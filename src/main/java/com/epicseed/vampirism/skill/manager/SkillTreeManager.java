@@ -1,6 +1,8 @@
 package com.epicseed.vampirism.skill.manager;
 
 import com.epicseed.vampirism.Vampirism;
+import com.epicseed.vampirism.domain.skill.SkillUnlockResult;
+import com.epicseed.vampirism.domain.skill.SkillUnlockStatus;
 import com.epicseed.vampirism.modifier.ModifierTag;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.StatModifier;
@@ -8,7 +10,6 @@ import com.epicseed.vampirism.skill.model.InlineModifier;
 import com.epicseed.vampirism.skill.model.Passive;
 import com.epicseed.vampirism.skill.model.Skill;
 import com.epicseed.vampirism.skill.runtime.ModifierScopeMatcher;
-import com.epicseed.vampirism.skill.runtime.SkillConditionEvaluator;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.epicseed.vampirism.skill.registry.SkillRegistry;
 
@@ -35,12 +36,7 @@ public class SkillTreeManager {
     }
 
     public boolean canUnlock(@Nonnull UUID uuid, Skill skill) {
-        if (!skill.enabled) {
-            return false;
-        }
-        List<Skill> reqs = skill.requires != null ? skill.requires : Collections.emptyList();
-        List<String> reqIds = reqs.stream().map(s -> s.id).collect(Collectors.toList());
-        return PlayerSkillRegistry.get().canUnlock(uuid, skill.id, skill.cost, reqIds);
+        return evaluateUnlock(uuid, skill).canUnlock();
     }
 
     /**
@@ -51,16 +47,50 @@ public class SkillTreeManager {
      * @return true if the skill was unlocked, false if preconditions were not met.
      */
     public boolean unlock(@Nonnull UUID uuid, Skill skill) {
-        if (!skill.enabled) {
-            return false;
+        return unlockDetailed(uuid, skill).unlocked();
+    }
+
+    @Nonnull
+    public SkillUnlockResult unlockDetailed(@Nonnull UUID uuid, @Nonnull Skill skill) {
+        SkillUnlockResult precheck = evaluateUnlock(uuid, skill);
+        if (!precheck.canUnlock()) {
+            return precheck;
         }
         List<Skill> reqs = skill.requires != null ? skill.requires : Collections.emptyList();
         List<String> reqIds = reqs.stream().map(s -> s.id).collect(Collectors.toList());
         boolean success = PlayerSkillRegistry.get().tryUnlock(uuid, skill.id, skill.cost, reqIds);
         if (success) {
             registerSkillModifiers(uuid, skill);
+            return result(SkillUnlockStatus.UNLOCKED, skill, "Skill unlocked: " + skill.displayName + "!");
         }
-        return success;
+        return result(SkillUnlockStatus.FAILED, skill, "Could not unlock: " + skill.displayName + ".");
+    }
+
+    @Nonnull
+    public SkillUnlockResult evaluateUnlock(@Nonnull UUID uuid, @Nonnull Skill skill) {
+        if (!skill.enabled) {
+            return result(SkillUnlockStatus.DISABLED, skill, "Skill is WIP: " + skill.displayName + ".");
+        }
+        if (PlayerSkillRegistry.get().hasSkill(uuid, skill.id)) {
+            return result(SkillUnlockStatus.ALREADY_UNLOCKED, skill, "Skill already unlocked: " + skill.displayName + ".");
+        }
+        List<Skill> reqs = skill.requires != null ? skill.requires : Collections.emptyList();
+        List<String> reqIds = reqs.stream().map(s -> s.id).collect(Collectors.toList());
+        for (String reqId : reqIds) {
+            if (!PlayerSkillRegistry.get().hasSkill(uuid, reqId)) {
+                return result(SkillUnlockStatus.MISSING_REQUIREMENTS, skill, "Requirements not met for: " + skill.displayName + ".");
+            }
+        }
+        int points = PlayerSkillRegistry.get().getSkillPoints(uuid);
+        if (points < skill.cost) {
+            return result(SkillUnlockStatus.INSUFFICIENT_POINTS, skill,
+                    "Insufficient points for: " + skill.displayName
+                            + " (required: " + skill.cost + ", available: " + points + ").");
+        }
+        if (!PlayerSkillRegistry.get().canUnlock(uuid, skill.id, skill.cost, reqIds)) {
+            return result(SkillUnlockStatus.FAILED, skill, "Could not unlock: " + skill.displayName + ".");
+        }
+        return result(SkillUnlockStatus.CAN_UNLOCK, skill, "Skill can be unlocked: " + skill.displayName + ".");
     }
 
     public boolean grant(@Nonnull UUID uuid, @Nonnull Skill skill) {
@@ -128,5 +158,10 @@ public class SkillTreeManager {
             case MULTIPLY -> (current, ctx) -> ModifierScopeMatcher.applies(mod, ctx) ? current * value : current;
             case OVERRIDE -> (current, ctx) -> ModifierScopeMatcher.applies(mod, ctx) ? value : current;
         };
+    }
+
+    @Nonnull
+    private static SkillUnlockResult result(@Nonnull SkillUnlockStatus status, @Nonnull Skill skill, @Nonnull String message) {
+        return new SkillUnlockResult(status, skill.id, message);
     }
 }

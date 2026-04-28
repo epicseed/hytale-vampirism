@@ -12,7 +12,7 @@ import javax.annotation.Nonnull;
 
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.config.VampirismConfig;
-import com.epicseed.vampirism.registry.PlayerRelicBindings;
+import com.epicseed.vampirism.domain.relic.RelicBindingService;
 import com.epicseed.vampirism.skill.model.Ability;
 import com.epicseed.vampirism.skill.model.Skill;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
@@ -83,16 +83,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
 
         UUID uuid = playerRef.getUuid();
 
-        // Seed the pending map with the EFFECTIVE bindings (overrides → globals).
-        // null = no per-player override → use global default
-        // ""   = intentionally cleared → keep empty (do NOT fall back to global default)
-        // "x"  = specific override → use it
-        Map<String, String> overrides = PlayerRelicBindings.get().bindingsFor(uuid);
-        for (String slot : SLOT_KEYS) {
-            String aId = overrides.get(slot);
-            if (aId == null) aId = RelicBindings.abilityFor(slot); // only fall back when there's no override at all
-            if (aId != null && !aId.isBlank()) pending.put(slot, aId);
-        }
+        pending.putAll(RelicBindingService.getEffectiveBindings(uuid));
         savedState.putAll(pending); // snapshot of the saved state for dirty-detection
 
         // Render slot tiles
@@ -132,8 +123,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
         }
 
         // Render unlocked abilities — reuse the proven GridCell.ui variants (same as SkillTree)
-        SkillRegistry skillRegistry = Vampirism.getInstance().GetSkillRegistry();
-        List<Skill> unlocked = collectUnlockedAbilitySkills(skillRegistry, uuid);
+        List<Skill> unlocked = RelicBindingService.listBindableAbilitySkills(uuid);
         final int cellSz = 64, gapX = 12, gapY = 12, cols = 8;
         for (int i = 0; i < unlocked.size(); i++) {
             Skill s = unlocked.get(i);
@@ -360,17 +350,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
             cmd.set("#SelectionHint.Text", blockedReason);
             return false;
         }
-        PlayerRelicBindings reg = PlayerRelicBindings.get();
-        reg.resetAll(uuid);
-        for (String slot : SLOT_KEYS) {
-            String aId = pending.get(slot);
-            if (aId != null && !aId.isBlank()) {
-                reg.set(uuid, slot, aId);
-            } else {
-                reg.set(uuid, slot, "");
-            }
-        }
-        reg.save();
+        RelicBindingService.applyBindings(uuid, pending);
         savedState.clear();
         savedState.putAll(pending);
         refreshAllSlots(cmd);
@@ -449,8 +429,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
     }
 
     private long slotBindingRemainingMs(@Nonnull UUID uuid, @Nonnull String slot) {
-        String activeAbilityId = normalizedBinding(savedState.get(slot));
-        return activeAbilityId == null ? 0L : AbilityCooldownTracker.getRemainingMs(uuid, activeAbilityId);
+        return RelicBindingService.slotBindingRemainingMs(uuid, savedState, slot);
     }
 
     private boolean hasActiveCooldowns() {
@@ -551,25 +530,11 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
     }
 
     private boolean isAbilityOnCooldown(@Nonnull UUID uuid, String abilityId) {
-        String normalized = normalizedBinding(abilityId);
-        return normalized != null && AbilityCooldownTracker.getRemainingMs(uuid, normalized) > 0L;
+        return RelicBindingService.isAbilityOnCooldown(uuid, abilityId);
     }
 
     private String validatePendingBindings(@Nonnull UUID uuid) {
-        for (String slot : SLOT_KEYS) {
-            String pendingAbilityId = normalizedBinding(pending.get(slot));
-            String savedAbilityId = normalizedBinding(savedState.get(slot));
-            if (Objects.equals(pendingAbilityId, savedAbilityId)) {
-                continue;
-            }
-            if (isSlotBindingOnCooldown(uuid, slot)) {
-                return slotCooldownMessage(uuid, slot);
-            }
-            if (pendingAbilityId != null && isAbilityOnCooldown(uuid, pendingAbilityId)) {
-                return abilityCooldownMessage(uuid, pendingAbilityId);
-            }
-        }
-        return null;
+        return RelicBindingService.validatePendingBindings(uuid, savedState, pending);
     }
 
     @Nonnull
@@ -578,16 +543,14 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
         if (abilityId == null) {
             return "Slot '" + slotLabel(slot) + "' is locked by cooldown.";
         }
-        long remainingMs = AbilityCooldownTracker.getRemainingMs(uuid, abilityId);
+        long remainingMs = RelicBindingService.remainingMs(uuid, abilityId);
         return "Cannot change '" + slotLabel(slot) + "' while '" + abilityLabel(abilityId)
                 + "' is on cooldown (" + formatCooldown(remainingMs) + "s remaining).";
     }
 
     @Nonnull
     private String abilityCooldownMessage(@Nonnull UUID uuid, @Nonnull String abilityId) {
-        long remainingMs = AbilityCooldownTracker.getRemainingMs(uuid, abilityId);
-        return "Cannot rebind '" + abilityLabel(abilityId) + "' while it is on cooldown ("
-                + formatCooldown(remainingMs) + "s remaining).";
+        return RelicBindingService.abilityCooldownMessage(uuid, abilityId);
     }
 
     @Nonnull
@@ -603,23 +566,21 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
 
     @Nonnull
     private String abilityLabel(@Nonnull String abilityId) {
-        return abilityLabel(abilityId, findSkillByAbilityId(abilityId));
+        return RelicBindingService.abilityLabel(abilityId);
     }
 
     @Nonnull
     private static String abilityLabel(@Nonnull String abilityId, Skill owner) {
-        Ability ab = Vampirism.getInstance().GetAbilityRegistry().Get(abilityId);
-        return (ab != null && ab.displayName != null) ? ab.displayName
-                : (owner != null ? owner.displayName : abilityId);
+        return RelicBindingService.abilityLabel(abilityId, owner);
     }
 
     private static String normalizedBinding(String abilityId) {
-        return abilityId == null || abilityId.isBlank() ? null : abilityId;
+        return RelicBindingService.normalized(abilityId).orElse(null);
     }
 
     @Nonnull
     private static String formatCooldown(long remainingMs) {
-        return Long.toString(Math.max(1L, (long) Math.ceil(remainingMs / 1000.0)));
+        return RelicBindingService.formatCooldown(remainingMs);
     }
 
     private void refreshAbilityHighlight(@Nonnull UICommandBuilder cmd) {

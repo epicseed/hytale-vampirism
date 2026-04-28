@@ -2,7 +2,6 @@ package com.epicseed.vampirism.commands;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -12,7 +11,10 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.epicseed.vampirism.Vampirism;
+import com.epicseed.vampirism.commands.admin.BloodAdminCommands;
+import com.epicseed.vampirism.commands.admin.VampireAdminCommands;
 import com.epicseed.vampirism.config.VampirismConfig;
+import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.model.Skill;
@@ -22,10 +24,8 @@ import com.epicseed.vampirism.skill.runtime.AbilityCooldownTracker;
 import com.epicseed.vampirism.skill.runtime.AbilityService;
 import com.epicseed.vampirism.skill.runtime.SkillActivationResult;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
-import com.epicseed.vampirism.systems.NightMarkedVictimSystem;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.AnimationSlot;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
@@ -44,8 +44,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public class VampirismCommand extends AbstractCommand {
 
-    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-
     public VampirismCommand() {
         super("vampirism", "Vampirism plugin management");
         this.setPermissionGroups(new String[]{"admin"});
@@ -53,10 +51,10 @@ public class VampirismCommand extends AbstractCommand {
         this.addSubCommand(new ConfigInfoCommand());
         this.addSubCommand(new StatusCommand());
         this.addSubCommand(new SatietyInfoCommand());
-        this.addSubCommand(new BloodSubCommand());
+        this.addSubCommand(new BloodAdminCommands());
         this.addSubCommand(new HuntSubCommand());
         this.addSubCommand(new AbilitySubCommand());
-        this.addSubCommand(new VampireSubCommand());
+        this.addSubCommand(new VampireAdminCommands());
         this.addSubCommand(new SkillPointsSubCommand());
         this.addSubCommand(new SkillResetCommand());
         this.addSubCommand(new MorphSubCommand());
@@ -104,136 +102,6 @@ public class VampirismCommand extends AbstractCommand {
         }
     }
 
-    // ─── /vampirism vampire ───────────────────────────────────────────────────
-
-    private static class VampireSubCommand extends AbstractCommand {
-
-        VampireSubCommand() {
-            super("vampire", "Manage the vampire player registry");
-            this.setPermissionGroups(new String[]{"admin"});
-            this.addSubCommand(new VampireAddCommand());
-            this.addSubCommand(new VampireRemoveCommand());
-            this.addSubCommand(new VampireToggleCommand());
-            this.addSubCommand(new VampireListCommand());
-        }
-
-        @Nonnull
-        @Override
-        public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
-            VampireStatusRegistry registry = VampireStatusRegistry.get();
-            boolean defaultEnabled = registry.isDefaultEnabled();
-            ctx.sendMessage(Message.raw("=== Vampire Status Registry ===").color("dark_red"));
-            ctx.sendMessage(Message.raw("Default: " + (defaultEnabled ? "everyone is vampire" : "nobody is vampire")).color("gray"));
-            ctx.sendMessage(Message.raw("/vampirism vampire add <player>").color("yellow"));
-            ctx.sendMessage(Message.raw("/vampirism vampire remove <player>").color("yellow"));
-            ctx.sendMessage(Message.raw("/vampirism vampire toggle <player>").color("yellow"));
-            ctx.sendMessage(Message.raw("/vampirism vampire list").color("yellow"));
-            return CompletableFuture.completedFuture(null);
-        }
-    }
-
-    private static class VampireAddCommand extends AbstractCommand {
-
-        private final RequiredArg<PlayerRef> playerArg;
-
-        VampireAddCommand() {
-            super("add", "Make a player a vampire");
-            this.setPermissionGroups(new String[]{"admin"});
-            this.playerArg = this.withRequiredArg("player", "Target player", (ArgumentType<PlayerRef>) ArgTypes.PLAYER_REF);
-        }
-
-        @Nonnull
-        @Override
-        public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
-            PlayerRef target = playerArg.get(ctx);
-            boolean changed = VampireStatusRegistry.get().addVampire(target.getUuid(), target.getUsername());
-            if (changed) {
-                ctx.sendMessage(Message.raw(target.getUsername() + " is now a vampire.").color("green"));
-            } else {
-                ctx.sendMessage(Message.raw(target.getUsername() + " is already a vampire.").color("yellow"));
-            }
-            return CompletableFuture.completedFuture(null);
-        }
-    }
-
-    private static class VampireRemoveCommand extends AbstractCommand {
-
-        private final RequiredArg<PlayerRef> playerArg;
-
-        VampireRemoveCommand() {
-            super("remove", "Remove vampirism from a player");
-            this.setPermissionGroups(new String[]{"admin"});
-            this.playerArg = this.withRequiredArg("player", "Target player", (ArgumentType<PlayerRef>) ArgTypes.PLAYER_REF);
-        }
-
-        @Nonnull
-        @Override
-        public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
-            PlayerRef target = playerArg.get(ctx);
-            boolean changed = VampireStatusRegistry.get().removeVampire(target.getUuid(), target.getUsername());
-            if (changed) {
-                ctx.sendMessage(Message.raw(target.getUsername() + " is no longer a vampire.").color("green"));
-            } else {
-                ctx.sendMessage(Message.raw(target.getUsername() + " was not a vampire.").color("yellow"));
-            }
-            return CompletableFuture.completedFuture(null);
-        }
-    }
-
-    private static class VampireToggleCommand extends AbstractCommand {
-
-        private final RequiredArg<PlayerRef> playerArg;
-
-        VampireToggleCommand() {
-            super("toggle", "Toggle vampirism for a player");
-            this.setPermissionGroups(new String[]{"admin"});
-            this.playerArg = this.withRequiredArg("player", "Target player", (ArgumentType<PlayerRef>) ArgTypes.PLAYER_REF);
-        }
-
-        @Nonnull
-        @Override
-        public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
-            PlayerRef target = playerArg.get(ctx);
-            boolean isNowVampire = VampireStatusRegistry.get().toggleVampire(target.getUuid(), target.getUsername());
-            String msg = target.getUsername() + (isNowVampire ? " is now a vampire." : " is no longer a vampire.");
-            ctx.sendMessage(Message.raw(msg).color(isNowVampire ? "green" : "red"));
-            return CompletableFuture.completedFuture(null);
-        }
-    }
-
-    private static class VampireListCommand extends AbstractCommand {
-
-        VampireListCommand() {
-            super("list", "Show vampire registry entries");
-            this.setPermissionGroups(new String[]{"admin"});
-        }
-
-        @Nonnull
-        @Override
-        public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
-            VampireStatusRegistry registry = VampireStatusRegistry.get();
-            boolean defaultEnabled = registry.isDefaultEnabled();
-            ctx.sendMessage(Message.raw("=== Vampire Status Registry ===").color("dark_red"));
-            ctx.sendMessage(Message.raw("Mode: " + (defaultEnabled
-                    ? "everyone is vampire (list = excluded)"
-                    : "nobody is vampire (list = included)")).color("gray"));
-
-            Map<UUID, String> entries = registry.getRegisteredEntries();
-            if (entries.isEmpty()) {
-                ctx.sendMessage(Message.raw("No registry entries (using defaults).").color("gray"));
-            } else {
-                String label = defaultEnabled ? "Non-vampires" : "Vampires";
-                ctx.sendMessage(Message.raw(label + " (" + entries.size() + "):").color("aqua"));
-                for (Map.Entry<UUID, String> entry : entries.entrySet()) {
-                    ctx.sendMessage(Message.raw("  - " + entry.getValue())
-                            .color("white")
-                            .insert(Message.raw(" (" + entry.getKey() + ")").color("gray")));
-                }
-            }
-            return CompletableFuture.completedFuture(null);
-        }
-    }
-
     // ─── /vampirism satiety <player> ─────────────────────────────────────────
 
     private static class SatietyInfoCommand extends AbstractCommand {
@@ -275,66 +143,6 @@ public class VampirismCommand extends AbstractCommand {
                 ctx.sendMessage(Message.raw("HUD active: " + hudActive).color(hudActive ? "green" : "yellow"));
             }
 
-            return CompletableFuture.completedFuture(null);
-        }
-    }
-
-    // ─── /vampirism blood ─────────────────────────────────────────────────────
-
-    private static class BloodSubCommand extends AbstractCommand {
-
-        BloodSubCommand() {
-            super("blood", "Manage player blood for debug");
-            this.setPermissionGroups(new String[]{"admin"});
-            this.addSubCommand(new BloodAddCommand());
-        }
-
-        @Nonnull
-        @Override
-        public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
-            ctx.sendMessage(Message.raw("=== Blood ===").color("dark_red"));
-            ctx.sendMessage(Message.raw("/vampirism blood add <player> <amount>").color("yellow"));
-            return CompletableFuture.completedFuture(null);
-        }
-    }
-
-    private static class BloodAddCommand extends AbstractCommand {
-
-        private final RequiredArg<PlayerRef> playerArg;
-        private final RequiredArg<Integer> amountArg;
-
-        BloodAddCommand() {
-            super("add", "Add blood units to a player");
-            this.setPermissionGroups(new String[]{"admin"});
-            this.playerArg = this.withRequiredArg("player", "Target player", (ArgumentType<PlayerRef>) ArgTypes.PLAYER_REF);
-            this.amountArg = this.withRequiredArg("amount", "Blood amount to add", (ArgumentType<Integer>) ArgTypes.INTEGER);
-        }
-
-        @Nonnull
-        @Override
-        public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
-            PlayerRef target = playerArg.get(ctx);
-            if (!VampireStatusRegistry.get().isVampire(target.getUuid())) {
-                ctx.sendMessage(Message.raw(target.getUsername() + " is not a vampire.").color("red"));
-                return CompletableFuture.completedFuture(null);
-            }
-
-            int amount = Math.max(0, amountArg.get(ctx));
-            if (amount <= 0) {
-                ctx.sendMessage(Message.raw("Value must be greater than 0.").color("yellow"));
-                return CompletableFuture.completedFuture(null);
-            }
-
-            int before = VampireVitalitySystem.getBloodByUuid(target.getUuid());
-            int after = VampireVitalitySystem.addBloodByUuid(target.getUuid(), amount);
-            int maxBlood = VampireVitalitySystem.getMaxBloodByUuid(target.getUuid());
-            if (after < 0) {
-                ctx.sendMessage(Message.raw(target.getUsername() + " is not online or has not been tracked yet.").color("red"));
-                return CompletableFuture.completedFuture(null);
-            }
-
-            ctx.sendMessage(Message.raw("Blood added for " + target.getUsername()
-                    + ": " + before + " / " + maxBlood + " -> " + after + " / " + maxBlood).color("green"));
             return CompletableFuture.completedFuture(null);
         }
     }
@@ -387,8 +195,8 @@ public class VampirismCommand extends AbstractCommand {
             UUID uuid = target.getUuid();
             int acquiredPoints = PlayerSkillRegistry.get().getAcquiredSkillPoints(uuid);
             int completedNightHunts = PlayerSkillRegistry.get().getCompletedNightHunts(uuid);
-            int baseVisualTier = NightMarkedVictimSystem.getBaseVisualTierForAcquiredPoints(acquiredPoints);
-            NightMarkedVictimSystem.HuntDebugInfo huntInfo = NightMarkedVictimSystem.getDebugInfo(uuid);
+            int baseVisualTier = NightHuntService.getBaseVisualTierForAcquiredPoints(acquiredPoints);
+            var huntInfo = NightHuntService.getDebugInfo(uuid);
 
             ctx.sendMessage(Message.raw("=== Hunt Info: " + target.getUsername() + " ===").color("dark_red"));
             ctx.sendMessage(Message.raw("Completed hunts: " + completedNightHunts).color("white"));
@@ -464,7 +272,7 @@ public class VampirismCommand extends AbstractCommand {
                 return;
             }
 
-            boolean started = NightMarkedVictimSystem.forceStart(target.getUuid(), targetPlayerRef, store);
+            boolean started = NightHuntService.forceStart(target.getUuid(), targetPlayerRef, store);
             if (!started) {
                 ctx.sendMessage(Message.raw("Could not force the hunt for " + target.getUsername()
                         + ". The event may already be active or no valid hunt destination was found.").color("yellow"));
@@ -494,7 +302,7 @@ public class VampirismCommand extends AbstractCommand {
                 return CompletableFuture.completedFuture(null);
             }
 
-            NightMarkedVictimSystem.resetCooldown(target.getUuid());
+            NightHuntService.resetCooldown(target.getUuid());
             ctx.sendMessage(Message.raw("Reset the marked prey hunt cooldown for " + target.getUsername() + ".").color("green"));
             return CompletableFuture.completedFuture(null);
         }

@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.vampirism.modifier.ModifierTag;
@@ -145,7 +146,7 @@ public class VampireCombatSystem extends DamageEventSystem {
             // Dispatch onDamageDealt for vampire attackers so reactive passives can fire
             if (attackerUuid != null) {
                 if (effectiveDamageAmount > 0f) {
-                    NightMarkedVictimSystem.recordMarkedPreyHit(attackerUuid, victimRef, store);
+                    NightHuntService.recordMarkedPreyHit(attackerUuid, victimRef, store);
                 }
                 PassiveService.get().onDamageDealt(
                         new SkillRuntimeContext(attackerUuid, attackerRef, store),
@@ -193,7 +194,7 @@ public class VampireCombatSystem extends DamageEventSystem {
                     if (attackerUuid != null) {
                         PassiveService.get().onKill(
                                 new SkillRuntimeContext(attackerUuid, attackerRef, victimRef, store));
-                        NightMarkedVictimSystem.onPlayerKilledMarkedPrey(attackerUuid, attackerRef, victimRef, store);
+                        NightHuntService.onPlayerKilledMarkedPrey(attackerUuid, attackerRef, victimRef, store);
                     }
                 }
             }

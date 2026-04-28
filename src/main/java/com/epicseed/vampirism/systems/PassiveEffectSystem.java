@@ -93,7 +93,7 @@ public class PassiveEffectSystem extends EntityTickingSystem<EntityStore> {
     public SystemGroup<EntityStore> getGroup() { return null; }
 
     @Override
-    public Query<EntityStore> getQuery() { return Query.any(); }
+    public Query<EntityStore> getQuery() { return Query.and(Player.getComponentType()); }
 
     @Override
     public void tick(float dt, int index,

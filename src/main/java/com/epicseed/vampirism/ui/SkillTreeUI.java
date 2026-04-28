@@ -9,9 +9,10 @@ import java.util.UUID;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
 import com.epicseed.vampirism.Vampirism;
+import com.epicseed.vampirism.domain.skill.SkillNodeState;
+import com.epicseed.vampirism.domain.skill.SkillTreePresenter;
+import com.epicseed.vampirism.domain.skill.SkillUnlockResult;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
-import com.epicseed.vampirism.skill.model.Ability;
-import com.epicseed.vampirism.skill.model.Passive;
 import com.epicseed.vampirism.skill.model.Skill;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.epicseed.vampirism.skill.registry.SkillRegistry;
@@ -195,7 +196,7 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
                 if (targetId == null) { sendUpdate(new UICommandBuilder()); return; }
                 Skill skill = skillRegistry.GetSkill(targetId);
                 if (skill == null) { sendUpdate(new UICommandBuilder()); return; }
-                boolean unlocked = SkillTreeManager.get().unlock(playerRef.getUuid(), skill);
+                SkillUnlockResult result = SkillTreeManager.get().unlockDetailed(playerRef.getUuid(), skill);
                 UICommandBuilder cmd = new UICommandBuilder();
                 showSkillDetail(cmd, skill, playerRef.getUuid());
                 refreshAllIndicators(cmd, playerRef.getUuid());
@@ -204,14 +205,14 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
                 // Send feedback to the player in chat
                 Player feedbackPlayer = store.getComponent(ref, Player.getComponentType());
                 if (feedbackPlayer != null) {
-                    if (unlocked) {
+                    if (result.unlocked()) {
                         feedbackPlayer.sendMessage(
-                                Message.raw("✓ Skill unlocked: " + skill.displayName + "!").color("green"));
+                                Message.raw("✓ " + result.message()).color("green"));
                     } else {
                         feedbackPlayer.sendMessage(
-                                Message.raw(buildUnlockFailureReason(skill, playerRef.getUuid())).color("yellow"));
+                                Message.raw(result.message()).color("yellow"));
                     }
-                } else if (!unlocked) {
+                } else if (!result.unlocked()) {
                     LOGGER.atInfo().log("[SkillTree] " + playerRef.getUsername() + " cannot unlock: " + skill.id);
                 }
             }
@@ -339,18 +340,7 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
 
         List<Skill> unlockSkills = reverseDepMap.getOrDefault(skill.id, List.of());
 
-        boolean isWip = !skill.enabled;
-        boolean isUnlocked = PlayerSkillRegistry.get().hasSkill(uuid, skill.id);
-        boolean canUnlock = !isWip && SkillTreeManager.get().canUnlock(uuid, skill);
-        boolean depsMet = skill.requires.isEmpty() || skill.requires.stream()
-                .allMatch(req -> PlayerSkillRegistry.get().hasSkill(uuid, req.id));
-        int availablePoints = PlayerSkillRegistry.get().getSkillPoints(uuid);
-
-        String costText = skill.cost == 1 ? "1 point" : skill.cost + " points";
-        String unlockStatus = isWip ? "WIP"
-                : isUnlocked ? "Unlocked"
-                : depsMet ? "Unlock (" + costText + ")"
-                        : "Locked";
+        SkillNodeState state = SkillTreePresenter.stateFor(skill, uuid);
 
         cmd.set("#SkillDetail.Visible", true);
         cmd.set("#SkillDetail #SkillTile.Background", raritySlotPath(skill.rarity));
@@ -365,13 +355,12 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
         cmd.set("#SkillDetail #SkillName.Text", skill.displayName);
         cmd.set("#SkillDetail #SkillName.Style.TextColor", rarityColor(skill.rarity));
         cmd.set("#SkillDetail #SkillType.Text", skill.type != null ? skill.type : "");
-        cmd.set("#SkillDetail #SkillCost.Text", costText);
+        cmd.set("#SkillDetail #SkillCost.Text", state.costText());
         cmd.set("#SkillDetail #SkillDesc.Text", buildSkillDescription(skill));
-        cmd.set("#PointsPanel #PointsValue.Text", String.valueOf(availablePoints));
-        cmd.set("#SkillDetail #UnlockButton.Text", unlockStatus);
+        cmd.set("#PointsPanel #PointsValue.Text", String.valueOf(state.availablePoints()));
+        cmd.set("#SkillDetail #UnlockButton.Text", state.unlockStatus());
 
-        boolean isDisabled = isWip || isUnlocked || !canUnlock;
-        cmd.set("#SkillDetail #UnlockButton.Disabled", isDisabled);
+        cmd.set("#SkillDetail #UnlockButton.Disabled", state.unlockButtonDisabled());
 
         // Store current skills for mini node click handling
         currentRequireSkills = new ArrayList<>(requireSkills);
@@ -438,44 +427,14 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
      * static ability/passive metadata below the base description.
      */
     private String buildSkillDescription(Skill skill) {
-        StringBuilder sb = new StringBuilder(skill.description != null ? skill.description : "");
-
-        if (skill.abilityId != null && !skill.abilityId.isBlank()) {
-            Ability ability = Vampirism.getInstance().GetAbilityRegistry().Get(skill.abilityId);
-            if (ability != null) {
-                sb.append("\n\n[Active]");
-                if (ability.bloodCost > 0)
-                    sb.append("  Blood: ").append(ability.bloodCost);
-                if (ability.cooldown > 0)
-                    sb.append("  Cooldown: ").append(String.format("%.1f", ability.cooldown)).append("s");
-            }
-        } else if (skill.passiveId != null && !skill.passiveId.isBlank()) {
-            Passive passive = Vampirism.getInstance().GetPassiveRegistry().Get(skill.passiveId);
-            sb.append("\n\n[Passive]");
-            if (passive != null && !passive.modifiers.isEmpty())
-                sb.append("  Modifiers: ").append(passive.modifiers.size());
-        }
-
-        return sb.toString();
+        return SkillTreePresenter.buildDescription(skill);
     }
 
     /**
      * Returns a human-readable explanation for why a skill could not be unlocked.
      */
     private String buildUnlockFailureReason(Skill skill, UUID uuid) {
-        if (!skill.enabled)
-            return "Skill is WIP: " + skill.displayName + ".";
-        if (PlayerSkillRegistry.get().hasSkill(uuid, skill.id))
-            return "Skill already unlocked: " + skill.displayName + ".";
-        boolean depsMet = skill.requires.isEmpty() || skill.requires.stream()
-                .allMatch(req -> PlayerSkillRegistry.get().hasSkill(uuid, req.id));
-        if (!depsMet)
-            return "Requirements not met for: " + skill.displayName + ".";
-        int points = PlayerSkillRegistry.get().getSkillPoints(uuid);
-        if (points < skill.cost)
-            return "Insufficient points for: " + skill.displayName
-                    + " (required: " + skill.cost + ", available: " + points + ").";
-        return "Could not unlock: " + skill.displayName + ".";
+        return SkillTreePresenter.unlockFailureReason(skill, uuid);
     }
 
     /**
@@ -483,22 +442,7 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
      * player.
      */
     private String indicatorColor(Skill skill, UUID uuid) {
-        if (!skill.enabled) {
-            return "#000000";
-        }
-        if (PlayerSkillRegistry.get().hasSkill(uuid, skill.id)) {
-            return "#00cc44"; // green — purchased and ready
-        }
-        boolean depsMet = skill.requires.isEmpty() || skill.requires.stream()
-                .allMatch(req -> PlayerSkillRegistry.get().hasSkill(uuid, req.id));
-        if (!depsMet) {
-            return "#cc3333"; // red — locked (dependencies not met)
-        }
-        int points = PlayerSkillRegistry.get().getSkillPoints(uuid);
-        if (points < skill.cost) {
-            return "#888888"; // gray — available but not enough points
-        }
-        return "#ffffff"; // default (no tint) — available and has points
+        return SkillTreePresenter.indicatorColor(skill, uuid);
     }
 
     /**

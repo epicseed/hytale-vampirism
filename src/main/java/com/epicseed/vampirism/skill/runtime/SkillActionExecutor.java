@@ -1,8 +1,12 @@
 package com.epicseed.vampirism.skill.runtime;
 
 import com.epicseed.vampirism.Vampirism;
+import com.epicseed.vampirism.domain.blood.BloodConversionService;
+import com.epicseed.vampirism.domain.blood.FeedService;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
+import com.epicseed.vampirism.skill.runtime.actions.ActionHandlerRegistry;
+import com.epicseed.vampirism.skill.runtime.actions.SkillActionHandler;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.epicseed.vampirism.util.WorldPositionHelper;
 import com.hypixel.hytale.component.AddReason;
@@ -44,8 +48,6 @@ import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.TargetUtil;
 import com.hypixel.hytale.protocol.SoundCategory;
-import com.epicseed.vampirism.systems.BloodFeedSystem;
-import com.epicseed.vampirism.systems.BloodConversionSystem;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -64,6 +66,7 @@ public final class SkillActionExecutor {
     private static final double TELEPORT_MIN_DISTANCE = 1.5;
     private static final double TELEPORT_WALL_BUFFER = 0.3;
     private static final Field PROJECTILE_DAMAGE_MODIFIER_FIELD = resolveProjectileDamageModifierField();
+    private static final ActionHandlerRegistry ACTION_HANDLERS = createActionHandlers();
 
     private SkillActionExecutor() {}
 
@@ -87,41 +90,46 @@ public final class SkillActionExecutor {
             return false;
         }
 
-        return switch (typeId) {
-            case "applyEffect"           -> applyEffect(resolved, ctx);
-            case "removeEffect"          -> removeEffect(resolved, ctx);
-            case "toggleEffect"          -> toggleEffect(resolved, ctx);
-            case "healSelf"              -> healSelf(resolved, ctx);
-            case "dealDamage"            -> dealDamage(resolved, ctx);
-            case "executeFinalBlow"      -> executeFinalBlow(resolved, ctx);
-            case "startFeedChannel"      -> startFeedChannel(resolved, ctx);
-            case "startHealthToBloodChannel" -> startHealthToBloodChannel(resolved, ctx);
-            case "spawnProjectile"       -> spawnProjectile(resolved, ctx);
-            case "teleport"              -> teleport(resolved, ctx);
-            case "activateAbility"       -> activateAbility(resolved, ctx);
-            case "grantTemporaryModifier" -> grantTemporaryModifier(resolved, ctx);
-            case "modifyStat"            -> modifyStat(resolved, ctx);
-            case "modifyBlood"           -> modifyBlood(resolved, ctx);
-            case "playSound"             -> playSound(resolved, ctx);
-            case "spawnParticles"        -> spawnParticles(resolved, ctx);
-            case "sendMessage"           -> sendMessage(resolved, ctx);
-            // Deprecated alias: old 'applyTimedSpeedBoost' re-maps to the generic primitive.
-            case "applyTimedSpeedBoost"  -> grantTemporaryModifierLegacySpeed(resolved, ctx);
-            // Deprecated actions removed in favour of data-driven equivalents; left as explicit
-            // warnings so stale JSON loudly surfaces during migration rather than silently doing nothing.
-            case "applyControlEffect" -> {
-                LOGGER.atWarning().log("[SkillActionExecutor] 'applyControlEffect' is deprecated; migrate to 'applyEffect' with an effectId + targetingId: " + resolved);
-                yield false;
-            }
-            case "highlightEnemies" -> {
-                LOGGER.atWarning().log("[SkillActionExecutor] 'highlightEnemies' is deprecated; migrate to 'applyEffect' with an effectId + targetingId: " + resolved);
-                yield false;
-            }
-            default -> {
-                LOGGER.atWarning().log("[SkillActionExecutor] Unsupported action type: " + typeId);
-                yield false;
-            }
-        };
+        SkillActionHandler handler = ACTION_HANDLERS.find(typeId);
+        if (handler == null) {
+            LOGGER.atWarning().log("[SkillActionExecutor] Unsupported action type: " + typeId);
+            return false;
+        }
+        return handler.execute(resolved, ctx);
+    }
+
+    private static ActionHandlerRegistry createActionHandlers() {
+        return new ActionHandlerRegistry()
+                .register("applyEffect", SkillActionExecutor::applyEffect)
+                .register("removeEffect", SkillActionExecutor::removeEffect)
+                .register("toggleEffect", SkillActionExecutor::toggleEffect)
+                .register("healSelf", SkillActionExecutor::healSelf)
+                .register("dealDamage", SkillActionExecutor::dealDamage)
+                .register("executeFinalBlow", SkillActionExecutor::executeFinalBlow)
+                .register("startFeedChannel", SkillActionExecutor::startFeedChannel)
+                .register("startHealthToBloodChannel", SkillActionExecutor::startHealthToBloodChannel)
+                .register("spawnProjectile", SkillActionExecutor::spawnProjectile)
+                .register("teleport", SkillActionExecutor::teleport)
+                .register("activateAbility", SkillActionExecutor::activateAbility)
+                .register("grantTemporaryModifier", SkillActionExecutor::grantTemporaryModifier)
+                .register("modifyStat", SkillActionExecutor::modifyStat)
+                .register("modifyBlood", SkillActionExecutor::modifyBlood)
+                .register("playSound", SkillActionExecutor::playSound)
+                .register("spawnParticles", SkillActionExecutor::spawnParticles)
+                .register("sendMessage", SkillActionExecutor::sendMessage)
+                .register("applyTimedSpeedBoost", SkillActionExecutor::grantTemporaryModifierLegacySpeed)
+                .register("applyControlEffect", SkillActionExecutor::deprecatedApplyControlEffect)
+                .register("highlightEnemies", SkillActionExecutor::deprecatedHighlightEnemies);
+    }
+
+    private static boolean deprecatedApplyControlEffect(Map<String, Object> action, SkillRuntimeContext ctx) {
+        LOGGER.atWarning().log("[SkillActionExecutor] 'applyControlEffect' is deprecated; migrate to 'applyEffect' with an effectId + targetingId: " + action);
+        return false;
+    }
+
+    private static boolean deprecatedHighlightEnemies(Map<String, Object> action, SkillRuntimeContext ctx) {
+        LOGGER.atWarning().log("[SkillActionExecutor] 'highlightEnemies' is deprecated; migrate to 'applyEffect' with an effectId + targetingId: " + action);
+        return false;
     }
 
     private static boolean applyEffect(Map<String, Object> action, SkillRuntimeContext ctx) {
@@ -404,11 +412,11 @@ public final class SkillActionExecutor {
     }
 
     private static boolean startFeedChannel(Map<String, Object> action, SkillRuntimeContext ctx) {
-        return BloodFeedSystem.startChannel(ctx, action);
+        return FeedService.startChannel(ctx, action);
     }
 
     private static boolean startHealthToBloodChannel(Map<String, Object> action, SkillRuntimeContext ctx) {
-        return BloodConversionSystem.startChannel(ctx, action);
+        return BloodConversionService.startChannel(ctx, action);
     }
 
     // -------------------------------------------------------------------------
