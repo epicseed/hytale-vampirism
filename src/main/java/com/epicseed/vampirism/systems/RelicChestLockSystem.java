@@ -2,10 +2,10 @@ package com.epicseed.vampirism.systems;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.vampirism.hytale.InventoryAdapter;
 import com.epicseed.vampirism.relic.RelicInventoryService;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
-import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.SystemGroup;
@@ -88,14 +88,8 @@ public class RelicChestLockSystem extends EntityEventSystem<EntityStore, Invento
 
         // Allow internal moves (hotbar↔storage, etc.) by checking if dest is a player section
         ItemContainer dest = move.getOtherContainer();
-        for (int sectionId : PLAYER_SECTION_IDS) {
-            @SuppressWarnings("unchecked")
-            ComponentType<EntityStore, ? extends InventoryComponent> sectionType =
-                    (ComponentType<EntityStore, ? extends InventoryComponent>)
-                    InventoryComponent.getComponentTypeById(sectionId);
-            if (sectionType == null) continue;
-            InventoryComponent section = store.getComponent(ref, sectionType);
-            if (section != null && section.getInventory() == dest) return;
+        if (InventoryAdapter.isPlayerSectionContainer(ref, store, dest, PLAYER_SECTION_IDS)) {
+            return;
         }
 
         // relic moved to an external container — reverse the move

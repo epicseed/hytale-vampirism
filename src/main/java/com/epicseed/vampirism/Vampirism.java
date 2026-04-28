@@ -2,20 +2,13 @@ package com.epicseed.vampirism;
 
 import javax.annotation.Nonnull;
 
-import com.epicseed.vampirism.modifier.ModifierRegistry;
-import com.epicseed.vampirism.commands.VampirismCommand;
-import com.epicseed.vampirism.commands.VampirismPotionCommand;
-import com.epicseed.vampirism.commands.VampirismSkillTreeCommand;
-import com.epicseed.vampirism.commands.VampirismRelicCommand;
-import com.epicseed.vampirism.commands.VampirismRelicBindingsCommand;
-import com.epicseed.vampirism.commands.VampirismRelicBindingCommand;
-import com.epicseed.vampirism.skill.runtime.AbilityCooldownTracker;
-import com.epicseed.vampirism.skill.runtime.PassiveService;
-import com.epicseed.vampirism.skill.runtime.TemporaryModifierTracker;
+import com.epicseed.vampirism.bootstrap.CommandRegistrar;
+import com.epicseed.vampirism.bootstrap.PlayerLifecycleCoordinator;
+import com.epicseed.vampirism.bootstrap.SystemRegistrar;
 import com.epicseed.vampirism.config.VampirismConfig;
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
-import com.epicseed.vampirism.registry.PlayerRelicBindings;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
+import com.epicseed.vampirism.registry.PlayerRelicBindings;
+import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.data.SkillLoader;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
 import com.epicseed.vampirism.skill.model.Skill;
@@ -28,42 +21,17 @@ import com.epicseed.vampirism.skill.registry.ReusableDefRegistry;
 import com.epicseed.vampirism.skill.registry.SkillRegistry;
 import com.epicseed.vampirism.skill.registry.StateRegistry;
 import com.epicseed.vampirism.skill.registry.StatDefRegistry;
-import com.epicseed.vampirism.systems.VampireVitalitySystem;
-import com.epicseed.vampirism.systems.BloodFeedSystem;
-import com.epicseed.vampirism.systems.BloodConversionSystem;
-import com.epicseed.vampirism.systems.CrimsonUmbrellaVisualSystem;
 import com.epicseed.vampirism.systems.VampireCombatSystem;
-import com.epicseed.vampirism.systems.EffectModifierSystem;
-import com.epicseed.vampirism.systems.FormHealthSystem;
-import com.epicseed.vampirism.systems.MorphFlySystem;
-import com.epicseed.vampirism.systems.NightMarkedVictimSystem;
-import com.epicseed.vampirism.systems.PassiveEffectSystem;
-import com.epicseed.vampirism.systems.VampireInfectionSystem;
 import com.epicseed.vampirism.systems.VampireMovementSystem;
-import com.epicseed.vampirism.systems.RelicChestLockSystem;
-import com.epicseed.vampirism.systems.RelicDeathDropPreventSystem;
-import com.epicseed.vampirism.systems.RelicDropPreventSystem;
-import com.epicseed.vampirism.systems.SneakSystem;
 import com.epicseed.vampirism.systems.SunburnSystem;
-import com.epicseed.vampirism.systems.VampireSleepSystem;
-import com.hypixel.hytale.component.Holder;
+import com.epicseed.vampirism.systems.VampireVitalitySystem;
+import com.epicseed.vampirism.skill.runtime.PassiveService;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector2d;
-import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent;
-import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
-import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
-import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
-import com.hypixel.hytale.server.core.event.events.player.RemovedPlayerFromWorldEvent;
-import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.util.Config;
-import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.WorldMapTracker;
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -71,7 +39,6 @@ import java.util.logging.Level;
 public class Vampirism extends JavaPlugin {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-    private static final Field WORLD_MAP_TRACKER_TRANSFORM_FIELD = resolveWorldMapTrackerTransformField();
 
     private static Vampirism instance;
 
@@ -113,77 +80,12 @@ public class Vampirism extends JavaPlugin {
         VampireMovementSystem.registerModifiers();
         VampireCombatSystem.registerModifiers();
 
-        this.getEventRegistry().register(PlayerConnectEvent.class, e -> {
-            UUID uuid = e.getPlayerRef().getUuid();
-            PlayerSkillRegistry.get().onPlayerConnect(uuid);
-            NightMarkedVictimSystem.onPlayerConnect(uuid);
-            AbilityCooldownTracker.restorePlayer(uuid, PlayerSkillRegistry.get().getPersistedAbilityCooldowns(uuid));
-            EffectModifierSystem.clearPlayer(uuid);
-            SkillTreeManager.get().reloadModifiers(uuid);
-            // Passive connect-time effects are applied lazily by PassiveEffectSystem once the
-            // player's entity context is fully available (typically within the first tick).
-        });
-        this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, e -> {
-            MorphFlySystem.onPlayerReady(e.getPlayerRef());
-        });
-        this.getEventRegistry().registerGlobal(AddPlayerToWorldEvent.class, e -> {
-            syncWorldMapTrackerTransform(e.getHolder(), e.getWorld(), false);
-        });
-        this.getEventRegistry().registerGlobal(RemovedPlayerFromWorldEvent.class, e -> {
-            syncWorldMapTrackerTransform(e.getHolder(), e.getWorld(), true);
-        });
-        this.getEventRegistry().register(PlayerDisconnectEvent.class, e -> {
-            UUID uuid = e.getPlayerRef().getUuid();
-            MorphFlySystem.captureDisconnectState(uuid);
-            VampireVitalitySystem.captureDisconnectState(uuid);
-            PlayerSkillRegistry.get().setPersistedAbilityCooldowns(uuid, AbilityCooldownTracker.snapshotRemaining(uuid));
-            NightMarkedVictimSystem.captureDisconnectState(uuid);
-            SkillTreeManager.get().evictPlayer(uuid);
-            ModifierRegistry.get().evict(uuid);
-            EffectModifierSystem.clearPlayer(uuid);
-            PlayerSkillRegistry.get().onPlayerDisconnect(uuid);
-            MorphFlySystem.clearTransientState(uuid);
-            FormHealthSystem.clearPlayer(uuid);
-            BloodFeedSystem.clearPlayer(uuid);
-            BloodConversionSystem.clearPlayer(uuid);
-            NightMarkedVictimSystem.clearPlayer(uuid);
-            SunburnSystem.onPlayerLeave(uuid);
-            SneakSystem.clearPlayer(uuid);
-            VampireMovementSystem.clearPlayer(uuid);
-            VampireCombatSystem.clearPlayer(uuid);
-            CrimsonUmbrellaVisualSystem.clearPlayer(uuid);
-            VampireInfectionSystem.clearPlayer(uuid);
-            AbilityCooldownTracker.clearPlayer(uuid);
-            TemporaryModifierTracker.clearPlayer(uuid);
-            PassiveEffectSystem.onPlayerDisconnect(uuid);
-        });
+        PlayerLifecycleCoordinator.register(this);
 
         LOGGER.atInfo().log("[Vampirism] Registering systems and commands...");
 
-        this.getEntityStoreRegistry().registerSystem(new VampireInfectionSystem());
-        this.getEntityStoreRegistry().registerSystem(new VampireVitalitySystem());
-        this.getEntityStoreRegistry().registerSystem(new BloodFeedSystem());
-        this.getEntityStoreRegistry().registerSystem(new BloodConversionSystem());
-        this.getEntityStoreRegistry().registerSystem(new VampireCombatSystem());
-        this.getEntityStoreRegistry().registerSystem(new VampireMovementSystem());
-        this.getEntityStoreRegistry().registerSystem(new EffectModifierSystem());
-        this.getEntityStoreRegistry().registerSystem(new FormHealthSystem());
-        this.getEntityStoreRegistry().registerSystem(new SunburnSystem());
-        this.getEntityStoreRegistry().registerSystem(new SneakSystem());
-        this.getEntityStoreRegistry().registerSystem(new MorphFlySystem());
-        this.getEntityStoreRegistry().registerSystem(new CrimsonUmbrellaVisualSystem());
-        this.getEntityStoreRegistry().registerSystem(new NightMarkedVictimSystem());
-        this.getEntityStoreRegistry().registerSystem(new PassiveEffectSystem());
-        this.getEntityStoreRegistry().registerSystem(new RelicDropPreventSystem());
-        this.getEntityStoreRegistry().registerSystem(new RelicDeathDropPreventSystem());
-        this.getEntityStoreRegistry().registerSystem(new RelicChestLockSystem());
-        this.getEntityStoreRegistry().registerSystem(new VampireSleepSystem());
-        this.getCommandRegistry().registerCommand(new VampirismCommand());
-        this.getCommandRegistry().registerCommand(new VampirismSkillTreeCommand());
-        this.getCommandRegistry().registerCommand(new VampirismPotionCommand());
-        this.getCommandRegistry().registerCommand(new VampirismRelicCommand());
-        this.getCommandRegistry().registerCommand(new VampirismRelicBindingsCommand());
-        this.getCommandRegistry().registerCommand(new VampirismRelicBindingCommand());
+        SystemRegistrar.register(this);
+        CommandRegistrar.register(this);
 
         LOGGER.atInfo().log("[Vampirism] All systems registered.");
     }
@@ -238,47 +140,6 @@ public class Vampirism extends JavaPlugin {
 
     private void SetHighestPositions(int maxX, int maxY) {
         highestPosition = new Vector2d(Math.abs(maxX), Math.abs(maxY));
-    }
-
-    private static void syncWorldMapTrackerTransform(@Nonnull Holder<EntityStore> holder,
-                                                     @Nonnull World world,
-                                                     boolean clear) {
-        Runnable action = () -> {
-            Player player = holder.getComponent(Player.getComponentType());
-            if (player == null) {
-                return;
-            }
-            TransformComponent transform = clear
-                    ? null
-                    : holder.getComponent(TransformComponent.getComponentType());
-            setWorldMapTrackerTransform(player.getWorldMapTracker(), transform);
-        };
-        if (world.isInThread()) {
-            action.run();
-            return;
-        }
-        world.execute(action);
-    }
-
-    // WorldMapTracker lazily grabs the player's transform from its own map thread; prime it on WorldThread instead.
-    private static void setWorldMapTrackerTransform(@Nonnull WorldMapTracker tracker,
-                                                    TransformComponent transform) {
-        try {
-            WORLD_MAP_TRACKER_TRANSFORM_FIELD.set(tracker, transform);
-        } catch (IllegalAccessException e) {
-            throw new IllegalStateException("Failed to synchronize WorldMapTracker transform cache.", e);
-        }
-    }
-
-    @Nonnull
-    private static Field resolveWorldMapTrackerTransformField() {
-        try {
-            Field field = WorldMapTracker.class.getDeclaredField("transformComponent");
-            field.setAccessible(true);
-            return field;
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
     }
 
     @Override

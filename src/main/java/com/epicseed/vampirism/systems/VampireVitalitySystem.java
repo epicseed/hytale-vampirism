@@ -1,6 +1,5 @@
 package com.epicseed.vampirism.systems;
 
-import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -9,21 +8,22 @@ import java.util.concurrent.Executor;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import com.epicseed.vampirism.domain.blood.BloodService;
+import com.epicseed.vampirism.domain.blood.BloodState;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.hud.BloodGaugeHud;
 import com.epicseed.vampirism.hud.RelicCooldownHud;
+import com.epicseed.vampirism.hytale.MultipleHudAdapter;
 import com.epicseed.vampirism.ui.RelicBindingsUI;
 import com.epicseed.vampirism.ui.SkillTreeUI;
 import com.hypixel.hytale.builtin.mounts.BlockMountComponent;
 import com.hypixel.hytale.builtin.mounts.MountedComponent;
 import com.epicseed.vampirism.modifier.ContextKey;
-import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.vampirism.modifier.ModifierTag;
-import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
+import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.relic.RelicInventoryService;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.epicseed.vampirism.skill.runtime.EntityRefTracker;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -37,7 +37,6 @@ import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.protocol.packets.interface_.HudComponent;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
@@ -53,28 +52,14 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
-    private static final boolean MULTIPLE_HUD_AVAILABLE;
     private static final String BLOOD_GAUGE_HUD_KEY = "vampiric_blood_gauge";
     private static final String RELIC_COOLDOWN_HUD_KEY = "vampiric_relic_cooldowns";
     private static final String VAMPIRE_THRONE_BLOCK_ID = "VampireThrone";
     private static final float VAMPIRE_THRONE_REGEN_INTERVAL_SECONDS = 2.5f;
-    public static final int BASE_BLOOD_CAPACITY_UNITS = 100;
+    public static final int BASE_BLOOD_CAPACITY_UNITS = BloodService.BASE_BLOOD_CAPACITY_UNITS;
 
-    static {
-        boolean available;
-        try {
-            Class.forName("com.buuz135.mhud.MultipleHUD");
-            available = true;
-        } catch (ClassNotFoundException e) {
-            available = false;
-        }
-        MULTIPLE_HUD_AVAILABLE = available;
-    }
-
-    private static final Map<Ref<EntityStore>, SatietyState> playerStates = new ConcurrentHashMap<>();
     private static final Map<Ref<EntityStore>, BloodGaugeHud> bloodGaugeHuds = new ConcurrentHashMap<>();
     private static final Map<Ref<EntityStore>, RelicCooldownHud> relicCooldownHuds = new ConcurrentHashMap<>();
-    private static final Map<UUID, Ref<EntityStore>> uuidToRef = new ConcurrentHashMap<>();
 
     /**
      * Called when a vampire lands a killing blow. Grants blood, kill heal bonus, and may trigger infection.
@@ -84,9 +69,9 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
                                     @Nullable Ref<EntityStore> victimRef,
                                     @Nonnull UUID victimUuid,
                                     @Nonnull String victimName) {
-        SatietyState state = playerStates.computeIfAbsent(attackerRef, k -> new SatietyState());
+        BloodState state = BloodService.getOrCreate(attackerRef);
 
-        state.maxBlood = resolveBloodCapacityUnits(attackerRef, store);
+        state.maxBlood = BloodService.resolveCapacityUnits(attackerRef, store);
         state.blood = Math.min(state.maxBlood, state.blood + VampirismConfig.get().getSatietyPerKill());
 
         // Kill heal bonus
@@ -117,31 +102,24 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
     }
 
     public static boolean isStarving(@Nonnull Ref<EntityStore> playerRef) {
-        SatietyState state = playerStates.get(playerRef);
-        return state != null && state.isStarving;
+        return BloodService.isStarving(playerRef);
     }
 
     public static int getBlood(@Nonnull Ref<EntityStore> playerRef) {
-        SatietyState state = playerStates.get(playerRef);
-        return state != null ? state.blood : BASE_BLOOD_CAPACITY_UNITS;
+        return BloodService.getBlood(playerRef);
     }
 
     public static int getMaxBlood(@Nonnull Ref<EntityStore> playerRef) {
-        SatietyState state = playerStates.get(playerRef);
-        return state != null ? Math.max(1, state.maxBlood) : BASE_BLOOD_CAPACITY_UNITS;
+        return BloodService.getMaxBlood(playerRef);
     }
 
     public static boolean canAffordBlood(@Nonnull Ref<EntityStore> playerRef, int bloodCost) {
-        if (bloodCost <= 0) return true;
-        SatietyState state = playerStates.get(playerRef);
-        int current = state != null ? state.blood : BASE_BLOOD_CAPACITY_UNITS;
-        return current >= bloodCost;
+        return BloodService.canAffordBlood(playerRef, bloodCost);
     }
 
     public static void spendBlood(@Nonnull Ref<EntityStore> playerRef, int bloodCost) {
         if (bloodCost <= 0) return;
-        SatietyState state = playerStates.computeIfAbsent(playerRef, k -> new SatietyState());
-        state.blood = Math.max(0, state.blood - bloodCost);
+        BloodState state = BloodService.spendBlood(playerRef, bloodCost);
         BloodGaugeHud hud = bloodGaugeHuds.get(playerRef);
         if (hud != null) hud.syncBlood(state.blood, state.maxBlood);
     }
@@ -150,58 +128,41 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
         if (bloodGain <= 0) {
             return getBlood(playerRef);
         }
-        SatietyState state = playerStates.computeIfAbsent(playerRef, k -> new SatietyState());
-        state.blood = Math.min(state.maxBlood, state.blood + bloodGain);
-        if (state.isStarving && state.blood >= VampirismConfig.get().getSatietyRecoveryThreshold()) {
-            state.isStarving = false;
-        }
+        BloodState state = BloodService.addBlood(playerRef, bloodGain);
         BloodGaugeHud hud = bloodGaugeHuds.get(playerRef);
         if (hud != null) hud.syncBlood(state.blood, state.maxBlood);
         return state.blood;
     }
 
     public static int addBloodByUuid(@Nonnull UUID uuid, int bloodGain) {
-        Ref<EntityStore> ref = uuidToRef.get(uuid);
+        Ref<EntityStore> ref = BloodService.getRefByUuid(uuid);
         if (ref == null) return -1;
         return addBlood(ref, bloodGain);
     }
 
     public static Ref<EntityStore> getRefByUuid(@Nonnull UUID uuid) {
-        return uuidToRef.get(uuid);
+        return BloodService.getRefByUuid(uuid);
     }
 
     public static int getBloodByUuid(@Nonnull UUID uuid) {
-        Ref<EntityStore> ref = uuidToRef.get(uuid);
-        if (ref == null) return -1;
-        SatietyState state = playerStates.get(ref);
-        return state != null ? state.blood : -1;
+        return BloodService.getBloodByUuid(uuid);
     }
 
     public static int getMaxBloodByUuid(@Nonnull UUID uuid) {
-        Ref<EntityStore> ref = uuidToRef.get(uuid);
-        if (ref == null) return -1;
-        SatietyState state = playerStates.get(ref);
-        return state != null ? Math.max(1, state.maxBlood) : -1;
+        return BloodService.getMaxBloodByUuid(uuid);
     }
 
     public static boolean isStarvingByUuid(@Nonnull UUID uuid) {
-        Ref<EntityStore> ref = uuidToRef.get(uuid);
-        if (ref == null) return false;
-        SatietyState state = playerStates.get(ref);
-        return state != null && state.isStarving;
+        return BloodService.isStarvingByUuid(uuid);
     }
 
     public static boolean isHudActiveByUuid(@Nonnull UUID uuid) {
-        Ref<EntityStore> ref = uuidToRef.get(uuid);
+        Ref<EntityStore> ref = BloodService.getRefByUuid(uuid);
         return ref != null && bloodGaugeHuds.containsKey(ref);
     }
 
     public static void captureDisconnectState(@Nonnull UUID uuid) {
-        Ref<EntityStore> ref = uuidToRef.get(uuid);
-        if (ref == null) return;
-        SatietyState state = playerStates.get(ref);
-        if (state == null) return;
-        PlayerSkillRegistry.get().setPersistedBlood(uuid, state.blood);
+        BloodService.captureDisconnectState(uuid);
     }
 
     @Override
@@ -211,7 +172,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
 
     @Override
     public Query<EntityStore> getQuery() {
-        return Query.any();
+        return Query.and(Player.getComponentType());
     }
 
     @Override
@@ -245,20 +206,10 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
                 return;
             }
 
-            uuidToRef.put(playerRefComponent.getUuid(), playerRef);
+            BloodService.registerRef(playerRefComponent.getUuid(), playerRef);
             EntityRefTracker.register(playerRefComponent.getUuid(), playerRef);
 
-            SatietyState state = playerStates.computeIfAbsent(playerRef, k -> {
-                SatietyState loaded = new SatietyState();
-                if (playerRefComponent != null) {
-                    loaded.blood = PlayerSkillRegistry.get().getPersistedBlood(playerRefComponent.getUuid());
-                }
-                loaded.maxBlood = resolveBloodCapacityUnits(playerRef, store);
-                loaded.blood = Math.max(0, Math.min(loaded.maxBlood, loaded.blood));
-                loaded.isStarving = loaded.blood <= VampirismConfig.get().getSatietyStarvingThreshold();
-                LOGGER.atInfo().log("[Satiety] Initialized for player " + playerRef);
-                return loaded;
-            });
+            BloodState state = BloodService.getOrCreateLoaded(playerRef, playerRefComponent.getUuid(), store);
 
             RelicInventoryService.SyncResult relicSync = RelicInventoryService.syncOwnership(
                     playerRef,
@@ -278,10 +229,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
                 state.relicInventoryFullNotified = false;
             }
 
-            state.maxBlood = resolveBloodCapacityUnits(playerRef, store);
-            if (state.blood > state.maxBlood) {
-                state.blood = state.maxBlood;
-            }
+            BloodService.refreshCapacity(state, playerRef, store);
 
             long now = System.currentTimeMillis();
 
@@ -339,7 +287,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
                                @Nonnull Player player,
                                PlayerRef playerRefComponent) {
         if (playerRefComponent != null) {
-            uuidToRef.remove(playerRefComponent.getUuid());
+            BloodService.unregisterRef(playerRefComponent.getUuid());
             EntityRefTracker.unregister(playerRefComponent.getUuid());
         }
         bloodGaugeHuds.remove(playerRef);
@@ -347,23 +295,23 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
         if (stateInputBindingsHidden(playerRef)) {
             restoreInputBindings(player, playerRefComponent);
         }
-        if (MULTIPLE_HUD_AVAILABLE && playerRefComponent != null) {
+        if (MultipleHudAdapter.isAvailable() && playerRefComponent != null) {
             World world = player.getWorld();
             if (world != null) {
                 Player p = player;
                 PlayerRef pr = playerRefComponent;
                 CompletableFuture.runAsync(() -> {
-                    mhudHide(p, pr, BLOOD_GAUGE_HUD_KEY);
-                    mhudHide(p, pr, RELIC_COOLDOWN_HUD_KEY);
+                    MultipleHudAdapter.hideCustomHud(p, pr, BLOOD_GAUGE_HUD_KEY);
+                    MultipleHudAdapter.hideCustomHud(p, pr, RELIC_COOLDOWN_HUD_KEY);
                 }, (Executor) world);
             }
         }
-        playerStates.remove(playerRef);
+        BloodService.removeState(playerRef);
     }
 
     private void syncInputBindingsHud(@Nonnull Player player,
-                                      PlayerRef playerRefComponent,
-                                      @Nonnull SatietyState state,
+                                       PlayerRef playerRefComponent,
+                                       @Nonnull BloodState state,
                                       boolean relicInHand) {
         if (playerRefComponent == null) return;
         if (relicInHand == state.inputBindingsHidden) {
@@ -379,7 +327,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
     }
 
     private boolean stateInputBindingsHidden(@Nonnull Ref<EntityStore> playerRef) {
-        SatietyState state = playerStates.get(playerRef);
+        BloodState state = BloodService.getState(playerRef);
         return state != null && state.inputBindingsHidden;
     }
 
@@ -396,10 +344,10 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
 
     private void initHuds(@Nonnull Ref<EntityStore> playerRef,
                           @Nonnull Player player,
-                          PlayerRef playerRefComponent,
-                          @Nonnull Store<EntityStore> store,
-                          @Nonnull SatietyState state) {
-        if (!MULTIPLE_HUD_AVAILABLE || playerRefComponent == null) return;
+                           PlayerRef playerRefComponent,
+                           @Nonnull Store<EntityStore> store,
+                           @Nonnull BloodState state) {
+        if (!MultipleHudAdapter.isAvailable() || playerRefComponent == null) return;
         World world = player.getWorld();
         if (world == null) return;
 
@@ -411,7 +359,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
             boolean bloodGaugeReady = bloodGaugeHuds.containsKey(pRef);
             if (!bloodGaugeReady) {
                 BloodGaugeHud hud = new BloodGaugeHud(pr);
-                bloodGaugeReady = mhudSet(p, pr, BLOOD_GAUGE_HUD_KEY, hud);
+                bloodGaugeReady = MultipleHudAdapter.setCustomHud(p, pr, BLOOD_GAUGE_HUD_KEY, hud);
                 if (bloodGaugeReady) {
                     bloodGaugeHuds.put(pRef, hud);
                     hud.sync(state.blood, state.maxBlood, p.getGameMode() == GameMode.Creative);
@@ -422,7 +370,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
             if (!cooldownReady) {
                 RelicCooldownHud relicHud = new RelicCooldownHud(pr);
                 relicHud.primeState(pRef, store);
-                cooldownReady = mhudSet(p, pr, RELIC_COOLDOWN_HUD_KEY, relicHud);
+                cooldownReady = MultipleHudAdapter.setCustomHud(p, pr, RELIC_COOLDOWN_HUD_KEY, relicHud);
                 if (cooldownReady) {
                     relicCooldownHuds.put(pRef, relicHud);
                 }
@@ -438,24 +386,10 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
         }, (Executor) world);
     }
 
-    private static int resolveBloodCapacityUnits(@Nonnull Ref<EntityStore> playerRef,
-                                                 @Nonnull Store<EntityStore> store) {
-        PlayerRef playerRefComponent = (PlayerRef) store.getComponent(playerRef, PlayerRef.getComponentType());
-        if (playerRefComponent == null) {
-            return BASE_BLOOD_CAPACITY_UNITS;
-        }
-        ModifierContext ctx = new ModifierContext(playerRefComponent.getUuid(), playerRef, store);
-        float multiplier = ModifierRegistry.get().compute(VampireStatType.BLOOD_BAR_CAPACITY, 1f, ctx);
-        if (!Float.isFinite(multiplier) || multiplier <= 0f) {
-            multiplier = 1f;
-        }
-        return Math.max(1, Math.round(BASE_BLOOD_CAPACITY_UNITS * multiplier));
-    }
-
     private void applyVampireThroneRecovery(@Nonnull Ref<EntityStore> playerRef,
-                                            @Nonnull Player player,
-                                            @Nonnull Store<EntityStore> store,
-                                            @Nonnull SatietyState state,
+                                             @Nonnull Player player,
+                                             @Nonnull Store<EntityStore> store,
+                                             @Nonnull BloodState state,
                                             float elapsedSeconds) {
         if (!isMountedOnVampireThrone(playerRef, player, store)) {
             state.vampireThroneRecoveryAccumulator = 0f;
@@ -509,47 +443,6 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
         return VAMPIRE_THRONE_BLOCK_ID.equals(blockMount.getExpectedBlockType().getId());
     }
 
-    // --- MultipleHUD reflection helpers (avoids compile-time dependency) ---
-
-    private static boolean mhudSet(Player player, PlayerRef pr, String key, CustomUIHud hud) {
-        try {
-            Class<?> cls = Class.forName("com.buuz135.mhud.MultipleHUD");
-            Object mhud = cls.getMethod("getInstance").invoke(null);
-            Method m = cls.getMethod("setCustomHud",
-                    Player.class, PlayerRef.class, String.class, CustomUIHud.class);
-            m.invoke(mhud, player, pr, key, hud);
-            return true;
-        } catch (Exception e) {
-            LOGGER.atWarning().log("[Satiety] mhudSet failed: " + e.getMessage());
-            return false;
-        }
-    }
-
-    private static void mhudHide(Player player, PlayerRef pr, String key) {
-        try {
-            Class<?> cls = Class.forName("com.buuz135.mhud.MultipleHUD");
-            Object mhud = cls.getMethod("getInstance").invoke(null);
-            Method m = cls.getMethod("hideCustomHud",
-                    Player.class, PlayerRef.class, String.class);
-            m.invoke(mhud, player, pr, key);
-        } catch (Exception e) {
-            LOGGER.atWarning().log("[Satiety] mhudHide failed: " + e.getMessage());
-        }
-    }
-
-    private static class SatietyState {
-        volatile int blood = BASE_BLOOD_CAPACITY_UNITS;
-        volatile int maxBlood = BASE_BLOOD_CAPACITY_UNITS;
-        volatile boolean isStarving = false;
-        volatile long lastUpdateTime = System.currentTimeMillis();
-        volatile long lastCooldownHudUpdateTime = 0L;
-        volatile long firstSeenTime = System.currentTimeMillis();
-        volatile boolean hudInitFailed = false;
-        volatile boolean inputBindingsHidden = false;
-        volatile boolean relicInventoryFullNotified = false;
-        volatile float vampireThroneRecoveryAccumulator = 0f;
-    }
-
     /** Context key for "is the player starving" — cached per compute() call. */
     public static final ContextKey<Boolean> IS_STARVING = new ContextKey<>() {};
 
@@ -560,13 +453,11 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
     public static final ContextKey<Boolean> IS_BLOOD_STATE_NORMAL = new ContextKey<>() {};
 
     public static boolean isOverfed(@Nonnull Ref<EntityStore> playerRef) {
-        return getBlood(playerRef) >= getMaxBlood(playerRef);
+        return BloodService.isOverfed(playerRef);
     }
 
     public static boolean isBloodStateNormal(@Nonnull Ref<EntityStore> playerRef) {
-        int blood = getBlood(playerRef);
-        return blood > VampirismConfig.get().getSatietyStarvingThreshold()
-                && blood < getMaxBlood(playerRef);
+        return BloodService.isBloodStateNormal(playerRef);
     }
 
     /** Tags for modifiers registered by this system. */

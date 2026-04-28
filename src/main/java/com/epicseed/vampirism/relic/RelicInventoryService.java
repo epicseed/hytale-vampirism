@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.hypixel.hytale.component.ComponentType;
+import com.epicseed.vampirism.hytale.InventoryAdapter;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
@@ -208,18 +208,10 @@ public final class RelicInventoryService {
         return removedAny;
     }
 
-    @Nullable
-    @SuppressWarnings("unchecked")
     private static InventoryComponent getInventorySection(@Nonnull Ref<EntityStore> playerRef,
-                                                          @Nonnull Store<EntityStore> store,
-                                                          int sectionId) {
-        ComponentType<EntityStore, ? extends InventoryComponent> sectionType =
-                (ComponentType<EntityStore, ? extends InventoryComponent>)
-                        InventoryComponent.getComponentTypeById(sectionId);
-        if (sectionType == null) {
-            return null;
-        }
-        return store.getComponent(playerRef, sectionType);
+                                                           @Nonnull Store<EntityStore> store,
+                                                           int sectionId) {
+        return InventoryAdapter.getInventorySection(playerRef, store, sectionId);
     }
 
     public record SyncResult(boolean hasRequiredRelic,

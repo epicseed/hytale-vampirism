@@ -1,6 +1,7 @@
 package com.epicseed.vampirism.systems;
 
 import com.epicseed.vampirism.Vampirism;
+import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
@@ -231,7 +232,7 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
         cleanupChannelEffects(session, store, playerRef);
         PassiveService.get().onFeed(ctx);
         if (targetKilled) {
-            NightMarkedVictimSystem.onPlayerKilledMarkedPrey(uuid, playerRef, session.targetRef, store);
+            NightHuntService.onPlayerKilledMarkedPrey(uuid, playerRef, session.targetRef, store);
             PlayerRef playerRefComponent = (PlayerRef) store.getComponent(playerRef, PlayerRef.getComponentType());
             String playerName = playerRefComponent != null ? playerRefComponent.getUsername() : uuid.toString();
             VampireInfectionSystem.completeAscension(uuid, playerName, playerRef, store);

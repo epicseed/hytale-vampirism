@@ -60,6 +60,10 @@ public class PlayerRelicBindings {
         PlayerSkillRegistry.get().setRelicBinding(uuid, slot, abilityId);
     }
 
+    public void setAll(@Nonnull UUID uuid, @Nonnull Map<String, String> bindings) {
+        PlayerSkillRegistry.get().setRelicBindings(uuid, bindings);
+    }
+
     public void clear(@Nonnull UUID uuid, @Nonnull String slot) {
         PlayerSkillRegistry.get().clearRelicBinding(uuid, slot);
     }

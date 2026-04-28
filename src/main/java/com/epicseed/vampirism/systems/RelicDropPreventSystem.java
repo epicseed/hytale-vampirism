@@ -2,9 +2,9 @@ package com.epicseed.vampirism.systems;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.vampirism.hytale.InventoryAdapter;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
-import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.SystemGroup;
@@ -46,15 +46,8 @@ public class RelicDropPreventSystem extends EntityEventSystem<EntityStore, DropI
             @Nonnull CommandBuffer<EntityStore> commandBuffer,
             @Nonnull DropItemEvent.PlayerRequest event) {
 
-        @SuppressWarnings("unchecked")
-        ComponentType<EntityStore, ? extends InventoryComponent> compType =
-            (ComponentType<EntityStore, ? extends InventoryComponent>)
-            InventoryComponent.getComponentTypeById(event.getInventorySectionId());
-
-        if (compType == null) return;
-
         Ref<EntityStore> ref = archetypeChunk.getReferenceTo(index);
-        InventoryComponent inventory = (InventoryComponent) store.getComponent(ref, compType);
+        InventoryComponent inventory = InventoryAdapter.getInventorySection(ref, store, event.getInventorySectionId());
         if (inventory == null) return;
 
         ItemStack stack = inventory.getInventory().getItemStack(event.getSlotId());

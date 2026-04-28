@@ -5,14 +5,12 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 
-import com.epicseed.vampirism.registry.PlayerRelicBindings;
+import com.epicseed.vampirism.domain.relic.RelicBindingService;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.relic.RelicInventoryService;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.epicseed.vampirism.skill.runtime.AbilityService;
 import com.epicseed.vampirism.skill.runtime.RelicBindings;
 import com.epicseed.vampirism.skill.runtime.SkillActivationResult;
-import com.epicseed.vampirism.systems.VampireInfectionSystem;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
@@ -68,13 +66,7 @@ public class VampirismRelicCommand extends AbstractCommand {
                                         @Nonnull String slotKey) {
         if (!isVampire(ctx, uuid)) return;
 
-        String abilityId = PlayerRelicBindings.get().abilityFor(uuid, slotKey);
-        if (abilityId == null || abilityId.isBlank()) {
-            abilityId = RelicBindings.abilityFor(slotKey);
-        }
-        if ((abilityId == null || abilityId.isBlank()) && PlayerSkillRegistry.get().isInfected(uuid)) {
-            abilityId = VampireInfectionSystem.BLOOD_SUCKER_ABILITY_ID;
-        }
+        String abilityId = RelicBindingService.resolveActivationAbility(uuid, slotKey).orElse(null);
         if (abilityId == null || abilityId.isBlank()) {
             ctx.sendMessage(Message.raw("No ability is bound to slot '" + slotKey + "'.").color("yellow"));
             return;
