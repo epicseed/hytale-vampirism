@@ -1,6 +1,6 @@
 {
   "TranslationProperties": {
-    "Name": "Vampire Thorne"
+    "Name": "Vampire Throne"
   },
   "PlayerAnimationsId": "Block",
   "Categories": [
@@ -36,10 +36,10 @@
     ],
     "BenchRequirement": [
       {
-        "Id": "Builders",
-        "Type": "StructuralCrafting",
+        "Type": "Crafting",
+        "Id": "Furniture_Bench",
         "Categories": [
-          "Chair"
+          "Furniture_Misc"
         ]
       }
     ]
