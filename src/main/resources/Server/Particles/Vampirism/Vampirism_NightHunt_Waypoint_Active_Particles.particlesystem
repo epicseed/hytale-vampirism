@@ -1,0 +1,15 @@
+{
+  "Spawners": [
+    {
+      "SpawnerId": "Vampirism_NightHunt_Waypoint_Active_Particles",
+      "PositionOffset": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Z": 0.0
+      },
+      "FixedRotation": false
+    }
+  ],
+  "CullDistance": 96.0,
+  "IsImportant": true
+}

@@ -1,0 +1,22 @@
+{
+    "Group": "EpicSeed",
+    "Name": "Vampirism",
+    "Version": "0.0.1",
+    "Description": "A progression-driven vampirism overhaul with infection, blood feeding, skill tree, abilities, unlockable forms, passive powers, and deadly sunburn.",
+    "Authors": [
+        {
+            "Name": "EpicSeed"
+        }
+    ],
+    "Website": "https://github.com/epicseed",
+    "ServerVersion": "2026.03.26-89796e57b",
+    "Dependencies": {
+        
+    },
+    "OptionalDependencies": {
+        "Buuz135:MultipleHUD": "*"
+    },
+    "DisabledByDefault": false,
+    "Main": "com.epicseed.vampirism.Vampirism",
+    "IncludesAssetPack": true
+}

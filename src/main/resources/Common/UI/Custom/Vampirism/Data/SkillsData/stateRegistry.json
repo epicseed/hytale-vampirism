@@ -1,0 +1,14 @@
+[
+  {
+    "effectId": "Potion_Morph_AncientBat",
+    "stateId": "IS_IN_ANCIENT_FORM"
+  },
+  {
+    "effectId": "Vampirism_Invisibility",
+    "stateId": "IS_INVISIBLE"
+  },
+  {
+    "effectId": "Vampirism_BloodThirstSpeed",
+    "stateId": "IS_IN_BLOOD_THIRST"
+  }
+]

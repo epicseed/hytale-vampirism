@@ -1,0 +1,39 @@
+{
+  "TranslationProperties": {
+    "Name": "Bat Wing",
+    "Description": "A leathery wing harvested from a bat."
+  },
+  "Categories": [
+    "Items.Ingredients"
+  ],
+  "Model": "Items/Ingredients/BatWing.blockymodel",
+  "Texture": "Items/Ingredients/BatWing.png",
+  "Quality": "Common",
+  "ItemLevel": 10,
+  "PlayerAnimationsId": "Item",
+  "IconProperties": {
+    "Scale": 0.72,
+    "Rotation": [
+      22,
+      210,
+      312
+    ],
+    "Translation": [
+      4,
+      1
+    ]
+  },
+  "Scale": 1.0,
+  "Icon": "Icons/ItemsGenerated/Ingredient_BatWing.png",
+  "Tags": {
+    "Type": [
+      "Ingredient"
+    ]
+  },
+  "ItemEntity": {
+    "ParticleSystemId": null
+  },
+  "ItemSoundSetId": "ISS_Items_Leather",
+  "MaxStack": 100,
+  "DropOnDeath": true
+}

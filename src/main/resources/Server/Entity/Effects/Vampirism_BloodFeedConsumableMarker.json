@@ -1,0 +1,18 @@
+{
+  "Duration": 1.25,
+  "Debuff": false,
+  "OverlapBehavior": "Extend",
+  "ApplicationEffects": {
+    "Particles": [
+      {
+        "SystemId": "Vampirism_BloodFeedMarker",
+        "TargetEntityPart": "Entity",
+        "TargetNodeName": "Head",
+        "PositionOffset": {
+          "Y": 1.0
+        },
+        "Scale": 1.0
+      }
+    ]
+  }
+}

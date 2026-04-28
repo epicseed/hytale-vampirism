@@ -1,0 +1,110 @@
+{
+  "RenderMode": "BlendLinear",
+  "ParticleRotationInfluence": "Billboard",
+  "LinearFiltering": true,
+  "LightInfluence": 0.9,
+  "ParticleRotateWithSpawner": false,
+  "TrailSpawnerPositionMultiplier": 0,
+  "TrailSpawnerRotationMultiplier": 1,
+  "MaxConcurrentParticles": 1,
+  "ParticleLifeSpan": {
+    "Min": 0.9,
+    "Max": 1.1
+  },
+  "SpawnRate": {
+    "Min": 1,
+    "Max": 1
+  },
+  "Attractors": [
+    {
+      "Position": {
+        "X": 0,
+        "Y": 0,
+        "Z": 0
+      },
+      "LinearAcceleration": {
+        "X": 0,
+        "Y": 0.45,
+        "Z": 0
+      },
+      "Radius": 1,
+      "DampingMultiplier": {
+        "X": 0,
+        "Y": 0.95,
+        "Z": 0
+      }
+    }
+  ],
+  "Particle": {
+    "Texture": "Particles/Textures/Vampirism/VampireFang.png",
+    "FrameSize": {
+      "Width": 64,
+      "Height": 64
+    },
+    "ScaleRatioConstraint": "OneToOne",
+    "UVOption": "None",
+    "Animation": {
+      "0": {
+        "FrameIndex": {
+          "Min": 0,
+          "Max": 0
+        },
+        "Opacity": 0,
+        "Scale": {
+          "X": {
+            "Min": 0.55,
+            "Max": 0.55
+          }
+        }
+      },
+      "15": {
+        "Opacity": 1,
+        "Scale": {
+          "X": {
+            "Min": 0.8,
+            "Max": 0.8
+          }
+        }
+      },
+      "80": {
+        "Opacity": 1,
+        "Scale": {
+          "X": {
+            "Min": 0.85,
+            "Max": 0.85
+          }
+        }
+      },
+      "100": {
+        "Opacity": 0,
+        "Scale": {
+          "X": {
+            "Min": 0.95,
+            "Max": 0.95
+          }
+        }
+      }
+    },
+    "InitialAnimationFrame": {
+      "Opacity": 1,
+      "FrameIndex": {
+        "Min": 0,
+        "Max": 0
+      },
+      "Scale": {
+        "X": {
+          "Min": 0.75,
+          "Max": 0.75
+        }
+      },
+      "Color": "#ffffff"
+    },
+    "SoftParticles": "Disable"
+  },
+  "SpawnBurst": true,
+  "TotalParticles": {
+    "Min": 1,
+    "Max": 1
+  },
+  "CameraOffset": -0.06
+}

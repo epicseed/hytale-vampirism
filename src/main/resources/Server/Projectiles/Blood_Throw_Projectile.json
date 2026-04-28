@@ -1,0 +1,36 @@
+{
+  "Appearance": "Blood_Throw_Projectile",
+  "Radius": 0.2,
+  "Height": 0.2,
+  "HorizontalCenterShot": 0.15,
+  "VerticalCenterShot": 0.1,
+  "DepthShot": 1.0,
+  "PitchAdjustShot": true,
+  "SticksVertically": true,
+  "MuzzleVelocity": 42,
+  "TerminalVelocity": 42,
+  "Gravity": 0,
+  "ImpactSlowdown": 0,
+  "TimeToLive": 3,
+  "Damage": 10,
+  "DeadTime": 0.05,
+  "DeadTimeMiss": 0.0,
+  "MissParticles": {
+    "SystemId": "Block_Break_Dirt",
+    "Color": "#b31424",
+    "Scale": 0.9
+  },
+  "HitParticles": {
+    "SystemId": "Block_Break_Dirt",
+    "Color": "#b31424",
+    "Scale": 0.9
+  },
+  "DeathParticles": {
+    "SystemId": "Block_Break_Dirt",
+    "Color": "#b31424",
+    "Scale": 0.9
+  },
+  "DeathEffectsOnHit": true,
+  "MissSoundEventId": "SFX_Skeleton_Mage_Spellbook_Impact",
+  "DeathSoundEventId": "SFX_Skeleton_Mage_Spellbook_Impact"
+}

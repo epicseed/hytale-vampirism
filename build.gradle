@@ -1,0 +1,421 @@
+plugins {
+    id 'java'
+    id 'org.jetbrains.gradle.plugin.idea-ext' version '1.3'
+    id 'com.gradleup.shadow' version '9.3.1'
+}
+
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import org.gradle.internal.os.OperatingSystem
+import java.util.zip.ZipFile
+
+ext {
+    if (project.hasProperty('hytale_home')) {
+        hytaleHome = file(project.findProperty('hytale_home')).absolutePath
+    }
+    else {
+        def os = OperatingSystem.current()
+        if (os.isWindows()) {
+            hytaleHome = "${System.getProperty("user.home")}/AppData/Roaming/Hytale"
+        }
+        else if (os.isMacOsX()) {
+            hytaleHome = "${System.getProperty("user.home")}/Library/Application Support/Hytale"
+        }
+        else if (os.isLinux()) {
+            hytaleHome = "${System.getProperty("user.home")}/.var/app/com.hypixel.HytaleLauncher/data/Hytale"
+            if (!file(hytaleHome).exists()) {
+                hytaleHome = "${System.getProperty("user.home")}/.local/share/Hytale"
+            }
+        }
+    }
+}
+
+def installedHytalePackageDir = file("${hytaleHome}/install/${patchline}/package/game/latest")
+def repoHytalePackageDir = file("${projectDir}/bin/server/install/release/package/game/latest")
+def hytalePackageDir = installedHytalePackageDir.exists() ? installedHytalePackageDir : (repoHytalePackageDir.exists() ? repoHytalePackageDir : null)
+def assetsZipFile = hytalePackageDir != null ? file("${hytalePackageDir}/Assets.zip") : null
+def serverJarFile = hytalePackageDir != null ? file("${hytalePackageDir}/Server/HytaleServer.jar") : null
+def hasHytaleAssets = assetsZipFile != null && assetsZipFile.exists()
+def hasHytaleServerJar = serverJarFile != null && serverJarFile.exists()
+
+if (!hasHytaleAssets) {
+    logger.lifecycle("Hytale assets not detected; asset indexing/validation and run configs will be skipped. Set -Phytale_home=/path/to/Hytale or provide bin/server/install/release/package/game/latest/Assets.zip.")
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(java_version)
+    withSourcesJar()
+    withJavadocJar()
+}
+
+// Quiet warnings about missing Javadocs.
+javadoc {
+    options.addStringOption('Xdoclint:-missing', '-quiet')
+}
+
+// Adds the Hytale server as a build dependency, allowing you to reference and
+// compile against their code without bundling it. When a local install is
+// present, we still use its jar for launching the server in IDE run configs.
+dependencies {
+    compileOnly("com.hypixel.hytale:Server:$hytale_build")
+    if (hasHytaleServerJar) {
+        runtimeOnly(files(serverJarFile))
+    }
+
+    // MultipleHUD — optional dependency (https://github.com/Buuz135/MultipleHUD)
+    // Jar is in libs/ and active — remove to disable HUD support:
+    compileOnly(files("libs/MultipleHUD.jar"))
+    implementation("com.fasterxml.jackson.core:jackson-core:2.21.2")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.21.2")
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        name = "hytale-release"
+        url = uri("https://maven.hytale.com/release")
+    }
+    maven {
+        name = "hytale-pre-release"
+        url = uri("https://maven.hytale.com/pre-release")
+    }
+}
+
+// Updates the manifest.json file with the latest properties defined in the
+// build.properties file. Currently we update the version and if packs are
+// included with the plugin.
+tasks.register('updatePluginManifest') {
+    def manifestFile = file('src/main/resources/manifest.json')
+    doLast {
+        if (!manifestFile.exists()) {
+            throw new GradleException("Could not find manifest.json at ${manifestFile.path}!")
+        }
+        def manifestJson = new JsonSlurper().parseText(manifestFile.text)
+        manifestJson.Version = version
+        manifestJson.ServerVersion = hytale_build
+        manifestJson.IncludesAssetPack = includes_pack.toBoolean()
+        manifestFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(manifestJson))
+    }
+}
+
+def hytaleAssetCategories = [
+        effects          : 'Server/Entity/Effects/',
+        entityStats      : 'Server/Entity/Stats/',
+        soundEvents      : 'Server/Audio/SoundEvents/',
+        items            : 'Server/Item/Items/',
+        itemAnimations   : 'Server/Item/Animations/',
+        itemQualities    : 'Server/Item/Qualities/',
+        models           : 'Server/Models/',
+        projectiles      : 'Server/Projectiles/',
+        projectileConfigs: 'Server/ProjectileConfigs/',
+        interactions     : 'Server/Item/Interactions/',
+        rootInteractions : 'Server/Item/RootInteractions/'
+]
+def hytaleAssetIndexFile = layout.buildDirectory.file('generated/hytale-assets/index.json')
+def hytaleAssetValidationReportFile = layout.buildDirectory.file('reports/hytale-assets/validation.json')
+
+def trimJsonSuffix = { String value ->
+    value.endsWith('.json') ? value.substring(0, value.length() - '.json'.length()) : value
+}
+
+def collectAssetEntriesFromZip = { File zipSource ->
+    def result = hytaleAssetCategories.collectEntries { category, prefix ->
+        [(category): [ids: new TreeSet<String>(), basenames: new TreeSet<String>(), paths: new TreeSet<String>()]]
+    }
+
+    ZipFile zipFile = new ZipFile(zipSource)
+    try {
+        zipFile.entries().each { entry ->
+            if (entry.isDirectory() || !entry.name.endsWith('.json')) return
+            hytaleAssetCategories.each { category, prefix ->
+                if (!entry.name.startsWith(prefix)) return
+                def relativePath = entry.name.substring(prefix.length()).replace('\\', '/')
+                def assetId = trimJsonSuffix(relativePath)
+                result[category].ids << assetId
+                result[category].basenames << trimJsonSuffix(relativePath.tokenize('/').last())
+                result[category].paths << entry.name
+            }
+        }
+    } finally {
+        zipFile.close()
+    }
+
+    return result
+}
+
+def collectLocalAssetEntries = { File resourcesRoot ->
+    def result = hytaleAssetCategories.collectEntries { category, prefix ->
+        [(category): [ids: new TreeSet<String>(), basenames: new TreeSet<String>(), paths: new TreeSet<String>()]]
+    }
+
+    hytaleAssetCategories.each { category, prefix ->
+        def assetDir = new File(resourcesRoot, prefix)
+        if (!assetDir.exists()) return
+
+        assetDir.eachFileRecurse { assetFile ->
+            if (!assetFile.isFile() || !assetFile.name.endsWith('.json')) return
+            def relativePath = assetDir.toPath().relativize(assetFile.toPath()).toString().replace(File.separatorChar, '/' as char)
+            def assetId = trimJsonSuffix(relativePath)
+            result[category].ids << assetId
+            result[category].basenames << trimJsonSuffix(assetFile.name)
+            result[category].paths << "${prefix}${relativePath}"
+        }
+    }
+
+    return result
+}
+
+def collectResolvableIds = { Map categoryIndex ->
+    def ids = new TreeSet<String>()
+    if (categoryIndex == null) return ids
+    ids.addAll(categoryIndex.ids ?: [])
+    ids.addAll(categoryIndex.basenames ?: [])
+    return ids
+}
+
+Closure walkJson
+walkJson = { Object node, Closure visitor ->
+    visitor(node)
+    if (node instanceof Map) {
+        node.values().each { child -> walkJson.call(child, visitor) }
+    } else if (node instanceof List) {
+        node.each { child -> walkJson.call(child, visitor) }
+    }
+}
+
+tasks.register('generateHytaleAssetIndex') {
+    if (hasHytaleAssets) {
+        inputs.file(assetsZipFile)
+    }
+    outputs.file(hytaleAssetIndexFile)
+
+    doLast {
+        def indexOutput = hytaleAssetIndexFile.get().asFile
+        indexOutput.parentFile.mkdirs()
+
+        if (!hasHytaleAssets) {
+            def skipped = [
+                    generatedAt: new Date().format("yyyy-MM-dd'T'HH:mm:ssXXX"),
+                    generatedFrom: null,
+                    skipped: true,
+                    reason: 'Assets.zip not found',
+                    categories: hytaleAssetCategories.collectEntries { category, _ ->
+                        [(category): [ids: [], basenames: [], paths: []]]
+                    }
+            ]
+            indexOutput.text = JsonOutput.prettyPrint(JsonOutput.toJson(skipped))
+            return
+        }
+
+        def collected = collectAssetEntriesFromZip(assetsZipFile)
+        def indexPayload = [
+                generatedAt: new Date().format("yyyy-MM-dd'T'HH:mm:ssXXX"),
+                generatedFrom: assetsZipFile.absolutePath,
+                skipped: false,
+                categories: collected.collectEntries { category, data ->
+                    [(category): [
+                            ids      : data.ids as List,
+                            basenames: data.basenames as List,
+                            paths    : data.paths as List
+                    ]]
+                }
+        ]
+
+        indexOutput.text = JsonOutput.prettyPrint(JsonOutput.toJson(indexPayload))
+    }
+}
+
+tasks.register('validateHytaleAssetRefs') {
+    dependsOn 'generateHytaleAssetIndex'
+    outputs.file(hytaleAssetValidationReportFile)
+
+    doLast {
+        def reportFile = hytaleAssetValidationReportFile.get().asFile
+        reportFile.parentFile.mkdirs()
+
+        if (!hasHytaleAssets) {
+            def skipped = [
+                    validatedAt: new Date().format("yyyy-MM-dd'T'HH:mm:ssXXX"),
+                    skipped: true,
+                    reason: 'Assets.zip not found',
+                    issues: []
+            ]
+            reportFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(skipped))
+            logger.lifecycle("Skipped Hytale asset validation because no Assets.zip was found.")
+            return
+        }
+
+        def resourcesRoot = file('src/main/resources')
+        def localIndex = collectLocalAssetEntries(resourcesRoot)
+        def officialIndex = new JsonSlurper().parse(hytaleAssetIndexFile.get().asFile)
+        def effectIds = collectResolvableIds(localIndex.effects)
+        effectIds.addAll(collectResolvableIds(officialIndex.categories?.effects))
+        def projectileIds = collectResolvableIds(localIndex.projectiles)
+        projectileIds.addAll(collectResolvableIds(officialIndex.categories?.projectiles))
+
+        def issues = []
+        def splitDataDir = file('src/main/resources/Common/UI/Custom/Vampirism/Data/SkillsData')
+        def splitEffectsFile = new File(splitDataDir, 'effects.json')
+        def splitActionsFile = new File(splitDataDir, 'actions.json')
+        def legacySkillsDataFile = file('src/main/resources/Common/UI/Custom/Vampirism/Data/SkillsData.json')
+        def effectDefs = []
+        def actionDefs = []
+        def effectSource = splitEffectsFile.path
+        def actionSource = splitActionsFile.path
+        if (splitEffectsFile.exists() || splitActionsFile.exists()) {
+            if (splitEffectsFile.exists()) {
+                effectDefs = new JsonSlurper().parse(splitEffectsFile)
+            }
+            if (splitActionsFile.exists()) {
+                actionDefs = new JsonSlurper().parse(splitActionsFile)
+            }
+        } else if (legacySkillsDataFile.exists()) {
+            def skillsData = new JsonSlurper().parse(legacySkillsDataFile)
+            effectDefs = skillsData.effects ?: []
+            actionDefs = skillsData.actions ?: []
+            effectSource = legacySkillsDataFile.path
+            actionSource = legacySkillsDataFile.path
+        }
+        effectDefs.each { effectDef ->
+                if (!(effectDef.effectId instanceof String) || effectDef.effectId.isBlank()) return
+                if (!effectIds.contains(effectDef.effectId)) {
+                    issues << [
+                            source  : effectSource,
+                            category: 'effects',
+                            owner   : effectDef.id,
+                            field   : 'effectId',
+                            value   : effectDef.effectId
+                    ]
+                }
+        }
+        actionDefs.each { actionDef ->
+                def definition = actionDef.definition
+                if (!(definition instanceof Map) || !(definition.projectileId instanceof String) || definition.projectileId.isBlank()) return
+                if (!projectileIds.contains(definition.projectileId)) {
+                    issues << [
+                            source  : actionSource,
+                            category: 'projectiles',
+                            owner   : actionDef.id,
+                            field   : 'projectileId',
+                            value   : definition.projectileId
+                    ]
+                }
+        }
+
+        def interactionsDir = file('src/main/resources/Server/Item/Interactions')
+        if (interactionsDir.exists()) {
+            interactionsDir.eachFileRecurse { interactionFile ->
+                if (!interactionFile.isFile() || !interactionFile.name.endsWith('.json')) return
+                def payload = new JsonSlurper().parse(interactionFile)
+                walkJson(payload) { node ->
+                    if (!(node instanceof Map)) return
+                    if (node.Type != 'LaunchProjectile' || !(node.ProjectileId instanceof String) || node.ProjectileId.isBlank()) return
+                    if (projectileIds.contains(node.ProjectileId)) return
+                    issues << [
+                            source  : interactionFile.path,
+                            category: 'projectiles',
+                            owner   : trimJsonSuffix(interactionFile.name),
+                            field   : 'ProjectileId',
+                            value   : node.ProjectileId
+                    ]
+                }
+            }
+        }
+
+        def reportPayload = [
+                validatedAt: new Date().format("yyyy-MM-dd'T'HH:mm:ssXXX"),
+                skipped: false,
+                issues: issues
+        ]
+        reportFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(reportPayload))
+
+        if (!issues.isEmpty()) {
+            def formattedIssues = issues.collect {
+                "${it.source} :: ${it.owner} :: ${it.field}='${it.value}' (${it.category})"
+            }.join('\n')
+            throw new GradleException("Hytale asset reference validation failed:\n${formattedIssues}")
+        }
+    }
+}
+
+// Makes sure the plugin manifest is up to date.
+tasks.named('processResources') {
+    dependsOn 'updatePluginManifest'
+}
+
+tasks.named('shadowJar') {
+    archiveClassifier.set('')
+    mergeServiceFiles()
+}
+
+// Ensure the shaded jar is produced during a normal build.
+tasks.named('build') {
+    dependsOn 'shadowJar'
+    dependsOn 'validateHytaleAssetRefs'
+}
+
+if (hasHytaleAssets && hasHytaleServerJar) {
+    // Create the working directory to run the server if it does not already exist.
+    def serverRunDir = file("$projectDir/run")
+    if (!serverRunDir.exists()) {
+        serverRunDir.mkdirs()
+    }
+
+    def createServerRunArguments = { String srcDir ->
+        def programParameters = '--allow-op --disable-sentry --assets="' + assetsZipFile.absolutePath + '"'
+        def modPaths = []
+        if (includes_pack.toBoolean()) {
+            modPaths << srcDir
+        }
+        if (load_user_mods.toBoolean() && installedHytalePackageDir.exists()) {
+            modPaths << "${hytaleHome}/UserData/Mods"
+        }
+        if (!modPaths.isEmpty()) {
+            programParameters += ' --mods="' + modPaths.join(',') + '"'
+        }
+        return programParameters
+    }
+
+    // Creates a run configuration in IDEA that will run the Hytale server with
+    // your plugin and the default assets.
+    idea.project.settings.runConfigurations {
+        'HytaleServer'(org.jetbrains.gradle.ext.Application) {
+            mainClass = 'com.hypixel.hytale.Main'
+            moduleName = project.idea.module.name + '.main'
+            programParameters = createServerRunArguments(sourceSets.main.java.srcDirs.first().parentFile.absolutePath)
+            workingDirectory = serverRunDir.absolutePath
+        }
+    }
+
+    // Creates a launch.json file for VSCode with the same configuration
+    tasks.register('generateVSCodeLaunch') {
+        def vscodeDir = file("$projectDir/.vscode")
+        def launchFile = file("$vscodeDir/launch.json")
+        doLast {
+            if (!vscodeDir.exists()) {
+                vscodeDir.mkdirs()
+            }
+            def programParams = createServerRunArguments("\${workspaceFolder}")
+            def launchConfig = [
+                    version: "0.2.0",
+                    configurations: [
+                            [
+                                    type: "java",
+                                    name: "HytaleServer",
+                                    request: "launch",
+                                    mainClass: "com.hypixel.hytale.Main",
+                                    args: programParams,
+                                    cwd: "\${workspaceFolder}/run"
+                            ]
+            ]
+            ]
+            launchFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(launchConfig))
+        }
+    }
+} else {
+    tasks.register('generateVSCodeLaunch') {
+        doLast {
+            logger.lifecycle("Skipped VSCode launch configuration because no runnable Hytale package was found.")
+        }
+    }
+}

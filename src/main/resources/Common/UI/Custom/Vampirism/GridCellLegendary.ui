@@ -1,0 +1,59 @@
+$C = "../Common.ui";
+$Sounds = "../Sounds.ui";
+
+Group {
+  Anchor: (Width: 64, Height: 64);
+
+  Group #SkillTile {
+    Anchor: (Full: 0);
+    Background: (TexturePath: "Common/ItemQualities/Slots/SlotLegendary.png");
+  }
+
+  Group #SkillIcon {
+    Anchor: (Full: 0);
+    Background: #000000(0);
+  }
+
+  Group #RarityOverlay {
+    Anchor: (Full: 0);
+    Visible: true;
+    Background: (TexturePath: "Common/ItemQualities/Slots/SlotLegendary_Overlay.png");
+    HitTestVisible: false;
+  }
+
+  Label #OverlayText {
+    Anchor: (Right: 3, Bottom: 3, Width: 28, Height: 14);
+    Visible: false;
+    Text: "";
+    Style: (FontSize: 11, TextColor: #ffffff, RenderBold: true, Alignment: Center);
+    HitTestVisible: false;
+  }
+
+  Group #Indicator {
+    Anchor: (Full: 0);
+    Background: (TexturePath: "Skills/Indicators/AvailableIndicator.png");
+  }
+
+  Group #Selected {
+    Anchor: (Full: 0);
+    Visible: false;
+    Background: (TexturePath: "Skills/Tiles/TileSelected.png");
+  }
+
+  Button #HitArea {
+    Anchor: (Full: 0);
+    TooltipText: "";
+    TextTooltipStyle: TextTooltipStyle(
+      Background: PatchStyle(TexturePath: "Common/ItemQualities/Tooltips/ItemTooltipLegendary.png", Border: 24),
+      MaxWidth: 400,
+      LabelStyle: LabelStyle(Wrap: true, FontSize: 16, TextColor: #f0a020),
+      Padding: 24
+    );
+    Style: (
+      Sounds: $Sounds.@CosmeticsTiles,
+      Hovered: (Background: (TexturePath: "Skills/Tiles/TileHovered.png")),
+      Pressed: (Background: (TexturePath: "Skills/Tiles/TileSelected.png"))
+    );
+  }
+
+}

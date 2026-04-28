@@ -1,0 +1,7 @@
+{
+  "Duration": 60,
+  "Debuff": false,
+  "OverlapBehavior": "Extend",
+  "StatusEffectIcon": "UI/StatusEffects/Vampirism_CrimsonUmbrella.png",
+  "ApplicationEffects": {}
+}

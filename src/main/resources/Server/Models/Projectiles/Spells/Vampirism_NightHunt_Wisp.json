@@ -1,0 +1,49 @@
+{
+  "Model": "Characters/Vampirism/InvisibleCarrier.blockymodel",
+  "Texture": "Characters/Empty_Cube_Texture.png",
+  "HitBox": {
+    "Max": {
+      "X": 0.1,
+      "Y": 0.1,
+      "Z": 0.1
+    },
+    "Min": {
+      "X": -0.1,
+      "Y": -0.1,
+      "Z": -0.1
+    }
+  },
+  "MinScale": 0.01,
+  "MaxScale": 0.01,
+  "Particles": [
+    {
+      "PositionOffset": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Z": 0.0
+      },
+      "SystemId": "Vampirism_NightHunt_Wisp_Particles",
+      "TargetNodeName": "Root"
+    },
+    {
+      "PositionOffset": {
+        "X": 0.0,
+        "Y": 0.15,
+        "Z": 0.0
+      },
+      "SystemId": "Vampirism_NightHunt_Wisp_Particles",
+      "TargetNodeName": "Root"
+    }
+  ],
+  "AnimationSets": {
+    "FlyIdle": {
+      "Animations": [
+        {
+          "Animation": "Items/Animations/Spin_Roll/Spin_Roll_Left.blockyanim",
+          "BlendingDuration": 0,
+          "Speed": 0.45
+        }
+      ]
+    }
+  }
+}

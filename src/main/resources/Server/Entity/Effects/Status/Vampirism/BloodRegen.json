@@ -1,0 +1,25 @@
+{
+    "Duration": 10,
+    "Debuff": false,
+    "OverlapBehavior": "Overwrite",
+    "StatusEffectIcon": "UI/StatusEffects/Regen/Large.png",
+    "ApplicationEffects": {
+        "EntityTopTint": "#3d0010",
+        "EntityBottomTint": "#1a0008",
+        "WorldSoundEventId": "SFX_Deployable_Totem_Heal_Despawn",
+        "Particles": [
+            {
+                "SystemId": "Potion_Health_Heal",
+                "TargetEntityPart": "Entity",
+                "TargetNodeName": "Pelvis"
+            }
+        ]
+    },
+    "StatModifiers": {
+        "Health": 4
+    },
+    "DamageCalculatorCooldown": 1.0,
+    "StatModifierEffects": {
+        "WorldSoundEventId": "SFX_Deployable_Totem_Heal_Despawn"
+    }
+}

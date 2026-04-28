@@ -1,0 +1,12 @@
+{
+  "Duration": 10,
+  "Debuff": false,
+  "OverlapBehavior": "Overwrite",
+  "StatusEffectIcon": "UI/StatusEffects/Regen/Large.png",
+  "ApplicationEffects": {
+    "EntityTopTint": "#7a0000",
+    "EntityBottomTint": "#2f0000",
+    "WorldSoundEventId": "SFX_Avatar_Powers_Enable",
+    "LocalSoundEventId": "SFX_Avatar_Powers_Enable_Local"
+  }
+}

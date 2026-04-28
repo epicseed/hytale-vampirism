@@ -1,0 +1,72 @@
+$C = "../Common.ui";
+
+@BottomMargin = 30;
+@ContainerMargin = 6;
+@HotbarSlotSpacingHud = 4;
+@DefaultItemSlotsPerRow = 9;
+@DefaultItemSlotSize = 74;
+@DefaultItemGridPadding = 2;
+@HotbarWidthHud = @DefaultItemSlotSize * @DefaultItemSlotsPerRow + @HotbarSlotSpacingHud * @DefaultItemSlotsPerRow;
+@HotbarHeight = @DefaultItemSlotSize + (2 * @DefaultItemGridPadding);
+@InventoryClosedContainerMargin = @BottomMargin + @ContainerMargin;
+
+Group #MainContainer {
+  Anchor: (Bottom: @InventoryClosedContainerMargin + @HotbarHeight + 26, Width: @HotbarWidthHud, Height: 24);
+  HitTestVisible: false;
+
+  Group #BloodBarRow {
+    Anchor: (Left: 0, Top: 0, Width: @HotbarWidthHud, Height: 24);
+    LayoutMode: Left;
+    HitTestVisible: false;
+
+    Group {
+      Anchor: (Left: 0, Width: 28, Height: 24, Top: 0);
+      HitTestVisible: false;
+
+      Group #Icon {
+        Anchor: (Left: 0, Width: 24, Height: 24);
+        Background: "BloodBar/HealthIcon.png";
+        HitTestVisible: false;
+      }
+
+      Group #IconCreative {
+        Anchor: (Left: 0, Width: 24, Height: 24);
+        Background: "BloodBar/CreativeHealthIcon.png";
+        Visible: false;
+        HitTestVisible: false;
+      }
+    }
+
+    Group #BarContainer {
+      Anchor: (Left: 0, Width: 318, Height: 12);
+      Background: "BloodBar/HealthBackground.png";
+      HitTestVisible: false;
+
+      ProgressBar #ProgressBarHealth {
+        Anchor: (Width: 318, Height: 12);
+        BarTexturePath: "BloodBar/HealthBarFill.png";
+        Value: 1.0;
+      }
+
+      ProgressBar #ProgressBarHealthCreative {
+        Anchor: (Width: 318, Height: 12);
+        BarTexturePath: "BloodBar/CreativeHealthBarFill.png";
+        Value: 1.0;
+        Visible: false;
+      }
+
+      ProgressBar #ProgressBarEffect {
+        Anchor: (Width: 318, Height: 12);
+        BarTexturePath: "BloodBar/HealthBarEffect.png";
+        Value: 1.0;
+      }
+
+      Label #BloodValueMarker {
+        Anchor: (Left: 0, Right: 0, Top: -1, Height: 12);
+        Text: "100 / 100";
+        Style: (FontSize: 10, TextColor: #ffd7d7, RenderBold: true, Alignment: Center);
+        HitTestVisible: false;
+      }
+    }
+  }
+}

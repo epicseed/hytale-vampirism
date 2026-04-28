@@ -1,0 +1,67 @@
+[
+  {
+    "definition": {
+      "type": "self"
+    },
+    "description": "Targets the player.",
+    "displayName": "Self",
+    "id": "self_target",
+    "tags": []
+  },
+  {
+    "definition": {
+      "maxRange": 24,
+      "team": "enemy",
+      "type": "projectile"
+    },
+    "description": "Projectile aimed at one enemy target.",
+    "displayName": "Single Enemy Projectile",
+    "id": "single_enemy_projectile",
+    "tags": []
+  },
+  {
+    "definition": {
+      "radius": 8,
+      "shape": "circle",
+      "team": "enemy",
+      "type": "area"
+    },
+    "description": "Area around the player affecting nearby enemies.",
+    "displayName": "Nearby Enemies Radius",
+    "id": "nearby_enemies_radius",
+    "tags": []
+  },
+  {
+    "definition": {
+      "maxRange": 32,
+      "type": "lookPosition"
+    },
+    "description": "Position the player is currently aiming at.",
+    "displayName": "Look Position",
+    "id": "look_position",
+    "tags": []
+  },
+  {
+    "definition": {
+      "maxRange": 5,
+      "team": "enemy",
+      "type": "target"
+    },
+    "description": "A single enemy entity the player is targeting at melee range.",
+    "displayName": "Single Enemy Target",
+    "id": "single_enemy_target",
+    "tags": []
+  },
+  {
+    "definition": {
+      "maxRange": 12,
+      "radius": 5,
+      "team": "enemy",
+      "type": "areaAtLook"
+    },
+    "description": "Sphere of enemies centered at the caster's look position — used by Blood Mist.",
+    "displayName": "Blood Mist Area At Look",
+    "id": "blood_mist_area_at_look",
+    "tags": []
+  }
+]

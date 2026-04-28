@@ -1,0 +1,12 @@
+Group {
+  // Left half of H: from left edge to center+4
+  Group #StripH {
+    Anchor: (Left: 0, Right: 28, Top: 28, Height: 8);
+    Background: #4a90d9(1);
+  }
+  // Top half of V: from top edge to center+4
+  Group #StripV {
+    Anchor: (Left: 28, Width: 8, Top: 0, Bottom: 28);
+    Background: #4a90d9(1);
+  }
+}

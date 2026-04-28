@@ -1,0 +1,10 @@
+{
+  "Duration": 30,
+  "Debuff": false,
+  "OverlapBehavior": "Overwrite",
+  "StatusEffectIcon": "UI/StatusEffects/Icon_Slow.png",
+  "ApplicationEffects": {
+    "EntityTopTint": "#101010",
+    "EntityBottomTint": "#050505"
+  }
+}

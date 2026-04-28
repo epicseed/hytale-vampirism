@@ -1,0 +1,36 @@
+//$C = "../Common.ui";
+
+@DefaultTextTooltipStyle = TextTooltipStyle(
+  Background: (TexturePath: "Tiles/TooltipDefaultBackground.png", Border: 24),
+  MaxWidth: 400,
+  LabelStyle: @SkillDescriptionLabel,
+  Padding: 24
+);
+
+@SkillDescriptionLabel = LabelStyle(
+    Wrap: true, FontSize: 16, HorizontalAlignment: Center, VerticalAlignment: Center
+);
+
+Group {
+  Anchor: (Width: 64, Height: 64);
+
+  Button #HitArea {
+    Anchor: (Full: 0);
+    TooltipText: "";
+    TextTooltipStyle: @DefaultTextTooltipStyle; // background, padding, etc.
+//    TooltipContent: "Plugin/SkillTooltip.ui"; // custom layout
+//    TextTooltipStyle: @DefaultTextTooltipStyle;
+
+    Background: (TexturePath: "Skills/Tiles/TileDefault.png");
+    Style: (
+      Hovered: (Background: (TexturePath: "Skills/Tiles/TileHovered.png")),
+      Pressed: (Background: (TexturePath: "Skills/Tiles/TileSelected.png"))
+    );
+
+  }
+
+  Label #HitText {
+  Text: "";
+  Style: @SkillDescriptionLabel;
+  }
+}

@@ -1,0 +1,59 @@
+[
+  {
+    "definition": {
+      "type": "onActivate"
+    },
+    "description": "Runs when an ability or effect is activated.",
+    "displayName": "On Activate",
+    "id": "on_activate",
+    "tags": []
+  },
+  {
+    "definition": {
+      "type": "onKill"
+    },
+    "description": "Runs when the player kills an entity.",
+    "displayName": "On Kill",
+    "id": "on_kill",
+    "tags": []
+  },
+  {
+    "definition": {
+      "type": "onFeed"
+    },
+    "description": "Runs after the player feeds successfully.",
+    "displayName": "On Feed",
+    "id": "on_feed",
+    "tags": []
+  },
+  {
+    "definition": {
+      "conditionId": "self_under_15_percent_health",
+      "cooldown": 600,
+      "type": "onCondition"
+    },
+    "description": "Runs when the player falls below 15% health.",
+    "displayName": "On Low Health 15%",
+    "id": "on_low_health_15",
+    "tags": []
+  },
+  {
+    "definition": {
+      "conditionId": "is_invisible",
+      "type": "onFirstHit"
+    },
+    "description": "Runs on the first attack made while invisible.",
+    "displayName": "On First Hit While Invisible",
+    "id": "on_first_hit_invisible",
+    "tags": []
+  },
+  {
+    "definition": {
+      "type": "onConnect"
+    },
+    "description": "Fires once when a player connects to the server.",
+    "displayName": "On Connect",
+    "id": "on_connect",
+    "tags": []
+  }
+]

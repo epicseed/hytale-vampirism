@@ -1,0 +1,242 @@
+$C = "../Common.ui";
+
+Group #RelicCooldownHudRoot {
+  Anchor: (Right: 24, Bottom: 38, Width: 396, Height: 76);
+  Visible: false;
+  HitTestVisible: false;
+
+  Group #SlotPrimary {
+    Anchor: (Left: 0, Top: 0, Width: 76, Height: 76);
+    HitTestVisible: false;
+
+    Group #SlotHitArea {
+      Anchor: (Full: 0);
+      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon.png");
+      HitTestVisible: false;
+    }
+
+    Group #SlotIcon {
+      Anchor: (Full: 0);
+      Visible: false;
+      Background: (TexturePath: "Vampirism/Common/WIPIcon.png");
+      HitTestVisible: false;
+    }
+
+    Group #RarityOverlay {
+      Anchor: (Full: 0);
+      Visible: true;
+      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+      HitTestVisible: false;
+    }
+
+    Group #CooldownOverlay {
+      Anchor: (Full: 0);
+      Visible: false;
+      Background: #000000(0.62);
+      HitTestVisible: false;
+    }
+
+    Label #CooldownText {
+      Anchor: (Left: 6, Right: 6, Top: 22, Height: 28);
+      Visible: false;
+      Text: "";
+      Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true, Alignment: Center);
+      HitTestVisible: false;
+    }
+
+    Label #SlotHint {
+      Anchor: (Left: 0, Right: 0, Bottom: 2, Height: 12);
+      Text: "Primary";
+      Style: (FontSize: 10, TextColor: #cfd8dc, RenderBold: true, Alignment: Center);
+      HitTestVisible: false;
+    }
+  }
+
+  Group #SlotSecondary {
+    Anchor: (Left: 80, Top: 0, Width: 76, Height: 76);
+    HitTestVisible: false;
+
+    Group #SlotHitArea {
+      Anchor: (Full: 0);
+      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon.png");
+      HitTestVisible: false;
+    }
+
+    Group #SlotIcon {
+      Anchor: (Full: 0);
+      Visible: false;
+      Background: (TexturePath: "Vampirism/Common/WIPIcon.png");
+      HitTestVisible: false;
+    }
+
+    Group #RarityOverlay {
+      Anchor: (Full: 0);
+      Visible: true;
+      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+      HitTestVisible: false;
+    }
+
+    Group #CooldownOverlay {
+      Anchor: (Full: 0);
+      Visible: false;
+      Background: #000000(0.62);
+      HitTestVisible: false;
+    }
+
+    Label #CooldownText {
+      Anchor: (Left: 6, Right: 6, Top: 22, Height: 28);
+      Visible: false;
+      Text: "";
+      Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true, Alignment: Center);
+      HitTestVisible: false;
+    }
+
+    Label #SlotHint {
+      Anchor: (Left: 0, Right: 0, Bottom: 2, Height: 12);
+      Text: "Secondary";
+      Style: (FontSize: 10, TextColor: #cfd8dc, RenderBold: true, Alignment: Center);
+      HitTestVisible: false;
+    }
+  }
+
+  Group #SlotAbility1 {
+    Anchor: (Left: 160, Top: 0, Width: 76, Height: 76);
+    HitTestVisible: false;
+
+    Group #SlotHitArea {
+      Anchor: (Full: 0);
+      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon.png");
+      HitTestVisible: false;
+    }
+
+    Group #SlotIcon {
+      Anchor: (Full: 0);
+      Visible: false;
+      Background: (TexturePath: "Vampirism/Common/WIPIcon.png");
+      HitTestVisible: false;
+    }
+
+    Group #RarityOverlay {
+      Anchor: (Full: 0);
+      Visible: true;
+      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+      HitTestVisible: false;
+    }
+
+    Group #CooldownOverlay {
+      Anchor: (Full: 0);
+      Visible: false;
+      Background: #000000(0.62);
+      HitTestVisible: false;
+    }
+
+    Label #CooldownText {
+      Anchor: (Left: 6, Right: 6, Top: 22, Height: 28);
+      Visible: false;
+      Text: "";
+      Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true, Alignment: Center);
+      HitTestVisible: false;
+    }
+
+    Label #SlotHint {
+      Anchor: (Left: 0, Right: 0, Bottom: 2, Height: 12);
+      Text: "Ability1";
+      Style: (FontSize: 10, TextColor: #cfd8dc, RenderBold: true, Alignment: Center);
+      HitTestVisible: false;
+    }
+  }
+
+  Group #SlotAbility2 {
+    Anchor: (Left: 240, Top: 0, Width: 76, Height: 76);
+    HitTestVisible: false;
+
+    Group #SlotHitArea {
+      Anchor: (Full: 0);
+      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon.png");
+      HitTestVisible: false;
+    }
+
+    Group #SlotIcon {
+      Anchor: (Full: 0);
+      Visible: false;
+      Background: (TexturePath: "Vampirism/Common/WIPIcon.png");
+      HitTestVisible: false;
+    }
+
+    Group #RarityOverlay {
+      Anchor: (Full: 0);
+      Visible: true;
+      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+      HitTestVisible: false;
+    }
+
+    Group #CooldownOverlay {
+      Anchor: (Full: 0);
+      Visible: false;
+      Background: #000000(0.62);
+      HitTestVisible: false;
+    }
+
+    Label #CooldownText {
+      Anchor: (Left: 6, Right: 6, Top: 22, Height: 28);
+      Visible: false;
+      Text: "";
+      Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true, Alignment: Center);
+      HitTestVisible: false;
+    }
+
+    Label #SlotHint {
+      Anchor: (Left: 0, Right: 0, Bottom: 2, Height: 12);
+      Text: "Ability2";
+      Style: (FontSize: 10, TextColor: #cfd8dc, RenderBold: true, Alignment: Center);
+      HitTestVisible: false;
+    }
+  }
+
+  Group #SlotAbility3 {
+    Anchor: (Left: 320, Top: 0, Width: 76, Height: 76);
+    HitTestVisible: false;
+
+    Group #SlotHitArea {
+      Anchor: (Full: 0);
+      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon.png");
+      HitTestVisible: false;
+    }
+
+    Group #SlotIcon {
+      Anchor: (Full: 0);
+      Visible: false;
+      Background: (TexturePath: "Vampirism/Common/WIPIcon.png");
+      HitTestVisible: false;
+    }
+
+    Group #RarityOverlay {
+      Anchor: (Full: 0);
+      Visible: true;
+      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+      HitTestVisible: false;
+    }
+
+    Group #CooldownOverlay {
+      Anchor: (Full: 0);
+      Visible: false;
+      Background: #000000(0.62);
+      HitTestVisible: false;
+    }
+
+    Label #CooldownText {
+      Anchor: (Left: 6, Right: 6, Top: 22, Height: 28);
+      Visible: false;
+      Text: "";
+      Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true, Alignment: Center);
+      HitTestVisible: false;
+    }
+
+    Label #SlotHint {
+      Anchor: (Left: 0, Right: 0, Bottom: 2, Height: 12);
+      Text: "Ability3";
+      Style: (FontSize: 10, TextColor: #cfd8dc, RenderBold: true, Alignment: Center);
+      HitTestVisible: false;
+    }
+  }
+}

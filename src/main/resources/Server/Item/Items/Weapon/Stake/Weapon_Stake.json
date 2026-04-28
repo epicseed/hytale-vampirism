@@ -1,0 +1,79 @@
+{
+  "Model": "Items/Weapons/Stake/Stake.blockymodel",
+  "Texture": "Items/Weapons/Stake/Stake.png",
+  "ItemLevel": 25,
+  "TranslationProperties": {
+    "Name": "Stake"
+  },
+  "Icon": "Icons/ItemsGenerated/Weapon_Stake.png",
+  "Quality": "Uncommon",
+  "ItemSoundSetId": "ISS_Weapons_Wood",
+  "PlayerAnimationsId": "Sword",
+  "InteractionVars": {
+    "Stake_Stab_Effect": {
+      "Interactions": [
+        "Spear_Stab_Effect"
+      ]
+    },
+    "Stake_Stab_Damage": {
+      "Interactions": [
+        {
+          "Type": "DamageEntity",
+          "DamageCalculator": {
+            "BaseDamage": {
+              "Physical": 7
+            }
+          },
+          "DamageEffects": {
+            "ModelParticles": [
+              {
+                "SystemId": "Impact_Dagger_Stab"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "Interactions": {
+    "Primary": {
+      "Interactions": [
+        {
+          "Type": "Simple",
+          "Effects": {
+            "ItemPlayerAnimationsId": "Sword",
+            "ItemAnimationId": "Stab",
+            "WorldSoundEventId": "SFX_Spear_Lunge",
+            "LocalSoundEventId": "SFX_Spear_Lunge",
+            "MovementEffects": {
+              "DisableLeft": false,
+              "DisableAll": false
+            },
+            "ClearAnimationOnFinish": true,
+            "ClearSoundEventOnFinish": false,
+            "WaitForAnimationToFinish": false
+          },
+          "RunTime": 0.16,
+          "Next": {
+            "Parent": "Stake_Stab"
+          }
+        }
+      ]
+    }
+  },
+  "MaxDurability": 50,
+  "DurabilityLossOnHit": 0.2,
+  "Weapon": {},
+  "IconProperties": {
+    "Scale": 0.5,
+    "Rotation": [
+      323,
+      222,
+      33
+    ],
+    "Translation": [
+      -16,
+      -17
+    ]
+  }
+}

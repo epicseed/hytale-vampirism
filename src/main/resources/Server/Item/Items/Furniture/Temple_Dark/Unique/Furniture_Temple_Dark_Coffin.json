@@ -1,0 +1,120 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Furniture_Temple_Dark_Coffin.name"
+  },
+  "PlayerAnimationsId": "Block",
+  "Categories": [
+    "Furniture.Containers"
+  ],
+  "Set": "Furniture_Temple_Dark",
+  "Icon": "Icons/ItemsGenerated/Furniture_Temple_Dark_Coffin.png",
+  "IconProperties": {
+    "Scale": 0.4,
+    "Translation": [
+      -12,
+      -20
+    ],
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ]
+  },
+  "Recipe": {
+    "Input": [
+      {
+        "ItemId": "Rock_Shale",
+        "Quantity": 3
+      },
+      {
+        "ItemId": "Soil_Pebbles_Frozen",
+        "Quantity": 4
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Type": "Crafting",
+        "Id": "Furniture_Bench",
+        "Categories": [
+          "Furniture_Beds"
+        ]
+      }
+    ]
+  },
+  "BlockType": {
+    "BlockParticleSetId": "Wood",
+    "BlockSoundSetId": "Wood",
+    "CustomModel": "Blocks/Decorative_Sets/Temple_Dark/Coffin.blockymodel",
+    "CustomModelScale": 1,
+    "CustomModelTexture": [
+      {
+        "Texture": "Blocks/Decorative_Sets/Temple_Dark/Coffin_Texture.png",
+        "Weight": 1
+      }
+    ],
+    "DrawType": "Model",
+    "Gathering": {
+      "Breaking": {
+        "GatherType": "Woods"
+      }
+    },
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "Bed"
+          }
+        ]
+      }
+    },
+    "Beds": [
+      {
+        "Offset": {
+          "X": 0.6,
+          "Y": -0.3,
+          "Z": 0.1
+        },
+        "Yaw": 90
+      }
+    ],
+    "HitboxType": "Coffin",
+    "Material": "Solid",
+    "Opacity": "Transparent",
+    "Support": {
+      "Down": [
+        {
+          "FaceType": "Full"
+        }
+      ]
+    },
+    "BlockEntity": {
+      "Components": {
+        "RespawnBlock": {}
+      }
+    },
+    "VariantRotation": "Wall",
+    "ParticleColor": "#4e462c",
+    "Flags": {
+      "IsUsable": true
+    }
+  },
+  "ResourceTypes": [
+    {
+      "Id": "Fuel"
+    },
+    {
+      "Id": "Charcoal"
+    }
+  ],
+  "Tags": {
+    "Type": [
+      "Furniture"
+    ],
+    "Family": [
+      "Temple_Dark"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Blocks_Wood",
+  "ItemLevel": 3,
+  "MaxStack": 1
+}

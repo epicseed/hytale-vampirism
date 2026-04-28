@@ -1,0 +1,369 @@
+// Hytale UI Definition: SkillTree
+// Controller: SkillTreeController.java
+$C = "../Common.ui";
+
+Group #SkillTreeRoot {
+  Anchor: (Full: 0);
+  Background: "Background/SkillTreeBackground.png";
+}
+
+Group #GridMatrix {
+  Anchor: (Full: 0);
+  LayoutMode: CenterMiddle;
+  //  Uncomment below for seeing group dimensions
+  //  Background: #7cb342(0.6);
+
+  // Zero-size pivot centered on screen by CenterMiddle.
+  // All cells and connectors are children of this pivot,
+  // with positions relative to screen center.
+  Group #GridPivot {
+    Anchor: (Width: 10000, Height: 10000);
+
+    // Pan container: moved as a whole on each D-pad press (O(1) instead of O(N)).
+    // Cells are appended here with fixed positions; pan shifts this group.
+    Group #GridContent {
+      Anchor: (Left: 0, Top: 0, Width: 10000, Height: 10000);
+    }
+  }
+}
+
+// Skill detail panel — top-right corner, updated on skill click
+$C.@Panel #SkillDetail {
+  Anchor: (Right: 16, Top: 56, Width: 300, Height: 435);
+  Visible: false;
+  Padding: (Full: 14);
+  LayoutMode: Top;
+
+  // === Header: tile + name + type + cost ===
+  Group #SkillHeader {
+    Anchor: (Left: 0, Right: 0, Height: 80);
+
+    Group #SkillTile {
+      Anchor: (Left: 0, Top: 0, Width: 72, Height: 72);
+      Background: #000000(0);
+
+      Group #SkillTileIcon {
+        Anchor: (Full: 0);
+        Background: #000000(0);
+      }
+
+      Group #SkillTileRarityOverlay {
+        Anchor: (Full: 0);
+        Visible: true;
+        Background: (TexturePath: "Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+        HitTestVisible: false;
+      }
+
+      Label #SkillTileOverlayText {
+        Anchor: (Right: 4, Bottom: 4, Width: 32, Height: 16);
+        Visible: false;
+        Text: "";
+        Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true, Alignment: Center);
+        HitTestVisible: false;
+      }
+    }
+
+    Label #SkillName {
+      Anchor: (Left: 80, Top: 0, Right: 0, Height: 30);
+      Text: "—";
+      Style: (FontSize: 16, TextColor: #ffcc80, RenderBold: true, Wrap: true);
+    }
+
+    Label #SkillType {
+      Anchor: (Left: 80, Top: 34, Right: 0, Height: 20);
+      Text: "";
+      Style: (FontSize: 12, TextColor: $C.@ColorGrayCaption);
+    }
+
+    Label #SkillCost {
+      Anchor: (Left: 80, Top: 58, Right: 0, Height: 20);
+      Text: "";
+      Style: (FontSize: 13, TextColor: $C.@ColorGoldHighlight, RenderBold: true);
+    }
+  }
+
+  Group { Anchor: (Left: 0, Right: 0, Height: 8); }
+  $C.@ContentSeparator {}
+  Group { Anchor: (Left: 0, Right: 0, Height: 8); }
+
+  // === Description ===
+  Label {
+    Anchor: (Left: 0, Right: 0, Height: 18);
+    Text: "DESCRIPTION";
+    Style: $C.@SubtitleStyle;
+  }
+  Group { Anchor: (Left: 0, Right: 0, Height: 4); }
+  Label #SkillDesc {
+    Anchor: (Left: 0, Right: 0, Height: 72);
+    Text: "";
+    Style: (FontSize: 12, TextColor: $C.@ColorDefaultLabel, Wrap: true);
+  }
+
+  Group { Anchor: (Left: 0, Right: 0, Height: 8); }
+  $C.@ContentSeparator {}
+  Group { Anchor: (Left: 0, Right: 0, Height: 8); }
+
+  // === Requires ===
+  Label {
+    Anchor: (Left: 0, Right: 0, Height: 18);
+    Text: "REQUIRES";
+    Style: $C.@SubtitleStyle;
+  }
+  Group { Anchor: (Left: 0, Right: 0, Height: 4); }
+  Group #SkillRequiresRow {
+    Anchor: (Left: 0, Right: 0, Height: 44);
+  }
+
+  Group { Anchor: (Left: 0, Right: 0, Height: 8); }
+  $C.@ContentSeparator {}
+  Group { Anchor: (Left: 0, Right: 0, Height: 8); }
+
+  // === Unlocks ===
+  Label {
+    Anchor: (Left: 0, Right: 0, Height: 18);
+    Text: "UNLOCKS";
+    Style: $C.@SubtitleStyle;
+  }
+  Group { Anchor: (Left: 0, Right: 0, Height: 4); }
+  Group #SkillUnlocksRow {
+    Anchor: (Left: 0, Right: 0, Height: 44);
+  }
+
+  Group { Anchor: (Left: 0, Right: 0, Height: 6); }
+
+  Group #BuyWrapper {
+    Anchor: (Left: 0, Right: 0, Height: 44);
+    LayoutMode: CenterMiddle;
+
+    $C.@TextButton #UnlockButton {
+      @Text = "Unlock Skill";
+      @Anchor = (Width: 220);
+    }
+  }
+}
+
+// Points panel — pinned right, beside the skill detail panel
+$C.@Panel #PointsPanel {
+  Anchor: (Right: 324, Top: 56, Width: 300, Height: 180);
+  Padding: (Full: 14);
+  LayoutMode: Top;
+
+  Label {
+    Anchor: (Left: 0, Right: 0, Height: 18);
+    Text: "AVAILABLE POINTS";
+    Style: $C.@SubtitleStyle;
+  }
+
+  Group { Anchor: (Left: 0, Right: 0, Height: 8); }
+  $C.@ContentSeparator {}
+  Group { Anchor: (Left: 0, Right: 0, Height: 16); }
+
+  Label #PointsValue {
+    Anchor: (Left: 0, Right: 0, Height: 64);
+    Text: "0";
+    Style: (FontSize: 52, TextColor: $C.@ColorGoldHighlight, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+  }
+
+  Group { Anchor: (Left: 0, Right: 0, Height: 8); }
+
+  Label {
+    Anchor: (Left: 0, Right: 0, Height: 18);
+    Text: "points to spend";
+    Style: (FontSize: 12, TextColor: $C.@ColorDefaultLabel, HorizontalAlignment: Center);
+  }
+}
+
+// Reload-skills button — floating over top-right corner of #PointsPanel
+// Right: 330 = 6px inside panel's right edge (panel is at Right: 324)
+Group #ReloadBtnWrapper {
+  Anchor: (Right: 330, Top: 62, Width: 26, Height: 26);
+  Group { Anchor: (Full: 0); Background: "Pages/Reload.png"; }
+  Button #ReloadButton {
+    Anchor: (Full: 0);
+    Style: $C.@TertiaryButtonStyle;
+    TooltipText: "Reset Skills";
+    TextTooltipStyle: $C.@DefaultTextTooltipStyle;
+  }
+}
+
+// Navigation tabs — top-left corner, browser-tab style (active = current page, no button)
+Group #NavTabs {
+  Anchor: (Left: 0, Top: 0, Width: 290, Height: 44);
+
+  // Active tab — Skill Tree is the current page, no Button (not clickable)
+  Group #TabSkillTree {
+    Anchor: (Left: 0, Top: 0, Width: 140, Height: 44);
+    Background: #1e3048;
+    Label {
+      Anchor: (Full: 0);
+      Text: "Skill Tree";
+      Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+    }
+  }
+
+  // Inactive tab — clicking navigates to Relic Bindings
+  Group #TabRelicBindingsWrapper {
+    Anchor: (Left: 144, Top: 0, Width: 146, Height: 44);
+    Background: #0d1820;
+    Label {
+      Anchor: (Full: 0);
+      Text: "Relic Bindings";
+      Style: (FontSize: 12, TextColor: #999999, HorizontalAlignment: Center, VerticalAlignment: Center);
+    }
+    Button #TabRelicBindingsBtn {
+      Anchor: (Full: 0);
+      Style: $C.@TertiaryButtonStyle;
+    }
+  }
+}
+
+// Navigation layer: 8-way D-pad in bottom-right corner (positioned over everything)
+Group #NavLayer {
+  Anchor: (Full: 0);
+
+  // Zoom buttons — vertical pair to the left of the D-pad, centered on same horizontal band
+  // D-pad: Bottom:88, Width:128 → center from bottom = 88+64=152. ZoomBtns: Height:88 → Bottom:152-44=108
+  Group #ZoomBtns {
+    Anchor: (Bottom: 108, Right: 228, Width: 40, Height: 88);
+
+    Group #ZoomInWrapper {
+      Anchor: (Left: 0, Top: 0, Width: 40, Height: 40);
+      Group { Anchor: (Full: 0); Background: #1a2a3a; }
+      Label {
+        Anchor: (Full: 0);
+        Text: "+";
+        Style: (FontSize: 24, RenderBold: true, HorizontalAlignment: Center);
+      }
+      Button #ZoomIn { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+    }
+
+    Group #ZoomOutWrapper {
+      Anchor: (Left: 0, Bottom: 0, Width: 40, Height: 40);
+      Group { Anchor: (Full: 0); Background: #1a2a3a; }
+      Label {
+        Anchor: (Full: 0);
+        Text: "-";
+        Style: (FontSize: 24, RenderBold: true, HorizontalAlignment: Center);
+      }
+      Button #ZoomOut { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+    }
+  }
+
+  // D-pad cluster — 3x3 grid of 40px cells with 4px gaps = 128x128
+  Group #DPad {
+    Anchor: (Bottom: 88, Right: 88, Width: 128, Height: 128);
+
+    Group #PanNWWrapper {
+      Anchor: (Left: 0, Top: 0, Width: 40, Height: 40);
+      Group { Anchor: (Full: 0); Background: "Pages/ArrowNW.png"; }
+      Button #PanNW { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+    }
+
+    Group #PanNWrapper {
+      Anchor: (Left: 44, Top: 0, Width: 40, Height: 40);
+      Group { Anchor: (Full: 0); Background: "Pages/ArrowN.png"; }
+      Button #PanN { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+    }
+
+    Group #PanNEWrapper {
+      Anchor: (Left: 88, Top: 0, Width: 40, Height: 40);
+      Group { Anchor: (Full: 0); Background: "Pages/ArrowNE.png"; }
+      Button #PanNE { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+    }
+
+    Group #PanWWrapper {
+      Anchor: (Left: 0, Top: 44, Width: 40, Height: 40);
+      Group { Anchor: (Full: 0); Background: "Pages/ArrowW.png"; }
+      Button #PanW { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+    }
+
+    Group #PanEWrapper {
+      Anchor: (Left: 88, Top: 44, Width: 40, Height: 40);
+      Group { Anchor: (Full: 0); Background: "Pages/ArrowE.png"; }
+      Button #PanE { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+    }
+
+    Group #ReloadWrapper {
+      Anchor: (Left: 44, Top: 44, Width: 40, Height: 40);
+      Group { Anchor: (Full: 0); Background: "Pages/Reload.png"; }
+      Button #ReloadPan { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+    }
+
+    Group #PanSWWrapper {
+      Anchor: (Left: 0, Top: 88, Width: 40, Height: 40);
+      Group { Anchor: (Full: 0); Background: "Pages/ArrowSW.png"; }
+      Button #PanSW { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+    }
+
+    Group #PanSWrapper {
+      Anchor: (Left: 44, Top: 88, Width: 40, Height: 40);
+      Group { Anchor: (Full: 0); Background: "Pages/ArrowS.png"; }
+      Button #PanS { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+    }
+
+    Group #PanSEWrapper {
+      Anchor: (Left: 88, Top: 88, Width: 40, Height: 40);
+      Group { Anchor: (Full: 0); Background: "Pages/ArrowSE.png"; }
+      Button #PanSE { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+    }
+  }
+
+}
+
+
+
+// Confirmation overlay — shown when player clicks reset button
+Group #ConfirmResetOverlay {
+  Anchor: (Full: 0);
+  Visible: false;
+
+  // Dim backdrop + click blocker: Button absorbs all background clicks so nothing behind is clickable
+  Button #OverlayBlocker {
+    Anchor: (Full: 0);
+    Background: #000000(0.45);
+  }
+
+  // Centering wrapper
+  Group {
+    Anchor: (Full: 0);
+    LayoutMode: CenterMiddle;
+
+    $C.@Panel #ConfirmDialog {
+      Anchor: (Width: 380, Height: 172);
+      Padding: (Full: 16);
+      LayoutMode: Top;
+
+      Label {
+        Anchor: (Left: 0, Right: 0, Height: 22);
+        Text: "RESET SKILLS";
+        Style: $C.@SubtitleStyle;
+      }
+
+      Group { Anchor: (Left: 0, Right: 0, Height: 8); }
+      $C.@ContentSeparator {}
+      Group { Anchor: (Left: 0, Right: 0, Height: 10); }
+
+      Label {
+        Anchor: (Left: 0, Right: 0, Height: 36);
+        Text: "All skills will be removed and points refunded. Are you sure?";
+        Style: (FontSize: 13, TextColor: $C.@ColorDefaultLabel, Wrap: true, HorizontalAlignment: Center);
+      }
+
+      Group { Anchor: (Left: 0, Right: 0, Height: 10); }
+
+      Group {
+        Anchor: (Left: 0, Right: 0, Height: 38);
+
+        $C.@CancelTextButton #ConfirmResetBtn {
+          @Text = "Confirm Reset";
+          @Anchor = (Left: 0, Width: 162, Height: 38);
+        }
+
+        $C.@SecondaryTextButton #CancelResetBtn {
+          @Text = "Cancel";
+          @Anchor = (Right: 0, Width: 162, Height: 38);
+        }
+      }
+    }
+  }
+}

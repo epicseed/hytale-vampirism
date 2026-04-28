@@ -1,0 +1,27 @@
+{
+  "TexturePath": "Trails/Daggers_Dash.png",
+  "LifeSpan": 20,
+  "Roll": -45,
+  "LightInfluence": 0,
+  "Start": {
+    "Width": 0.48,
+    "Color": "#ff5a7cff"
+  },
+  "End": {
+    "Width": 0.02,
+    "Color": "#ff244200"
+  },
+  "RenderMode": "Erosion",
+  "Smooth": true,
+  "Animation": {
+    "FrameSize": {
+      "X": 256,
+      "Y": 96
+    },
+    "FrameLifeSpan": 5,
+    "FrameRange": {
+      "Min": 0,
+      "Max": 3
+    }
+  }
+}

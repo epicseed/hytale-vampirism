@@ -1,0 +1,19 @@
+{
+  "Appearance": "Vampirism_NightHunt_Wisp",
+  "Radius": 0.2,
+  "Height": 0.2,
+  "HorizontalCenterShot": 0.0,
+  "VerticalCenterShot": 0.0,
+  "DepthShot": 0.0,
+  "PitchAdjustShot": true,
+  "SticksVertically": true,
+  "MuzzleVelocity": 12,
+  "TerminalVelocity": 12,
+  "Gravity": 0,
+  "ImpactSlowdown": 0,
+  "TimeToLive": 6.0,
+  "Damage": 0,
+  "DeadTime": 0.05,
+  "DeadTimeMiss": 0.0,
+  "DeathEffectsOnHit": true
+}

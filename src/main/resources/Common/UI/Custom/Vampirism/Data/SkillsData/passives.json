@@ -1,0 +1,224 @@
+[
+  {
+    "description": "Reduces sunburn progression and blood thirst drain",
+    "displayName": "Sun Resistance",
+    "iconPath": "",
+    "id": "SunResistance",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "sun_resistance_base",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "SUNBURN_RESISTANCE",
+        "target": {},
+        "value": 0.2
+      },
+      {
+        "conditions": [],
+        "modifierId": "sun_resistance_drain",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "BLOOD_DRAIN_RATE",
+        "target": {},
+        "value": -0.1
+      }
+    ]
+  },
+  {
+    "description": "Increases blood collection rate from feeding",
+    "displayName": "Blood Drain",
+    "iconPath": "",
+    "id": "BloodDrain",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "blood_drain_collection",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "BLOOD_COLLECTION_RATE",
+        "target": {},
+        "value": 0.2
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "actionId": "heal_after_feed"
+      }
+    ],
+    "description": "Heals HP after each successful bite",
+    "displayName": "Healer's Bite",
+    "iconPath": "",
+    "id": "HealerBite",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "healer_bite_amount",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "BITE_HEAL_AMOUNT",
+        "target": {},
+        "value": 5
+      }
+    ],
+    "triggers": [
+      {
+        "triggerId": "on_feed"
+      }
+    ]
+  },
+  {
+    "description": "Reduces enemy detection radius while sneaking; increases blood drain while crouched",
+    "displayName": "Unnoticed",
+    "iconPath": "",
+    "id": "Unnoticed",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "unnoticed_base",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "STEALTH_DETECTION_RADIUS",
+        "target": {},
+        "value": -0.3
+      },
+      {
+        "conditions": [
+          {
+            "conditionId": "is_sneaking"
+          }
+        ],
+        "modifierId": "unnoticed_drain",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "BLOOD_DRAIN_RATE",
+        "target": {},
+        "value": 0.2
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "actionId": "apply_night_vision"
+      }
+    ],
+    "description": "Passively see clearly in the dark",
+    "displayName": "Night Vision",
+    "iconPath": "",
+    "id": "NightVision"
+  },
+  {
+    "actions": [
+      {
+        "actionId": "apply_bat_swarm_cloud"
+      }
+    ],
+    "description": "Below 15% HP: summons a bat cloud to disorient enemies. Cooldown: 10 min",
+    "displayName": "Bat Swarm",
+    "iconPath": "",
+    "id": "BatSwarm",
+    "triggers": [
+      {
+        "triggerId": "on_low_health_15"
+      }
+    ]
+  },
+  {
+    "description": "In Normal blood state: +5% damage reduction",
+    "displayName": "Blood Sphere",
+    "iconPath": "",
+    "id": "BloodSphere",
+    "modifiers": [
+      {
+        "conditions": [
+          {
+            "conditionId": "normal_blood_state"
+          }
+        ],
+        "modifierId": "blood_sphere_defense",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "DAMAGE_IN_REDUCTION",
+        "target": {},
+        "value": 0.05
+      }
+    ]
+  },
+  {
+    "description": "In Normal blood state: attacks restore 4 HP",
+    "displayName": "Blood Leach",
+    "iconPath": "",
+    "id": "BloodLeach",
+    "modifiers": [
+      {
+        "conditions": [
+          {
+            "conditionId": "normal_blood_state"
+          }
+        ],
+        "modifierId": "blood_leach_heal",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "ON_HIT_HEAL",
+        "target": {},
+        "value": 4
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "actionId": "apply_kill_speed_boost"
+      }
+    ],
+    "description": "After killing an entity: +10% speed for 10s",
+    "displayName": "Boiling Blood",
+    "iconPath": "",
+    "id": "BoilingBlood",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "boiling_blood_speed",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "KILL_SPEED_BOOST",
+        "target": {},
+        "value": 0.1
+      },
+      {
+        "conditions": [],
+        "modifierId": "boiling_blood_duration",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "KILL_SPEED_BOOST_DURATION",
+        "target": {},
+        "value": 10
+      }
+    ],
+    "triggers": [
+      {
+        "triggerId": "on_kill"
+      }
+    ]
+  },
+  {
+    "description": "Increases maximum blood bar capacity by 40%",
+    "displayName": "Increase Blood Bar Capacity",
+    "iconPath": "",
+    "id": "IncreaseBloodBarCapacity",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "blood_bar_capacity_bonus",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "BLOOD_BAR_CAPACITY",
+        "target": {},
+        "value": 0.4
+      }
+    ]
+  }
+]

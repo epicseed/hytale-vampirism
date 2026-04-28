@@ -1,0 +1,103 @@
+{
+  "RenderMode": "Erosion",
+  "ParticleRotationInfluence": "BillboardVelocity",
+  "LinearFiltering": true,
+  "LightInfluence": 0.15,
+  "ParticleRotateWithSpawner": true,
+  "TrailSpawnerPositionMultiplier": 0.45,
+  "TrailSpawnerRotationMultiplier": 0.45,
+  "MaxConcurrentParticles": 28,
+  "ParticleLifeSpan": {
+    "Min": 0.55,
+    "Max": 0.85
+  },
+  "SpawnRate": {
+    "Min": 28,
+    "Max": 40
+  },
+  "InitialVelocity": {
+    "Speed": {
+      "Min": 0.15,
+      "Max": 0.45
+    }
+  },
+  "EmitOffset": {
+    "X": {
+      "Min": -0.08,
+      "Max": 0.08
+    },
+    "Y": {
+      "Min": -0.08,
+      "Max": 0.08
+    },
+    "Z": {
+      "Min": -0.08,
+      "Max": 0.08
+    }
+  },
+  "UseEmitDirection": false,
+  "Particle": {
+    "Texture": "Particles/Textures/Smoke/Smoke_Drop.png",
+    "FrameSize": {
+      "Width": 64,
+      "Height": 64
+    },
+    "ScaleRatioConstraint": "OneToOne",
+    "UVOption": "None",
+    "Animation": {
+      "0": {
+        "Opacity": 0,
+        "Scale": {
+          "X": {
+            "Min": 0.18,
+            "Max": 0.26
+          }
+        },
+        "Color": "#5b0f23"
+      },
+      "20": {
+        "Opacity": 1,
+        "Scale": {
+          "X": {
+            "Min": 0.34,
+            "Max": 0.46
+          }
+        },
+        "Color": "#7b1732"
+      },
+      "60": {
+        "Opacity": 0.95,
+        "Scale": {
+          "X": {
+            "Min": 0.42,
+            "Max": 0.56
+          }
+        },
+        "Color": "#9a2745"
+      },
+      "100": {
+        "Opacity": 0,
+        "Scale": {
+          "X": {
+            "Min": 0.62,
+            "Max": 0.78
+          }
+        },
+        "Color": "#d56a84"
+      }
+    },
+    "InitialAnimationFrame": {
+      "Opacity": 1,
+      "Scale": {
+        "X": {
+          "Min": 0.28,
+          "Max": 0.36
+        }
+      },
+      "Color": "#7b1732"
+    },
+    "SoftParticles": "Disable"
+  },
+  "SpawnBurst": false,
+  "CameraOffset": -0.04
+}

@@ -1,0 +1,157 @@
+[
+  {
+    "description": "Multiplier applied to outgoing damage dealt by the vampire",
+    "displayName": "Damage Output",
+    "id": "DAMAGE_OUT"
+  },
+  {
+    "description": "Fraction of incoming damage that is negated",
+    "displayName": "Damage Reduction",
+    "id": "DAMAGE_IN_REDUCTION"
+  },
+  {
+    "description": "Fraction of damage dealt restored as health when feeding",
+    "displayName": "Lifesteal",
+    "id": "LIFESTEAL"
+  },
+  {
+    "description": "Flat health restored on each successful hit",
+    "displayName": "On-hit Heal",
+    "id": "ON_HIT_HEAL"
+  },
+  {
+    "description": "Bonus damage applied to the first undetected attack",
+    "displayName": "Ambush Damage",
+    "id": "AMBUSH_DAMAGE_MULTIPLIER"
+  },
+  {
+    "description": "Base damage dealt by blood projectiles and derived attacks",
+    "displayName": "Projectile Damage",
+    "id": "PROJECTILE_DAMAGE"
+  },
+  {
+    "description": "Target health threshold used by execute-style abilities",
+    "displayName": "Execute Health Threshold",
+    "id": "ABILITY_EXECUTE_HEALTH_THRESHOLD"
+  },
+  {
+    "description": "Multiplier applied to ability self-damage components",
+    "displayName": "Self Damage Multiplier",
+    "id": "SELF_DAMAGE_MULTIPLIER"
+  },
+  {
+    "description": "Stamina recovery bonus while Blood Thirst/frenzy is active",
+    "displayName": "Frenzy Stamina Recovery",
+    "id": "FRENZY_STAMINA_RECOVERY"
+  },
+  {
+    "description": "Additive bonus to base movement speed",
+    "displayName": "Movement Speed",
+    "id": "SPEED"
+  },
+  {
+    "description": "Movement speed while in bat form",
+    "displayName": "Bat Form Speed",
+    "id": "BAT_FORM_SPEED"
+  },
+  {
+    "description": "Movement speed while in ancient form",
+    "displayName": "Ancient Form Speed",
+    "id": "ANCIENT_FORM_SPEED"
+  },
+  {
+    "description": "Travel speed of blood projectiles",
+    "displayName": "Projectile Speed",
+    "id": "PROJECTILE_SPEED"
+  },
+  {
+    "description": "Speed bonus granted after killing an entity",
+    "displayName": "Kill Speed Boost",
+    "id": "KILL_SPEED_BOOST"
+  },
+  {
+    "description": "Duration of the post-kill speed boost",
+    "displayName": "Kill Speed Duration",
+    "id": "KILL_SPEED_BOOST_DURATION"
+  },
+  {
+    "description": "Fraction of fall damage that is negated",
+    "displayName": "Fall Damage Reduction",
+    "id": "FALL_DAMAGE_REDUCTION"
+  },
+  {
+    "description": "Reduces the rate at which sunburn damage accumulates",
+    "displayName": "Sunburn Resistance",
+    "id": "SUNBURN_RESISTANCE"
+  },
+  {
+    "description": "Rate at which the blood bar passively refills",
+    "displayName": "Blood Regeneration",
+    "id": "BLOOD_REGEN"
+  },
+  {
+    "description": "Multiplier applied to all healing the vampire receives",
+    "displayName": "Healing Received",
+    "id": "HEALING_RECEIVED"
+  },
+  {
+    "description": "Flat health restored after feeding",
+    "displayName": "Bite Heal Amount",
+    "id": "BITE_HEAL_AMOUNT"
+  },
+  {
+    "description": "Maximum health while in bat form",
+    "displayName": "Bat Form Health",
+    "id": "BAT_FORM_MAX_HEALTH"
+  },
+  {
+    "description": "Bonus health granted by ancient form",
+    "displayName": "Ancient Form Health",
+    "id": "ANCIENT_FORM_HEALTH_BONUS"
+  },
+  {
+    "description": "Multiplier applied to maximum blood storage",
+    "displayName": "Blood Bar Capacity",
+    "id": "BLOOD_BAR_CAPACITY"
+  },
+  {
+    "description": "Multiplier applied to blood consumption and hunger drain",
+    "displayName": "Blood Drain Rate",
+    "id": "BLOOD_DRAIN_RATE"
+  },
+  {
+    "description": "Multiplier applied to blood gained from feeding or collection",
+    "displayName": "Blood Collection Rate",
+    "id": "BLOOD_COLLECTION_RATE"
+  },
+  {
+    "description": "Multiplier applied to feeding speed",
+    "displayName": "Feeding Speed",
+    "id": "FEEDING_SPEED"
+  },
+  {
+    "description": "Multiplier applied to ability blood costs",
+    "displayName": "Ability Blood Cost",
+    "id": "ABILITY_BLOOD_COST_MULTIPLIER"
+  },
+  {
+    "description": "Fractional reduction applied to ability cooldowns",
+    "displayName": "Cooldown Reduction",
+    "id": "ABILITY_COOLDOWN_REDUCTION"
+  },
+  {
+    "description": "Fixed cooldown override in seconds for a targeted ability",
+    "displayName": "Cooldown Override Seconds",
+    "id": "ABILITY_COOLDOWN_OVERRIDE_SECONDS"
+  },
+  {
+    "description": "Multiplier applied to timed ability durations",
+    "displayName": "Ability Duration",
+    "id": "ABILITY_DURATION_MULTIPLIER"
+  },
+  {
+    "description": "Multiplier applied to the enemy detection radius while sneaking",
+    "displayName": "Stealth Detection",
+    "id": "STEALTH_DETECTION_RADIUS"
+  }
+]

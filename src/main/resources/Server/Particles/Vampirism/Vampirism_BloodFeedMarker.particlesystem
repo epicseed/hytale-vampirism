@@ -1,0 +1,14 @@
+{
+  "Spawners": [
+    {
+      "SpawnerId": "Vampirism_BloodFeedMarker",
+      "PositionOffset": {
+        "X": 0,
+        "Y": 0,
+        "Z": -0.05
+      },
+      "FixedRotation": false
+    }
+  ],
+  "LifeSpan": 3
+}

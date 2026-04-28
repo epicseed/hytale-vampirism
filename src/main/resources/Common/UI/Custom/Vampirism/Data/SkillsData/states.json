@@ -1,0 +1,57 @@
+[
+  {
+    "description": "Player is exposed to sunlight",
+    "displayName": "In Sunlight",
+    "id": "IN_SUNLIGHT"
+  },
+  {
+    "description": "World time is currently in the night phase",
+    "displayName": "Night",
+    "id": "IS_NIGHT"
+  },
+  {
+    "description": "Blood bar is empty",
+    "displayName": "Starving",
+    "id": "IS_STARVING"
+  },
+  {
+    "description": "Blood bar is completely full",
+    "displayName": "Overfed",
+    "id": "IS_OVERFED"
+  },
+  {
+    "description": "Blood bar is between starving and overfed",
+    "displayName": "Normal Blood State",
+    "id": "IS_BLOOD_STATE_NORMAL"
+  },
+  {
+    "description": "Player is transformed into a bat",
+    "displayName": "Bat Form",
+    "id": "IS_IN_BAT_FORM"
+  },
+  {
+    "description": "Player is transformed into an ancient bat",
+    "displayName": "Ancient Form",
+    "id": "IS_IN_ANCIENT_FORM"
+  },
+  {
+    "description": "Player is invisible",
+    "displayName": "Invisible",
+    "id": "IS_INVISIBLE"
+  },
+  {
+    "description": "Player is crouching/sneaking",
+    "displayName": "Sneaking",
+    "id": "IS_SNEAKING"
+  },
+  {
+    "description": "Alias state active while Blood Thirst is active",
+    "displayName": "Frenzy",
+    "id": "IS_IN_FRENZY"
+  },
+  {
+    "description": "Player has Blood Thirst active",
+    "displayName": "Blood Thirst",
+    "id": "IS_IN_BLOOD_THIRST"
+  }
+]

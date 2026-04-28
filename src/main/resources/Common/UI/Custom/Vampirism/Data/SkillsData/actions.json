@@ -1,0 +1,328 @@
+[
+  {
+    "definition": {
+      "effectId": "bat_morph",
+      "type": "toggleEffect"
+    },
+    "description": "Toggles the bat morph effect on the player (activates or deactivates).",
+    "displayName": "Toggle Bat Morph",
+    "id": "apply_bat_morph",
+    "tags": []
+  },
+  {
+    "definition": {
+      "effectId": "ancient_morph",
+      "type": "applyEffect"
+    },
+    "description": "Applies the ancient form transformation to the player.",
+    "displayName": "Apply Ancient Morph",
+    "id": "apply_ancient_morph",
+    "tags": []
+  },
+  {
+    "definition": {
+      "effectId": "invisibility_effect",
+      "type": "applyEffect"
+    },
+    "description": "Applies the invisibility effect to the player.",
+    "displayName": "Apply Invisibility",
+    "id": "apply_invisibility_effect",
+    "tags": []
+  },
+  {
+    "definition": {
+      "effectId": "crimson_umbrella_effect",
+      "type": "applyEffect"
+    },
+    "description": "Spawns a sun-blocking umbrella above the player.",
+    "displayName": "Apply Crimson Umbrella",
+    "id": "apply_crimson_umbrella",
+    "tags": []
+  },
+  {
+    "definition": {
+      "effectId": "blood_thirst_speed_buff",
+      "type": "applyEffect"
+    },
+    "description": "Applies the speed boost component of Blood Thirst.",
+    "displayName": "Apply Blood Thirst Speed",
+    "id": "apply_blood_thirst_speed",
+    "tags": []
+  },
+  {
+    "definition": {
+      "effectId": "void_shield_buff",
+      "type": "applyEffect"
+    },
+    "description": "Applies the Void Shield buff after teleporting.",
+    "displayName": "Apply Void Shield",
+    "id": "apply_void_shield",
+    "tags": []
+  },
+  {
+    "definition": {
+      "effectId": "bat_vision_effect",
+      "type": "applyEffect"
+    },
+    "description": "Applies night vision and enemy detection while in bat form.",
+    "displayName": "Apply Bat Vision",
+    "id": "apply_bat_vision",
+    "tags": []
+  },
+  {
+    "definition": {
+      "durationSeconds": 2,
+      "effectId": "night_vision_effect",
+      "targetingId": "nearby_enemies_radius",
+      "type": "applyEffect"
+    },
+    "description": "Highlights nearby enemies while the owner condition remains active.",
+    "displayName": "Highlight Nearby Enemies",
+    "id": "highlight_nearby_enemies",
+    "tags": []
+  },
+  {
+    "definition": {
+      "pitch": 1.15,
+      "scope": "world",
+      "soundId": "SFX_Spear_Lunge",
+      "type": "playSound",
+      "volume": 0.85
+    },
+    "description": "Plays the Blood Throw launch sound at the caster.",
+    "displayName": "Blood Throw — Play Sound",
+    "id": "blood_throw_play_sound",
+    "tags": []
+  },
+  {
+    "definition": {
+      "projectileId": "Blood_Throw_Projectile",
+      "type": "spawnProjectile"
+    },
+    "description": "Fires the standard blood projectile.",
+    "displayName": "Spawn Blood Projectile",
+    "id": "spawn_blood_projectile",
+    "tags": []
+  },
+  {
+    "definition": {
+      "damageType": "blood",
+      "selfDamage": true,
+      "targetingId": "nearby_enemies_radius",
+      "type": "dealDamage"
+    },
+    "description": "Deals AOE blood damage to nearby enemies; also damages the caster.",
+    "displayName": "Deal Hemorrhage AOE",
+    "id": "deal_hemorrhage_aoe",
+    "tags": []
+  },
+  {
+    "definition": {
+      "requirementId": "devour_threshold",
+      "type": "executeFinalBlow"
+    },
+    "description": "Instantly kills the target if they are below the execution threshold.",
+    "displayName": "Execute Low HP Target",
+    "id": "execute_low_health_target",
+    "tags": []
+  },
+  {
+    "definition": {
+      "bloodGain": 10,
+      "casterAnimationId": "Tongue",
+      "casterEffectId": "blood_feed_caster_channel_effect",
+      "damage": 6,
+      "executeThreshold": 0.25,
+      "executeThresholdStatId": "ABILITY_EXECUTE_HEALTH_THRESHOLD",
+      "feedSpeedStatId": "FEEDING_SPEED",
+        "maxRange": 1.5,
+      "targetEffectId": "blood_feed_target_root_effect",
+      "type": "startFeedChannel"
+    },
+    "description": "Starts a short-range feed channel; on completion it bites the target and executes them if they are below 25% HP.",
+    "displayName": "Start Blood Feed Channel",
+    "id": "start_blood_feed_channel",
+    "tags": []
+  },
+  {
+    "definition": {
+      "bloodGain": 2,
+      "casterEffectId": "blood_conversion_channel_effect",
+      "healthCost": 2,
+      "minimumHealth": 1,
+      "tickIntervalSeconds": 0.5,
+      "type": "startHealthToBloodChannel"
+    },
+    "description": "Channels a self-cast for 10s that steadily converts 2 health into 2 blood per pulse without dropping below 1 HP.",
+    "displayName": "Start Blood Conversion Channel",
+    "id": "start_health_to_blood_channel",
+    "tags": []
+  },
+  {
+    "definition": {
+      "conditionId": "target_under_20_percent_health",
+      "durationSeconds": 10,
+      "effectId": "night_vision_effect",
+      "targetingId": "nearby_enemies_radius",
+      "type": "applyEffect"
+    },
+    "description": "Highlights enemies below the configured health threshold.",
+    "displayName": "Highlight Low Health Enemies",
+    "id": "highlight_low_health_enemies",
+    "tags": []
+  },
+  {
+    "definition": {
+      "durationSeconds": 5,
+      "effectId": "bat_swarm_effect",
+      "targetingId": "nearby_enemies_radius",
+      "type": "applyEffect"
+    },
+    "description": "Applies a fear-like control effect to nearby enemies.",
+    "displayName": "Fear Nearby Enemies",
+    "id": "fear_nearby_enemies",
+    "tags": []
+  },
+  {
+    "definition": {
+      "targetingId": "look_position",
+      "type": "teleport"
+    },
+    "description": "Teleports the player to the current look target.",
+    "displayName": "Teleport To Look Target",
+    "id": "teleport_to_look_target",
+    "tags": []
+  },
+  {
+    "definition": {
+      "effectId": "bat_swarm_effect",
+      "targetingId": "nearby_enemies_radius",
+      "type": "applyEffect"
+    },
+    "description": "Summons a bat cloud to disorient nearby enemies.",
+    "displayName": "Apply Bat Swarm Cloud",
+    "id": "apply_bat_swarm_cloud",
+    "tags": []
+  },
+  {
+    "definition": {
+      "amountStatId": "KILL_SPEED_BOOST",
+      "durationStatId": "KILL_SPEED_BOOST_DURATION",
+      "stacking": "replace",
+      "statId": "SPEED",
+      "type": "grantTemporaryModifier"
+    },
+    "description": "Grants a temporary speed boost after killing an entity via timed modifier.",
+    "displayName": "Apply Kill Speed Boost",
+    "id": "apply_kill_speed_boost",
+    "tags": []
+  },
+  {
+    "definition": {
+      "statId": "BITE_HEAL_AMOUNT",
+      "type": "healSelf"
+    },
+    "description": "Heals the player based on BITE_HEAL_AMOUNT after feeding.",
+    "displayName": "Heal After Feed",
+    "id": "heal_after_feed",
+    "tags": []
+  },
+  {
+    "definition": {
+      "abilityId": "BatForm",
+      "type": "activateAbility"
+    },
+    "description": "Automatically activates bat form.",
+    "displayName": "Auto Enter Bat Form",
+    "id": "auto_enter_bat_form",
+    "tags": []
+  },
+  {
+    "definition": {
+      "effectId": "night_vision_effect",
+      "type": "applyEffect"
+    },
+    "description": "Applies night vision effect to the player.",
+    "displayName": "Apply Night Vision",
+    "id": "apply_night_vision",
+    "tags": []
+  },
+  {
+    "definition": {
+      "effectId": "lord_robe_invisibility_effect",
+      "type": "applyEffect"
+    },
+    "description": "Maintains the Lord Robe night invisibility effect while its conditions remain true.",
+    "displayName": "Apply Lord Robe Invisibility",
+    "id": "apply_lord_robe_invisibility",
+    "tags": []
+  },
+  {
+    "definition": {
+      "effectId": "companion_umbrella_effect",
+      "type": "applyEffect"
+    },
+    "description": "Maintains Crimson Umbrella while the companion condition remains true.",
+    "displayName": "Apply Companion Umbrella",
+    "id": "apply_companion_umbrella",
+    "tags": []
+  },
+  {
+    "definition": {
+      "scope": "world",
+      "soundId": "Vampirism/BloodMist_Cast",
+      "type": "playSound"
+    },
+    "description": "Plays the Blood Mist casting sound effect.",
+    "displayName": "Blood Mist — Play Sound",
+    "id": "blood_mist_play_sound",
+    "tags": []
+  },
+  {
+    "definition": {
+      "particleId": "Effect_BloodMist",
+      "targetingId": "blood_mist_area_at_look",
+      "type": "spawnParticles"
+    },
+    "description": "Spawns the red mist particle system at the aimed area.",
+    "displayName": "Blood Mist — Spawn Particles",
+    "id": "blood_mist_spawn_particles",
+    "tags": []
+  },
+  {
+    "definition": {
+      "durationSeconds": 4,
+      "effectId": "blood_mist_slow_effect",
+      "targetingId": "blood_mist_area_at_look",
+      "type": "applyEffect"
+    },
+    "description": "Applies a 4-second vampiric slow to every enemy caught in the mist.",
+    "displayName": "Blood Mist — Slow AoE",
+    "id": "blood_mist_slow_aoe",
+    "tags": []
+  },
+  {
+    "definition": {
+      "amount": 0.3,
+      "duration": 4,
+      "stacking": "refresh",
+      "statId": "SPEED",
+      "type": "grantTemporaryModifier"
+    },
+    "description": "Grants the caster a short speed buff so they can escape their own mist.",
+    "displayName": "Blood Mist — Self Speed",
+    "id": "blood_mist_self_speed",
+    "tags": []
+  },
+  {
+    "definition": {
+      "color": "red",
+      "text": "The mist answers your call.",
+      "type": "sendMessage"
+    },
+    "description": "Flavor message shown to the caster when Blood Mist activates.",
+    "displayName": "Blood Mist — Flavor Message",
+    "id": "blood_mist_flavor_message",
+    "tags": []
+  }
+]

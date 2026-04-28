@@ -1,0 +1,1758 @@
+[
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Turn into a vampire",
+    "displayName": "Become a Vampire",
+    "enabled": true,
+    "iconPath": "Icon_BecomeAVampire.png",
+    "id": "BecomeAVampire",
+    "modifiers": [],
+    "passiveId": "BecomeAVampire",
+    "position": {
+      "x": 0,
+      "y": 0
+    },
+    "rarity": "legendary",
+    "requires": [],
+    "tags": [],
+    "triggers": [],
+    "type": "passive"
+  },
+  {
+    "abilityId": "BloodSucker",
+    "actions": [],
+    "cost": 1,
+    "description": "Unlock the ability to suck blood from entities and execute weakened targets below 25% HP.",
+    "displayName": "Blood Sucker",
+    "enabled": true,
+    "iconPath": "Icon_BloodSucker.png",
+    "id": "BloodSucker",
+    "modifiers": [],
+    "passiveId": "",
+    "position": {
+      "x": 0,
+      "y": 2
+    },
+    "rarity": "common",
+    "requires": [
+      "BecomeAVampire"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "ability"
+  },
+  {
+    "abilityId": "BloodConversion",
+    "actions": [],
+    "cost": 1,
+    "description": "Convert life into blood over 10s at a 1:1 ratio. Costs 2 HP per pulse, stops at 1 HP. Cooldown: 20s",
+    "displayName": "Blood Conversion",
+    "enabled": true,
+    "iconPath": "Icon_BloodDrain.png",
+    "id": "BloodConversion",
+    "modifiers": [],
+    "passiveId": "",
+    "position": {
+      "x": 0,
+      "y": 4
+    },
+    "rarity": "common",
+    "requires": [
+      "BloodSucker"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "ability"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Increase movement speed as a vampire",
+    "displayName": "Vampiric Speed I",
+    "enabled": true,
+    "iconPath": "Icon_Speed.png",
+    "id": "Speed",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "speed_1_bonus",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "SPEED",
+        "target": {},
+        "value": 0.5
+      }
+    ],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": 3,
+      "y": 2
+    },
+    "rarity": "common",
+    "requires": [
+      "BloodSucker"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "Further increases movement speed",
+    "displayName": "Vampiric Speed II",
+    "enabled": true,
+    "iconPath": "Icon_Speed.png",
+    "id": "Speed_2",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "speed_2_bonus",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "SPEED",
+        "target": {},
+        "value": 0.5
+      }
+    ],
+    "overlayText": "II",
+    "passiveId": "",
+    "position": {
+      "x": -4,
+      "y": 2
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "BloodSucker"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 3,
+    "description": "Maximizes vampiric movement speed",
+    "displayName": "Vampiric Speed III",
+    "enabled": true,
+    "iconPath": "Icon_Speed.png",
+    "id": "Speed_3",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "speed_3_bonus",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "SPEED",
+        "target": {},
+        "value": 0.5
+      }
+    ],
+    "overlayText": "III",
+    "passiveId": "",
+    "position": {
+      "x": -2,
+      "y": -1
+    },
+    "rarity": "rare",
+    "requires": [
+      "BloodSucker"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "BloodThirst",
+    "actions": [],
+    "cost": 2,
+    "description": "Enters a hunting state: increases movement and grants frenzy recovery while active. Time: 10s | Cooldown: 50s | BloodCost: 20",
+    "displayName": "Blood Thirst",
+    "enabled": true,
+    "iconPath": "Icon_BloodThirst.png",
+    "id": "BloodThirst",
+    "modifiers": [],
+    "passiveId": "",
+    "position": {
+      "x": 6,
+      "y": 2
+    },
+    "rarity": "rare",
+    "requires": [
+      "Speed"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "ability"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Increases the duration of Blood Thirst from 10s to 20s",
+    "displayName": "Extended Thirst",
+    "enabled": false,
+    "iconPath": "",
+    "id": "BloodThirst_1",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "blood_thirst_duration_u1",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "ABILITY_DURATION_MULTIPLIER",
+        "target": {
+          "abilityId": "BloodThirst",
+          "type": "ability"
+        },
+        "value": 1
+      }
+    ],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": 9,
+      "y": 2
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "BloodThirst"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Decreases Blood Thirst cooldown from 50s to 35s",
+    "displayName": "Swift Thirst",
+    "enabled": false,
+    "iconPath": "",
+    "id": "BloodThirst_2",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "blood_thirst_cooldown_u2",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "ABILITY_COOLDOWN_REDUCTION",
+        "target": {
+          "abilityId": "BloodThirst",
+          "type": "ability"
+        },
+        "value": 0.3
+      }
+    ],
+    "overlayText": "II",
+    "passiveId": "",
+    "position": {
+      "x": 9,
+      "y": 0
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "BloodThirst_1"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "Devour",
+    "actions": [],
+    "cost": 3,
+    "description": "Instantly executes enemies below 5% HP. Cooldown: 25s | BloodCost: 20",
+    "displayName": "Devour",
+    "enabled": false,
+    "iconPath": "Icon_Devour.png",
+    "id": "Devour",
+    "modifiers": [],
+    "passiveId": "",
+    "position": {
+      "x": 11,
+      "y": 3
+    },
+    "rarity": "epic",
+    "requires": [
+      "BloodThirst"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "ability"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Decreases Devour cooldown from 25s to 20s",
+    "displayName": "Quick Devour",
+    "enabled": false,
+    "iconPath": "",
+    "id": "Devour_1",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "devour_cooldown_u1",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "ABILITY_COOLDOWN_REDUCTION",
+        "target": {
+          "abilityId": "Devour",
+          "type": "ability"
+        },
+        "value": 0.2
+      }
+    ],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": 13,
+      "y": 3
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "Devour"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "Devour can execute enemies below 20% HP",
+    "displayName": "Vampiric Sword",
+    "enabled": false,
+    "iconPath": "",
+    "id": "Devour_2",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "devour_threshold_u2",
+        "operation": "OVERRIDE",
+        "priority": 150,
+        "statId": "ABILITY_EXECUTE_HEALTH_THRESHOLD",
+        "target": {
+          "abilityId": "Devour",
+          "type": "ability"
+        },
+        "value": 0.2
+      }
+    ],
+    "overlayText": "II",
+    "passiveId": "",
+    "position": {
+      "x": 15,
+      "y": 3
+    },
+    "rarity": "rare",
+    "requires": [
+      "Devour_1"
+    ],
+    "tags": [
+      "requires_vampiric_sword"
+    ],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Increases the blood collection rate from feeding",
+    "displayName": "Blood Drain",
+    "enabled": false,
+    "iconPath": "",
+    "id": "BloodDrain",
+    "modifiers": [],
+    "passiveId": "BloodDrain",
+    "position": {
+      "x": 7,
+      "y": 4
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "BloodThirst"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "passive"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Increases feeding speed by 20%",
+    "displayName": "Ravenous Drain",
+    "enabled": false,
+    "iconPath": "",
+    "id": "BloodDrain_1",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "blood_drain_feeding_u1",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "FEEDING_SPEED",
+        "target": {},
+        "value": 0.2
+      }
+    ],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": 6,
+      "y": 5
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "BloodDrain"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "Heals HP after each successful bite",
+    "displayName": "Healer's Bite",
+    "enabled": false,
+    "iconPath": "",
+    "id": "HealerBite",
+    "modifiers": [],
+    "passiveId": "HealerBite",
+    "position": {
+      "x": 9,
+      "y": 4
+    },
+    "rarity": "rare",
+    "requires": [
+      "BloodThirst"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "passive"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Restores more health after each bite",
+    "displayName": "Restorative Bite",
+    "enabled": false,
+    "iconPath": "",
+    "id": "HealerBite_1",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "healer_bite_heal_u1",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "HEALING_RECEIVED",
+        "target": {},
+        "value": 0.2
+      }
+    ],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": 9,
+      "y": 6
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "HealerBite"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "In Normal blood state: +5% damage reduction",
+    "displayName": "Blood Sphere",
+    "enabled": false,
+    "iconPath": "",
+    "id": "BloodSphere",
+    "modifiers": [],
+    "passiveId": "BloodSphere",
+    "position": {
+      "x": 7,
+      "y": 6
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "BloodDrain"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "passive"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "In Normal blood state: attacks restore 4 HP",
+    "displayName": "Blood Leach",
+    "enabled": false,
+    "iconPath": "",
+    "id": "BloodLeach",
+    "modifiers": [],
+    "passiveId": "BloodLeach",
+    "position": {
+      "x": 7,
+      "y": 8
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "BloodSphere"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "passive"
+  },
+  {
+    "abilityId": "BatForm",
+    "actions": [],
+    "cost": 3,
+    "description": "Transform into a bat for swift travel. Low HP, cannot attack. Time: 1m | Cooldown: 1m | BloodCost: 25",
+    "displayName": "Bat Form",
+    "enabled": true,
+    "iconPath": "Icon_BatForm.png",
+    "id": "BatForm",
+    "modifiers": [],
+    "passiveId": "",
+    "position": {
+      "x": -8,
+      "y": 2
+    },
+    "rarity": "rare",
+    "requires": [
+      "Speed_2"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "ability"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Increases bat form movement speed",
+    "displayName": "Swiftwing",
+    "enabled": false,
+    "iconPath": "Icon_BatForm.png",
+    "id": "BatForm_1",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "bat_form_speed_u1",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "BAT_FORM_SPEED",
+        "target": {},
+        "value": 0.5
+      }
+    ],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": -8,
+      "y": -1
+    },
+    "rarity": "rare",
+    "requires": [
+      "BatForm"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Increases bat form maximum health",
+    "displayName": "Ironwing",
+    "enabled": false,
+    "iconPath": "Icon_BatForm.png",
+    "id": "BatForm_2",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "bat_form_health_u2",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "BAT_FORM_MAX_HEALTH",
+        "target": {},
+        "value": 20
+      }
+    ],
+    "overlayText": "II",
+    "passiveId": "",
+    "position": {
+      "x": -10,
+      "y": -1
+    },
+    "rarity": "epic",
+    "requires": [
+      "BatForm_1"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [
+      {
+        "actionId": "apply_bat_vision",
+        "conditions": [
+          {
+            "conditionId": "in_bat_form"
+          }
+        ]
+      },
+      {
+        "actionId": "highlight_nearby_enemies",
+        "conditions": [
+          {
+            "conditionId": "in_bat_form"
+          }
+        ]
+      }
+    ],
+    "cost": 2,
+    "description": "Grants night vision and enemy detection while in bat form",
+    "displayName": "Bat Vision",
+    "enabled": false,
+    "iconPath": "Icon_BatForm.png",
+    "id": "BatForm_3",
+    "modifiers": [],
+    "overlayText": "III",
+    "passiveId": "",
+    "position": {
+      "x": -12,
+      "y": -1
+    },
+    "rarity": "legendary",
+    "requires": [
+      "BatForm_2"
+    ],
+    "tags": [
+      "requires_bat_form"
+    ],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "Below 15% HP: summons a bat cloud to disorient enemies. Cooldown: 10 min",
+    "displayName": "Bat Swarm",
+    "enabled": false,
+    "iconPath": "",
+    "id": "BatSwarm",
+    "modifiers": [],
+    "passiveId": "BatSwarm",
+    "position": {
+      "x": -8,
+      "y": 4
+    },
+    "rarity": "rare",
+    "requires": [
+      "BatForm"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "passive"
+  },
+  {
+    "abilityId": "",
+    "actions": [
+      {
+        "actionId": "auto_enter_bat_form"
+      }
+    ],
+    "cost": 2,
+    "description": "When Bat Swarm activates, automatically transforms into bat form",
+    "displayName": "Emergency Retreat",
+    "enabled": false,
+    "iconPath": "",
+    "id": "BatSwarm_1",
+    "modifiers": [],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": -10,
+      "y": 4
+    },
+    "rarity": "epic",
+    "requires": [
+      "BatSwarm"
+    ],
+    "tags": [],
+    "triggers": [
+      {
+        "triggerId": "on_low_health_15"
+      }
+    ],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "AncientForm",
+    "actions": [],
+    "cost": 4,
+    "description": "Transform into a giant ancient bat: instantly collects blood, +200 HP. Time: 50s | Cooldown: 4m | BloodCost: 60",
+    "displayName": "Ancient Form",
+    "enabled": false,
+    "iconPath": "",
+    "id": "AncientForm",
+    "modifiers": [],
+    "passiveId": "",
+    "position": {
+      "x": -10,
+      "y": 2
+    },
+    "rarity": "legendary",
+    "requires": [
+      "BatForm"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "ability"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "Increases claw damage while in Ancient Form",
+    "displayName": "Sanguinare Claws",
+    "enabled": false,
+    "iconPath": "",
+    "id": "AncientForm_1",
+    "modifiers": [
+      {
+        "conditions": [
+          {
+            "conditionId": "in_ancient_form"
+          }
+        ],
+        "modifierId": "ancient_form_claws_u1",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "DAMAGE_OUT",
+        "target": {},
+        "value": 0.3
+      }
+    ],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": -12,
+      "y": 2
+    },
+    "rarity": "epic",
+    "requires": [
+      "AncientForm"
+    ],
+    "tags": [
+      "requires_sanguinare_claws"
+    ],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "Hissing",
+    "actions": [],
+    "cost": 3,
+    "description": "Causes fear in all nearby enemies. Cooldown: 50s | BloodCost: 40",
+    "displayName": "Hissing",
+    "enabled": false,
+    "iconPath": "",
+    "id": "Hissing",
+    "modifiers": [],
+    "passiveId": "",
+    "position": {
+      "x": -6,
+      "y": 4
+    },
+    "rarity": "rare",
+    "requires": [
+      "Speed_2"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "ability"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Decreases Hissing cooldown from 50s to 30s",
+    "displayName": "Dreadful Hiss",
+    "enabled": false,
+    "iconPath": "",
+    "id": "Hissing_1",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "hissing_cooldown_u1",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "ABILITY_COOLDOWN_REDUCTION",
+        "target": {
+          "abilityId": "Hissing",
+          "type": "ability"
+        },
+        "value": 0.4
+      }
+    ],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": -6,
+      "y": 6
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "Hissing"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Decreases Hissing blood cost from 40 to 20",
+    "displayName": "Echoing Terror",
+    "enabled": false,
+    "iconPath": "",
+    "id": "Hissing_2",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "hissing_cost_u2",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "ABILITY_BLOOD_COST_MULTIPLIER",
+        "target": {
+          "abilityId": "Hissing",
+          "type": "ability"
+        },
+        "value": -0.5
+      }
+    ],
+    "overlayText": "II",
+    "passiveId": "",
+    "position": {
+      "x": -6,
+      "y": 8
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "Hissing_1"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "BloodThrow",
+    "actions": [],
+    "cost": 2,
+    "description": "Hurl a blood projectile at enemies. BloodCost: 20",
+    "displayName": "Blood Throw",
+    "enabled": true,
+    "iconPath": "Icon_BloodThrow.png",
+    "id": "BloodThrow",
+    "modifiers": [],
+    "passiveId": "",
+    "position": {
+      "x": -2,
+      "y": -4
+    },
+    "rarity": "common",
+    "requires": [
+      "Speed_3"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "ability"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "Increases the damage dealt by Blood Throw",
+    "displayName": "Empowered Blood Throw",
+    "enabled": true,
+    "iconPath": "Icon_BloodThrow.png",
+    "id": "BloodThrow_1",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "blood_throw_damage_u1",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "PROJECTILE_DAMAGE",
+        "target": {
+          "abilityId": "BloodThrow",
+          "type": "ability"
+        },
+        "value": 5
+      }
+    ],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": -1,
+      "y": -6
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "BloodThrow"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Increases Blood Throw projectile speed",
+    "displayName": "Swiftblood",
+    "enabled": true,
+    "iconPath": "Icon_BloodThrow.png",
+    "id": "BloodThrow_2",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "blood_throw_proj_speed_u2",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "PROJECTILE_SPEED",
+        "target": {
+          "abilityId": "BloodThrow",
+          "type": "ability"
+        },
+        "value": 5
+      }
+    ],
+    "overlayText": "II",
+    "passiveId": "",
+    "position": {
+      "x": -1,
+      "y": -8
+    },
+    "rarity": "rare",
+    "requires": [
+      "BloodThrow_1"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Decreases Blood Throw blood cost from 20 to 10",
+    "displayName": "Efficient Blood",
+    "enabled": true,
+    "iconPath": "Icon_BloodThrow.png",
+    "id": "BloodThrow_3",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "blood_throw_cost_u3",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "ABILITY_BLOOD_COST_MULTIPLIER",
+        "target": {
+          "abilityId": "BloodThrow",
+          "type": "ability"
+        },
+        "value": -0.5
+      }
+    ],
+    "overlayText": "III",
+    "passiveId": "",
+    "position": {
+      "x": -1,
+      "y": -10
+    },
+    "rarity": "epic",
+    "requires": [
+      "BloodThrow_2"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "Blood Throw costs no blood; replaced by a fixed 4s cooldown",
+    "displayName": "Free Blood",
+    "enabled": true,
+    "iconPath": "Icon_BloodThrow.png",
+    "id": "BloodThrow_4A",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "blood_throw_free_u4a",
+        "operation": "MULTIPLY",
+        "priority": 150,
+        "statId": "ABILITY_BLOOD_COST_MULTIPLIER",
+        "target": {
+          "abilityId": "BloodThrow",
+          "type": "ability"
+        },
+        "value": 0
+      },
+      {
+        "conditions": [],
+        "modifierId": "blood_throw_fixed_cooldown_u4a",
+        "operation": "OVERRIDE",
+        "priority": 150,
+        "statId": "ABILITY_COOLDOWN_OVERRIDE_SECONDS",
+        "target": {
+          "abilityId": "BloodThrow",
+          "type": "ability"
+        },
+        "value": 4
+      }
+    ],
+    "overlayText": "IVA",
+    "passiveId": "",
+    "position": {
+      "x": 0,
+      "y": -12
+    },
+    "rarity": "legendary",
+    "requires": [
+      "BloodThrow_3"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "Further increases Blood Throw damage (alternate path)",
+    "displayName": "Hemorrhagic Throw",
+    "enabled": true,
+    "iconPath": "Icon_BloodThrow.png",
+    "id": "BloodThrow_4B",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "blood_throw_damage_u4b",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "PROJECTILE_DAMAGE",
+        "target": {
+          "abilityId": "BloodThrow",
+          "type": "ability"
+        },
+        "value": 10
+      }
+    ],
+    "overlayText": "IVB",
+    "passiveId": "",
+    "position": {
+      "x": -2,
+      "y": -12
+    },
+    "rarity": "legendary",
+    "requires": [
+      "BloodThrow_3"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "Hemorrhage",
+    "actions": [],
+    "cost": 3,
+    "description": "AOE blood damage based on Blood Throw damage. Damages the caster. Cooldown: 30s | Damage: 100 | Self-Damage: 30",
+    "displayName": "Hemorrhage",
+    "enabled": false,
+    "iconPath": "",
+    "id": "Hemorrhage",
+    "modifiers": [],
+    "passiveId": "",
+    "position": {
+      "x": -3,
+      "y": -6
+    },
+    "rarity": "epic",
+    "requires": [
+      "BloodThrow"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "ability"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "Increases Hemorrhage damage",
+    "displayName": "Blood Torrent",
+    "enabled": false,
+    "iconPath": "",
+    "id": "Hemorrhage_1A",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "hemorrhage_damage_u1a",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "PROJECTILE_DAMAGE",
+        "target": {
+          "abilityId": "Hemorrhage",
+          "type": "ability"
+        },
+        "value": 0.2
+      }
+    ],
+    "overlayText": "IA",
+    "passiveId": "",
+    "position": {
+      "x": -5,
+      "y": -6
+    },
+    "rarity": "rare",
+    "requires": [
+      "Hemorrhage"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "Equipping the Sacred Staff prevents Hemorrhage self-damage",
+    "displayName": "Sacred Vampire",
+    "enabled": false,
+    "iconPath": "",
+    "id": "Hemorrhage_1B",
+    "modifiers": [
+      {
+        "conditions": [
+          {
+            "conditionId": "sacred_staff_equipped"
+          }
+        ],
+        "modifierId": "hemorrhage_self_damage_u1b",
+        "operation": "OVERRIDE",
+        "priority": 200,
+        "statId": "SELF_DAMAGE_MULTIPLIER",
+        "target": {
+          "abilityId": "Hemorrhage",
+          "type": "ability"
+        },
+        "value": 0
+      }
+    ],
+    "overlayText": "IB",
+    "passiveId": "",
+    "position": {
+      "x": -3,
+      "y": -8
+    },
+    "rarity": "epic",
+    "requires": [
+      "Hemorrhage"
+    ],
+    "tags": [
+      "requires_sacred_staff"
+    ],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "Teleport",
+    "actions": [],
+    "cost": 4,
+    "description": "Teleport to the position the player is aiming at. Cooldown: 2m | BloodCost: 50",
+    "displayName": "Teleport",
+    "enabled": true,
+    "iconPath": "Icon_Teleport.png",
+    "id": "Teleport",
+    "modifiers": [],
+    "passiveId": "",
+    "position": {
+      "x": 2,
+      "y": -10
+    },
+    "rarity": "epic",
+    "requires": [
+      "BloodThrow_3"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "ability"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "While Void Shield is active, Teleport cooldown is halved (30s)",
+    "displayName": "Void Shield",
+    "enabled": false,
+    "iconPath": "",
+    "id": "Teleport_1",
+    "modifiers": [
+      {
+        "conditions": [
+          {
+            "conditionId": "void_shield_active"
+          }
+        ],
+        "modifierId": "teleport_void_shield_u1",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "ABILITY_COOLDOWN_REDUCTION",
+        "target": {
+          "abilityId": "Teleport",
+          "type": "ability"
+        },
+        "value": 0.5
+      }
+    ],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": 2,
+      "y": -8
+    },
+    "rarity": "legendary",
+    "requires": [
+      "Teleport"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Increases the amount of blood harvested from enemies",
+    "displayName": "Blood Collection",
+    "enabled": false,
+    "iconPath": "",
+    "id": "BloodCollection",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "blood_collection_bonus",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "BLOOD_COLLECTION_RATE",
+        "target": {},
+        "value": 0.2
+      }
+    ],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": 0,
+      "y": -2
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "Speed_3"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "Deepens your connection to blood magic",
+    "displayName": "Blood Mastery",
+    "enabled": false,
+    "iconPath": "",
+    "id": "Blood",
+    "modifiers": [],
+    "overlayText": "II",
+    "passiveId": "",
+    "position": {
+      "x": -4,
+      "y": -2
+    },
+    "rarity": "common",
+    "requires": [
+      "Speed_3"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "Increases maximum blood bar capacity by 40%",
+    "displayName": "Increase Blood Bar Capacity",
+    "enabled": false,
+    "iconPath": "",
+    "id": "IncreaseBloodBarCapacity",
+    "modifiers": [],
+    "passiveId": "IncreaseBloodBarCapacity",
+    "position": {
+      "x": 0,
+      "y": -4
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "BloodCollection"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "passive"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "Enemies have greater difficulty detecting the player while sneaking. Consumes more blood while crouched.",
+    "displayName": "Unnoticed",
+    "enabled": false,
+    "iconPath": "",
+    "id": "Unnoticed",
+    "modifiers": [],
+    "passiveId": "Unnoticed",
+    "position": {
+      "x": -3,
+      "y": 4
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "BloodSucker"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "passive"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Can approach enemies much closer without being detected",
+    "displayName": "Shadow Step",
+    "enabled": false,
+    "iconPath": "",
+    "id": "Unnoticed_1",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "unnoticed_sneak_u1",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "STEALTH_DETECTION_RADIUS",
+        "target": {},
+        "value": -0.2
+      }
+    ],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": -3,
+      "y": 6
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "Unnoticed"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "First undetected attack deals +70% damage. BloodCost: 10",
+    "displayName": "Ambush",
+    "enabled": false,
+    "iconPath": "",
+    "id": "Unnoticed_2",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "unnoticed_ambush_u2",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "AMBUSH_DAMAGE_MULTIPLIER",
+        "target": {},
+        "value": 0.7
+      }
+    ],
+    "overlayText": "II",
+    "passiveId": "",
+    "position": {
+      "x": -1,
+      "y": 6
+    },
+    "rarity": "rare",
+    "requires": [
+      "Unnoticed_1"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "Invisibility",
+    "actions": [],
+    "cost": 4,
+    "description": "Become invisible; entities cannot detect the player. Time: 30s | Cooldown: 2m | BloodCost: 100",
+    "displayName": "Invisibility",
+    "enabled": false,
+    "iconPath": "Icon_Invisibility.png",
+    "id": "Invisibility",
+    "modifiers": [],
+    "passiveId": "",
+    "position": {
+      "x": -3,
+      "y": 8
+    },
+    "rarity": "legendary",
+    "requires": [
+      "Unnoticed_1"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "ability"
+  },
+  {
+    "abilityId": "",
+    "actions": [
+      {
+        "actionId": "apply_lord_robe_invisibility",
+        "conditions": [
+          {
+            "conditionId": "is_night"
+          },
+          {
+            "conditionId": "lord_robe_full_set_equipped"
+          }
+        ]
+      }
+    ],
+    "cost": 2,
+    "description": "Permanent invisibility during the night while wearing the full Lord Robe set",
+    "displayName": "Lord Robe",
+    "enabled": false,
+    "iconPath": "",
+    "id": "Invisibility_1",
+    "modifiers": [],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": -3,
+      "y": 10
+    },
+    "rarity": "legendary",
+    "requires": [
+      "Invisibility"
+    ],
+    "tags": [
+      "requires_lord_robe_set"
+    ],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "Deals extra damage from behind while invisible",
+    "displayName": "Vampiric Dagger",
+    "enabled": false,
+    "iconPath": "",
+    "id": "Invisibility_2",
+    "modifiers": [
+      {
+        "conditions": [
+          {
+            "conditionId": "is_invisible"
+          }
+        ],
+        "modifierId": "invisibility_dagger_u2",
+        "operation": "ADD",
+        "priority": 150,
+        "statId": "AMBUSH_DAMAGE_MULTIPLIER",
+        "target": {},
+        "value": 0.5
+      }
+    ],
+    "overlayText": "II",
+    "passiveId": "",
+    "position": {
+      "x": -1,
+      "y": 8
+    },
+    "rarity": "epic",
+    "requires": [
+      "Invisibility"
+    ],
+    "tags": [
+      "requires_vampiric_dagger"
+    ],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "Resists sunlight and reduces blood thirst. SunResistance: 20%",
+    "displayName": "Sun Resistance",
+    "enabled": true,
+    "iconPath": "Icon_SunResistance.png",
+    "id": "SunResistance",
+    "modifiers": [],
+    "passiveId": "SunResistance",
+    "position": {
+      "x": 2,
+      "y": 0
+    },
+    "rarity": "rare",
+    "requires": [
+      "BloodSucker"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "passive"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "Increases sun resistance to 40%",
+    "displayName": "Hardened Skin",
+    "enabled": true,
+    "iconPath": "Icon_SunResistance.png",
+    "id": "SunResistance_1",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "sun_resistance_u1",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "SUNBURN_RESISTANCE",
+        "target": {},
+        "value": 0.2
+      }
+    ],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": 2,
+      "y": -2
+    },
+    "rarity": "rare",
+    "requires": [
+      "SunResistance"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "CrimsonUmbrella",
+    "actions": [],
+    "cost": 3,
+    "description": "Creates an umbrella overhead granting sun immunity. Time: 1m | Cooldown: 30s | BloodCost: 40",
+    "displayName": "Crimson Umbrella",
+    "enabled": true,
+    "iconPath": "Icon_CrimsonUmbrela.png",
+    "id": "CrimsonUmbrella",
+    "modifiers": [],
+    "passiveId": "",
+    "position": {
+      "x": 2,
+      "y": -4
+    },
+    "rarity": "epic",
+    "requires": [
+      "SunResistance_1"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "ability"
+  },
+  {
+    "abilityId": "",
+    "actions": [
+      {
+        "actionId": "apply_companion_umbrella",
+        "conditions": [
+          {
+            "conditionId": "companion_present"
+          },
+          {
+            "effectId": "crimson_umbrella_effect",
+            "type": "effectActive"
+          }
+        ]
+      }
+    ],
+    "cost": 2,
+    "description": "While a companion is present, the umbrella remains indefinitely",
+    "displayName": "Companion Service",
+    "enabled": false,
+    "iconPath": "Icon_CrimsonUmbrela.png",
+    "id": "CrimsonUmbrella_1",
+    "modifiers": [],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": 2,
+      "y": -6
+    },
+    "rarity": "legendary",
+    "requires": [
+      "CrimsonUmbrella"
+    ],
+    "tags": [
+      "requires_companion"
+    ],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Passively see clearly in the dark",
+    "displayName": "Night Vision",
+    "enabled": false,
+    "iconPath": "Icon_NightVision.png",
+    "id": "NightVision",
+    "modifiers": [],
+    "passiveId": "NightVision",
+    "position": {
+      "x": 3,
+      "y": 4
+    },
+    "rarity": "uncommon",
+    "requires": [
+      "Speed"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "passive"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 2,
+    "description": "After killing an entity: gain +10% speed for 10s",
+    "displayName": "Boiling Blood",
+    "enabled": true,
+    "iconPath": "",
+    "id": "BoilingBlood",
+    "modifiers": [],
+    "passiveId": "BoilingBlood",
+    "position": {
+      "x": 4,
+      "y": 0
+    },
+    "rarity": "rare",
+    "requires": [
+      "Speed"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "passive"
+  },
+  {
+    "abilityId": "",
+    "actions": [],
+    "cost": 1,
+    "description": "Increases post-kill speed boost from 10% to 20%",
+    "displayName": "Bloodlust Rush",
+    "enabled": true,
+    "iconPath": "",
+    "id": "BoilingBlood_1",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "boiling_blood_speed_u1",
+        "operation": "ADD",
+        "priority": 100,
+        "statId": "KILL_SPEED_BOOST",
+        "target": {},
+        "value": 0.1
+      }
+    ],
+    "overlayText": "I",
+    "passiveId": "",
+    "position": {
+      "x": 4,
+      "y": -2
+    },
+    "rarity": "rare",
+    "requires": [
+      "BoilingBlood"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "upgrade"
+  },
+  {
+    "abilityId": "BloodMist",
+    "actions": [],
+    "cost": 2,
+    "description": "Exhale a cloud of blood mist: slows enemies in the area while you dash out. Duration: 4s | Cooldown: 45s | BloodCost: 15",
+    "displayName": "Blood Mist",
+    "enabled": false,
+    "iconPath": "",
+    "id": "BloodMist",
+    "modifiers": [],
+    "passiveId": "",
+    "position": {
+      "x": 4,
+      "y": 4
+    },
+    "rarity": "rare",
+    "requires": [
+      "Speed"
+    ],
+    "tags": [],
+    "triggers": [],
+    "type": "ability"
+  }
+]

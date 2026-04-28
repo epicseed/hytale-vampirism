@@ -1,0 +1,58 @@
+$C = "../Common.ui";
+$Sounds = "../Sounds.ui";
+
+// 40x40 mini skill node used in SkillDetail requires/unlocks rows.
+// #MiniTile.Background     = rarity slot texture (set from Java)
+// #MiniIcon.Background     = skill icon          (set from Java)
+// #MiniHitArea.TooltipText = skill name          (set from Java)
+// #MiniStateDot.Background = state color         (set from Java: green=unlocked, red=locked)
+Group {
+  Anchor: (Width: 40, Height: 40);
+
+  Group #MiniTile {
+    Anchor: (Full: 0);
+    Background: #000000(0);
+
+    Group #MiniIcon {
+      Anchor: (Full: 0);
+      Background: #000000(0);
+    }
+
+    Group #MiniRarityOverlay {
+      Anchor: (Full: 0);
+      Visible: true;
+      Background: (TexturePath: "Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+      HitTestVisible: false;
+    }
+
+    Label #MiniOverlayText {
+      Anchor: (Right: 2, Bottom: 2, Width: 18, Height: 12);
+      Visible: false;
+      Text: "";
+      Style: (FontSize: 9, TextColor: #ffffff, RenderBold: true, Alignment: Center);
+      HitTestVisible: false;
+    }
+  }
+
+  Group #MiniStateOverlay {
+    Anchor: (Full: 0);
+    Visible: false;
+    Background: (TexturePath: "Skills/Indicators/AvailableIndicator.png");
+  }
+
+  Button #MiniHitArea {
+    Anchor: (Full: 0);
+    TooltipText: "";
+    TextTooltipStyle: TextTooltipStyle(
+      Background: PatchStyle(TexturePath: "Common/ItemQualities/Tooltips/ItemTooltipCommon.png", Border: 24),
+      MaxWidth: 300,
+      LabelStyle: LabelStyle(Wrap: true, FontSize: 16, TextColor: #cccccc),
+      Padding: 24
+    );
+    Style: (
+      Sounds: $Sounds.@CosmeticsTiles,
+      Hovered: (Background: (TexturePath: "Skills/Tiles/TileHovered.png")),
+      Pressed: (Background: (TexturePath: "Skills/Tiles/TileSelected.png"))
+    );
+  }
+}

@@ -1,0 +1,92 @@
+[
+  {
+    "definition": {
+      "conditionId": "in_bat_form",
+      "type": "condition"
+    },
+    "description": "Only valid while the player is in bat form.",
+    "displayName": "Bat Form Only",
+    "id": "bat_form_only",
+    "tags": []
+  },
+  {
+    "definition": {
+      "conditionId": "in_ancient_form",
+      "type": "condition"
+    },
+    "description": "Only valid while the player is in ancient form.",
+    "displayName": "Ancient Form Only",
+    "id": "ancient_form_only",
+    "tags": []
+  },
+  {
+    "definition": {
+      "conditionId": "is_invisible",
+      "type": "condition"
+    },
+    "description": "Only valid while the player is invisible.",
+    "displayName": "Invisible Only",
+    "id": "invisible_only",
+    "tags": []
+  },
+  {
+    "definition": {
+      "conditionId": "normal_blood_state",
+      "type": "condition"
+    },
+    "description": "Requires the player to be in the normal blood state.",
+    "displayName": "Normal Blood State Only",
+    "id": "normal_blood_state_only",
+    "tags": []
+  },
+  {
+    "definition": {
+      "conditionId": "target_under_5_percent_health",
+      "type": "condition"
+    },
+    "description": "Requires the target to be low enough for execution (5% HP).",
+    "displayName": "Devour Threshold",
+    "id": "devour_threshold",
+    "tags": []
+  },
+  {
+    "definition": {
+      "conditionId": "target_under_20_percent_health",
+      "type": "condition"
+    },
+    "description": "Requires the target to be below 20% HP (with Vampiric Sword).",
+    "displayName": "Devour Threshold (Upgraded)",
+    "id": "devour_threshold_upgraded",
+    "tags": []
+  },
+  {
+    "definition": {
+      "conditionId": "lord_robe_full_set_equipped",
+      "type": "condition"
+    },
+    "description": "Requires the full Lord Robe equipment set.",
+    "displayName": "Lord Robe Full Set",
+    "id": "lord_robe_full_set",
+    "tags": []
+  },
+  {
+    "definition": {
+      "conditionId": "companion_present",
+      "type": "condition"
+    },
+    "description": "Requires a companion to be present.",
+    "displayName": "Companion Present",
+    "id": "companion_present_req",
+    "tags": []
+  },
+  {
+    "definition": {
+      "conditionId": "has_enough_blood_for_mist",
+      "type": "condition"
+    },
+    "description": "Blood Mist requires the caster to have at least 15 blood.",
+    "displayName": "Blood Mist Blood Gate",
+    "id": "blood_mist_blood_cost",
+    "tags": []
+  }
+]

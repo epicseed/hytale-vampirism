@@ -1,0 +1,192 @@
+[
+  {
+    "description": "Increases base vampire movement speed",
+    "displayName": "Speed I Bonus",
+    "id": "speed_1_bonus"
+  },
+  {
+    "description": "Further increases vampire movement speed",
+    "displayName": "Speed II Bonus",
+    "id": "speed_2_bonus"
+  },
+  {
+    "description": "Maximizes vampire movement speed",
+    "displayName": "Speed III Bonus",
+    "id": "speed_3_bonus"
+  },
+  {
+    "description": "Base sunburn resistance from Sun Resistance passive",
+    "displayName": "Sun Resistance Base",
+    "id": "sun_resistance_base"
+  },
+  {
+    "description": "Additional sunburn resistance (total 40%)",
+    "displayName": "Sun Resistance Upgrade",
+    "id": "sun_resistance_u1"
+  },
+  {
+    "description": "Increases blood collection rate",
+    "displayName": "Blood Drain Collection",
+    "id": "blood_drain_collection"
+  },
+  {
+    "description": "Increases feeding speed by 20%",
+    "displayName": "Blood Drain Feeding Speed",
+    "id": "blood_drain_feeding_u1"
+  },
+  {
+    "description": "Sets bite heal HP amount",
+    "displayName": "Healer Bite Heal Amount",
+    "id": "healer_bite_amount"
+  },
+  {
+    "description": "Increases healing received from bites",
+    "displayName": "Healer Bite Healing Bonus",
+    "id": "healer_bite_heal_u1"
+  },
+  {
+    "description": "Increases Blood Throw projectile damage",
+    "displayName": "Blood Throw Damage I",
+    "id": "blood_throw_damage_u1"
+  },
+  {
+    "description": "Increases Blood Throw projectile travel speed",
+    "displayName": "Blood Throw Projectile Speed",
+    "id": "blood_throw_proj_speed_u2"
+  },
+  {
+    "description": "Reduces Blood Throw blood cost by 50% (to 10)",
+    "displayName": "Blood Throw Cost Reduction",
+    "id": "blood_throw_cost_u3"
+  },
+  {
+    "description": "Sets Blood Throw blood cost to 0",
+    "displayName": "Blood Throw Free Blood",
+    "id": "blood_throw_free_u4a"
+  },
+  {
+    "description": "Further increases Blood Throw damage (alt path)",
+    "displayName": "Blood Throw Damage II",
+    "id": "blood_throw_damage_u4b"
+  },
+  {
+    "description": "Doubles Blood Thirst duration (10s → 20s)",
+    "displayName": "Blood Thirst Duration",
+    "id": "blood_thirst_duration_u1"
+  },
+  {
+    "description": "Reduces Blood Thirst cooldown by 30% (50s → 35s)",
+    "displayName": "Blood Thirst Cooldown",
+    "id": "blood_thirst_cooldown_u2"
+  },
+  {
+    "description": "Boosts movement speed during Blood Thirst",
+    "displayName": "Blood Thirst Speed",
+    "id": "blood_thirst_speed"
+  },
+  {
+    "description": "Base speed boost in bat form",
+    "displayName": "Bat Form Speed",
+    "id": "bat_form_speed"
+  },
+  {
+    "description": "Increases bat form movement speed",
+    "displayName": "Bat Form Speed Upgrade",
+    "id": "bat_form_speed_u1"
+  },
+  {
+    "description": "Increases bat form max health",
+    "displayName": "Bat Form Health Upgrade",
+    "id": "bat_form_health_u2"
+  },
+  {
+    "description": "+200 HP in ancient form",
+    "displayName": "Ancient Form Health",
+    "id": "ancient_form_health"
+  },
+  {
+    "description": "Bonus damage with claws in ancient form",
+    "displayName": "Sanguinare Claws Damage",
+    "id": "ancient_form_claws_u1"
+  },
+  {
+    "description": "Reduces Hissing cooldown by 40% (50s → 30s)",
+    "displayName": "Hissing Cooldown Reduction",
+    "id": "hissing_cooldown_u1"
+  },
+  {
+    "description": "Reduces Hissing blood cost by 50% (40 → 20)",
+    "displayName": "Hissing Cost Reduction",
+    "id": "hissing_cost_u2"
+  },
+  {
+    "description": "Increases Hemorrhage outgoing damage",
+    "displayName": "Hemorrhage Damage Bonus",
+    "id": "hemorrhage_damage_u1a"
+  },
+  {
+    "description": "Reduces Devour cooldown by 20% (25s → 20s)",
+    "displayName": "Devour Cooldown Reduction",
+    "id": "devour_cooldown_u1"
+  },
+  {
+    "description": "Halves Teleport cooldown while Void Shield is active",
+    "displayName": "Void Shield Cooldown",
+    "id": "teleport_void_shield_u1"
+  },
+  {
+    "description": "Reduces enemy detection radius while sneaking",
+    "displayName": "Unnoticed Base Stealth",
+    "id": "unnoticed_base"
+  },
+  {
+    "description": "Further reduces enemy detection radius",
+    "displayName": "Shadow Step Sneak",
+    "id": "unnoticed_sneak_u1"
+  },
+  {
+    "description": "+70% damage on first undetected attack",
+    "displayName": "Ambush Damage",
+    "id": "unnoticed_ambush_u2"
+  },
+  {
+    "description": "Bonus damage from behind while invisible",
+    "displayName": "Vampiric Dagger Damage",
+    "id": "invisibility_dagger_u2"
+  },
+  {
+    "description": "Increases blood collection rate",
+    "displayName": "Blood Collection Bonus",
+    "id": "blood_collection_bonus"
+  },
+  {
+    "description": "+5% damage reduction in normal blood state",
+    "displayName": "Blood Sphere Defense",
+    "id": "blood_sphere_defense"
+  },
+  {
+    "description": "+4 HP on hit in normal blood state",
+    "displayName": "Blood Leach Heal",
+    "id": "blood_leach_heal"
+  },
+  {
+    "description": "+10% speed after killing an entity",
+    "displayName": "Boiling Blood Speed Boost",
+    "id": "boiling_blood_speed"
+  },
+  {
+    "description": "Kill speed boost lasts 10 seconds",
+    "displayName": "Boiling Blood Duration",
+    "id": "boiling_blood_duration"
+  },
+  {
+    "description": "Increases kill speed boost from 10% to 20%",
+    "displayName": "Boiling Blood Speed II",
+    "id": "boiling_blood_speed_u1"
+  },
+  {
+    "description": "Increases max blood bar capacity by 40%",
+    "displayName": "Blood Bar Capacity Bonus",
+    "id": "blood_bar_capacity_bonus"
+  }
+]

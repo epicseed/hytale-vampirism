@@ -1,0 +1,22 @@
+{
+  "TranslationProperties": {
+    "Name": "Vampiric Relic",
+    "Description": "Left Click: BatForm | Right Click: AncientForm | Q: BloodThirst | E: BloodThrow | Ability3: Devour | Shift + Use: Relic Bindings"
+  },
+  "Icon": "Icons/ItemsGenerated/VampireFang.png",
+  "Model": "Items/Vampirism/EmptyHands.blockymodel",
+  "MaxStack": 1,
+  "PlayerAnimationsId": "Default",
+  "Interactions": {
+    "Primary": "VampirismRelic_Primary",
+    "Secondary": "VampirismRelic_Secondary",
+    "Use": "VampirismRelic_Use",
+    "Ability1": "VampirismRelic_Ability1",
+    "Ability2": "VampirismRelic_Ability2",
+    "Ability3": "VampirismRelic_Ability3"
+  },
+  "InteractionConfig": {
+    "AllEntities": true
+  },
+  "Quality": "Tool"
+}

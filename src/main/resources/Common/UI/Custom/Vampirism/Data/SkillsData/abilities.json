@@ -1,0 +1,342 @@
+[
+  {
+    "actions": [
+      {
+        "actionId": "apply_bat_morph"
+      }
+    ],
+    "bloodCost": 25,
+    "castTime": 0,
+    "channelDuration": 0,
+    "charges": 0,
+    "cooldown": 60,
+    "description": "Transform into a bat for swift travel. Low HP; cannot attack.",
+    "displayName": "Bat Form",
+    "duration": 60,
+    "effects": [
+      "bat_morph"
+    ],
+    "iconPath": "Icon_BatForm.png",
+    "id": "BatForm",
+    "requirements": [],
+    "tags": [],
+    "targeting": {
+      "targetingId": "self_target"
+    }
+  },
+  {
+    "actions": [
+      {
+        "actionId": "apply_ancient_morph"
+      }
+    ],
+    "bloodCost": 60,
+    "castTime": 0,
+    "channelDuration": 0,
+    "charges": 0,
+    "cooldown": 240,
+    "description": "Transform into a giant ancient bat: collects blood instantly, +200 HP.",
+    "displayName": "Ancient Form",
+    "duration": 50,
+    "effects": [
+      "ancient_morph"
+    ],
+    "iconPath": "",
+    "id": "AncientForm",
+    "requirements": [],
+    "tags": [],
+    "targeting": {
+      "targetingId": "self_target"
+    }
+  },
+  {
+    "actions": [
+      {
+        "actionId": "blood_throw_play_sound"
+      },
+      {
+        "actionId": "spawn_blood_projectile"
+      }
+    ],
+    "bloodCost": 20,
+    "castTime": 0,
+    "channelDuration": 0,
+    "charges": 0,
+    "cooldown": 0,
+    "description": "Hurl a projectile of blood at enemies.",
+    "displayName": "Blood Throw",
+    "duration": 0,
+    "effects": [],
+    "iconPath": "",
+    "id": "BloodThrow",
+    "requirements": [],
+    "tags": [],
+    "targeting": {
+      "targetingId": "single_enemy_projectile"
+    }
+  },
+  {
+    "actions": [
+      {
+        "actionId": "highlight_low_health_enemies"
+      },
+      {
+        "actionId": "apply_blood_thirst_speed"
+      }
+    ],
+    "bloodCost": 20,
+    "castTime": 0,
+    "channelDuration": 0,
+    "charges": 0,
+    "cooldown": 50,
+    "description": "Enters a hunting state: increases movement and grants frenzy recovery while active.",
+    "displayName": "Blood Thirst",
+    "duration": 10,
+    "effects": [
+      "blood_thirst_speed_buff"
+    ],
+    "iconPath": "",
+    "id": "BloodThirst",
+    "requirements": [],
+    "tags": [],
+    "targeting": {
+      "targetingId": "self_target"
+    }
+  },
+  {
+    "actions": [
+      {
+        "actionId": "fear_nearby_enemies"
+      }
+    ],
+    "bloodCost": 40,
+    "castTime": 0,
+    "channelDuration": 0,
+    "charges": 0,
+    "cooldown": 50,
+    "description": "Causes fear in all nearby enemies.",
+    "displayName": "Hissing",
+    "duration": 0,
+    "effects": [],
+    "iconPath": "",
+    "id": "Hissing",
+    "requirements": [],
+    "tags": [],
+    "targeting": {
+      "targetingId": "nearby_enemies_radius"
+    }
+  },
+  {
+    "actions": [
+      {
+        "actionId": "start_blood_feed_channel"
+      }
+    ],
+    "bloodCost": 0,
+    "castTime": 0,
+    "channelDuration": 1.5,
+    "charges": 0,
+    "cooldown": 0,
+    "description": "Channels a blood bite on a short-range target, draining blood and executing enemies below 25% HP.",
+    "displayName": "Blood Sucker",
+    "duration": 0,
+    "effects": [],
+    "iconPath": "Icon_BloodSucker.png",
+    "id": "BloodSucker",
+    "requirements": [],
+    "tags": [],
+    "targeting": {
+      "maxRange": 1.5,
+      "targetingId": "single_enemy_target"
+    }
+  },
+  {
+    "actions": [
+      {
+        "actionId": "start_health_to_blood_channel"
+      }
+    ],
+    "bloodCost": 0,
+    "castTime": 0,
+    "channelDuration": 10,
+    "charges": 0,
+    "cooldown": 20,
+    "description": "Channel cursed alchemy for 10s to convert health into blood at a 1:1 ratio, stopping safely at 1 HP.",
+    "displayName": "Blood Conversion",
+    "duration": 0,
+    "effects": [
+      "blood_conversion_channel_effect"
+    ],
+    "iconPath": "Icon_BloodDrain.png",
+    "id": "BloodConversion",
+    "requirements": [],
+    "tags": [],
+    "targeting": {
+      "targetingId": "self_target"
+    }
+  },
+  {
+    "actions": [
+      {
+        "actionId": "apply_crimson_umbrella"
+      }
+    ],
+    "bloodCost": 40,
+    "castTime": 0,
+    "channelDuration": 0,
+    "charges": 0,
+    "cooldown": 30,
+    "description": "Creates a sun-blocking umbrella granting sun immunity.",
+    "displayName": "Crimson Umbrella",
+    "duration": 60,
+    "effects": [
+      "crimson_umbrella_effect"
+    ],
+    "iconPath": "Icon_CrimsonUmbrela.png",
+    "id": "CrimsonUmbrella",
+    "requirements": [],
+    "tags": [],
+    "targeting": {
+      "targetingId": "self_target"
+    }
+  },
+  {
+    "actions": [
+      {
+        "actionId": "execute_low_health_target"
+      }
+    ],
+    "bloodCost": 20,
+    "castTime": 0,
+    "channelDuration": 0,
+    "charges": 0,
+    "cooldown": 25,
+    "description": "Instantly executes enemies below 5% HP.",
+    "displayName": "Devour",
+    "duration": 0,
+    "effects": [],
+    "iconPath": "",
+    "id": "Devour",
+    "requirements": [
+      {
+        "requirementId": "devour_threshold"
+      }
+    ],
+    "tags": [],
+    "targeting": {
+      "targetingId": "single_enemy_target"
+    }
+  },
+  {
+    "actions": [
+      {
+        "actionId": "apply_invisibility_effect"
+      }
+    ],
+    "bloodCost": 100,
+    "castTime": 0,
+    "channelDuration": 0,
+    "charges": 0,
+    "cooldown": 120,
+    "description": "Become invisible; entities cannot detect the player.",
+    "displayName": "Invisibility",
+    "duration": 30,
+    "effects": [
+      "invisibility_effect"
+    ],
+    "iconPath": "",
+    "id": "Invisibility",
+    "requirements": [],
+    "tags": [],
+    "targeting": {
+      "targetingId": "self_target"
+    }
+  },
+  {
+    "actions": [
+      {
+        "actionId": "deal_hemorrhage_aoe"
+      }
+    ],
+    "bloodCost": 0,
+    "castTime": 0,
+    "channelDuration": 0,
+    "charges": 0,
+    "cooldown": 30,
+    "description": "AOE blood damage based on Blood Throw damage. Also damages the caster.",
+    "displayName": "Hemorrhage",
+    "duration": 0,
+    "effects": [],
+    "iconPath": "",
+    "id": "Hemorrhage",
+    "requirements": [],
+    "tags": [],
+    "targeting": {
+      "targetingId": "nearby_enemies_radius"
+    }
+  },
+  {
+    "actions": [
+      {
+        "actionId": "teleport_to_look_target"
+      }
+    ],
+    "bloodCost": 50,
+    "castTime": 0,
+    "channelDuration": 0,
+    "charges": 0,
+    "cooldown": 120,
+    "description": "Teleport to the position the player is aiming at.",
+    "displayName": "Teleport",
+    "duration": 0,
+    "effects": [],
+    "iconPath": "",
+    "id": "Teleport",
+    "requirements": [],
+    "tags": [],
+    "targeting": {
+      "targetingId": "look_position"
+    }
+  },
+  {
+    "actions": [
+      {
+        "actionId": "blood_mist_play_sound"
+      },
+      {
+        "actionId": "blood_mist_spawn_particles"
+      },
+      {
+        "actionId": "blood_mist_slow_aoe"
+      },
+      {
+        "actionId": "blood_mist_self_speed"
+      },
+      {
+        "actionId": "blood_mist_flavor_message"
+      }
+    ],
+    "bloodCost": 15,
+    "castTime": 0,
+    "channelDuration": 0,
+    "charges": 0,
+    "cooldown": 45,
+    "description": "Exhale a cloud of blood mist at the look target: slows enemies in the area while granting the caster a brief burst of speed to reposition.",
+    "displayName": "Blood Mist",
+    "duration": 4,
+    "effects": [
+      "blood_mist_slow_effect"
+    ],
+    "iconPath": "",
+    "id": "BloodMist",
+    "requirements": [
+      {
+        "requirementId": "blood_mist_blood_cost"
+      }
+    ],
+    "tags": [],
+    "targeting": {
+      "targetingId": "blood_mist_area_at_look"
+    }
+  }
+]

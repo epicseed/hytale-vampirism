@@ -1,0 +1,20 @@
+{
+  "Type": "Condition",
+  "Crouching": true,
+  "Next": {
+    "Type": "Command",
+    "Command": "relicbinding",
+    "Next": {
+      "Type": "UseBlock",
+      "Failed": {
+        "Type": "UseEntity"
+      }
+    }
+  },
+  "Failed": {
+    "Type": "UseBlock",
+    "Failed": {
+      "Type": "UseEntity"
+    }
+  }
+}

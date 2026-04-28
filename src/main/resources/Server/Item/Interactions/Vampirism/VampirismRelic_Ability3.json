@@ -1,0 +1,10 @@
+{
+  "Type": "Command",
+  "Command": "vampirismrelic ability3",
+  "Next": {
+    "Type": "UseBlock",
+    "Failed": {
+      "Type": "UseEntity"
+    }
+  }
+}

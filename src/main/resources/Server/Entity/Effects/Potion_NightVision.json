@@ -1,0 +1,5 @@
+{
+  "Duration": 10,
+  "Debuff": false,
+  "OverlapBehavior": "Overwrite"
+}

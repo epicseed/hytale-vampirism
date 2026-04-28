@@ -1,0 +1,35 @@
+{
+    "Duration": 15,
+    "Debuff": false,
+    "OverlapBehavior": "Overwrite",
+    "StatusEffectIcon": "UI/StatusEffects/Burn.png",
+    "ApplicationEffects": {
+        "EntityTopTint": "#8b0000",
+        "EntityBottomTint": "#3d0000",
+        "ModelVFXId": "Burn",
+        "WorldSoundEventId": "SFX_Avatar_Powers_Enable",
+        "LocalSoundEventId": "SFX_Avatar_Powers_Enable_Local",
+        "Particles": [
+            {
+                "SystemId": "Effect_Fire"
+            }
+        ]
+    },
+    "RawStatModifiers": {
+        "Health": [
+            {
+                "Amount": 1.25,
+                "CalculationType": "Multiplicative",
+                "Target": "Max"
+            }
+        ]
+    },
+    "DamageResistance": {
+        "Physical": [
+            {
+                "CalculationType": "Multiplicative",
+                "Amount": 0.15
+            }
+        ]
+    }
+}

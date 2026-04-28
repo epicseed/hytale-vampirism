@@ -1,0 +1,222 @@
+{
+  "Parent": "Player",
+  "Model": "NPC/Vampirism/BatImp.blockymodel",
+  "Texture": "NPC/Vampirism/BatImp_Texture.png",
+  "EyeHeight": 1.15,
+  "CrouchOffset": -0.2,
+  "DefaultAttachments": [],
+  "HitBox": {
+    "Max": {
+      "X": 0.45,
+      "Y": 1.6,
+      "Z": 0.45
+    },
+    "Min": {
+      "X": -0.45,
+      "Y": 0,
+      "Z": -0.45
+    }
+  },
+  "AnimationSets": {
+    "Idle": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Fly/Fly_Idle.blockyanim"
+        }
+      ]
+    },
+    "Alerted": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Fly/Fly_Idle.blockyanim",
+          "Looping": false,
+          "Speed": 1.1
+        }
+      ]
+    },
+    "IdlePassive": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Attacks/Scratch.blockyanim",
+          "BlendingDuration": 0.15,
+          "Looping": false,
+          "Speed": 0.85
+        }
+      ],
+      "NextAnimationDelay": {
+        "Max": 12,
+        "Min": 5
+      }
+    },
+    "Search": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Fly/Fly_Idle.blockyanim",
+          "Looping": false,
+          "Speed": 0.9
+        }
+      ]
+    },
+    "Walk": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Default/Walk.blockyanim"
+        }
+      ]
+    },
+    "WalkBackward": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Default/Walk.blockyanim",
+          "Speed": 0.9
+        }
+      ]
+    },
+    "Run": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Default/Walk.blockyanim",
+          "Speed": 1.2
+        }
+      ]
+    },
+    "RunBackward": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Default/Walk.blockyanim",
+          "Speed": 1.05
+        }
+      ]
+    },
+    "Sprint": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Fly/Fly.blockyanim",
+          "Speed": 1.05
+        }
+      ]
+    },
+    "FlyIdle": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Fly/Fly_Idle.blockyanim"
+        }
+      ]
+    },
+    "Fly": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Fly/Fly.blockyanim"
+        }
+      ]
+    },
+    "FlyFast": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Fly/Fly.blockyanim",
+          "Speed": 1.25
+        }
+      ]
+    },
+    "Jump": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Fly/Fly.blockyanim",
+          "Looping": false,
+          "Speed": 1.1
+        }
+      ]
+    },
+    "JumpWalk": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Fly/Fly.blockyanim",
+          "Looping": false,
+          "Speed": 1.1
+        }
+      ]
+    },
+    "JumpRun": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Fly/Fly.blockyanim",
+          "Looping": false,
+          "Speed": 1.2
+        }
+      ]
+    },
+    "JumpSprint": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Fly/Fly.blockyanim",
+          "Looping": false,
+          "Speed": 1.3
+        }
+      ]
+    },
+    "Fall": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Fly/Fly_Idle.blockyanim",
+          "Speed": 0.95
+        }
+      ]
+    },
+    "Hurt": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Damage/Hurt.blockyanim",
+          "BlendingDuration": 0.1,
+          "Looping": false,
+          "SoundEventId": "SFX_Bat_Hurt"
+        }
+      ]
+    },
+    "Death": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Damage/Hurt.blockyanim",
+          "BlendingDuration": 0.1,
+          "Looping": false,
+          "Speed": 0.8,
+          "SoundEventId": "SFX_Bat_Death"
+        }
+      ]
+    },
+    "Spawn": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Default/Spawn.blockyanim",
+          "BlendingDuration": 0,
+          "Looping": false
+        }
+      ]
+    },
+    "Laydown": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Fly/Fly_Idle.blockyanim",
+          "Looping": false,
+          "Speed": 0.65
+        }
+      ]
+    },
+    "Sleep": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Fly/Fly_Idle.blockyanim",
+          "Speed": 0.45
+        }
+      ]
+    },
+    "Wake": {
+      "Animations": [
+        {
+          "Animation": "NPC/Vampirism/Animations/Default/Spawn.blockyanim",
+          "Looping": false,
+          "Speed": 1.0
+        }
+      ]
+    }
+  }
+}

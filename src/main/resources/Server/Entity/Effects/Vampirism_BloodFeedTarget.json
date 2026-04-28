@@ -1,0 +1,13 @@
+{
+  "Duration": 2,
+  "Debuff": true,
+  "StatusEffectIcon": "UI/StatusEffects/Vampirism_BloodSucker.png",
+  "OverlapBehavior": "Overwrite",
+  "ApplicationEffects": {
+    "EntityTopTint": "#3b0010",
+    "EntityBottomTint": "#190007",
+    "MovementEffects": {
+      "DisableAll": true
+    }
+  }
+}

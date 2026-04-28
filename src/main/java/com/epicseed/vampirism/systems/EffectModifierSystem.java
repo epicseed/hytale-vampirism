@@ -1,0 +1,167 @@
+package com.epicseed.vampirism.systems;
+
+import com.epicseed.vampirism.Vampirism;
+import com.epicseed.vampirism.config.VampirismConfig;
+import com.epicseed.vampirism.modifier.ModifierRegistry;
+import com.epicseed.vampirism.modifier.ModifierTag;
+import com.epicseed.vampirism.modifier.StatModifier;
+import com.epicseed.vampirism.registry.VampireStatusRegistry;
+import com.epicseed.vampirism.skill.model.EffectDef;
+import com.epicseed.vampirism.skill.model.InlineModifier;
+import com.epicseed.vampirism.skill.runtime.ModifierScopeMatcher;
+import com.epicseed.vampirism.skill.runtime.SkillConditionEvaluator;
+import com.hypixel.hytale.component.ArchetypeChunk;
+import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.SystemGroup;
+import com.hypixel.hytale.component.query.Query;
+import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
+import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
+import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+
+import javax.annotation.Nonnull;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Polls each vampire player's active Hytale effects and registers/unregisters
+ * {@link com.epicseed.vampirism.modifier.StatModifier}s from matching {@link EffectDef}s.
+ *
+ * <p>Runs every {@link VampirismConfig#getEffectTicksBetweenUpdates()} ticks. On each cycle,
+ * it compares the set of currently active effects against the last known state, registering
+ * modifiers when an effect becomes active and unregistering them when it expires or is removed.
+ *
+ * <p>Tag format: {@code "effect:<effectDefId>:<modifierKey>"}.
+ */
+public class EffectModifierSystem extends EntityTickingSystem<EntityStore> {
+
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+
+    /** effectId → cached Hytale effect index (set to -1 if the asset is not found). */
+    private final Map<String, Integer> effectIndexCache = new ConcurrentHashMap<>();
+
+    /**
+     * Per-player set of effectDef IDs whose modifiers are currently registered.
+     * Values use {@link ConcurrentHashMap#newKeySet()} for safe cross-thread eviction.
+     */
+    private static final Map<UUID, Set<String>> activeEffectModifiers = new ConcurrentHashMap<>();
+    /** Per-player tick counters used to throttle effect polling cadence. */
+    private static final Map<UUID, Integer> ticksSinceLastUpdate = new ConcurrentHashMap<>();
+
+    @Override
+    public SystemGroup<EntityStore> getGroup() {
+        return null;
+    }
+
+    @Override
+    public Query<EntityStore> getQuery() {
+        return Query.any();
+    }
+
+    @Override
+    public void tick(float dt, int index, @Nonnull ArchetypeChunk<EntityStore> chunk,
+                     @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+        try {
+            @SuppressWarnings("unchecked")
+            Ref<EntityStore> playerRef = (Ref<EntityStore>) chunk.getReferenceTo(index);
+
+            Player player = (Player) store.getComponent(playerRef, Player.getComponentType());
+            if (player == null) return;
+
+            PlayerRef playerRefComponent = (PlayerRef) store.getComponent(playerRef, PlayerRef.getComponentType());
+            if (playerRefComponent == null) return;
+
+            UUID uuid = playerRefComponent.getUuid();
+            if (!VampireStatusRegistry.get().isVampire(uuid)) {
+                clearPlayer(uuid);
+                return;
+            }
+
+            int ticks = ticksSinceLastUpdate.getOrDefault(uuid, 0) + 1;
+            if (ticks < VampirismConfig.get().getEffectTicksBetweenUpdates()) {
+                ticksSinceLastUpdate.put(uuid, ticks);
+                return;
+            }
+            ticksSinceLastUpdate.put(uuid, 0);
+
+            EffectControllerComponent ec = (EffectControllerComponent) store.getComponent(
+                    playerRef, EffectControllerComponent.getComponentType());
+            if (ec == null) return;
+
+            Collection<EffectDef> allDefs = Vampirism.getInstance().GetEffectDefRegistry().GetAll();
+            Set<String> currentlyTracked = activeEffectModifiers.computeIfAbsent(
+                    uuid, k -> ConcurrentHashMap.newKeySet());
+
+            for (EffectDef effectDef : allDefs) {
+                if (effectDef.modifiers == null || effectDef.modifiers.isEmpty()) continue;
+                if (effectDef.effectId == null || effectDef.effectId.isBlank()) continue;
+
+                int hytaleIndex = resolveEffectIndex(effectDef.effectId);
+                if (hytaleIndex < 0) continue;
+
+                boolean isActive = ec.hasEffect(hytaleIndex);
+                boolean wasTracked = currentlyTracked.contains(effectDef.id);
+
+                if (isActive && !wasTracked) {
+                    registerEffectModifiers(uuid, effectDef);
+                    currentlyTracked.add(effectDef.id);
+                } else if (!isActive && wasTracked) {
+                    unregisterEffectModifiers(uuid, effectDef);
+                    currentlyTracked.remove(effectDef.id);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.atSevere().log("[EffectModifierSystem] Error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Clears the per-player tracking state. Call on disconnect or when the modifier
+     * registry has already been evicted so no stale "active" entries remain.
+     */
+    public static void clearPlayer(@Nonnull UUID uuid) {
+        ModifierRegistry.get().unregisterByTagPrefix(uuid, "effect:");
+        ticksSinceLastUpdate.remove(uuid);
+        activeEffectModifiers.remove(uuid);
+    }
+
+    // -------------------------------------------------------------------------
+
+    private int resolveEffectIndex(String effectId) {
+        return effectIndexCache.computeIfAbsent(effectId, id -> {
+            int idx = EntityEffect.getAssetMap().getIndex(id);
+            if (idx < 0) {
+                LOGGER.atWarning().log("[EffectModifierSystem] Hytale effect not found in asset map: " + id);
+            }
+            return idx;
+        });
+    }
+
+    private void registerEffectModifiers(@Nonnull UUID uuid, @Nonnull EffectDef effectDef) {
+        ModifierRegistry reg = ModifierRegistry.get();
+        for (InlineModifier mod : effectDef.modifiers) {
+            if (mod.stat == null) continue;
+            String modKey = mod.modifierId != null && !mod.modifierId.isBlank() ? mod.modifierId : mod.statId;
+            String tagKey = "effect:" + effectDef.id + ":" + modKey;
+            float value = mod.value;
+            StatModifier modifier = switch (mod.operation) {
+                case ADD      -> (current, ctx) -> ModifierScopeMatcher.applies(mod, ctx) ? current + value : current;
+                case MULTIPLY -> (current, ctx) -> ModifierScopeMatcher.applies(mod, ctx) ? current * value : current;
+                case OVERRIDE -> (current, ctx) -> ModifierScopeMatcher.applies(mod, ctx) ? value : current;
+            };
+            reg.register(uuid, mod.stat, ModifierTag.of(tagKey), mod.priority, modifier);
+        }
+    }
+
+    private void unregisterEffectModifiers(@Nonnull UUID uuid, @Nonnull EffectDef effectDef) {
+        ModifierRegistry.get().unregisterByTagPrefix(uuid, "effect:" + effectDef.id + ":");
+    }
+}

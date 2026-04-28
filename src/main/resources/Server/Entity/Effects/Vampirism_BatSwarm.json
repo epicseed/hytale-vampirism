@@ -1,0 +1,19 @@
+{
+  "Duration": 8,
+  "Debuff": true,
+  "OverlapBehavior": "Extend",
+  "StatusEffectIcon": "UI/StatusEffects/Icon_Slow.png",
+  "ApplicationEffects": {
+    "EntityTopTint": "#2d153a",
+    "EntityBottomTint": "#130a18",
+    "MovementEffects": {
+      "DisableSprint": true,
+      "DisableJump": true
+    },
+    "Particles": [
+      {
+        "SystemId": "Effect_Poison"
+      }
+    ]
+  }
+}

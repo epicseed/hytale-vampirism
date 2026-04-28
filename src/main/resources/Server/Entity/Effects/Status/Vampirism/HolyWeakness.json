@@ -1,0 +1,31 @@
+{
+    "Duration": 20,
+    "Debuff": true,
+    "OverlapBehavior": "Overwrite",
+    "StatusEffectIcon": "UI/StatusEffects/Burn.png",
+    "ApplyConditions": [
+        {
+            "Id": "HasEffect",
+            "EffectId": "Status/Vampirism/BloodFrenzy",
+            "Inverse": true
+        }
+    ],
+    "ApplicationEffects": {
+        "EntityTopTint": "#ffffaa",
+        "EntityBottomTint": "#ffffff",
+        "ScreenEffect": "ScreenEffects/Fire.png",
+        "WorldSoundEventId": "SFX_Effect_Burn_World",
+        "LocalSoundEventId": "SFX_Effect_Burn_Local",
+        "Particles": [
+            {
+                "SystemId": "Effect_Fire"
+            }
+        ]
+    },
+    "DamageCalculator": {
+        "BaseDamage": {
+            "Fire": 8
+        }
+    },
+    "DamageCalculatorCooldown": 2.0
+}

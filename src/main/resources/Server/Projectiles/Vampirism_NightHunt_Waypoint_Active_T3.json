@@ -1,0 +1,19 @@
+{
+  "Appearance": "Vampirism_NightHunt_Waypoint_Active_T3",
+  "Radius": 0.01,
+  "Height": 0.01,
+  "HorizontalCenterShot": 0.0,
+  "VerticalCenterShot": 0.0,
+  "DepthShot": 0.0,
+  "PitchAdjustShot": false,
+  "SticksVertically": false,
+  "MuzzleVelocity": 1,
+  "TerminalVelocity": 1,
+  "Gravity": 0,
+  "ImpactSlowdown": 0,
+  "TimeToLive": 3600,
+  "Damage": 0,
+  "DeadTime": 0,
+  "DeadTimeMiss": 0,
+  "DeathEffectsOnHit": false
+}

@@ -1,0 +1,15 @@
+{
+  "Duration": 15,
+  "Debuff": false,
+  "OverlapBehavior": "Overwrite",
+  "StatusEffectIcon": "UI/StatusEffects/Burn.png",
+  "ApplicationEffects": {
+    "EntityTopTint": "#2a1658",
+    "EntityBottomTint": "#120a27",
+    "Particles": [
+      {
+        "SystemId": "Potion_Morph_Burst"
+      }
+    ]
+  }
+}

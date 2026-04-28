@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vampirism Editor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #1a1a2e;
+      --surface:   #16213e;
+      --border:    #0f3460;
+      --accent:    #e94560;
+      --accent2:   #2ecc71;
+      --text:      #e0e0e0;
+      --text-dim:  #8899aa;
+      --input-bg:  #0d1b2a;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── TOP BAR ─────────────────────────────────── */
+    #topbar {
+      background: var(--border);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      height: 44px;
+      flex-shrink: 0;
+      border-bottom: 2px solid var(--accent);
+    }
+    #topbar .logo {
+      font-weight: 800;
+      font-size: 15px;
+      color: var(--accent);
+      letter-spacing: 1px;
+    }
+    #file-status {
+      font-size: 12px;
+      color: var(--text-dim);
+      flex: 1;
+    }
+    #file-status.dirty { color: #f0c040; }
+    #file-status.saved { color: var(--accent2); }
+    #topbar button {
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 11px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .btn-primary   { background: var(--accent);  color: #fff; }
+    .btn-success   { background: var(--accent2); color: #fff; }
+    .btn-secondary { background: var(--border);  color: var(--text-dim); }
+
+    /* ── TABS ────────────────────────────────────── */
+    #tab-bar {
+      background: var(--surface);
+      display: flex;
+      gap: 2px;
+      padding: 0 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .tab {
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      color: var(--text-dim);
+      user-select: none;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* ── CONTENT ─────────────────────────────────── */
+    #content {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    .tab-pane {
+      display: none;
+      position: absolute;
+      inset: 0;
+      overflow: auto;
+    }
+    .tab-pane.active { display: flex; flex-direction: column; }
+
+    /* ── SHARED TABLE STYLES ─────────────────────── */
+    .pane-inner {
+      padding: 20px;
+      flex: 1;
+    }
+    .pane-toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      align-items: center;
+    }
+    .pane-toolbar h2 {
+      font-size: 14px;
+      color: var(--accent);
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      flex: 1;
+    }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    table.data-table th {
+      background: var(--border);
+      color: var(--text-dim);
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    table.data-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid #1e2d42;
+      vertical-align: top;
+    }
+    table.data-table tr:hover td { background: #1c2940; }
+    table.data-table .actions { white-space: nowrap; }
+    table.data-table button {
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+    .btn-edit   { background: var(--border); color: var(--text-dim); }
+    .btn-delete { background: #3a1020; color: #e94560; }
+
+    /* ── MODAL ───────────────────────────────────── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.65);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      min-width: 420px;
+      max-width: 640px;
+      max-height: 88vh;
+      overflow-y: auto;
+      width: 100%;
+    }
+    .modal h3 {
+      font-size: 14px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 16px;
+    }
+    .form-group { margin-bottom: 12px; }
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 10px;
+      border-radius: 5px;
+      font-size: 13px;
+    }
+    .form-group textarea { resize: vertical; min-height: 60px; }
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 18px;
+    }
+    .modal-actions button {
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .tag {
+      display: inline-block;
+      background: var(--border);
+      color: var(--text-dim);
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin: 2px;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .badge-upgrade  { background: #1a3a60; color: #60a0f0; }
+    .badge-passive  { background: #1a3a20; color: #60c060; }
+    .badge-ability  { background: #3a1a40; color: #c080e0; }
+    .badge-legendary{ background: #3a2800; color: #f0c040; }
+    .badge-epic     { background: #2a1a40; color: #c080ff; }
+    .badge-rare     { background: #1a2a40; color: #60a0f0; }
+    .badge-uncommon { background: #1a3a20; color: #60c060; }
+    .badge-common   { background: #2a2a2a; color: #a0a0a0; }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <span class="logo">🧛 VAMPIRISM EDITOR</span>
+  <span id="file-status">Loading…</span>
+  <button class="btn-secondary" onclick="App.reload()">↺ Reload</button>
+  <button class="btn-success"   onclick="App.save()" title="Ctrl+S">💾 Save</button>
+</div>
+
+<!-- TAB BAR -->
+  <div id="tab-bar">
+    <div class="tab active" data-tab="skill-tree">🌳 Skill Tree</div>
+    <div class="tab" data-tab="skills">🗡 Skills</div>
+    <div class="tab" data-tab="abilities">⚡ Abilities</div>
+    <div class="tab" data-tab="passives">🛡 Passives</div>
+    <div class="tab" data-tab="effects">✨ Effects</div>
+    <div class="tab" data-tab="modifiers">📊 Modifiers</div>
+    <div class="tab" data-tab="stats">📈 Stats</div>
+    <div class="tab" data-tab="states">🔮 States</div>
+    <div class="tab" data-tab="conditions">🧩 Conditions</div>
+    <div class="tab" data-tab="requirements">📋 Requirements</div>
+    <div class="tab" data-tab="triggers">⚙ Triggers</div>
+    <div class="tab" data-tab="actions">🎬 Actions</div>
+    <div class="tab" data-tab="targetings">🎯 Targeting</div>
+    <div class="tab" data-tab="state-registry">🔗 State Registry</div>
+    <div class="tab" data-tab="relic-bindings">💍 Relic Bindings</div>
+    <div class="tab" data-tab="hytale-effects">🧬 Entity Effects</div>
+    <div class="tab" data-tab="items">👜 Items</div>
+    <div class="tab" data-tab="projectiles">🧪 Projectiles</div>
+    <div class="tab" data-tab="projectile-configs">🚀 Projectile Configs</div>
+    <div class="tab" data-tab="interactions">🔗 Interactions</div>
+    <div class="tab" data-tab="root-interactions">🌱 Root Interactions</div>
+    <div class="tab" data-tab="hytale-browser">🧭 Hytale Assets</div>
+  </div>
+
+<!-- CONTENT -->
+  <div id="content">
+    <div class="tab-pane active" id="pane-skill-tree"></div>
+    <div class="tab-pane"        id="pane-skills"></div>
+    <div class="tab-pane"        id="pane-abilities"></div>
+    <div class="tab-pane"        id="pane-passives"></div>
+    <div class="tab-pane"        id="pane-effects"></div>
+    <div class="tab-pane"        id="pane-modifiers"></div>
+    <div class="tab-pane"        id="pane-stats"></div>
+    <div class="tab-pane"        id="pane-states"></div>
+    <div class="tab-pane"        id="pane-conditions"></div>
+    <div class="tab-pane"        id="pane-requirements"></div>
+    <div class="tab-pane"        id="pane-triggers"></div>
+    <div class="tab-pane"        id="pane-actions"></div>
+    <div class="tab-pane"        id="pane-targetings"></div>
+    <div class="tab-pane"        id="pane-state-registry"></div>
+    <div class="tab-pane"        id="pane-relic-bindings"></div>
+    <div class="tab-pane"        id="pane-hytale-effects"></div>
+    <div class="tab-pane"        id="pane-items"></div>
+    <div class="tab-pane"        id="pane-projectiles"></div>
+    <div class="tab-pane"        id="pane-projectile-configs"></div>
+    <div class="tab-pane"        id="pane-interactions"></div>
+    <div class="tab-pane"        id="pane-root-interactions"></div>
+    <div class="tab-pane"        id="pane-hytale-browser"></div>
+  </div>
+
+<script src="app.js"></script>
+<script src="side-editors.js"></script>
+<script src="ref-picker.js"></script>
+<script src="hytale-assets.js"></script>
+<script src="skill-tree.js"></script>
+<script src="skills.js"></script>
+<script src="abilities.js"></script>
+<script src="passives.js"></script>
+<script src="effects.js"></script>
+<script src="modifiers.js"></script>
+<script src="definitions.js"></script>
+<script src="stats.js"></script>
+<script src="states.js"></script>
+<script src="state-registry.js"></script>
+<script src="relic-bindings.js"></script>
+</body>
+</html>

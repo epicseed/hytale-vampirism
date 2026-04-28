@@ -1,0 +1,12 @@
+Group {
+  Group #StripH {
+    Anchor: (Left: 28, Right: 0, Top: 28, Height: 8);
+    Background: #88ccff(1);
+    Visible: false;
+  }
+  Group #StripV {
+    Anchor: (Left: 28, Width: 8, Top: 0, Bottom: 28);
+    Background: #88ccff(1);
+    Visible: false;
+  }
+}

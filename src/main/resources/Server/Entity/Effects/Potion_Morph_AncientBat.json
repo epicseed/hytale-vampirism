@@ -1,0 +1,16 @@
+{
+  "StatusEffectIcon": "Icons/ItemsGenerated/Morph_Collar.png",
+  "OverlapBehavior": "Overwrite",
+  "Duration": 50,
+  "ModelChange": "Bat",
+  "ApplicationEffects": {
+    "EntityTopTint": "#5b0018",
+    "EntityBottomTint": "#25000a",
+    "Particles": [
+      {
+        "SystemId": "Potion_Morph_Burst"
+      }
+    ],
+    "WorldSoundEventId": "SFX_Bat_Alerted"
+  }
+}

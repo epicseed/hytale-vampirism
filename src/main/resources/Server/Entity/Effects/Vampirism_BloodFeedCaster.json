@@ -1,0 +1,9 @@
+{
+  "Duration": 2,
+  "OverlapBehavior": "Overwrite",
+  "ApplicationEffects": {
+    "EntityAnimationId": "Tongue",
+    "EntityTopTint": "#5f0b17",
+    "EntityBottomTint": "#2a0509"
+  }
+}

@@ -1,0 +1,270 @@
+[
+  {
+    "actions": [],
+    "description": "Player is transformed into a bat.",
+    "displayName": "Bat Form",
+    "duration": 60,
+    "effectId": "Potion_Morph_Bat",
+    "id": "bat_morph",
+    "modifiers": [
+      {
+        "conditions": [
+          {
+            "conditionId": "in_bat_form"
+          }
+        ],
+        "modifierId": "bat_form_speed",
+        "operation": "ADD",
+        "priority": 200,
+        "statId": "BAT_FORM_SPEED",
+        "target": {},
+        "value": 2
+      }
+    ],
+    "requirements": [],
+    "tags": []
+  },
+  {
+    "actions": [],
+    "description": "Player is transformed into an ancient giant bat.",
+    "displayName": "Ancient Form",
+    "duration": 50,
+    "effectId": "Potion_Morph_AncientBat",
+    "id": "ancient_morph",
+    "modifiers": [
+      {
+        "conditions": [
+          {
+            "conditionId": "in_ancient_form"
+          }
+        ],
+        "modifierId": "ancient_form_health",
+        "operation": "ADD",
+        "priority": 200,
+        "statId": "ANCIENT_FORM_HEALTH_BONUS",
+        "target": {},
+        "value": 200
+      }
+    ],
+    "requirements": [],
+    "tags": []
+  },
+  {
+    "actions": [],
+    "description": "Player is invisible and undetectable.",
+    "displayName": "Invisibility",
+    "duration": 30,
+    "effectId": "Vampirism_Invisibility",
+    "id": "invisibility_effect",
+    "modifiers": [],
+    "requirements": [],
+    "tags": []
+  },
+  {
+    "actions": [],
+    "description": "Maintained invisibility granted by the Lord Robe night bonus.",
+    "displayName": "Lord Robe Invisibility",
+    "duration": 2,
+    "effectId": "Vampirism_Invisibility",
+    "id": "lord_robe_invisibility_effect",
+    "modifiers": [],
+    "requirements": [],
+    "tags": []
+  },
+  {
+    "actions": [],
+    "description": "Speed boost and frenzy stamina recovery while Blood Thirst is active.",
+    "displayName": "Blood Thirst Speed",
+    "duration": 10,
+    "effectId": "Vampirism_BloodThirstSpeed",
+    "id": "blood_thirst_speed_buff",
+    "modifiers": [
+      {
+        "conditions": [
+          {
+            "conditionId": "is_in_blood_thirst"
+          }
+        ],
+        "modifierId": "blood_thirst_speed",
+        "operation": "ADD",
+        "priority": 200,
+        "statId": "SPEED",
+        "target": {},
+        "value": 1
+      },
+      {
+        "conditions": [],
+        "modifierId": "blood_thirst_frenzy_stamina_recovery",
+        "operation": "ADD",
+        "priority": 200,
+        "statId": "FRENZY_STAMINA_RECOVERY",
+        "target": {},
+        "value": 0.05
+      }
+    ],
+    "requirements": [],
+    "tags": []
+  },
+  {
+    "actions": [],
+    "description": "Sun immunity umbrella above the player.",
+    "displayName": "Crimson Umbrella",
+    "duration": 60,
+    "effectId": "Vampirism_CrimsonUmbrella",
+    "id": "crimson_umbrella_effect",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "crimson_umbrella_sunburn",
+        "operation": "OVERRIDE",
+        "priority": 250,
+        "statId": "SUNBURN_RESISTANCE",
+        "target": {},
+        "value": 1
+      }
+    ],
+    "requirements": [],
+    "tags": []
+  },
+  {
+    "actions": [],
+    "description": "Short-lived umbrella extension maintained while a companion is nearby.",
+    "displayName": "Companion Umbrella",
+    "duration": 2,
+    "effectId": "Vampirism_CrimsonUmbrella",
+    "id": "companion_umbrella_effect",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "companion_umbrella_sunburn",
+        "operation": "OVERRIDE",
+        "priority": 250,
+        "statId": "SUNBURN_RESISTANCE",
+        "target": {},
+        "value": 1
+      }
+    ],
+    "requirements": [],
+    "tags": []
+  },
+  {
+    "actions": [],
+    "description": "Defensive buff that halves Teleport cooldown while active.",
+    "displayName": "Void Shield",
+    "duration": 15,
+    "effectId": "Vampirism_VoidShield",
+    "id": "void_shield_buff",
+    "modifiers": [],
+    "requirements": [],
+    "tags": []
+  },
+  {
+    "actions": [],
+    "description": "A cloud of bats disorients nearby enemies.",
+    "displayName": "Bat Swarm Cloud",
+    "duration": 8,
+    "effectId": "Vampirism_BatSwarm",
+    "id": "bat_swarm_effect",
+    "modifiers": [],
+    "requirements": [],
+    "tags": []
+  },
+  {
+    "actions": [],
+    "description": "Night vision and enemy detection while in bat form.",
+    "displayName": "Bat Vision",
+    "duration": 2,
+    "effectId": "Potion_NightVision",
+    "id": "bat_vision_effect",
+    "modifiers": [],
+    "requirements": [],
+    "tags": []
+  },
+  {
+    "actions": [],
+    "description": "Allows the player to see clearly in the dark.",
+    "displayName": "Night Vision",
+    "duration": -1,
+    "effectId": "Potion_NightVision",
+    "id": "night_vision_effect",
+    "modifiers": [],
+    "requirements": [],
+    "tags": []
+  },
+  {
+    "actions": [],
+    "description": "Short channel effect on the vampire while feeding.",
+    "displayName": "Blood Feed Caster Channel",
+    "duration": 2,
+    "effectId": "Vampirism_BloodFeedCaster",
+    "id": "blood_feed_caster_channel_effect",
+    "modifiers": [],
+    "requirements": [],
+    "tags": []
+  },
+  {
+    "actions": [],
+    "description": "Roots the victim in place while BloodSucker is channeling.",
+    "displayName": "Blood Feed Target Root",
+    "duration": 2,
+    "effectId": "Vampirism_BloodFeedTarget",
+    "id": "blood_feed_target_root_effect",
+    "modifiers": [],
+    "requirements": [],
+    "tags": []
+  },
+  {
+    "actions": [],
+    "description": "Visual channel effect while converting health into blood.",
+    "displayName": "Blood Conversion Channel",
+    "duration": 10,
+    "effectId": "Vampirism_BloodConversionChannel",
+    "id": "blood_conversion_channel_effect",
+    "modifiers": [],
+    "requirements": [],
+    "tags": []
+  },
+  {
+    "actions": [],
+    "description": "Highlights nearby low-health BloodSucker targets with an overhead marker.",
+    "displayName": "Blood Feed Consumable Marker",
+    "duration": 1.25,
+    "effectId": "Vampirism_BloodFeedConsumableMarker",
+    "id": "blood_feed_consumable_marker_effect",
+    "modifiers": [],
+    "requirements": [],
+    "tags": []
+  },
+  {
+    "actions": [],
+    "description": "Temporary speed boost after killing an entity.",
+    "displayName": "Kill Speed Boost",
+    "duration": 10,
+    "effectId": "Vampirism_KillSpeedBoost",
+    "id": "kill_speed_boost_effect",
+    "modifiers": [
+      {
+        "conditions": [],
+        "modifierId": "boiling_blood_speed",
+        "operation": "ADD",
+        "priority": 200,
+        "statId": "SPEED",
+        "target": {},
+        "value": 0.1
+      }
+    ],
+    "requirements": [],
+    "tags": []
+  },
+  {
+    "actions": [],
+    "description": "Vampiric slow debuff applied by Blood Mist.",
+    "displayName": "Blood Mist Slow",
+    "duration": 4,
+    "effectId": "Slow_Vampiric",
+    "id": "blood_mist_slow_effect",
+    "modifiers": [],
+    "requirements": [],
+    "tags": []
+  }
+]

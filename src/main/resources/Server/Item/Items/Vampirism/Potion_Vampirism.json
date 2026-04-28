@@ -1,0 +1,114 @@
+{
+  "TranslationProperties": {
+    "Name": "Potion of Vampirism",
+    "Description": "A forbidden draught that transforms the drinker into a vampire."
+  },
+  "Quality": "Rare",
+  "ItemLevel": 1,
+  "Categories": [
+    "Items.Consumables"
+  ],
+  "PlayerAnimationsId": {
+    "Parent": "Item",
+    "Animations": {
+      "Consume": {
+        "FirstPerson": "Characters/Animations/Items/Main_Handed/Item/Attacks/Drink/Drink_FPS.blockyanim",
+        "ThirdPerson": "Characters/Animations/Items/Main_Handed/Item/Attacks/Drink/Drink.blockyanim",
+        "Speed": 1,
+        "Looping": true
+      }
+    }
+  },
+  "Icon": "Icons/ItemsGenerated/Potion_Regen_Mana_Small.png",
+  "Model": "Items/Consumables/Potions/Potion_Small.blockymodel",
+  "Texture": "Items/Consumables/Potions/Potion_Textures/Purple.png",
+  "IconProperties": {
+    "Scale": 0.8,
+    "Translation": [
+      0,
+      -10
+    ],
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ]
+  },
+  "Consumable": true,
+  "Interactions": {
+    "Secondary": "Root_Secondary_Consume_Potion"
+  },
+  "InteractionVars": {
+    "Effect": {
+      "Interactions": [
+        {
+          "Type": "Command",
+          "Command": "vampirismpotion transform"
+        }
+      ]
+    },
+    "ConsumeSFX": {
+      "Interactions": [
+        {
+          "Parent": "Consume_SFX",
+          "Effects": {
+            "LocalSoundEventId": "SFX_Health_Potion_Low_Drink"
+          }
+        }
+      ]
+    },
+    "ConsumedSFX": {
+      "Interactions": [
+        {
+          "Parent": "Consumed_SFX",
+          "Effects": {
+            "LocalSoundEventId": "SFX_Potion_Drink_Success"
+          }
+        }
+      ]
+    }
+  },
+  "Recipe": {
+    "TimeSeconds": 2,
+    "KnowledgeRequired": false,
+    "Input": [
+      {
+        "ItemId": "Potion_Empty",
+        "Quantity": 1
+      },
+      {
+        "ItemId": "Ingredient_Life_Essence",
+        "Quantity": 15
+      },
+      {
+        "ItemId": "Plant_Crop_Health2",
+        "Quantity": 5
+      },
+      {
+        "ItemId": "Ingredient_Bone_Fragment",
+        "Quantity": 2
+      },
+      {
+        "ItemId": "Ingredient_BatWing",
+        "Quantity": 1
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Id": "Alchemybench",
+        "Type": "Crafting",
+        "Categories": [
+          "Alchemy_Potions_Misc"
+        ]
+      }
+    ],
+    "RequiredMemoriesLevel": 4
+  },
+  "MaxStack": 1,
+  "Tags": {
+    "Type": [
+      "Consumable"
+    ]
+  },
+  "DropOnDeath": true
+}

@@ -1,0 +1,166 @@
+[
+  {
+    "definition": {
+      "operator": "isTrue",
+      "stateId": "IS_IN_BAT_FORM",
+      "type": "state"
+    },
+    "description": "Player is currently transformed into bat form.",
+    "displayName": "In Bat Form",
+    "id": "in_bat_form",
+    "tags": []
+  },
+  {
+    "definition": {
+      "operator": "isTrue",
+      "stateId": "IS_IN_ANCIENT_FORM",
+      "type": "state"
+    },
+    "description": "Player is currently transformed into ancient form.",
+    "displayName": "In Ancient Form",
+    "id": "in_ancient_form",
+    "tags": []
+  },
+  {
+    "definition": {
+      "operator": "isTrue",
+      "stateId": "IS_INVISIBLE",
+      "type": "state"
+    },
+    "description": "Player is currently invisible.",
+    "displayName": "Invisible",
+    "id": "is_invisible",
+    "tags": []
+  },
+  {
+    "definition": {
+      "operator": "isTrue",
+      "stateId": "IS_SNEAKING",
+      "type": "state"
+    },
+    "description": "Player is currently sneaking/crouching.",
+    "displayName": "Sneaking",
+    "id": "is_sneaking",
+    "tags": []
+  },
+  {
+    "definition": {
+      "operator": "isTrue",
+      "stateId": "IS_IN_BLOOD_THIRST",
+      "type": "state"
+    },
+    "description": "Player has Blood Thirst active.",
+    "displayName": "Blood Thirst Active",
+    "id": "is_in_blood_thirst",
+    "tags": []
+  },
+  {
+    "definition": {
+      "operator": "isTrue",
+      "stateId": "IS_BLOOD_STATE_NORMAL",
+      "type": "state"
+    },
+    "description": "Player is in the normal blood state.",
+    "displayName": "Normal Blood State",
+    "id": "normal_blood_state",
+    "tags": []
+  },
+  {
+    "definition": {
+      "operator": "\u003c=",
+      "subject": "target",
+      "type": "healthPercent",
+      "value": 0.05
+    },
+    "description": "Target entity is at or below 5% health.",
+    "displayName": "Target Under 5% HP",
+    "id": "target_under_5_percent_health",
+    "tags": []
+  },
+  {
+    "definition": {
+      "operator": "\u003c=",
+      "subject": "target",
+      "type": "healthPercent",
+      "value": 0.2
+    },
+    "description": "Target entity is at or below 20% health.",
+    "displayName": "Target Under 20% HP",
+    "id": "target_under_20_percent_health",
+    "tags": []
+  },
+  {
+    "definition": {
+      "operator": "\u003c=",
+      "subject": "self",
+      "type": "healthPercent",
+      "value": 0.15
+    },
+    "description": "Player is at or below 15% health.",
+    "displayName": "Self Under 15% HP",
+    "id": "self_under_15_percent_health",
+    "tags": []
+  },
+  {
+    "definition": {
+      "operator": "isTrue",
+      "stateId": "IS_NIGHT",
+      "type": "state"
+    },
+    "description": "The world is currently in night time.",
+    "displayName": "At Night",
+    "id": "is_night",
+    "tags": []
+  },
+  {
+    "definition": {
+      "operator": "equipped",
+      "setId": "LordRobe",
+      "type": "equipmentSet"
+    },
+    "description": "Full Lord Robe set is equipped.",
+    "displayName": "Lord Robe Full Set",
+    "id": "lord_robe_full_set_equipped",
+    "tags": []
+  },
+  {
+    "definition": {
+      "itemId": "VampirismRelic",
+      "type": "equippedItem"
+    },
+    "description": "The Sacred Staff / Vampirism Relic is currently held.",
+    "displayName": "Sacred Staff Equipped",
+    "id": "sacred_staff_equipped",
+    "tags": []
+  },
+  {
+    "definition": {
+      "type": "companionPresent"
+    },
+    "description": "A companion entity is present near the player.",
+    "displayName": "Companion Present",
+    "id": "companion_present",
+    "tags": []
+  },
+  {
+    "definition": {
+      "effectId": "void_shield_buff",
+      "type": "effectActive"
+    },
+    "description": "The Void Shield buff is currently active on the player.",
+    "displayName": "Void Shield Active",
+    "id": "void_shield_active",
+    "tags": []
+  },
+  {
+    "definition": {
+      "op": "gte",
+      "type": "bloodCompare",
+      "value": 15
+    },
+    "description": "Caster has at least 15 blood.",
+    "displayName": "Blood \u003e= 15",
+    "id": "has_enough_blood_for_mist",
+    "tags": []
+  }
+]

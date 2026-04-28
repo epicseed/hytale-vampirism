@@ -1,0 +1,103 @@
+{
+  "Model": "Items/Projectiles/Blood_Throw_Projectile.blockymodel",
+  "Texture": "Items/Projectiles/Blood_Throw_Projectile.png",
+  "HitBox": {
+    "Max": {
+      "X": 0.1,
+      "Y": 0.1,
+      "Z": 0.1
+    },
+    "Min": {
+      "X": -0.1,
+      "Y": -0.1,
+      "Z": -0.1
+    }
+  },
+  "MinScale": 1,
+  "MaxScale": 1,
+  "Particles": [
+    {
+      "PositionOffset": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Z": 0.0
+      },
+      "SystemId": "Vampirism_NightHunt_Wisp_Particles",
+      "TargetNodeName": "Origin_Projectile"
+    },
+    {
+      "PositionOffset": {
+        "X": 0.0,
+        "Y": 0.08,
+        "Z": 0.0
+      },
+      "SystemId": "Vampirism_NightHunt_Wisp_Particles",
+      "TargetNodeName": "Origin_Projectile"
+    }
+  ],
+  "Trails": [
+    {
+      "TargetNodeName": "Origin_Projectile",
+      "TrailId": "Blood_Throw_Trail"
+    },
+    {
+      "TargetNodeName": "Origin_Projectile",
+      "TrailId": "Blood_Throw_Trail",
+      "RotationOffset": {
+        "Yaw": 90,
+        "Pitch": 0,
+        "Roll": 45
+      }
+    },
+    {
+      "TargetNodeName": "Origin_Projectile",
+      "TrailId": "Blood_Throw_Trail",
+      "RotationOffset": {
+        "Yaw": 180,
+        "Pitch": 0,
+        "Roll": 90
+      }
+    },
+    {
+      "TargetNodeName": "Origin_Projectile",
+      "TrailId": "Blood_Throw_Trail",
+      "RotationOffset": {
+        "Yaw": 270,
+        "Pitch": 0,
+        "Roll": 135
+      }
+    },
+    {
+      "TargetNodeName": "Origin_Projectile",
+      "TrailId": "Blood_Throw_Trail",
+      "RotationOffset": {
+        "Yaw": 0,
+        "Pitch": 45,
+        "Roll": 90
+      }
+    },
+    {
+      "TargetNodeName": "Origin_Projectile",
+      "TrailId": "Blood_Throw_Trail",
+      "RotationOffset": {
+        "Yaw": 180,
+        "Pitch": 45,
+        "Roll": 90
+      }
+    }
+  ],
+  "AnimationSets": {
+    "FlyIdle": {
+      "Animations": [
+        {
+          "Animation": "Items/Animations/Spin_Roll/Spin_Roll_Left.blockyanim",
+          "BlendingDuration": 0,
+          "Speed": 1.45
+        }
+      ]
+    }
+  },
+  "Light": {
+    "Color": "#9a2745"
+  }
+}

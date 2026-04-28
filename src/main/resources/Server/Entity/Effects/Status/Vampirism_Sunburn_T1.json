@@ -1,0 +1,31 @@
+{
+    "ApplicationEffects": {
+        "EntityBottomTint": "#2a0000",
+        "EntityTopTint": "#ff4400",
+        "ScreenEffect": "ScreenEffects/SunFire.png",
+        "WorldSoundEventId": "SFX_Effect_Burn_World",
+        "LocalSoundEventId": "SFX_Effect_Burn_Local",
+        "Particles": [
+            {
+                "SystemId": "Effect_Fire"
+            }
+        ]
+    },
+    "DamageCalculator": {
+        "BaseDamage": {
+            "Fire": 2
+        }
+    },
+    "DamageCalculatorCooldown": 1.0,
+    "DamageEffects": {
+        "WorldSoundEventId": "SFX_Effect_Burn_World",
+        "PlayerSoundEventId": "SFX_Effect_Burn_Local"
+    },
+    "OverlapBehavior": "Overwrite",
+    "RemovalBehavior": "Complete",
+    "Infinite": false,
+    "Debuff": true,
+    "StatusEffectIcon": "UI/StatusEffects/Vampirism_Sunburn_T1.png",
+    "DeathMessageKey": "server.general.deathCause.burn",
+    "Duration": 5
+}
