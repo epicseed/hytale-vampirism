@@ -24,6 +24,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 public class RelicCooldownHud extends CustomUIHud {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+    private static final long INITIAL_UPDATE_GRACE_MS = 500L;
 
     private static final String RELIC_ITEM_ID = "VampirismRelic";
     private static final String EMPTY_ICON = "Vampirism/Common/WIPIcon.png";
@@ -37,6 +38,8 @@ public class RelicCooldownHud extends CustomUIHud {
     };
 
     private final PlayerRef ownerRef;
+    private RelicCooldownDisplayState state = RelicCooldownDisplayState.defaultState();
+    private final long suppressUpdatesUntilMs = System.currentTimeMillis() + INITIAL_UPDATE_GRACE_MS;
 
     public RelicCooldownHud(@Nonnull PlayerRef playerRef) {
         super(playerRef);
@@ -46,45 +49,75 @@ public class RelicCooldownHud extends CustomUIHud {
     @Override
     protected void build(@Nonnull UICommandBuilder builder) {
         builder.append("Vampirism/RelicCooldownHud.ui");
+        writeState(builder, state);
+    }
+
+    public void primeState(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
+        this.state = createState(ref, store);
     }
 
     public void refresh(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
+        applyState(createState(ref, store));
+    }
+
+    private void applyState(@Nonnull RelicCooldownDisplayState nextState) {
+        if (state.matches(nextState)) {
+            return;
+        }
+        state = nextState;
+        if (System.currentTimeMillis() < suppressUpdatesUntilMs) {
+            return;
+        }
+
         try {
             UICommandBuilder builder = new UICommandBuilder();
-            boolean relicInHand = isRelicInHand(ref, store);
-            builder.set("#RelicCooldownHudRoot.Visible", relicInHand);
-            if (relicInHand) {
-                updateSlots(builder);
-            }
+            writeState(builder, state);
             this.update(false, builder);
         } catch (Exception e) {
             LOGGER.atSevere().log("[RelicCooldownHud] Error updating HUD: " + e.getMessage());
         }
     }
 
-    private void updateSlots(@Nonnull UICommandBuilder builder) {
+    @Nonnull
+    private RelicCooldownDisplayState createState(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
+        boolean relicInHand = isRelicInHand(ref, store);
+        SlotDisplayState[] slots = new SlotDisplayState[SLOT_KEYS.length];
         for (int i = 0; i < SLOT_KEYS.length; i++) {
             String slotKey = SLOT_KEYS[i];
-            String selector = SLOT_SELECTORS[i];
             String abilityId = PlayerRelicBindings.get().abilityFor(ownerRef.getUuid(), slotKey);
             Ability ability = abilityId != null && !abilityId.isBlank()
                     ? Vampirism.getInstance().GetAbilityRegistry().Get(abilityId)
                     : null;
             Skill owner = abilityId != null && !abilityId.isBlank() ? findSkillByAbilityId(abilityId) : null;
 
-            builder.set(selector + " #SlotHitArea.Background", raritySlotPath(owner != null ? owner.rarity : null));
-            builder.set(selector + " #RarityOverlay.Background", raritySlotOverlayPath(owner != null ? owner.rarity : null));
-
             boolean hasBinding = abilityId != null && !abilityId.isBlank();
-            builder.set(selector + " #SlotIcon.Visible", hasBinding);
-            builder.set(selector + " #SlotIcon.Background", hasBinding ? iconPath(owner) : EMPTY_ICON);
-
             long remainingMs = ability != null ? AbilityCooldownTracker.getRemainingMs(ownerRef.getUuid(), ability.id) : 0L;
             boolean onCooldown = remainingMs > 0L;
-            builder.set(selector + " #CooldownOverlay.Visible", onCooldown);
-            builder.set(selector + " #CooldownText.Visible", onCooldown);
-            builder.set(selector + " #CooldownText.Text", onCooldown ? formatCooldown(remainingMs) : "");
-            builder.set(selector + " #SlotHint.Text", slotHint(slotKey));
+            slots[i] = new SlotDisplayState(
+                    raritySlotPath(owner != null ? owner.rarity : null),
+                    raritySlotOverlayPath(owner != null ? owner.rarity : null),
+                    hasBinding,
+                    hasBinding ? iconPath(owner) : EMPTY_ICON,
+                    onCooldown,
+                    onCooldown ? formatCooldown(remainingMs) : "",
+                    slotHint(slotKey));
+        }
+        return new RelicCooldownDisplayState(relicInHand, slots);
+    }
+
+    private static void writeState(@Nonnull UICommandBuilder builder, @Nonnull RelicCooldownDisplayState state) {
+        builder.set("#RelicCooldownHudRoot.Visible", state.relicInHand);
+        for (int i = 0; i < SLOT_SELECTORS.length; i++) {
+            String selector = SLOT_SELECTORS[i];
+            SlotDisplayState slot = state.slots[i];
+            builder.set(selector + " #SlotHitArea.Background", slot.slotBackground);
+            builder.set(selector + " #RarityOverlay.Background", slot.rarityOverlayBackground);
+            builder.set(selector + " #SlotIcon.Visible", slot.iconVisible);
+            builder.set(selector + " #SlotIcon.Background", slot.iconBackground);
+            builder.set(selector + " #CooldownOverlay.Visible", slot.cooldownVisible);
+            builder.set(selector + " #CooldownText.Visible", slot.cooldownVisible);
+            builder.set(selector + " #CooldownText.Text", slot.cooldownText);
+            builder.set(selector + " #SlotHint.Text", slot.slotHint);
         }
     }
 
@@ -152,5 +185,84 @@ public class RelicCooldownHud extends CustomUIHud {
             case "ability3" -> "Ability3";
             default -> "";
         };
+    }
+
+    private static final class RelicCooldownDisplayState {
+        private final boolean relicInHand;
+        private final SlotDisplayState[] slots;
+
+        private RelicCooldownDisplayState(boolean relicInHand, @Nonnull SlotDisplayState[] slots) {
+            this.relicInHand = relicInHand;
+            this.slots = slots;
+        }
+
+        @Nonnull
+        private static RelicCooldownDisplayState defaultState() {
+            SlotDisplayState[] slots = new SlotDisplayState[SLOT_KEYS.length];
+            for (int i = 0; i < SLOT_KEYS.length; i++) {
+                slots[i] = SlotDisplayState.defaultState(slotHint(SLOT_KEYS[i]));
+            }
+            return new RelicCooldownDisplayState(false, slots);
+        }
+
+        private boolean matches(@Nonnull RelicCooldownDisplayState other) {
+            if (relicInHand != other.relicInHand || slots.length != other.slots.length) {
+                return false;
+            }
+            for (int i = 0; i < slots.length; i++) {
+                if (!slots[i].matches(other.slots[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    private static final class SlotDisplayState {
+        private final String slotBackground;
+        private final String rarityOverlayBackground;
+        private final boolean iconVisible;
+        private final String iconBackground;
+        private final boolean cooldownVisible;
+        private final String cooldownText;
+        private final String slotHint;
+
+        private SlotDisplayState(@Nonnull String slotBackground,
+                                 @Nonnull String rarityOverlayBackground,
+                                 boolean iconVisible,
+                                 @Nonnull String iconBackground,
+                                 boolean cooldownVisible,
+                                 @Nonnull String cooldownText,
+                                 @Nonnull String slotHint) {
+            this.slotBackground = slotBackground;
+            this.rarityOverlayBackground = rarityOverlayBackground;
+            this.iconVisible = iconVisible;
+            this.iconBackground = iconBackground;
+            this.cooldownVisible = cooldownVisible;
+            this.cooldownText = cooldownText;
+            this.slotHint = slotHint;
+        }
+
+        @Nonnull
+        private static SlotDisplayState defaultState(@Nonnull String slotHint) {
+            return new SlotDisplayState(
+                    raritySlotPath(null),
+                    raritySlotOverlayPath(null),
+                    false,
+                    EMPTY_ICON,
+                    false,
+                    "",
+                    slotHint);
+        }
+
+        private boolean matches(@Nonnull SlotDisplayState other) {
+            return iconVisible == other.iconVisible
+                    && cooldownVisible == other.cooldownVisible
+                    && slotBackground.equals(other.slotBackground)
+                    && rarityOverlayBackground.equals(other.rarityOverlayBackground)
+                    && iconBackground.equals(other.iconBackground)
+                    && cooldownText.equals(other.cooldownText)
+                    && slotHint.equals(other.slotHint);
+        }
     }
 }

@@ -13,6 +13,7 @@ import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.hud.BloodGaugeHud;
 import com.epicseed.vampirism.hud.RelicCooldownHud;
 import com.epicseed.vampirism.ui.RelicBindingsUI;
+import com.epicseed.vampirism.ui.SkillTreeUI;
 import com.hypixel.hytale.builtin.mounts.BlockMountComponent;
 import com.hypixel.hytale.builtin.mounts.MountedComponent;
 import com.epicseed.vampirism.modifier.ContextKey;
@@ -37,6 +38,7 @@ import com.hypixel.hytale.protocol.packets.interface_.HudComponent;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
+import com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
@@ -222,8 +224,13 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
             Player player = (Player) store.getComponent(playerRef, Player.getComponentType());
             if (player == null) return;
 
+            CustomUIPage activeCustomPage = player.getPageManager().getCustomPage();
+            boolean relicBindingsOpen = activeCustomPage instanceof RelicBindingsUI;
+            boolean skillTreeOpen = activeCustomPage instanceof SkillTreeUI;
+            boolean blockRelicHudRefresh = activeCustomPage != null;
+
             PlayerRef playerRefComponent = (PlayerRef) store.getComponent(playerRef, PlayerRef.getComponentType());
-            if (playerRefComponent != null) {
+            if (playerRefComponent != null && relicBindingsOpen) {
                 RelicBindingsUI.refreshOpenCooldowns(playerRefComponent.getUuid());
             }
             if (playerRefComponent == null) {
@@ -289,7 +296,10 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
             long cooldownHudInterval = VampirismConfig.get().getCooldownHudUpdateIntervalMs();
             boolean relicInHand = isRelicInHand(playerRef, store);
             syncInputBindingsHud(player, playerRefComponent, state, relicInHand);
-            if (relicHud != null && (cooldownHudInterval <= 0L
+            if (relicHud != null
+                    && !blockRelicHudRefresh
+                    && !skillTreeOpen
+                    && (cooldownHudInterval <= 0L
                     || now - state.lastCooldownHudUpdateTime >= cooldownHudInterval)) {
                 state.lastCooldownHudUpdateTime = now;
                 relicHud.refresh(playerRef, store);
@@ -411,6 +421,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
             boolean cooldownReady = relicCooldownHuds.containsKey(pRef);
             if (!cooldownReady) {
                 RelicCooldownHud relicHud = new RelicCooldownHud(pr);
+                relicHud.primeState(pRef, store);
                 cooldownReady = mhudSet(p, pr, RELIC_COOLDOWN_HUD_KEY, relicHud);
                 if (cooldownReady) {
                     relicCooldownHuds.put(pRef, relicHud);
