@@ -8,6 +8,9 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
+/**
+ * Mutable carrier for the night-hunt state machine.
+ */
 public final class HuntState {
     public HuntPhase phase = HuntPhase.IDLE;
     public float cooldownRemainingSeconds = 0f;

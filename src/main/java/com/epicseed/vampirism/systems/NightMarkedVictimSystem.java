@@ -6,15 +6,19 @@ import com.epicseed.vampirism.domain.hunt.HuntPhase;
 import com.epicseed.vampirism.domain.hunt.HuntState;
 import com.epicseed.vampirism.domain.hunt.NightHuntCleanupService;
 import com.epicseed.vampirism.domain.hunt.NightHuntDebugInfo;
+import com.epicseed.vampirism.domain.hunt.NightHuntEventService;
+import com.epicseed.vampirism.domain.hunt.NightHuntFailureResult;
+import com.epicseed.vampirism.domain.hunt.NightHuntFailureService;
+import com.epicseed.vampirism.domain.hunt.NightHuntGeometry;
 import com.epicseed.vampirism.domain.hunt.NightHuntMarkerService;
 import com.epicseed.vampirism.domain.hunt.NightHuntMessages;
 import com.epicseed.vampirism.domain.hunt.NightHuntPreySpawnService;
 import com.epicseed.vampirism.domain.hunt.NightHuntRewardService;
 import com.epicseed.vampirism.domain.hunt.NightHuntRouteService;
+import com.epicseed.vampirism.domain.hunt.NightHuntTimeService;
 import com.epicseed.vampirism.domain.hunt.NightHuntTrackingService;
 import com.epicseed.vampirism.domain.hunt.NightHuntVisualService;
 import com.epicseed.vampirism.domain.hunt.PendingRouteKind;
-import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.hypixel.hytale.component.Archetype;
@@ -34,7 +38,6 @@ import com.hypixel.hytale.server.core.modules.entity.component.TransformComponen
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
-import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -69,8 +72,8 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         if (state == null) {
             return;
         }
-        clearPreyTracking(state.preyEntityUuid);
-        clearApproachMarker(state);
+        NightHuntTrackingService.clearPrey(state.preyEntityUuid);
+        NightHuntMarkerService.clearApproachMarker(state);
         removeEntityImmediately(state.preyRef);
         removeEntityImmediately(state.waypointDisplayRef);
         for (Ref<EntityStore> helperRef : state.helperRefs) {
@@ -170,13 +173,13 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
                 Math.max(0, state.completedWaypoints),
                 targetWaypointCount(state),
                 Math.max(0, state.bonusWaypoints),
-                clampVisualTier(state.visualTier),
+                NightHuntVisualService.clampVisualTier(state.visualTier),
                 state.forced,
                 state.phase == HuntPhase.PREY_ACTIVE && state.preyRef != null && state.preyRef.isValid());
     }
 
     public static int getBaseVisualTierForAcquiredPoints(int acquiredPoints) {
-        return computeBaseVisualTier(acquiredPoints);
+        return NightHuntVisualService.computeBaseVisualTier(acquiredPoints);
     }
 
     public static void onPlayerKilledMarkedPrey(@Nullable UUID attackerUuid,
@@ -240,7 +243,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
             return;
         }
 
-        if (!isNightPeriod(store) && !state.forced) {
+        if (!NightHuntTimeService.isNightPeriod(store) && !state.forced) {
             clearTransientHunt(state, commandBuffer);
             state.idleDelayRemainingSeconds = randomIdleDelaySeconds();
             return;
@@ -304,7 +307,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
             return;
         }
 
-        if (!isWithinActivationRange(
+        if (!NightHuntGeometry.isWithinActivationRange(
                 playerTransform.getPosition(),
                 state.destination,
                 VampirismConfig.get().getNightHuntArrivalRadius())) {
@@ -317,7 +320,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
             return;
         }
 
-        clearApproachMarker(state);
+        NightHuntMarkerService.clearApproachMarker(state);
         if (!beginGuidingRoute(
                 state,
                 playerRef,
@@ -351,18 +354,18 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         }
         float waypointCancelDistance = VampirismConfig.get().getNightHuntWaypointCancelDistance();
         if (waypointCancelDistance > 0f
-                && horizontalDistance(playerTransform.getPosition(), state.destination) > waypointCancelDistance) {
+                && NightHuntGeometry.horizontalDistance(playerTransform.getPosition(), state.destination) > waypointCancelDistance) {
             cancelActiveHunt(playerRef, state, store, commandBuffer, NightHuntMessages.CANCEL_WAYPOINT_DISTANCE, "yellow");
             return;
         }
 
-        boolean markerActive = isWithinActivationRange(
+        boolean markerActive = NightHuntGeometry.isWithinActivationRange(
                 playerTransform.getPosition(),
                 state.destination,
                 VampirismConfig.get().getNightHuntArrivalRadius());
-        syncWaypointDisplay(dt, state, markerActive, store, commandBuffer);
-        updateGuideWisps(dt, state, store, commandBuffer);
-        emitGuidePulse(dt, playerRef, playerTransform, state, store, commandBuffer);
+        NightHuntVisualService.syncWaypointDisplay(dt, state, markerActive, store, commandBuffer);
+        NightHuntVisualService.updateGuideWisps(dt, state, store, commandBuffer);
+        NightHuntVisualService.emitGuidePulse(dt, extractPlayerUuid(playerRef, store), playerTransform, state, store, commandBuffer);
         if (!markerActive) {
             return;
         }
@@ -375,8 +378,8 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
 
         World world = resolveWorld(store);
         if (world != null && state.completedWaypoints < targetWaypointCount(state)) {
-            clearWaypointDisplay(state, commandBuffer);
-            clearGuideWisps(state, commandBuffer);
+            NightHuntCleanupService.clearWaypointDisplay(state, commandBuffer);
+            NightHuntCleanupService.clearGuideWisps(state, commandBuffer);
             if (queueGuidingRouteResolution(
                     state,
                     playerRef,
@@ -390,7 +393,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
 
         state.phase = HuntPhase.SUMMONING;
         state.summonRemainingSeconds = VampirismConfig.get().getNightHuntSummonDurationSeconds();
-        sendPlayerMessage(playerRef, store, NightHuntMessages.SUMMON, "red");
+        NightHuntMessages.send(playerRef, store, NightHuntMessages.SUMMON, "red");
     }
 
     private static void tickSummoning(float dt,
@@ -405,13 +408,13 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
             return;
         }
 
-        boolean markerActive = isWithinActivationRange(
+        boolean markerActive = NightHuntGeometry.isWithinActivationRange(
                 playerTransform.getPosition(),
                 state.destination,
                 VampirismConfig.get().getNightHuntSummonCancelRadius());
-        syncWaypointDisplay(dt, state, markerActive, store, commandBuffer);
-        updateGuideWisps(dt, state, store, commandBuffer);
-        emitGuidePulse(dt, playerRef, playerTransform, state, store, commandBuffer);
+        NightHuntVisualService.syncWaypointDisplay(dt, state, markerActive, store, commandBuffer);
+        NightHuntVisualService.updateGuideWisps(dt, state, store, commandBuffer);
+        NightHuntVisualService.emitGuidePulse(dt, extractPlayerUuid(playerRef, store), playerTransform, state, store, commandBuffer);
         if (!markerActive) {
             UUID ownerUuid = extractPlayerUuid(playerRef, store);
             if (ownerUuid != null) {
@@ -419,7 +422,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
             } else {
                 state.phase = HuntPhase.GUIDING;
                 state.summonRemainingSeconds = 0f;
-                sendPlayerMessage(playerRef, store, NightHuntMessages.FAIL, "yellow");
+                NightHuntMessages.send(playerRef, store, NightHuntMessages.FAIL, "yellow");
             }
             return;
         }
@@ -450,8 +453,8 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
             if (state.preyRef.isValid()) {
                 commandBuffer.tryRemoveEntity(state.preyRef, RemoveReason.REMOVE);
             }
-            clearPreyTracking(state.preyEntityUuid);
-            clearHelperRefs(state, commandBuffer);
+            NightHuntTrackingService.clearPrey(state.preyEntityUuid);
+            NightHuntCleanupService.clearHelperRefs(state, commandBuffer);
             if (state.ownerUuid != null && state.ownerPlayerRef != null && state.ownerPlayerRef.isValid()) {
                 TransformComponent ownerTransform = (TransformComponent) store.getComponent(
                         state.ownerPlayerRef, TransformComponent.getComponentType());
@@ -465,50 +468,11 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         }
     }
 
-    private static void emitGuidePulse(float dt,
-                                       @Nonnull Ref<EntityStore> playerRef,
-                                       @Nonnull TransformComponent playerTransform,
-                                       @Nonnull HuntState state,
-                                       @Nonnull Store<EntityStore> store,
-                                       @Nonnull CommandBuffer<EntityStore> commandBuffer) {
-        NightHuntVisualService.emitGuidePulse(dt, extractPlayerUuid(playerRef, store), playerTransform, state, store, commandBuffer);
-    }
-
-    private static void spawnGuidePulse(@Nonnull UUID ownerUuid,
-                                        @Nonnull TransformComponent playerTransform,
-                                        @Nonnull HuntState state,
-                                         int pulseIndex,
-                                         int pulseCount,
-                                         @Nonnull Store<EntityStore> store) {
-        NightHuntVisualService.spawnGuidePulse(ownerUuid, playerTransform, state, pulseIndex, pulseCount, store);
-    }
-
-    private static void updateGuideWisps(float dt,
-                                          @Nonnull HuntState state,
-                                          @Nonnull Store<EntityStore> store,
-                                          @Nonnull CommandBuffer<EntityStore> commandBuffer) {
-        NightHuntVisualService.updateGuideWisps(dt, state, store, commandBuffer);
-    }
-
-    private static void syncWaypointDisplay(float dt,
-                                            @Nonnull HuntState state,
-                                             boolean markerActive,
-                                             @Nonnull Store<EntityStore> store,
-                                             @Nonnull CommandBuffer<EntityStore> commandBuffer) {
-        NightHuntVisualService.syncWaypointDisplay(dt, state, markerActive, store, commandBuffer);
-    }
-
-    private static void spawnWaypointDisplay(@Nonnull HuntState state,
-                                              boolean markerActive,
-                                              @Nonnull Store<EntityStore> store) {
-        NightHuntVisualService.spawnWaypointDisplay(state, markerActive, store);
-    }
-
     private static void spawnMarkedPrey(@Nonnull UUID ownerUuid,
                                         @Nonnull Ref<EntityStore> playerRef,
                                         @Nonnull HuntState state,
                                         @Nonnull Store<EntityStore> store) {
-        if (!NightHuntPreySpawnService.spawnMarkedPrey(ownerUuid, playerRef, state, store, currentHour(store))) {
+        if (!NightHuntPreySpawnService.spawnMarkedPrey(ownerUuid, playerRef, state, store, NightHuntTimeService.currentHour(store))) {
             resetToIdle(state, VampirismConfig.get().getNightHuntFailedCooldownSeconds());
         }
     }
@@ -526,7 +490,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         }
         Vector3d origin = playerTransform.getPosition();
         float baseYaw = playerTransform.getRotation() != null ? playerTransform.getRotation().getYaw() : 0f;
-        long requestId = beginPendingRoute(state, PendingRouteKind.START);
+        long requestId = NightHuntRouteService.beginPendingRoute(state, PendingRouteKind.START);
         state.ownerPlayerRef = playerRef;
         state.forced = forced;
         VampirismConfig config = VampirismConfig.get();
@@ -559,15 +523,15 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
                                                  double minDistance,
                                                  double maxDistance) {
         HuntState activeState = ACTIVE_HUNTS.get(ownerUuid);
-        if (activeState != state || !isPendingRoute(state, requestId, PendingRouteKind.START)) {
+        if (activeState != state || !NightHuntRouteService.isPendingRoute(state, requestId, PendingRouteKind.START)) {
             return;
         }
         if (!playerRef.isValid() || store.isShutdown()) {
             resetToIdle(state, 0f);
             return;
         }
-        Vector3d destination = findHuntDestinationAllowLoading(origin, baseYaw, world, minDistance, maxDistance);
-        if (!isPendingRoute(state, requestId, PendingRouteKind.START)) {
+        Vector3d destination = NightHuntRouteService.findHuntDestinationAllowLoading(origin, baseYaw, world, minDistance, maxDistance);
+        if (!NightHuntRouteService.isPendingRoute(state, requestId, PendingRouteKind.START)) {
             return;
         }
         if (destination == null) {
@@ -575,13 +539,13 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
             return;
         }
 
-        clearPendingRoute(state);
+        NightHuntCleanupService.clearPendingRoute(state);
         state.phase = HuntPhase.APPROACHING;
         state.destination = destination;
         state.waypointIndex = 1;
         state.completedWaypoints = 0;
         state.bonusWaypoints = 0;
-        state.routeYawDegrees = yawBetween(origin, destination);
+        state.routeYawDegrees = NightHuntRouteService.yawBetween(origin, destination);
         state.waypointRotationDegrees = (float) state.routeYawDegrees;
         state.waypointDisplayUpdateAccumulator = 0f;
         state.approachElapsedSeconds = 0f;
@@ -590,15 +554,15 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         state.summonRemainingSeconds = 0f;
         state.preyLifetimeRemainingSeconds = 0f;
         state.preyRewardPoints = 0;
-        state.visualTier = computeBaseVisualTier(acquiredPoints);
+        state.visualTier = NightHuntVisualService.computeBaseVisualTier(acquiredPoints);
         state.ownerUuid = null;
         state.ownerPlayerRef = playerRef;
         state.approachMarkerId = NightHuntMarkerService.markerIdFor(extractPlayerUuid(playerRef, store));
         state.approachMarkerWorldName = world.getName();
-        clearHelperRefs(state, null);
+        NightHuntCleanupService.clearHelperRefs(state, null);
         state.forced = forced;
         setApproachMarker(state, playerRef, store, world);
-        sendPlayerMessage(playerRef, store, NightHuntMessages.START, "dark_red");
+        NightHuntMessages.send(playerRef, store, NightHuntMessages.START, "dark_red");
     }
 
     private static boolean beginGuidingRoute(@Nonnull HuntState state,
@@ -612,7 +576,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         if (state.phase != HuntPhase.APPROACHING) {
             return false;
         }
-        long requestId = beginPendingRoute(state, PendingRouteKind.APPROACH);
+        long requestId = NightHuntRouteService.beginPendingRoute(state, PendingRouteKind.APPROACH);
         state.ownerPlayerRef = playerRef;
         VampirismConfig config = VampirismConfig.get();
         world.execute(() -> resolveApproachGuidingRoute(
@@ -641,15 +605,15 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
                                                     int visualTier,
                                                     double minDistance,
                                                     double maxDistance) {
-        if (!isPendingRoute(state, requestId, PendingRouteKind.APPROACH)) {
+        if (!NightHuntRouteService.isPendingRoute(state, requestId, PendingRouteKind.APPROACH)) {
             return;
         }
         if (!playerRef.isValid() || store.isShutdown()) {
             resetToIdle(state, 0f);
             return;
         }
-        Vector3d destination = findHuntDestinationAllowLoading(origin, baseYaw, world, minDistance, maxDistance);
-        if (!isPendingRoute(state, requestId, PendingRouteKind.APPROACH)) {
+        Vector3d destination = NightHuntRouteService.findHuntDestinationAllowLoading(origin, baseYaw, world, minDistance, maxDistance);
+        if (!NightHuntRouteService.isPendingRoute(state, requestId, PendingRouteKind.APPROACH)) {
             return;
         }
         if (destination == null) {
@@ -657,13 +621,13 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
             return;
         }
 
-        clearPendingRoute(state);
+        NightHuntCleanupService.clearPendingRoute(state);
         state.phase = HuntPhase.GUIDING;
         state.destination = destination;
         state.waypointIndex = 1;
         state.completedWaypoints = 0;
         state.bonusWaypoints = 0;
-        state.routeYawDegrees = yawBetween(origin, destination);
+        state.routeYawDegrees = NightHuntRouteService.yawBetween(origin, destination);
         state.waypointRotationDegrees = (float) state.routeYawDegrees;
         state.waypointDisplayUpdateAccumulator = 0f;
         state.approachElapsedSeconds = 0f;
@@ -672,13 +636,13 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         state.summonRemainingSeconds = 0f;
         state.preyLifetimeRemainingSeconds = 0f;
         state.preyRewardPoints = 0;
-        state.visualTier = clampVisualTier(visualTier);
+        state.visualTier = NightHuntVisualService.clampVisualTier(visualTier);
         state.ownerUuid = null;
         state.approachMarkerId = null;
         state.approachMarkerWorldName = null;
-        clearHelperRefs(state, null);
+        NightHuntCleanupService.clearHelperRefs(state, null);
         state.forced = forced;
-        sendPlayerMessage(playerRef, store, NightHuntMessages.TRAIL, "dark_red");
+        NightHuntMessages.send(playerRef, store, NightHuntMessages.TRAIL, "dark_red");
     }
 
     private static boolean queueGuidingRouteResolution(@Nonnull HuntState state,
@@ -690,7 +654,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         if (state.phase != HuntPhase.GUIDING) {
             return false;
         }
-        long requestId = beginPendingRoute(state, PendingRouteKind.WAYPOINT);
+        long requestId = NightHuntRouteService.beginPendingRoute(state, PendingRouteKind.WAYPOINT);
         VampirismConfig config = VampirismConfig.get();
         world.execute(() -> resolveWaypointGuidingRoute(
                 state,
@@ -714,21 +678,21 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
                                                     float baseYaw,
                                                     double minDistance,
                                                     double maxDistance) {
-        if (!isPendingRoute(state, requestId, PendingRouteKind.WAYPOINT)) {
+        if (!NightHuntRouteService.isPendingRoute(state, requestId, PendingRouteKind.WAYPOINT)) {
             return;
         }
         if (!playerRef.isValid() || store.isShutdown()) {
             resetToIdle(state, 0f);
             return;
         }
-        Vector3d nextDestination = findHuntDestinationAllowLoading(origin, baseYaw, world, minDistance, maxDistance);
-        if (!isPendingRoute(state, requestId, PendingRouteKind.WAYPOINT)) {
+        Vector3d nextDestination = NightHuntRouteService.findHuntDestinationAllowLoading(origin, baseYaw, world, minDistance, maxDistance);
+        if (!NightHuntRouteService.isPendingRoute(state, requestId, PendingRouteKind.WAYPOINT)) {
             return;
         }
-        clearPendingRoute(state);
+        NightHuntCleanupService.clearPendingRoute(state);
         if (nextDestination != null) {
             state.phase = HuntPhase.GUIDING;
-            state.routeYawDegrees = yawBetween(origin, nextDestination);
+            state.routeYawDegrees = NightHuntRouteService.yawBetween(origin, nextDestination);
             state.destination = nextDestination;
             state.waypointIndex = state.completedWaypoints + 1;
             state.waypointElapsedSeconds = 0f;
@@ -738,41 +702,15 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
 
         state.phase = HuntPhase.SUMMONING;
         state.summonRemainingSeconds = VampirismConfig.get().getNightHuntSummonDurationSeconds();
-        sendPlayerMessage(playerRef, store, NightHuntMessages.SUMMON, "red");
-    }
-
-    @Nullable
-    private static Vector3d findHuntDestination(@Nonnull Vector3d origin,
-                                                float baseYaw,
-                                                @Nonnull World world,
-                                                double minDistance,
-                                                double maxDistance) {
-        return NightHuntRouteService.findHuntDestination(origin, baseYaw, world, minDistance, maxDistance);
-    }
-
-    @Nullable
-    private static Vector3d findHuntDestinationAllowLoading(@Nonnull Vector3d origin,
-                                                            float baseYaw,
-                                                            @Nonnull World world,
-                                                            double minDistance,
-                                                            double maxDistance) {
-        return NightHuntRouteService.findHuntDestinationAllowLoading(origin, baseYaw, world, minDistance, maxDistance);
+        NightHuntMessages.send(playerRef, store, NightHuntMessages.SUMMON, "red");
     }
 
     private static void clearTransientHunt(@Nonnull HuntState state, @Nonnull CommandBuffer<EntityStore> commandBuffer) {
-        NightHuntCleanupService.clearTransientHunt(state, commandBuffer, () -> clearApproachMarker(state));
+        NightHuntCleanupService.clearTransientHunt(state, commandBuffer, () -> NightHuntMarkerService.clearApproachMarker(state));
     }
 
     private static void resetToIdle(@Nonnull HuntState state, float cooldownSeconds) {
-        NightHuntCleanupService.resetToIdle(state, cooldownSeconds, randomIdleDelaySeconds(), () -> clearApproachMarker(state));
-    }
-
-    private static void clearWaypointDisplay(@Nonnull HuntState state, @Nonnull CommandBuffer<EntityStore> commandBuffer) {
-        NightHuntCleanupService.clearWaypointDisplay(state, commandBuffer);
-    }
-
-    private static void clearGuideWisps(@Nonnull HuntState state, @Nullable CommandBuffer<EntityStore> commandBuffer) {
-        NightHuntCleanupService.clearGuideWisps(state, commandBuffer);
+        NightHuntCleanupService.resetToIdle(state, cooldownSeconds, randomIdleDelaySeconds(), () -> NightHuntMarkerService.clearApproachMarker(state));
     }
 
     private static void cancelActiveHunt(@Nonnull Ref<EntityStore> playerRef,
@@ -786,137 +724,40 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
                 state.cooldownRemainingSeconds,
                 VampirismConfig.get().getNightHuntFailedCooldownSeconds());
         state.idleDelayRemainingSeconds = randomIdleDelaySeconds();
-        sendPlayerMessage(playerRef, store, message, color);
-    }
-
-    private static void clearHelperRefs(@Nonnull HuntState state, @Nullable CommandBuffer<EntityStore> commandBuffer) {
-        NightHuntCleanupService.clearHelperRefs(state, commandBuffer);
+        NightHuntMessages.send(playerRef, store, message, color);
     }
 
     private static void applyRouteEvent(@Nonnull UUID ownerUuid,
                                         @Nonnull Ref<EntityStore> playerRef,
                                         @Nonnull TransformComponent playerTransform,
-                                        @Nonnull HuntState state,
-                                        @Nonnull Store<EntityStore> store,
-                                        @Nonnull CommandBuffer<EntityStore> commandBuffer) {
-        NightHuntSpawnRegistry.RouteEventOption routeEvent = NightHuntSpawnRegistry.get().pickRouteEvent(
-                new NightHuntSpawnRegistry.RouteEventContext(
-                        PlayerSkillRegistry.get().getAcquiredSkillPoints(ownerUuid),
-                        state.completedWaypoints,
-                        state.forced,
-                        currentHour(store),
-                        state.visualTier));
-        if (routeEvent == null) {
-            return;
-        }
-
-        if (routeEvent.text() != null) {
-            sendPlayerMessage(playerRef, store, routeEvent.text(), routeEvent.textColor());
-        }
-        state.bonusWaypoints = Math.max(0, state.bonusWaypoints + routeEvent.extraWaypoints());
-        state.visualTier = clampVisualTier(state.visualTier + routeEvent.visualTierDelta());
-        for (int i = 0; i < routeEvent.instantGuideBursts(); i++) {
-            final int burstIndex = i;
-            commandBuffer.run(bufferStore -> spawnGuidePulse(
-                    ownerUuid,
-                    playerTransform,
-                    state,
-                    burstIndex,
-                    Math.max(1, routeEvent.instantGuideBursts()),
-                    bufferStore));
-        }
-    }
-
-    private static void resolveFailState(@Nonnull UUID ownerUuid,
-                                         @Nonnull Ref<EntityStore> playerRef,
-                                         @Nonnull TransformComponent playerTransform,
-                                         @Nonnull String failurePhase,
                                          @Nonnull HuntState state,
                                          @Nonnull Store<EntityStore> store,
                                          @Nonnull CommandBuffer<EntityStore> commandBuffer) {
-        NightHuntSpawnRegistry.FailStateOption failState = NightHuntSpawnRegistry.get().pickFailState(
-                new NightHuntSpawnRegistry.FailStateContext(
-                        PlayerSkillRegistry.get().getAcquiredSkillPoints(ownerUuid),
-                        state.completedWaypoints,
-                        state.forced,
-                        currentHour(store),
-                        state.visualTier,
-                        failurePhase));
-        if (failState == null) {
-            if (FAIL_PHASE_SUMMONING.equals(failurePhase)) {
-                state.phase = HuntPhase.GUIDING;
-                state.summonRemainingSeconds = 0f;
-                sendPlayerMessage(playerRef, store, NightHuntMessages.FAIL, "yellow");
-                return;
-            }
-            resetToIdle(state, VampirismConfig.get().getNightHuntFailedCooldownSeconds());
-            return;
-        }
-
-        if (failState.text() != null) {
-            sendPlayerMessage(playerRef, store, failState.text(), failState.textColor());
-        }
-
-        if (failState.resumeGuiding()) {
-            state.phase = HuntPhase.GUIDING;
-            state.summonRemainingSeconds = 0f;
-            state.visualTier = clampVisualTier(Math.max(state.visualTier, failState.ambushVisualTier()));
-            clearGuideWisps(state, commandBuffer);
-            return;
-        }
-
-        if (failState.ambushRoleId() != null) {
-            clearGuideWisps(state, commandBuffer);
-            clearWaypointDisplay(state, commandBuffer);
-            clearHelperRefs(state, commandBuffer);
-            if (state.preyRef != null && state.preyRef.isValid()) {
-                commandBuffer.tryRemoveEntity(state.preyRef, RemoveReason.REMOVE);
-            }
-            clearPreyTracking(state.preyEntityUuid);
-            commandBuffer.run(bufferStore -> spawnAmbushPrey(ownerUuid, playerRef, playerTransform, state, failState, bufferStore));
-            return;
-        }
-
-        resetToIdle(state, failState.cooldownSeconds() > 0f
-                ? failState.cooldownSeconds()
-                : VampirismConfig.get().getNightHuntFailedCooldownSeconds());
+        NightHuntEventService.applyRouteEvent(ownerUuid, playerRef, playerTransform, state, store, commandBuffer, NightHuntTimeService.currentHour(store));
     }
 
-    private static void spawnAmbushPrey(@Nonnull UUID ownerUuid,
-                                        @Nonnull Ref<EntityStore> playerRef,
-                                        @Nonnull TransformComponent playerTransform,
-                                        @Nonnull HuntState state,
-                                        @Nonnull NightHuntSpawnRegistry.FailStateOption failState,
-                                        @Nonnull Store<EntityStore> store) {
-        if (!NightHuntPreySpawnService.spawnAmbushPrey(
+    private static NightHuntFailureResult resolveFailState(@Nonnull UUID ownerUuid,
+                                                           @Nonnull Ref<EntityStore> playerRef,
+                                                           @Nonnull TransformComponent playerTransform,
+                                                           @Nonnull String failurePhase,
+                                                           @Nonnull HuntState state,
+                                                           @Nonnull Store<EntityStore> store,
+                                                           @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+        return NightHuntFailureService.resolveFailState(
                 ownerUuid,
                 playerRef,
                 playerTransform,
+                failurePhase,
                 state,
-                failState,
                 store,
-                resolveWorld(store))) {
-            resetToIdle(state, failState.cooldownSeconds() > 0f
-                    ? failState.cooldownSeconds()
-                    : VampirismConfig.get().getNightHuntFailedCooldownSeconds());
-        }
+                commandBuffer,
+                NightHuntTimeService.currentHour(store),
+                randomIdleDelaySeconds(),
+                () -> NightHuntMarkerService.clearApproachMarker(state));
     }
 
     private static int targetWaypointCount(@Nonnull HuntState state) {
         return Math.max(1, VampirismConfig.get().getNightHuntWaypointCount() + state.bonusWaypoints);
-    }
-
-    private static int computeBaseVisualTier(int acquiredPoints) {
-        return NightHuntVisualService.computeBaseVisualTier(acquiredPoints);
-    }
-
-    private static int clampVisualTier(int visualTier) {
-        return NightHuntVisualService.clampVisualTier(visualTier);
-    }
-
-    private static int currentHour(@Nonnull Store<EntityStore> store) {
-        WorldTimeResource worldTime = store.getResource(WorldTimeResource.getResourceType());
-        return worldTime != null ? worldTime.getCurrentHour() : -1;
     }
 
     @Nonnull
@@ -943,16 +784,6 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         return millis / 1000f;
     }
 
-    private static boolean isNightPeriod(@Nonnull Store<EntityStore> store) {
-        WorldTimeResource worldTime = store.getResource(WorldTimeResource.getResourceType());
-        if (worldTime == null) {
-            return false;
-        }
-        VampirismConfig config = VampirismConfig.get();
-        return worldTime.getSunlightFactor() < 0.01d
-                && !worldTime.isDayTimeWithinRange(config.getDayStartHour(), config.getNightStartHour());
-    }
-
     @Nullable
     private static World resolveWorld(@Nonnull Store<EntityStore> store) {
         EntityStore entityStore = store.getExternalData();
@@ -966,10 +797,6 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         NightHuntMarkerService.setApproachMarker(state, playerRef, store, world, extractPlayerUuid(playerRef, store));
     }
 
-    private static void clearApproachMarker(@Nonnull HuntState state) {
-        NightHuntMarkerService.clearApproachMarker(state);
-    }
-
     @Nullable
     private static UUID extractPlayerUuid(@Nonnull Ref<EntityStore> playerRef, @Nonnull Store<EntityStore> store) {
         PlayerRef playerRefComponent = (PlayerRef) store.getComponent(playerRef, PlayerRef.getComponentType());
@@ -980,10 +807,6 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
     private static UUID extractEntityUuid(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
         UUIDComponent uuidComponent = (UUIDComponent) store.getComponent(ref, UUIDComponent.getComponentType());
         return uuidComponent != null ? uuidComponent.getUuid() : null;
-    }
-
-    private static void clearPreyTracking(@Nullable UUID preyUuid) {
-        NightHuntTrackingService.clearPrey(preyUuid);
     }
 
     private static boolean tryCompleteTrackedPreyKill(@Nonnull HuntState state,
@@ -1003,7 +826,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
                                                @Nonnull HuntState state,
                                                @Nonnull Store<EntityStore> store) {
         int rewardPoints = Math.max(0, state.preyRewardPoints);
-        clearPreyTracking(state.preyEntityUuid);
+        NightHuntTrackingService.clearPrey(state.preyEntityUuid);
         state.phase = HuntPhase.IDLE;
         state.destination = null;
         state.approachElapsedSeconds = 0f;
@@ -1016,11 +839,11 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         state.cooldownRemainingSeconds = VampirismConfig.get().getNightHuntCooldownSeconds();
         state.idleDelayRemainingSeconds = randomIdleDelaySeconds();
         state.guidePulseAccumulator = 0f;
-        clearApproachMarker(state);
+        NightHuntMarkerService.clearApproachMarker(state);
         state.waypointDisplayRef = null;
         state.waypointDisplayActive = false;
-        clearGuideWisps(state, null);
-        clearHelperRefs(state, null);
+        NightHuntCleanupService.clearGuideWisps(state, null);
+        NightHuntCleanupService.clearHelperRefs(state, null);
         state.waypointIndex = 0;
         state.completedWaypoints = 0;
         state.bonusWaypoints = 0;
@@ -1032,7 +855,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         state.ownerUuid = null;
         state.ownerPlayerRef = null;
         state.forced = false;
-        clearPendingRoute(state);
+        NightHuntCleanupService.clearPendingRoute(state);
 
         NightHuntRewardService.grantCompletionReward(ownerUuid, rewardRef, store, rewardPoints);
     }
@@ -1046,58 +869,11 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         return health == null || health.get() <= 0f;
     }
 
-    private static void sendPlayerMessage(@Nonnull Ref<EntityStore> playerRef,
-                                          @Nonnull Store<EntityStore> store,
-                                          @Nonnull String text,
-                                          @Nonnull String color) {
-        NightHuntMessages.send(playerRef, store, text, color);
-    }
-
-    private static double horizontalDistance(@Nonnull Vector3d a, @Nonnull Vector3d b) {
-        double dx = a.x - b.x;
-        double dz = a.z - b.z;
-        return Math.sqrt(dx * dx + dz * dz);
-    }
-
-    private static double distance(@Nonnull Vector3d a, @Nonnull Vector3d b) {
-        double dx = a.x - b.x;
-        double dy = a.y - b.y;
-        double dz = a.z - b.z;
-        return Math.sqrt(dx * dx + dy * dy + dz * dz);
-    }
-
-    private static boolean isWithinActivationRange(@Nonnull Vector3d playerPosition,
-                                                   @Nonnull Vector3d destination,
-                                                   float horizontalRadius) {
-        if (horizontalDistance(playerPosition, destination) > horizontalRadius) {
-            return false;
-        }
-        return Math.abs(playerPosition.y - destination.y) <= VampirismConfig.get().getNightHuntActivationHeightTolerance();
-    }
-
     private static float randomIdleDelaySeconds() {
         VampirismConfig config = VampirismConfig.get();
         return (float) ThreadLocalRandom.current().nextDouble(
                 config.getNightHuntIdleDelayMinSeconds(),
                 config.getNightHuntIdleDelayMaxSeconds());
-    }
-
-    private static double yawBetween(@Nonnull Vector3d from, @Nonnull Vector3d to) {
-        return NightHuntRouteService.yawBetween(from, to);
-    }
-
-    private static long beginPendingRoute(@Nonnull HuntState state, @Nonnull PendingRouteKind kind) {
-        return NightHuntRouteService.beginPendingRoute(state, kind);
-    }
-
-    private static void clearPendingRoute(@Nonnull HuntState state) {
-        NightHuntCleanupService.clearPendingRoute(state);
-    }
-
-    private static boolean isPendingRoute(@Nonnull HuntState state,
-                                           long requestId,
-                                           @Nonnull PendingRouteKind kind) {
-        return NightHuntRouteService.isPendingRoute(state, requestId, kind);
     }
 
 }
