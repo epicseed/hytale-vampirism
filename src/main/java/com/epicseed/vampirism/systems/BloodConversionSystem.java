@@ -53,7 +53,7 @@ public class BloodConversionSystem extends EntityTickingSystem<EntityStore> {
 
     @Override
     public Query<EntityStore> getQuery() {
-        return Query.any();
+        return Query.and(Player.getComponentType());
     }
 
     public static boolean startChannel(@Nonnull SkillRuntimeContext ctx, @Nonnull Map<String, Object> action) {

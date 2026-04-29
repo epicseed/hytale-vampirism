@@ -1,6 +1,7 @@
 package com.epicseed.vampirism.systems;
 
 import com.epicseed.vampirism.config.VampirismConfig;
+import com.epicseed.vampirism.domain.hunt.NightHuntMessages;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
@@ -66,15 +67,6 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
     private static final String WAYPOINT_PROJECTILE_ACTIVE_TIER2_ID = "Vampirism_NightHunt_Waypoint_Active_T2";
     private static final String WAYPOINT_PROJECTILE_TIER3_ID = "Vampirism_NightHunt_Waypoint_T3";
     private static final String WAYPOINT_PROJECTILE_ACTIVE_TIER3_ID = "Vampirism_NightHunt_Waypoint_Active_T3";
-    private static final String HUNT_START_TEXT = "A blood omen marks a distant place on your map.";
-    private static final String HUNT_TRAIL_TEXT = "The blood trail awakens from the marked place.";
-    private static final String HUNT_SUMMON_TEXT = "The marked prey draws near...";
-    private static final String HUNT_SPAWN_TEXT = "The marked prey emerged from the blood's call.";
-    private static final String HUNT_FAIL_TEXT = "The trail faded before the summoning could complete.";
-    private static final String HUNT_CANCEL_DEATH_TEXT = "Your death snuffs out the blood hunt.";
-    private static final String HUNT_CANCEL_APPROACH_TIMEOUT_TEXT = "The blood omen faded before you could reach it.";
-    private static final String HUNT_CANCEL_WAYPOINT_TIMEOUT_TEXT = "The blood trail went cold after too much delay.";
-    private static final String HUNT_CANCEL_WAYPOINT_DISTANCE_TEXT = "You strayed too far from the blood trail, and the hunt collapsed.";
     private static final String FAIL_PHASE_SUMMONING = "summoning";
     private static final String FAIL_PHASE_PREY_ACTIVE = "prey-active";
     private static final String PREY_HEALTH_MODIFIER_KEY = "night_hunt_prey_health_bonus";
@@ -299,7 +291,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         state.cooldownRemainingSeconds = Math.max(0f, state.cooldownRemainingSeconds - dt);
 
         if (state.phase != HuntPhase.IDLE && isDead(playerRef, store)) {
-            cancelActiveHunt(playerRef, state, store, commandBuffer, HUNT_CANCEL_DEATH_TEXT, "red");
+            cancelActiveHunt(playerRef, state, store, commandBuffer, NightHuntMessages.CANCEL_DEATH, "red");
             return;
         }
 
@@ -363,7 +355,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         state.approachElapsedSeconds += dt;
         float approachTimeoutSeconds = VampirismConfig.get().getNightHuntApproachTimeoutSeconds();
         if (approachTimeoutSeconds > 0f && state.approachElapsedSeconds >= approachTimeoutSeconds) {
-            cancelActiveHunt(playerRef, state, store, commandBuffer, HUNT_CANCEL_APPROACH_TIMEOUT_TEXT, "yellow");
+            cancelActiveHunt(playerRef, state, store, commandBuffer, NightHuntMessages.CANCEL_APPROACH_TIMEOUT, "yellow");
             return;
         }
 
@@ -409,13 +401,13 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         state.waypointElapsedSeconds += dt;
         float waypointTimeoutSeconds = VampirismConfig.get().getNightHuntWaypointTimeoutSeconds();
         if (waypointTimeoutSeconds > 0f && state.waypointElapsedSeconds >= waypointTimeoutSeconds) {
-            cancelActiveHunt(playerRef, state, store, commandBuffer, HUNT_CANCEL_WAYPOINT_TIMEOUT_TEXT, "yellow");
+            cancelActiveHunt(playerRef, state, store, commandBuffer, NightHuntMessages.CANCEL_WAYPOINT_TIMEOUT, "yellow");
             return;
         }
         float waypointCancelDistance = VampirismConfig.get().getNightHuntWaypointCancelDistance();
         if (waypointCancelDistance > 0f
                 && horizontalDistance(playerTransform.getPosition(), state.destination) > waypointCancelDistance) {
-            cancelActiveHunt(playerRef, state, store, commandBuffer, HUNT_CANCEL_WAYPOINT_DISTANCE_TEXT, "yellow");
+            cancelActiveHunt(playerRef, state, store, commandBuffer, NightHuntMessages.CANCEL_WAYPOINT_DISTANCE, "yellow");
             return;
         }
 
@@ -453,7 +445,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
 
         state.phase = HuntPhase.SUMMONING;
         state.summonRemainingSeconds = VampirismConfig.get().getNightHuntSummonDurationSeconds();
-        sendPlayerMessage(playerRef, store, HUNT_SUMMON_TEXT, "red");
+        sendPlayerMessage(playerRef, store, NightHuntMessages.SUMMON, "red");
     }
 
     private static void tickSummoning(float dt,
@@ -482,7 +474,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
             } else {
                 state.phase = HuntPhase.GUIDING;
                 state.summonRemainingSeconds = 0f;
-                sendPlayerMessage(playerRef, store, HUNT_FAIL_TEXT, "yellow");
+                sendPlayerMessage(playerRef, store, NightHuntMessages.FAIL, "yellow");
             }
             return;
         }
@@ -874,7 +866,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         PREY_OWNERS.put(preyUuid, ownerUuid);
         clearHelperRefs(state, null);
         spawnHelpers(state, preyRef, helperRoleId, helperCount, helperSpreadRadius, store);
-        sendPlayerMessage(playerRef, store, onSpawnMessage != null ? onSpawnMessage : HUNT_SPAWN_TEXT, "red");
+        sendPlayerMessage(playerRef, store, onSpawnMessage != null ? onSpawnMessage : NightHuntMessages.SPAWN, "red");
         return true;
     }
 
@@ -963,7 +955,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         clearHelperRefs(state, null);
         state.forced = forced;
         setApproachMarker(state, playerRef, store, world);
-        sendPlayerMessage(playerRef, store, HUNT_START_TEXT, "dark_red");
+        sendPlayerMessage(playerRef, store, NightHuntMessages.START, "dark_red");
     }
 
     private static boolean beginGuidingRoute(@Nonnull HuntState state,
@@ -1043,7 +1035,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         state.approachMarkerWorldName = null;
         clearHelperRefs(state, null);
         state.forced = forced;
-        sendPlayerMessage(playerRef, store, HUNT_TRAIL_TEXT, "dark_red");
+        sendPlayerMessage(playerRef, store, NightHuntMessages.TRAIL, "dark_red");
     }
 
     private static boolean queueGuidingRouteResolution(@Nonnull HuntState state,
@@ -1103,7 +1095,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
 
         state.phase = HuntPhase.SUMMONING;
         state.summonRemainingSeconds = VampirismConfig.get().getNightHuntSummonDurationSeconds();
-        sendPlayerMessage(playerRef, store, HUNT_SUMMON_TEXT, "red");
+        sendPlayerMessage(playerRef, store, NightHuntMessages.SUMMON, "red");
     }
 
     @Nullable
@@ -1331,7 +1323,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
             if (FAIL_PHASE_SUMMONING.equals(failurePhase)) {
                 state.phase = HuntPhase.GUIDING;
                 state.summonRemainingSeconds = 0f;
-                sendPlayerMessage(playerRef, store, HUNT_FAIL_TEXT, "yellow");
+                sendPlayerMessage(playerRef, store, NightHuntMessages.FAIL, "yellow");
                 return;
             }
             resetToIdle(state, VampirismConfig.get().getNightHuntFailedCooldownSeconds());
@@ -1713,7 +1705,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         if (rewardPoints > 0) {
             PlayerSkillRegistry.get().addSkillPoints(ownerUuid, rewardPoints);
             if (rewardRef != null && rewardRef.isValid()) {
-                sendPlayerMessage(rewardRef, store, rewardText(rewardPoints), "green");
+                sendPlayerMessage(rewardRef, store, NightHuntMessages.rewardText(rewardPoints), "green");
             }
         }
     }
@@ -1731,10 +1723,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
                                           @Nonnull Store<EntityStore> store,
                                           @Nonnull String text,
                                           @Nonnull String color) {
-        Player player = (Player) store.getComponent(playerRef, Player.getComponentType());
-        if (player != null) {
-            player.sendMessage(Message.raw(text).color(color));
-        }
+        NightHuntMessages.send(playerRef, store, text, color);
     }
 
     private static double horizontalDistance(@Nonnull Vector3d a, @Nonnull Vector3d b) {
@@ -1847,11 +1836,6 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         return new Vector3d(destination.x,
                 destination.y + VampirismConfig.get().getNightHuntWaypointMarkerYOffset(),
                 destination.z);
-    }
-
-    @Nonnull
-    private static String rewardText(int points) {
-        return "+" + points + " marked prey skill tree point" + (points == 1 ? "" : "s") + ".";
     }
 
     private static void zeroPhysics(@Nonnull ProjectileComponent projectile, @Nonnull Holder<EntityStore> holder) {
