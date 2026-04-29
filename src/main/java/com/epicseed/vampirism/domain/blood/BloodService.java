@@ -19,20 +19,27 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 public final class BloodService {
     public static final int BASE_BLOOD_CAPACITY_UNITS = 100;
 
-    private static final Map<Ref<EntityStore>, BloodState> playerStates = new ConcurrentHashMap<>();
+    private static final Map<UUID, BloodState> playerStates = new ConcurrentHashMap<>();
     private static final Map<UUID, Ref<EntityStore>> uuidToRef = new ConcurrentHashMap<>();
+    private static final Map<Ref<EntityStore>, UUID> refToUuid = new ConcurrentHashMap<>();
+    private static final Map<Ref<EntityStore>, BloodState> legacyRefStates = new ConcurrentHashMap<>();
 
     private BloodService() {
     }
 
     public static BloodState getOrCreate(@Nonnull Ref<EntityStore> playerRef) {
-        return playerStates.computeIfAbsent(playerRef, ignored -> new BloodState());
+        UUID uuid = refToUuid.get(playerRef);
+        if (uuid != null) {
+            return playerStates.computeIfAbsent(uuid, ignored -> new BloodState());
+        }
+        return legacyRefStates.computeIfAbsent(playerRef, ignored -> new BloodState());
     }
 
     public static BloodState getOrCreateLoaded(@Nonnull Ref<EntityStore> playerRef,
                                                @Nonnull UUID uuid,
                                                @Nonnull Store<EntityStore> store) {
-        return playerStates.computeIfAbsent(playerRef, ignored -> {
+        registerRef(uuid, playerRef);
+        return playerStates.computeIfAbsent(uuid, ignored -> {
             BloodState loaded = new BloodState();
             loaded.blood = PlayerSkillRegistry.get().getPersistedBlood(uuid);
             loaded.maxBlood = resolveCapacityUnits(playerRef, store);
@@ -43,19 +50,39 @@ public final class BloodService {
     }
 
     public static BloodState getState(@Nonnull Ref<EntityStore> playerRef) {
-        return playerStates.get(playerRef);
+        UUID uuid = refToUuid.get(playerRef);
+        if (uuid != null) {
+            return playerStates.get(uuid);
+        }
+        return legacyRefStates.get(playerRef);
     }
 
     public static void removeState(@Nonnull Ref<EntityStore> playerRef) {
-        playerStates.remove(playerRef);
+        UUID uuid = refToUuid.remove(playerRef);
+        if (uuid != null) {
+            playerStates.remove(uuid);
+            Ref<EntityStore> currentRef = uuidToRef.get(uuid);
+            if (playerRef.equals(currentRef)) {
+                uuidToRef.remove(uuid);
+            }
+        }
+        legacyRefStates.remove(playerRef);
     }
 
     public static void registerRef(@Nonnull UUID uuid, @Nonnull Ref<EntityStore> playerRef) {
         uuidToRef.put(uuid, playerRef);
+        refToUuid.put(playerRef, uuid);
+        BloodState legacy = legacyRefStates.remove(playerRef);
+        if (legacy != null) {
+            playerStates.putIfAbsent(uuid, legacy);
+        }
     }
 
     public static void unregisterRef(@Nonnull UUID uuid) {
-        uuidToRef.remove(uuid);
+        Ref<EntityStore> ref = uuidToRef.remove(uuid);
+        if (ref != null) {
+            refToUuid.remove(ref);
+        }
     }
 
     public static Ref<EntityStore> getRefByUuid(@Nonnull UUID uuid) {
@@ -103,32 +130,33 @@ public final class BloodService {
     }
 
     public static int getBloodByUuid(@Nonnull UUID uuid) {
-        Ref<EntityStore> ref = uuidToRef.get(uuid);
-        if (ref == null) return -1;
-        BloodState state = playerStates.get(ref);
+        BloodState state = playerStates.get(uuid);
         return state != null ? state.blood : -1;
     }
 
     public static int getMaxBloodByUuid(@Nonnull UUID uuid) {
-        Ref<EntityStore> ref = uuidToRef.get(uuid);
-        if (ref == null) return -1;
-        BloodState state = playerStates.get(ref);
+        BloodState state = playerStates.get(uuid);
         return state != null ? Math.max(1, state.maxBlood) : -1;
     }
 
     public static boolean isStarvingByUuid(@Nonnull UUID uuid) {
-        Ref<EntityStore> ref = uuidToRef.get(uuid);
-        if (ref == null) return false;
-        BloodState state = playerStates.get(ref);
+        BloodState state = playerStates.get(uuid);
         return state != null && state.isStarving;
     }
 
     public static void captureDisconnectState(@Nonnull UUID uuid) {
-        Ref<EntityStore> ref = uuidToRef.get(uuid);
-        if (ref == null) return;
-        BloodState state = playerStates.get(ref);
+        BloodState state = playerStates.get(uuid);
         if (state == null) return;
         PlayerSkillRegistry.get().setPersistedBlood(uuid, state.blood);
+    }
+
+    public static void clearPlayer(@Nonnull UUID uuid) {
+        Ref<EntityStore> ref = uuidToRef.remove(uuid);
+        if (ref != null) {
+            refToUuid.remove(ref);
+            legacyRefStates.remove(ref);
+        }
+        playerStates.remove(uuid);
     }
 
     public static int resolveCapacityUnits(@Nonnull Ref<EntityStore> playerRef,
