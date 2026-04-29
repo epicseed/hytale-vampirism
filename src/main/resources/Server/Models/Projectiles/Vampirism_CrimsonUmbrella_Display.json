@@ -1,6 +1,6 @@
 {
-  "Model": "Items/Projectiles/Vampirism_CrimsonUmbrella_Display.blockymodel",
-  "Texture": "Items/Projectiles/Vampirism_CrimsonUmbrella_Display.png",
+  "Model": "Items/Vampirism/Projectiles/Vampirism_CrimsonUmbrella_Display.blockymodel",
+  "Texture": "Items/Vampirism/Projectiles/Vampirism_CrimsonUmbrella_Display.png",
   "HitBox": {
     "Max": {
       "X": 0.05,

@@ -16,7 +16,8 @@ public class NightHuntSpawnRegistry {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final String RESOURCE_PATH = "Common/UI/Custom/Vampirism/Data/NightHuntSpawns.json";
+    private static final String RESOURCE_PATH = "data/vampirism/night-hunt/spawns.json";
+    private static final String LEGACY_RESOURCE_PATH = "Common/UI/Custom/Vampirism/Data/NightHuntSpawns.json";
 
     private static NightHuntSpawnRegistry instance;
 
@@ -176,15 +177,16 @@ public class NightHuntSpawnRegistry {
     }
 
     private void load() {
-        try (InputStream in = getClassLoader().getResourceAsStream(RESOURCE_PATH)) {
+        String resourcePath = resourcePath();
+        try (InputStream in = getClassLoader().getResourceAsStream(resourcePath)) {
             if (in == null) {
-                LOGGER.atWarning().log("[NightHuntSpawnRegistry] Missing resource " + RESOURCE_PATH + ", using fallback.");
+                LOGGER.atWarning().log("[NightHuntSpawnRegistry] Missing resource " + resourcePath + ", using fallback.");
                 data = defaultData();
                 return;
             }
             data = MAPPER.readValue(in, RegistryData.class);
             if (data == null || data.spawns == null || data.spawns.isEmpty()) {
-                LOGGER.atWarning().log("[NightHuntSpawnRegistry] Empty resource " + RESOURCE_PATH + ", using fallback.");
+                LOGGER.atWarning().log("[NightHuntSpawnRegistry] Empty resource " + resourcePath + ", using fallback.");
                 data = defaultData();
                 return;
             }
@@ -195,9 +197,14 @@ public class NightHuntSpawnRegistry {
                 data.failStates = new ArrayList<>();
             }
         } catch (IOException e) {
-            LOGGER.atSevere().log("[NightHuntSpawnRegistry] Failed to load resource " + RESOURCE_PATH + ": " + e.getMessage());
+            LOGGER.atSevere().log("[NightHuntSpawnRegistry] Failed to load resource " + resourcePath + ": " + e.getMessage());
             data = defaultData();
         }
+    }
+
+    private String resourcePath() {
+        ClassLoader loader = getClassLoader();
+        return loader.getResource(RESOURCE_PATH) != null ? RESOURCE_PATH : LEGACY_RESOURCE_PATH;
     }
 
     private static boolean isValidSpawn(@Nullable SpawnOptionData option) {

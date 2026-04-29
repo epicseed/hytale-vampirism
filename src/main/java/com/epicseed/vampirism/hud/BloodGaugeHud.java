@@ -11,7 +11,7 @@ public class BloodGaugeHud extends CustomUIHud {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private static final int DEFAULT_BLOOD_CAPACITY = 100;
-    private static final String LAYOUT_PATH = "Vampirism/BloodBar.ui";
+    private static final String LAYOUT_PATH = "Vampirism/Huds/BloodBar.ui";
     private static final String NORMAL_ICON = "#Icon";
     private static final String CREATIVE_ICON = "#IconCreative";
     private static final String NORMAL_BAR = "#ProgressBarHealth";

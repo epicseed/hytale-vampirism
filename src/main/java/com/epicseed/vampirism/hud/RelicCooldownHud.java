@@ -27,7 +27,7 @@ public class RelicCooldownHud extends CustomUIHud {
     private static final long INITIAL_UPDATE_GRACE_MS = 500L;
 
     private static final String RELIC_ITEM_ID = "VampirismRelic";
-    private static final String EMPTY_ICON = "Vampirism/Common/WIPIcon.png";
+    private static final String EMPTY_ICON = "Vampirism/Assets/Common/WIPIcon.png";
     private static final String[] SLOT_KEYS = { "primary", "secondary", "ability1", "ability2", "ability3" };
     private static final String[] SLOT_SELECTORS = {
             "#SlotPrimary",
@@ -48,7 +48,7 @@ public class RelicCooldownHud extends CustomUIHud {
 
     @Override
     protected void build(@Nonnull UICommandBuilder builder) {
-        builder.append("Vampirism/RelicCooldownHud.ui");
+        builder.append("Vampirism/Huds/RelicCooldownHud.ui");
         writeState(builder, state);
     }
 
@@ -129,7 +129,7 @@ public class RelicCooldownHud extends CustomUIHud {
     @Nonnull
     private static String iconPath(Skill owner) {
         return owner != null && owner.iconPath != null && !owner.iconPath.isBlank()
-                ? "Vampirism/Skills/Icons/" + owner.iconPath
+                ? "Vampirism/Assets/Skills/Icons/" + owner.iconPath
                 : EMPTY_ICON;
     }
 
@@ -160,7 +160,7 @@ public class RelicCooldownHud extends CustomUIHud {
             case "legendary" -> "Legendary";
             default -> "Common";
         };
-        return "Vampirism/Common/ItemQualities/Slots/Slot" + name + ".png";
+        return "Vampirism/Assets/Common/ItemQualities/Slots/Slot" + name + ".png";
     }
 
     @Nonnull
@@ -172,7 +172,7 @@ public class RelicCooldownHud extends CustomUIHud {
             case "legendary" -> "Legendary";
             default -> "Common";
         };
-        return "Vampirism/Common/ItemQualities/Slots/Slot" + name + "_Overlay.png";
+        return "Vampirism/Assets/Common/ItemQualities/Slots/Slot" + name + "_Overlay.png";
     }
 
     @Nonnull

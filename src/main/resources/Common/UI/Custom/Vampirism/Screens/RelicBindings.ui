@@ -1,11 +1,11 @@
 // Hytale UI Definition: RelicBindings
 // Controller: RelicBindingsUI.java
-$C = "../Common.ui";
-$Sounds = "../Sounds.ui";
+$C = "../../Common.ui";
+$Sounds = "../../Sounds.ui";
 
 Group #RelicBindingsRoot {
   Anchor: (Full: 0);
-  Background: "Background/SkillTreeBackground.png";
+  Background: "Vampirism/Assets/SkillTree/Background.png";
 }
 
 // Navigation tabs — top-left corner, browser-tab style (active = current page, no button)
@@ -68,7 +68,7 @@ Group #SlotsBar {
 
       Group #SlotTile {
         Anchor: (Left: 0, Top: 0, Width: 96, Height: 96);
-        Background: (TexturePath: "Common/ItemQualities/Slots/SlotCommon.png");
+        Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon.png");
       }
 
       Group #SlotIcon {
@@ -80,7 +80,7 @@ Group #SlotsBar {
       Group #RarityOverlay {
         Anchor: (Left: 0, Top: 0, Width: 96, Height: 96);
         Visible: true;
-        Background: (TexturePath: "Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+        Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
         HitTestVisible: false;
       }
 
@@ -103,8 +103,8 @@ Group #SlotsBar {
         Anchor: (Left: 0, Top: 0, Width: 96, Height: 96);
         Style: (
           Sounds: $Sounds.@CosmeticsTiles,
-          Hovered: (Background: (TexturePath: "Skills/Tiles/TileHovered.png")),
-          Pressed: (Background: (TexturePath: "Skills/Tiles/TileSelected.png"))
+          Hovered: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileHovered.png")),
+          Pressed: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileSelected.png"))
         );
       }
 
@@ -137,7 +137,7 @@ Group #SlotsBar {
 
       Group #SlotTile {
         Anchor: (Left: 0, Top: 0, Width: 96, Height: 96);
-        Background: (TexturePath: "Common/ItemQualities/Slots/SlotCommon.png");
+        Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon.png");
       }
 
       Group #SlotIcon {
@@ -149,7 +149,7 @@ Group #SlotsBar {
       Group #RarityOverlay {
         Anchor: (Left: 0, Top: 0, Width: 96, Height: 96);
         Visible: true;
-        Background: (TexturePath: "Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+        Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
         HitTestVisible: false;
       }
 
@@ -172,8 +172,8 @@ Group #SlotsBar {
         Anchor: (Left: 0, Top: 0, Width: 96, Height: 96);
         Style: (
           Sounds: $Sounds.@CosmeticsTiles,
-          Hovered: (Background: (TexturePath: "Skills/Tiles/TileHovered.png")),
-          Pressed: (Background: (TexturePath: "Skills/Tiles/TileSelected.png"))
+          Hovered: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileHovered.png")),
+          Pressed: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileSelected.png"))
         );
       }
 
@@ -206,7 +206,7 @@ Group #SlotsBar {
 
       Group #SlotTile {
         Anchor: (Left: 0, Top: 0, Width: 96, Height: 96);
-        Background: (TexturePath: "Common/ItemQualities/Slots/SlotCommon.png");
+        Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon.png");
       }
 
       Group #SlotIcon {
@@ -218,7 +218,7 @@ Group #SlotsBar {
       Group #RarityOverlay {
         Anchor: (Left: 0, Top: 0, Width: 96, Height: 96);
         Visible: true;
-        Background: (TexturePath: "Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+        Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
         HitTestVisible: false;
       }
 
@@ -241,8 +241,8 @@ Group #SlotsBar {
         Anchor: (Left: 0, Top: 0, Width: 96, Height: 96);
         Style: (
           Sounds: $Sounds.@CosmeticsTiles,
-          Hovered: (Background: (TexturePath: "Skills/Tiles/TileHovered.png")),
-          Pressed: (Background: (TexturePath: "Skills/Tiles/TileSelected.png"))
+          Hovered: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileHovered.png")),
+          Pressed: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileSelected.png"))
         );
       }
 
@@ -275,7 +275,7 @@ Group #SlotsBar {
 
       Group #SlotTile {
         Anchor: (Left: 0, Top: 0, Width: 96, Height: 96);
-        Background: (TexturePath: "Common/ItemQualities/Slots/SlotCommon.png");
+        Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon.png");
       }
 
       Group #SlotIcon {
@@ -287,7 +287,7 @@ Group #SlotsBar {
       Group #RarityOverlay {
         Anchor: (Left: 0, Top: 0, Width: 96, Height: 96);
         Visible: true;
-        Background: (TexturePath: "Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+        Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
         HitTestVisible: false;
       }
 
@@ -310,8 +310,8 @@ Group #SlotsBar {
         Anchor: (Left: 0, Top: 0, Width: 96, Height: 96);
         Style: (
           Sounds: $Sounds.@CosmeticsTiles,
-          Hovered: (Background: (TexturePath: "Skills/Tiles/TileHovered.png")),
-          Pressed: (Background: (TexturePath: "Skills/Tiles/TileSelected.png"))
+          Hovered: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileHovered.png")),
+          Pressed: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileSelected.png"))
         );
       }
 
@@ -344,7 +344,7 @@ Group #SlotsBar {
 
       Group #SlotTile {
         Anchor: (Left: 0, Top: 0, Width: 96, Height: 96);
-        Background: (TexturePath: "Common/ItemQualities/Slots/SlotCommon.png");
+        Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon.png");
       }
 
       Group #SlotIcon {
@@ -356,7 +356,7 @@ Group #SlotsBar {
       Group #RarityOverlay {
         Anchor: (Left: 0, Top: 0, Width: 96, Height: 96);
         Visible: true;
-        Background: (TexturePath: "Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+        Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
         HitTestVisible: false;
       }
 
@@ -379,8 +379,8 @@ Group #SlotsBar {
         Anchor: (Left: 0, Top: 0, Width: 96, Height: 96);
         Style: (
           Sounds: $Sounds.@CosmeticsTiles,
-          Hovered: (Background: (TexturePath: "Skills/Tiles/TileHovered.png")),
-          Pressed: (Background: (TexturePath: "Skills/Tiles/TileSelected.png"))
+          Hovered: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileHovered.png")),
+          Pressed: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileSelected.png"))
         );
       }
 

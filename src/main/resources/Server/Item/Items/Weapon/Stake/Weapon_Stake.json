@@ -1,11 +1,11 @@
 {
-  "Model": "Items/Weapons/Stake/Stake.blockymodel",
-  "Texture": "Items/Weapons/Stake/Stake.png",
+  "Model": "Items/Vampirism/Weapons/Stake/Stake.blockymodel",
+  "Texture": "Items/Vampirism/Weapons/Stake/Stake.png",
   "ItemLevel": 25,
   "TranslationProperties": {
     "Name": "Stake"
   },
-  "Icon": "Icons/ItemsGenerated/Weapon_Stake.png",
+  "Icon": "Icons/ItemsGenerated/Vampirism/Weapon_Stake.png",
   "Quality": "Uncommon",
   "ItemSoundSetId": "ISS_Weapons_Wood",
   "PlayerAnimationsId": "Sword",

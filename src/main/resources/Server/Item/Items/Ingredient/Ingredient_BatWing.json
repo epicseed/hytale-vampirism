@@ -6,8 +6,8 @@
   "Categories": [
     "Items.Ingredients"
   ],
-  "Model": "Items/Ingredients/BatWing.blockymodel",
-  "Texture": "Items/Ingredients/BatWing.png",
+  "Model": "Items/Vampirism/Ingredients/BatWing.blockymodel",
+  "Texture": "Items/Vampirism/Ingredients/BatWing.png",
   "Quality": "Common",
   "ItemLevel": 10,
   "PlayerAnimationsId": "Item",
@@ -24,7 +24,7 @@
     ]
   },
   "Scale": 1.0,
-  "Icon": "Icons/ItemsGenerated/Ingredient_BatWing.png",
+  "Icon": "Icons/ItemsGenerated/Vampirism/Ingredient_BatWing.png",
   "Tags": {
     "Type": [
       "Ingredient"

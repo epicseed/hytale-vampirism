@@ -265,7 +265,11 @@ tasks.register('validateHytaleAssetRefs') {
         projectileIds.addAll(collectResolvableIds(officialIndex.categories?.projectiles))
 
         def issues = []
-        def splitDataDir = file('src/main/resources/Common/UI/Custom/Vampirism/Data/SkillsData')
+        def splitDataDir = file('src/main/resources/data/vampirism/skills')
+        def legacySplitDataDir = file('src/main/resources/Common/UI/Custom/Vampirism/Data/SkillsData')
+        if (!splitDataDir.exists() && legacySplitDataDir.exists()) {
+            splitDataDir = legacySplitDataDir
+        }
         def splitEffectsFile = new File(splitDataDir, 'effects.json')
         def splitActionsFile = new File(splitDataDir, 'actions.json')
         def legacySkillsDataFile = file('src/main/resources/Common/UI/Custom/Vampirism/Data/SkillsData.json')
@@ -353,6 +357,9 @@ tasks.register('validateHytaleAssetRefs') {
 // source manifest.
 tasks.named('processResources') {
     dependsOn 'generatePluginManifest'
+    doFirst {
+        delete destinationDir
+    }
     exclude { details ->
         details.file.canonicalFile == sourcePluginManifest.canonicalFile
     }
@@ -367,12 +374,65 @@ tasks.register('validateSkillData', JavaExec) {
     mainClass = 'com.epicseed.vampirism.skill.data.SkillDataValidationCli'
 }
 
+tasks.register('validateResourceLayout') {
+    doLast {
+        def backupFiles = fileTree('src/main/resources') {
+            include '**/*.bak'
+        }.files
+        if (!backupFiles.isEmpty()) {
+            throw new GradleException("Backup files must not be packaged under src/main/resources: ${backupFiles*.path.sort()}")
+        }
+
+        def legacyPluginDataDir = file('src/main/resources/Common/UI/Custom/Vampirism/Data')
+        if (legacyPluginDataDir.exists() && !fileTree(legacyPluginDataDir).files.isEmpty()) {
+            throw new GradleException("Plugin runtime data belongs under src/main/resources/data/vampirism, not ${legacyPluginDataDir.path}.")
+        }
+
+        def customUiRoot = file('src/main/resources/Common/UI/Custom')
+        def uiRefPattern = ~/Vampirism\/[A-Za-z0-9_.\/-]+\.(png|ui)/
+        def uiRefSources = []
+        uiRefSources.addAll(fileTree('src/main/java') { include '**/*.java' }.files)
+        uiRefSources.addAll(fileTree('src/main/resources/Common/UI/Custom') { include '**/*.ui' }.files)
+        def missingUiRefs = [] as Set
+        uiRefSources.findAll { it.exists() }.each { sourceFile ->
+            (sourceFile.text =~ uiRefPattern).each { match ->
+                def ref = match[0]
+                if (!new File(customUiRoot, ref).exists()) {
+                    missingUiRefs << "${sourceFile.path}: ${ref}"
+                }
+            }
+        }
+        if (!missingUiRefs.isEmpty()) {
+            throw new GradleException("Missing Common/UI/Custom resource references:\n${missingUiRefs.sort().join('\n')}")
+        }
+
+        def commonAssetPattern = ~/"((Blocks\/Vampirism|Entities\/Vampirism|Icons\/ItemsGenerated\/Vampirism|Items\/Vampirism|Particles\/Vampirism|ScreenEffects\/Vampirism|UI\/StatusEffects\/Vampirism)\/[^"]+\.(png|blockymodel|blockyanim))"/
+        def missingCommonRefs = [] as Set
+        fileTree('src/main/resources/Server') {
+            include '**/*.json'
+            include '**/*.particlespawner'
+            include '**/*.particlesystem'
+        }.files.findAll { it.exists() }.each { sourceFile ->
+            (sourceFile.text =~ commonAssetPattern).each { match ->
+                def ref = match[1]
+                if (!file("src/main/resources/Common/${ref}").exists()) {
+                    missingCommonRefs << "${sourceFile.path}: ${ref}"
+                }
+            }
+        }
+        if (!missingCommonRefs.isEmpty()) {
+            throw new GradleException("Missing Common resource references:\n${missingCommonRefs.sort().join('\n')}")
+        }
+    }
+}
+
 tasks.named('test') {
     useJUnitPlatform()
 }
 
 tasks.named('check') {
     dependsOn 'validateSkillData'
+    dependsOn 'validateResourceLayout'
 }
 
 tasks.named('shadowJar') {

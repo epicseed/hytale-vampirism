@@ -2,7 +2,7 @@
     "ApplicationEffects": {
         "EntityBottomTint": "#2a0000",
         "EntityTopTint": "#ff4400",
-        "ScreenEffect": "ScreenEffects/SunFire.png",
+        "ScreenEffect": "ScreenEffects/Vampirism/SunFire.png",
         "WorldSoundEventId": "SFX_Effect_Burn_World",
         "LocalSoundEventId": "SFX_Effect_Burn_Local",
         "Particles": [
@@ -25,7 +25,7 @@
     "RemovalBehavior": "Complete",
     "Infinite": false,
     "Debuff": true,
-    "StatusEffectIcon": "UI/StatusEffects/Vampirism_Sunburn_T1.png",
+    "StatusEffectIcon": "UI/StatusEffects/Vampirism/Sunburn_T1.png",
     "DeathMessageKey": "server.general.deathCause.burn",
     "Duration": 5
 }

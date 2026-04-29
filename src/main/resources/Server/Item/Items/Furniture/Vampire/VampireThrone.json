@@ -47,10 +47,10 @@
   "BlockType": {
     "BlockParticleSetId": "Metal",
     "BlockSoundSetId": "Bone",
-    "CustomModel": "Blocks/Decorative_Sets/Vampire/Chair.blockymodel",
+    "CustomModel": "Blocks/Vampirism/Furniture/VampireThrone/Chair.blockymodel",
     "CustomModelTexture": [
       {
-        "Texture": "Blocks/Decorative_Sets/Vampire/Chair_Texture_AlphaCutted.png",
+        "Texture": "Blocks/Vampirism/Furniture/VampireThrone/Chair_Texture_AlphaCutted.png",
         "Weight": 1
       }
     ],
@@ -86,8 +86,8 @@
     "VariantRotation": "NESW",
     "Opacity": "Transparent"
   },
-  "Model": "Blocks/Decorative_Sets/Vampire/Chair.blockymodel",
-  "Texture": "Blocks/Decorative_Sets/Vampire/Chair_Texture_AlphaCutted.png",
+  "Model": "Blocks/Vampirism/Furniture/VampireThrone/Chair.blockymodel",
+  "Texture": "Blocks/Vampirism/Furniture/VampireThrone/Chair_Texture_AlphaCutted.png",
   "ResourceTypes": [
     {
       "Id": "Fuel"
@@ -104,7 +104,7 @@
       "Vampire"
     ]
   },
-  "Icon": "Icons/ItemsGenerated/VampireThrone.png",
+  "Icon": "Icons/ItemsGenerated/Vampirism/VampireThrone.png",
   "ItemSoundSetId": "ISS_Items_Bones",
   "Quality": "Common"
 }

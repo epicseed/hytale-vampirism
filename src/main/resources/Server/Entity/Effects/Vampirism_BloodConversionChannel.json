@@ -2,7 +2,7 @@
   "Duration": 10,
   "Debuff": false,
   "OverlapBehavior": "Overwrite",
-  "StatusEffectIcon": "UI/StatusEffects/Vampirism_BloodConversion.png",
+  "StatusEffectIcon": "UI/StatusEffects/Vampirism/BloodConversion.png",
   "ApplicationEffects": {
     "EntityTopTint": "#7a111f",
     "EntityBottomTint": "#33060c"

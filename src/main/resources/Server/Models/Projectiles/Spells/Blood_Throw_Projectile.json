@@ -1,6 +1,6 @@
 {
-  "Model": "Items/Projectiles/Blood_Throw_Projectile.blockymodel",
-  "Texture": "Items/Projectiles/Blood_Throw_Projectile.png",
+  "Model": "Items/Vampirism/Projectiles/Blood_Throw_Projectile.blockymodel",
+  "Texture": "Items/Vampirism/Projectiles/Blood_Throw_Projectile.png",
   "HitBox": {
     "Max": {
       "X": 0.1,

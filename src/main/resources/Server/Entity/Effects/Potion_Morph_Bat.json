@@ -1,5 +1,5 @@
 {
-  "StatusEffectIcon": "UI/StatusEffects/Vampirism_BatForm.png",
+  "StatusEffectIcon": "UI/StatusEffects/Vampirism/BatForm.png",
   "OverlapBehavior": "Overwrite",
   "Duration": 120,
   "ModelChange": "Bat",

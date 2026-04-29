@@ -1,10 +1,10 @@
 // Hytale UI Definition: SkillTree
 // Controller: SkillTreeController.java
-$C = "../Common.ui";
+$C = "../../Common.ui";
 
 Group #SkillTreeRoot {
   Anchor: (Full: 0);
-  Background: "Background/SkillTreeBackground.png";
+  Background: "Vampirism/Assets/SkillTree/Background.png";
 }
 
 Group #GridMatrix {
@@ -50,7 +50,7 @@ $C.@Panel #SkillDetail {
       Group #SkillTileRarityOverlay {
         Anchor: (Full: 0);
         Visible: true;
-        Background: (TexturePath: "Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+        Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
         HitTestVisible: false;
       }
 
@@ -177,7 +177,7 @@ $C.@Panel #PointsPanel {
 // Right: 330 = 6px inside panel's right edge (panel is at Right: 324)
 Group #ReloadBtnWrapper {
   Anchor: (Right: 330, Top: 62, Width: 26, Height: 26);
-  Group { Anchor: (Full: 0); Background: "Pages/Reload.png"; }
+  Group { Anchor: (Full: 0); Background: "Vampirism/Assets/SkillTree/Navigation/Reload.png"; }
   Button #ReloadButton {
     Anchor: (Full: 0);
     Style: $C.@TertiaryButtonStyle;
@@ -255,55 +255,55 @@ Group #NavLayer {
 
     Group #PanNWWrapper {
       Anchor: (Left: 0, Top: 0, Width: 40, Height: 40);
-      Group { Anchor: (Full: 0); Background: "Pages/ArrowNW.png"; }
+      Group { Anchor: (Full: 0); Background: "Vampirism/Assets/SkillTree/Navigation/ArrowNW.png"; }
       Button #PanNW { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
     }
 
     Group #PanNWrapper {
       Anchor: (Left: 44, Top: 0, Width: 40, Height: 40);
-      Group { Anchor: (Full: 0); Background: "Pages/ArrowN.png"; }
+      Group { Anchor: (Full: 0); Background: "Vampirism/Assets/SkillTree/Navigation/ArrowN.png"; }
       Button #PanN { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
     }
 
     Group #PanNEWrapper {
       Anchor: (Left: 88, Top: 0, Width: 40, Height: 40);
-      Group { Anchor: (Full: 0); Background: "Pages/ArrowNE.png"; }
+      Group { Anchor: (Full: 0); Background: "Vampirism/Assets/SkillTree/Navigation/ArrowNE.png"; }
       Button #PanNE { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
     }
 
     Group #PanWWrapper {
       Anchor: (Left: 0, Top: 44, Width: 40, Height: 40);
-      Group { Anchor: (Full: 0); Background: "Pages/ArrowW.png"; }
+      Group { Anchor: (Full: 0); Background: "Vampirism/Assets/SkillTree/Navigation/ArrowW.png"; }
       Button #PanW { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
     }
 
     Group #PanEWrapper {
       Anchor: (Left: 88, Top: 44, Width: 40, Height: 40);
-      Group { Anchor: (Full: 0); Background: "Pages/ArrowE.png"; }
+      Group { Anchor: (Full: 0); Background: "Vampirism/Assets/SkillTree/Navigation/ArrowE.png"; }
       Button #PanE { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
     }
 
     Group #ReloadWrapper {
       Anchor: (Left: 44, Top: 44, Width: 40, Height: 40);
-      Group { Anchor: (Full: 0); Background: "Pages/Reload.png"; }
+      Group { Anchor: (Full: 0); Background: "Vampirism/Assets/SkillTree/Navigation/Reload.png"; }
       Button #ReloadPan { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
     }
 
     Group #PanSWWrapper {
       Anchor: (Left: 0, Top: 88, Width: 40, Height: 40);
-      Group { Anchor: (Full: 0); Background: "Pages/ArrowSW.png"; }
+      Group { Anchor: (Full: 0); Background: "Vampirism/Assets/SkillTree/Navigation/ArrowSW.png"; }
       Button #PanSW { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
     }
 
     Group #PanSWrapper {
       Anchor: (Left: 44, Top: 88, Width: 40, Height: 40);
-      Group { Anchor: (Full: 0); Background: "Pages/ArrowS.png"; }
+      Group { Anchor: (Full: 0); Background: "Vampirism/Assets/SkillTree/Navigation/ArrowS.png"; }
       Button #PanS { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
     }
 
     Group #PanSEWrapper {
       Anchor: (Left: 88, Top: 88, Width: 40, Height: 40);
-      Group { Anchor: (Full: 0); Background: "Pages/ArrowSE.png"; }
+      Group { Anchor: (Full: 0); Background: "Vampirism/Assets/SkillTree/Navigation/ArrowSE.png"; }
       Button #PanSE { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
     }
   }
