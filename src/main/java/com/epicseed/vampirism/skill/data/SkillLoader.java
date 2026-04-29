@@ -80,6 +80,10 @@ public class SkillLoader {
         return skillList;
     }
 
+    public void ValidateSkillData() {
+        readJson();
+    }
+
     // -------------------------------------------------------------------------
     // Definitions (passives, abilities, modifiers, effects, states)
     // -------------------------------------------------------------------------
@@ -385,10 +389,11 @@ public class SkillLoader {
     // -------------------------------------------------------------------------
 
     private SkillTreeDataTransfer readJson() {
-        if (resourceExists(TREE_JSON_PATH)) {
-            return readSplitJson();
-        }
-        return readLegacyJson();
+        SkillTreeDataTransfer data = resourceExists(TREE_JSON_PATH)
+                ? readSplitJson()
+                : readLegacyJson();
+        new SkillDataValidator().validateOrThrow(data);
+        return data;
     }
 
     private SkillTreeDataTransfer readSplitJson() {

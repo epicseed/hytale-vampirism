@@ -188,5 +188,45 @@
     "description": "Increases max blood bar capacity by 40%",
     "displayName": "Blood Bar Capacity Bonus",
     "id": "blood_bar_capacity_bonus"
+  },
+  {
+    "description": "Reduces passive blood drain while sun resistance is unlocked.",
+    "displayName": "Sun Resistance Blood Drain",
+    "id": "sun_resistance_drain"
+  },
+  {
+    "description": "Raises Devour's execution threshold.",
+    "displayName": "Devour Threshold Upgrade",
+    "id": "devour_threshold_u2"
+  },
+  {
+    "description": "Sets Blood Throw's cooldown for the free-cast branch.",
+    "displayName": "Blood Throw Fixed Cooldown",
+    "id": "blood_throw_fixed_cooldown_u4a"
+  },
+  {
+    "description": "Reduces Hemorrhage self damage.",
+    "displayName": "Hemorrhage Self Damage Reduction",
+    "id": "hemorrhage_self_damage_u1b"
+  },
+  {
+    "description": "Increases blood drain while using stealth movement.",
+    "displayName": "Unnoticed Blood Drain",
+    "id": "unnoticed_drain"
+  },
+  {
+    "description": "Restores frenzy stamina while Blood Thirst is active.",
+    "displayName": "Blood Thirst Frenzy Stamina Recovery",
+    "id": "blood_thirst_frenzy_stamina_recovery"
+  },
+  {
+    "description": "Suppresses sunburn while protected by Crimson Umbrella.",
+    "displayName": "Crimson Umbrella Sunburn Protection",
+    "id": "crimson_umbrella_sunburn"
+  },
+  {
+    "description": "Suppresses sunburn while protected by a companion umbrella.",
+    "displayName": "Companion Umbrella Sunburn Protection",
+    "id": "companion_umbrella_sunburn"
   }
 ]
