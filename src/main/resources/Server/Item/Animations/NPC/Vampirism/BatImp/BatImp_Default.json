@@ -1,7 +1,7 @@
 {
   "Animations": {
     "Scratch": {
-      "ThirdPerson": "Entities/Vampirism/BatImp/Animations/Attacks/Scratch.blockyanim",
+      "ThirdPerson": "NPC/Vampirism/BatImp/Animations/Attacks/Scratch.blockyanim",
       "Speed": 1,
       "Looping": false
     }

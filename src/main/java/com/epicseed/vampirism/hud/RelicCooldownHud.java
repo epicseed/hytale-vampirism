@@ -11,6 +11,7 @@ import com.epicseed.vampirism.skill.model.Ability;
 import com.epicseed.vampirism.skill.model.Skill;
 import com.epicseed.vampirism.skill.runtime.AbilityCooldownTracker;
 import com.epicseed.vampirism.skill.registry.SkillRegistry;
+import com.epicseed.vampirism.ui.VampirismUiPaths;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -27,7 +28,6 @@ public class RelicCooldownHud extends CustomUIHud {
     private static final long INITIAL_UPDATE_GRACE_MS = 500L;
 
     private static final String RELIC_ITEM_ID = "VampirismRelic";
-    private static final String EMPTY_ICON = "Vampirism/Assets/Common/WIPIcon.png";
     private static final String[] SLOT_KEYS = { "primary", "secondary", "ability1", "ability2", "ability3" };
     private static final String[] SLOT_SELECTORS = {
             "#SlotPrimary",
@@ -48,7 +48,7 @@ public class RelicCooldownHud extends CustomUIHud {
 
     @Override
     protected void build(@Nonnull UICommandBuilder builder) {
-        builder.append("Vampirism/Huds/RelicCooldownHud.ui");
+        builder.append(VampirismUiPaths.RELIC_COOLDOWN_HUD_LAYOUT);
         writeState(builder, state);
     }
 
@@ -97,7 +97,7 @@ public class RelicCooldownHud extends CustomUIHud {
                     raritySlotPath(owner != null ? owner.rarity : null),
                     raritySlotOverlayPath(owner != null ? owner.rarity : null),
                     hasBinding,
-                    hasBinding ? iconPath(owner) : EMPTY_ICON,
+                    hasBinding ? iconPath(owner) : VampirismUiPaths.WIP_ICON,
                     onCooldown,
                     onCooldown ? formatCooldown(remainingMs) : "",
                     slotHint(slotKey));
@@ -128,9 +128,7 @@ public class RelicCooldownHud extends CustomUIHud {
 
     @Nonnull
     private static String iconPath(Skill owner) {
-        return owner != null && owner.iconPath != null && !owner.iconPath.isBlank()
-                ? "Vampirism/Assets/Skills/Icons/" + owner.iconPath
-                : EMPTY_ICON;
+        return owner != null ? VampirismUiPaths.skillIcon(owner.iconPath) : VampirismUiPaths.WIP_ICON;
     }
 
     @Nonnull
@@ -153,26 +151,12 @@ public class RelicCooldownHud extends CustomUIHud {
 
     @Nonnull
     private static String raritySlotPath(String rarity) {
-        String name = rarity == null ? "Common" : switch (rarity.toLowerCase(Locale.ROOT)) {
-            case "uncommon" -> "Uncommon";
-            case "rare" -> "Rare";
-            case "epic" -> "Epic";
-            case "legendary" -> "Legendary";
-            default -> "Common";
-        };
-        return "Vampirism/Assets/Common/ItemQualities/Slots/Slot" + name + ".png";
+        return VampirismUiPaths.raritySlot(rarity);
     }
 
     @Nonnull
     private static String raritySlotOverlayPath(String rarity) {
-        String name = rarity == null ? "Common" : switch (rarity.toLowerCase(Locale.ROOT)) {
-            case "uncommon" -> "Uncommon";
-            case "rare" -> "Rare";
-            case "epic" -> "Epic";
-            case "legendary" -> "Legendary";
-            default -> "Common";
-        };
-        return "Vampirism/Assets/Common/ItemQualities/Slots/Slot" + name + "_Overlay.png";
+        return VampirismUiPaths.raritySlotOverlay(rarity);
     }
 
     @Nonnull
@@ -249,7 +233,7 @@ public class RelicCooldownHud extends CustomUIHud {
                     raritySlotPath(null),
                     raritySlotOverlayPath(null),
                     false,
-                    EMPTY_ICON,
+                    VampirismUiPaths.WIP_ICON,
                     false,
                     "",
                     slotHint);

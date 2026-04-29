@@ -45,9 +45,6 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
     /** Slot keys in display order. */
     private static final String[] SLOT_KEYS = { "primary", "secondary", "ability1", "ability2", "ability3" };
 
-    /** Placeholder icon path for abilities without a custom icon. */
-    private static final String EMPTY_ICON = "Vampirism/Assets/Common/WIPIcon.png";
-
     /** Pending binding map being edited (slot -> abilityId). */
     private final LinkedHashMap<String, String> pending = new LinkedHashMap<>();
 
@@ -79,7 +76,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
                       @Nonnull UIEventBuilder events,
                       @Nonnull Store<EntityStore> store) {
 
-        cmd.append("Vampirism/Screens/RelicBindings.ui");
+        cmd.append(VampirismUiPaths.RELIC_BINDINGS_LAYOUT);
 
         UUID uuid = playerRef.getUuid();
 
@@ -139,9 +136,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
             // Hide the availability indicator — not relevant in this context
             cmd.set(selector + " #Indicator.Visible", false);
 
-            String abilityIconPath = (s.iconPath != null && !s.iconPath.isEmpty())
-                    ? "Vampirism/Assets/Skills/Icons/" + s.iconPath
-                    : EMPTY_ICON;
+            String abilityIconPath = VampirismUiPaths.skillIcon(s.iconPath);
             cmd.set(selector + " #SkillIcon.Background", abilityIconPath);
 
             Ability ab = Vampirism.getInstance().GetAbilityRegistry().Get(s.abilityId);
@@ -400,9 +395,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
 
         Skill owner = findSkillByAbilityId(abilityId);
         String rarity = owner != null ? owner.rarity : null;
-        String iconPath = (owner != null && owner.iconPath != null && !owner.iconPath.isEmpty())
-                ? "Vampirism/Assets/Skills/Icons/" + owner.iconPath
-                : EMPTY_ICON;
+        String iconPath = owner != null ? VampirismUiPaths.skillIcon(owner.iconPath) : VampirismUiPaths.WIP_ICON;
 
         cmd.set(selector + " #SlotTile.Background", raritySlotPath(rarity));
         cmd.set(selector + " #RarityOverlay.Background", raritySlotOverlayPath(rarity));
@@ -591,14 +584,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
     }
 
     private static String rarityGridCell(String rarity) {
-        if (rarity == null) return "Vampirism/Components/SkillGrid/GridCell.ui";
-        return switch (rarity.toLowerCase()) {
-            case "uncommon"  -> "Vampirism/Components/SkillGrid/GridCellUncommon.ui";
-            case "rare"      -> "Vampirism/Components/SkillGrid/GridCellRare.ui";
-            case "epic"      -> "Vampirism/Components/SkillGrid/GridCellEpic.ui";
-            case "legendary" -> "Vampirism/Components/SkillGrid/GridCellLegendary.ui";
-            default          -> "Vampirism/Components/SkillGrid/GridCell.ui";
-        };
+        return VampirismUiPaths.rarityGridCell(rarity);
     }
 
     private static List<Skill> collectUnlockedAbilitySkills(@Nonnull SkillRegistry registry, @Nonnull UUID uuid) {
@@ -620,26 +606,11 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
     }
 
     private static String raritySlotPath(String rarity) {
-        // cmd.set() paths are relative to Common/UI/Custom/ — plugin textures need "Vampirism/" prefix
-        String name = rarity == null ? "Common" : switch (rarity.toLowerCase()) {
-            case "uncommon" -> "Uncommon";
-            case "rare" -> "Rare";
-            case "epic" -> "Epic";
-            case "legendary" -> "Legendary";
-            default -> "Common";
-        };
-        return "Vampirism/Assets/Common/ItemQualities/Slots/Slot" + name + ".png";
+        return VampirismUiPaths.raritySlot(rarity);
     }
 
     private static String raritySlotOverlayPath(String rarity) {
-        String name = rarity == null ? "Common" : switch (rarity.toLowerCase()) {
-            case "uncommon" -> "Uncommon";
-            case "rare" -> "Rare";
-            case "epic" -> "Epic";
-            case "legendary" -> "Legendary";
-            default -> "Common";
-        };
-        return "Vampirism/Assets/Common/ItemQualities/Slots/Slot" + name + "_Overlay.png";
+        return VampirismUiPaths.raritySlotOverlay(rarity);
     }
 
     private static String rarityLabel(String rarity) {

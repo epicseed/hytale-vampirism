@@ -6,7 +6,7 @@ Group {
 
   Group #SkillTile {
     Anchor: (Full: 0);
-    Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotEpic.png");
+    Background: (TexturePath: "../../Assets/Shared/ItemQualities/Slots/SlotEpic.png");
   }
 
   Group #SkillIcon {
@@ -17,7 +17,7 @@ Group {
   Group #RarityOverlay {
     Anchor: (Full: 0);
     Visible: true;
-    Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotEpic_Overlay.png");
+    Background: (TexturePath: "../../Assets/Shared/ItemQualities/Slots/SlotEpic_Overlay.png");
     HitTestVisible: false;
   }
 
@@ -31,28 +31,28 @@ Group {
 
   Group #Indicator {
     Anchor: (Full: 0);
-    Background: (TexturePath: "Vampirism/Assets/Skills/Indicators/AvailableIndicator.png");
+    Background: (TexturePath: "../../Assets/Components/SkillGrid/Indicators/AvailableIndicator.png");
   }
 
   Group #Selected {
     Anchor: (Full: 0);
     Visible: false;
-    Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileSelected.png");
+    Background: (TexturePath: "../../Assets/Components/SkillGrid/Tiles/TileSelected.png");
   }
 
   Button #HitArea {
     Anchor: (Full: 0);
     TooltipText: "";
     TextTooltipStyle: TextTooltipStyle(
-      Background: PatchStyle(TexturePath: "Vampirism/Assets/Common/ItemQualities/Tooltips/ItemTooltipEpic.png", Border: 24),
+      Background: PatchStyle(TexturePath: "../../Assets/Shared/ItemQualities/Tooltips/ItemTooltipEpic.png", Border: 24),
       MaxWidth: 400,
       LabelStyle: LabelStyle(Wrap: true, FontSize: 16, TextColor: #c084fc),
       Padding: 24
     );
     Style: (
       Sounds: $Sounds.@CosmeticsTiles,
-      Hovered: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileHovered.png")),
-      Pressed: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileSelected.png"))
+      Hovered: (Background: (TexturePath: "../../Assets/Components/SkillGrid/Tiles/TileHovered.png")),
+      Pressed: (Background: (TexturePath: "../../Assets/Components/SkillGrid/Tiles/TileSelected.png"))
     );
   }
 

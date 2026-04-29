@@ -388,6 +388,11 @@ tasks.register('validateResourceLayout') {
             throw new GradleException("Plugin runtime data belongs under src/main/resources/data/vampirism, not ${legacyPluginDataDir.path}.")
         }
 
+        def invalidEntitiesDir = file('src/main/resources/Common/Entities')
+        if (invalidEntitiesDir.exists() && !fileTree(invalidEntitiesDir).files.isEmpty()) {
+            throw new GradleException("Common/Entities is not a valid Hytale runtime root. Use Common/Characters or Common/NPC depending on the asset type.")
+        }
+
         def customUiRoot = file('src/main/resources/Common/UI/Custom')
         def uiRefPattern = ~/Vampirism\/[A-Za-z0-9_.\/-]+\.(png|ui)/
         def uiRefSources = []
@@ -406,7 +411,72 @@ tasks.register('validateResourceLayout') {
             throw new GradleException("Missing Common/UI/Custom resource references:\n${missingUiRefs.sort().join('\n')}")
         }
 
-        def commonAssetPattern = ~/"((Blocks\/Vampirism|Entities\/Vampirism|Icons\/ItemsGenerated\/Vampirism|Items\/Vampirism|Particles\/Vampirism|ScreenEffects\/Vampirism|UI\/StatusEffects\/Vampirism)\/[^"]+\.(png|blockymodel|blockyanim))"/
+        def legacyUiRefs = [] as Set
+        def unsupportedUiPathFragments = [
+                'Vampirism/Assets/Common/',
+                'Vampirism/Screens/SkillDebug.ui',
+                'Vampirism/Assets/Skills/',
+                'Vampirism/Assets/SkillTree/',
+                '../Assets/Skills/',
+                '../../Assets/Skills/',
+                '../Assets/SkillTree/',
+                '../../Assets/SkillTree/'
+        ]
+        uiRefSources.findAll { it.exists() }.each { sourceFile ->
+            unsupportedUiPathFragments.each { fragment ->
+                if (sourceFile.text.contains(fragment)) {
+                    legacyUiRefs << "${sourceFile.path}: ${fragment}"
+                }
+            }
+        }
+        if (!legacyUiRefs.isEmpty()) {
+            throw new GradleException("Legacy Common/UI/Custom references must be migrated:\n${legacyUiRefs.sort().join('\n')}")
+        }
+
+        def invalidUiMarkupRefs = [] as Set
+        fileTree('src/main/resources/Common/UI/Custom') {
+            include '**/*.ui'
+        }.files.findAll { it.exists() }.each { uiFile ->
+            if (uiFile.text.contains('Vampirism/Assets/')) {
+                invalidUiMarkupRefs << "${uiFile.path}: Vampirism/Assets/"
+            }
+        }
+        if (!invalidUiMarkupRefs.isEmpty()) {
+            throw new GradleException("UI markup asset paths must be relative to the declaring .ui file:\n${invalidUiMarkupRefs.sort().join('\n')}")
+        }
+
+        def relativeUiAssetPattern = ~/(?:\.\.\/)+Assets\/[A-Za-z0-9_.\/-]+\.(png|ui)/
+        def missingRelativeUiAssets = [] as Set
+        fileTree('src/main/resources/Common/UI/Custom') {
+            include '**/*.ui'
+        }.files.findAll { it.exists() }.each { uiFile ->
+            (uiFile.text =~ relativeUiAssetPattern).each { match ->
+                def ref = match[0]
+                if (!new File(uiFile.parentFile, ref).exists()) {
+                    missingRelativeUiAssets << "${uiFile.path}: ${ref}"
+                }
+            }
+        }
+        if (!missingRelativeUiAssets.isEmpty()) {
+            throw new GradleException("Missing relative UI asset references:\n${missingRelativeUiAssets.sort().join('\n')}")
+        }
+
+        def legacyServerLayoutRefs = [] as Set
+        legacyServerLayoutRefs.addAll(fileTree('src/main/resources/Server/Entity/Effects') {
+            include 'Vampirism_*.json'
+        }.files*.path)
+        legacyServerLayoutRefs.addAll(fileTree('src/main/resources/Server/Entity/Effects/Status') {
+            include 'Vampirism_*.json'
+        }.files*.path)
+        def legacyModelDir = file('src/main/resources/Server/Models/Vampirism')
+        if (legacyModelDir.exists() && !fileTree(legacyModelDir).files.isEmpty()) {
+            legacyServerLayoutRefs.addAll(fileTree(legacyModelDir).files*.path)
+        }
+        if (!legacyServerLayoutRefs.isEmpty()) {
+            throw new GradleException("Legacy Server resource layout must be migrated:\n${legacyServerLayoutRefs.sort().join('\n')}")
+        }
+
+        def commonAssetPattern = ~/"((Blocks\/Vampirism|Characters\/Vampirism|Icons\/ItemsGenerated\/Vampirism|Items\/Vampirism|NPC\/Vampirism|Particles\/Vampirism|ScreenEffects\/Vampirism|UI\/StatusEffects\/Vampirism)\/[^"]+\.(png|blockymodel|blockyanim))"/
         def missingCommonRefs = [] as Set
         fileTree('src/main/resources/Server') {
             include '**/*.json'
@@ -422,6 +492,20 @@ tasks.register('validateResourceLayout') {
         }
         if (!missingCommonRefs.isEmpty()) {
             throw new GradleException("Missing Common resource references:\n${missingCommonRefs.sort().join('\n')}")
+        }
+
+        def invalidCommonRefs = [] as Set
+        fileTree('src/main/resources/Server') {
+            include '**/*.json'
+            include '**/*.particlespawner'
+            include '**/*.particlesystem'
+        }.files.findAll { it.exists() }.each { sourceFile ->
+            if (sourceFile.text.contains('"Entities/Vampirism/')) {
+                invalidCommonRefs << "${sourceFile.path}: Entities/Vampirism"
+            }
+        }
+        if (!invalidCommonRefs.isEmpty()) {
+            throw new GradleException("Unsupported Common roots referenced by server assets:\n${invalidCommonRefs.sort().join('\n')}")
         }
     }
 }

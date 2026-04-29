@@ -1,7 +1,7 @@
 //$C = "../../Common.ui";
 
 @DefaultTextTooltipStyle = TextTooltipStyle(
-  Background: (TexturePath: "Tiles/TooltipDefaultBackground.png", Border: 24),
+  Background: (TexturePath: "../../Assets/Shared/ItemQualities/Tooltips/ItemTooltipCommon.png", Border: 24),
   MaxWidth: 400,
   LabelStyle: @SkillDescriptionLabel,
   Padding: 24
@@ -21,10 +21,10 @@ Group {
 //    TooltipContent: "Plugin/SkillTooltip.ui"; // custom layout
 //    TextTooltipStyle: @DefaultTextTooltipStyle;
 
-    Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileDefault.png");
+    Background: (TexturePath: "../../Assets/Components/SkillGrid/Tiles/TileDefault.png");
     Style: (
-      Hovered: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileHovered.png")),
-      Pressed: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileSelected.png"))
+      Hovered: (Background: (TexturePath: "../../Assets/Components/SkillGrid/Tiles/TileHovered.png")),
+      Pressed: (Background: (TexturePath: "../../Assets/Components/SkillGrid/Tiles/TileSelected.png"))
     );
 
   }
