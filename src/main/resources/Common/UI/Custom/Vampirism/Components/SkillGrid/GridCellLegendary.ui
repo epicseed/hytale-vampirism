@@ -1,12 +1,12 @@
-$C = "../Common.ui";
-$Sounds = "../Sounds.ui";
+$C = "../../../Common.ui";
+$Sounds = "../../../Sounds.ui";
 
 Group {
   Anchor: (Width: 64, Height: 64);
 
   Group #SkillTile {
     Anchor: (Full: 0);
-    Background: (TexturePath: "Common/ItemQualities/Slots/SlotLegendary.png");
+    Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotLegendary.png");
   }
 
   Group #SkillIcon {
@@ -17,7 +17,7 @@ Group {
   Group #RarityOverlay {
     Anchor: (Full: 0);
     Visible: true;
-    Background: (TexturePath: "Common/ItemQualities/Slots/SlotLegendary_Overlay.png");
+    Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotLegendary_Overlay.png");
     HitTestVisible: false;
   }
 
@@ -31,28 +31,28 @@ Group {
 
   Group #Indicator {
     Anchor: (Full: 0);
-    Background: (TexturePath: "Skills/Indicators/AvailableIndicator.png");
+    Background: (TexturePath: "Vampirism/Assets/Skills/Indicators/AvailableIndicator.png");
   }
 
   Group #Selected {
     Anchor: (Full: 0);
     Visible: false;
-    Background: (TexturePath: "Skills/Tiles/TileSelected.png");
+    Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileSelected.png");
   }
 
   Button #HitArea {
     Anchor: (Full: 0);
     TooltipText: "";
     TextTooltipStyle: TextTooltipStyle(
-      Background: PatchStyle(TexturePath: "Common/ItemQualities/Tooltips/ItemTooltipLegendary.png", Border: 24),
+      Background: PatchStyle(TexturePath: "Vampirism/Assets/Common/ItemQualities/Tooltips/ItemTooltipLegendary.png", Border: 24),
       MaxWidth: 400,
       LabelStyle: LabelStyle(Wrap: true, FontSize: 16, TextColor: #f0a020),
       Padding: 24
     );
     Style: (
       Sounds: $Sounds.@CosmeticsTiles,
-      Hovered: (Background: (TexturePath: "Skills/Tiles/TileHovered.png")),
-      Pressed: (Background: (TexturePath: "Skills/Tiles/TileSelected.png"))
+      Hovered: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileHovered.png")),
+      Pressed: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileSelected.png"))
     );
   }
 

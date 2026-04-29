@@ -2,7 +2,7 @@
   "Duration": 300,
   "Debuff": true,
   "OverlapBehavior": "Extend",
-  "StatusEffectIcon": "UI/StatusEffects/Vampirism_Infected.png",
+  "StatusEffectIcon": "UI/StatusEffects/Vampirism/Infected.png",
   "ApplicationEffects": {
     "EntityTopTint": "#7a111f",
     "EntityBottomTint": "#2a060c"

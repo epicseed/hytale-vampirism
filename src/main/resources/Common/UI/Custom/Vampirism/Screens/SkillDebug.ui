@@ -1,4 +1,4 @@
-//$C = "../Common.ui";
+//$C = "../../Common.ui";
 
 @DefaultTextTooltipStyle = TextTooltipStyle(
   Background: (TexturePath: "Tiles/TooltipDefaultBackground.png", Border: 24),
@@ -21,10 +21,10 @@ Group {
 //    TooltipContent: "Plugin/SkillTooltip.ui"; // custom layout
 //    TextTooltipStyle: @DefaultTextTooltipStyle;
 
-    Background: (TexturePath: "Skills/Tiles/TileDefault.png");
+    Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileDefault.png");
     Style: (
-      Hovered: (Background: (TexturePath: "Skills/Tiles/TileHovered.png")),
-      Pressed: (Background: (TexturePath: "Skills/Tiles/TileSelected.png"))
+      Hovered: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileHovered.png")),
+      Pressed: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileSelected.png"))
     );
 
   }

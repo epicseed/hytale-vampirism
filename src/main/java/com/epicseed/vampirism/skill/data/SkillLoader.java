@@ -37,22 +37,9 @@ public class SkillLoader {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private static final String DATA_DIR = "Common/UI/Custom/Vampirism/Data/SkillsData";
+    private static final String DATA_DIR = "data/vampirism/skills";
+    private static final String LEGACY_DATA_DIR = "Common/UI/Custom/Vampirism/Data/SkillsData";
     private static final String LEGACY_JSON_PATH = "Common/UI/Custom/Vampirism/Data/SkillsData.json";
-    private static final String TREE_JSON_PATH = DATA_DIR + "/tree.json";
-    private static final String PASSIVES_JSON_PATH = DATA_DIR + "/passives.json";
-    private static final String ABILITIES_JSON_PATH = DATA_DIR + "/abilities.json";
-    private static final String MODIFIERS_JSON_PATH = DATA_DIR + "/modifiers.json";
-    private static final String EFFECTS_JSON_PATH = DATA_DIR + "/effects.json";
-    private static final String STATES_JSON_PATH = DATA_DIR + "/states.json";
-    private static final String STATS_JSON_PATH = DATA_DIR + "/stats.json";
-    private static final String CONDITIONS_JSON_PATH = DATA_DIR + "/conditions.json";
-    private static final String REQUIREMENTS_JSON_PATH = DATA_DIR + "/requirements.json";
-    private static final String TRIGGERS_JSON_PATH = DATA_DIR + "/triggers.json";
-    private static final String ACTIONS_JSON_PATH = DATA_DIR + "/actions.json";
-    private static final String TARGETINGS_JSON_PATH = DATA_DIR + "/targetings.json";
-    private static final String STATE_REGISTRY_JSON_PATH = DATA_DIR + "/stateRegistry.json";
-    private static final String RELIC_BINDINGS_JSON_PATH = DATA_DIR + "/relicBindings.json";
 
     // -------------------------------------------------------------------------
     // Tree (skill graph)
@@ -389,35 +376,38 @@ public class SkillLoader {
     // -------------------------------------------------------------------------
 
     private SkillTreeDataTransfer readJson() {
-        SkillTreeDataTransfer data = resourceExists(TREE_JSON_PATH)
-                ? readSplitJson()
+        String splitDataDir = splitDataDir();
+        SkillTreeDataTransfer data = splitDataDir != null
+                ? readSplitJson(splitDataDir)
                 : readLegacyJson();
         new SkillDataValidator().validateOrThrow(data);
         return data;
     }
 
-    private SkillTreeDataTransfer readSplitJson() {
+    private SkillTreeDataTransfer readSplitJson(String dataDir) {
         SkillTreeDataTransfer data = new SkillTreeDataTransfer();
-        data.tree = readList(TREE_JSON_PATH, SkillDTO[].class);
-        data.passives = readList(PASSIVES_JSON_PATH, PassiveDTO[].class);
-        data.abilities = readList(ABILITIES_JSON_PATH, AbilityDTO[].class);
-        data.modifiers = readList(MODIFIERS_JSON_PATH, ModifierDefDTO[].class);
-        data.effects = readList(EFFECTS_JSON_PATH, EffectDefDTO[].class);
-        data.states = readList(STATES_JSON_PATH, StateDTO[].class);
-        data.stats = readList(STATS_JSON_PATH, StatDefDTO[].class);
-        data.conditions = readList(CONDITIONS_JSON_PATH, ReusableDefDTO[].class);
-        data.requirements = readList(REQUIREMENTS_JSON_PATH, ReusableDefDTO[].class);
-        data.triggers = readList(TRIGGERS_JSON_PATH, ReusableDefDTO[].class);
-        data.actions = readList(ACTIONS_JSON_PATH, ReusableDefDTO[].class);
-        data.targetings = readList(TARGETINGS_JSON_PATH, ReusableDefDTO[].class);
-        data.stateRegistry = readList(STATE_REGISTRY_JSON_PATH, StateEffectBindingDTO[].class);
-        data.relicBindings = readStringMap(RELIC_BINDINGS_JSON_PATH);
+        data.tree = readList(sectionPath(dataDir, "tree.json"), SkillDTO[].class);
+        data.passives = readList(sectionPath(dataDir, "passives.json"), PassiveDTO[].class);
+        data.abilities = readList(sectionPath(dataDir, "abilities.json"), AbilityDTO[].class);
+        data.modifiers = readList(sectionPath(dataDir, "modifiers.json"), ModifierDefDTO[].class);
+        data.effects = readList(sectionPath(dataDir, "effects.json"), EffectDefDTO[].class);
+        data.states = readList(sectionPath(dataDir, "states.json"), StateDTO[].class);
+        data.stats = readList(sectionPath(dataDir, "stats.json"), StatDefDTO[].class);
+        data.conditions = readList(sectionPath(dataDir, "conditions.json"), ReusableDefDTO[].class);
+        data.requirements = readList(sectionPath(dataDir, "requirements.json"), ReusableDefDTO[].class);
+        data.triggers = readList(sectionPath(dataDir, "triggers.json"), ReusableDefDTO[].class);
+        data.actions = readList(sectionPath(dataDir, "actions.json"), ReusableDefDTO[].class);
+        data.targetings = readList(sectionPath(dataDir, "targetings.json"), ReusableDefDTO[].class);
+        data.stateRegistry = readList(sectionPath(dataDir, "stateRegistry.json"), StateEffectBindingDTO[].class);
+        data.relicBindings = readStringMap(sectionPath(dataDir, "relicBindings.json"));
         return data;
     }
 
     private SkillTreeDataTransfer readLegacyJson() {
         InputStream json = getClass().getClassLoader().getResourceAsStream(LEGACY_JSON_PATH);
-        if (json == null) throw new RuntimeException("Skill data not found at: " + DATA_DIR + " or " + LEGACY_JSON_PATH);
+        if (json == null) {
+            throw new RuntimeException("Skill data not found at: " + DATA_DIR + ", " + LEGACY_DATA_DIR + " or " + LEGACY_JSON_PATH);
+        }
         try {
             return mapper.readValue(json, SkillTreeDataTransfer.class);
         } catch (RuntimeException e) {
@@ -429,6 +419,20 @@ public class SkillLoader {
 
     private boolean resourceExists(String path) {
         return getClass().getClassLoader().getResource(path) != null;
+    }
+
+    private String splitDataDir() {
+        if (resourceExists(sectionPath(DATA_DIR, "tree.json"))) {
+            return DATA_DIR;
+        }
+        if (resourceExists(sectionPath(LEGACY_DATA_DIR, "tree.json"))) {
+            return LEGACY_DATA_DIR;
+        }
+        return null;
+    }
+
+    private String sectionPath(String dataDir, String fileName) {
+        return dataDir + "/" + fileName;
     }
 
     private <T> List<T> readList(String path, Class<T[]> arrayClass) {

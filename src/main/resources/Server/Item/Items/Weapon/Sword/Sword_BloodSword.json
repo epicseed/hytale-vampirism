@@ -3,9 +3,9 @@
   "TranslationProperties": {
     "Name": "Blood Sword"
   },
-  "Model": "Items/Weapons/Sword/SwordBlood.blockymodel",
-  "Texture": "Items/Weapons/Sword/SwordBloodTexture.png",
-  "Icon": "Icons/ItemsGenerated/Sword_BloodSword.png",
+  "Model": "Items/Vampirism/Weapons/Sword/SwordBlood.blockymodel",
+  "Texture": "Items/Vampirism/Weapons/Sword/SwordBloodTexture.png",
+  "Icon": "Icons/ItemsGenerated/Vampirism/Sword_BloodSword.png",
   "Quality": "Rare",
   "ItemLevel": 35,
   "InteractionVars": {

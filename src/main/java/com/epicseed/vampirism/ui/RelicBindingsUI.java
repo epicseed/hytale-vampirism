@@ -46,7 +46,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
     private static final String[] SLOT_KEYS = { "primary", "secondary", "ability1", "ability2", "ability3" };
 
     /** Placeholder icon path for abilities without a custom icon. */
-    private static final String EMPTY_ICON = "Vampirism/Common/WIPIcon.png";
+    private static final String EMPTY_ICON = "Vampirism/Assets/Common/WIPIcon.png";
 
     /** Pending binding map being edited (slot -> abilityId). */
     private final LinkedHashMap<String, String> pending = new LinkedHashMap<>();
@@ -79,7 +79,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
                       @Nonnull UIEventBuilder events,
                       @Nonnull Store<EntityStore> store) {
 
-        cmd.append("Vampirism/RelicBindings.ui");
+        cmd.append("Vampirism/Screens/RelicBindings.ui");
 
         UUID uuid = playerRef.getUuid();
 
@@ -140,7 +140,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
             cmd.set(selector + " #Indicator.Visible", false);
 
             String abilityIconPath = (s.iconPath != null && !s.iconPath.isEmpty())
-                    ? "Vampirism/Skills/Icons/" + s.iconPath
+                    ? "Vampirism/Assets/Skills/Icons/" + s.iconPath
                     : EMPTY_ICON;
             cmd.set(selector + " #SkillIcon.Background", abilityIconPath);
 
@@ -401,7 +401,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
         Skill owner = findSkillByAbilityId(abilityId);
         String rarity = owner != null ? owner.rarity : null;
         String iconPath = (owner != null && owner.iconPath != null && !owner.iconPath.isEmpty())
-                ? "Vampirism/Skills/Icons/" + owner.iconPath
+                ? "Vampirism/Assets/Skills/Icons/" + owner.iconPath
                 : EMPTY_ICON;
 
         cmd.set(selector + " #SlotTile.Background", raritySlotPath(rarity));
@@ -591,13 +591,13 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
     }
 
     private static String rarityGridCell(String rarity) {
-        if (rarity == null) return "Vampirism/GridCell.ui";
+        if (rarity == null) return "Vampirism/Components/SkillGrid/GridCell.ui";
         return switch (rarity.toLowerCase()) {
-            case "uncommon"  -> "Vampirism/GridCellUncommon.ui";
-            case "rare"      -> "Vampirism/GridCellRare.ui";
-            case "epic"      -> "Vampirism/GridCellEpic.ui";
-            case "legendary" -> "Vampirism/GridCellLegendary.ui";
-            default          -> "Vampirism/GridCell.ui";
+            case "uncommon"  -> "Vampirism/Components/SkillGrid/GridCellUncommon.ui";
+            case "rare"      -> "Vampirism/Components/SkillGrid/GridCellRare.ui";
+            case "epic"      -> "Vampirism/Components/SkillGrid/GridCellEpic.ui";
+            case "legendary" -> "Vampirism/Components/SkillGrid/GridCellLegendary.ui";
+            default          -> "Vampirism/Components/SkillGrid/GridCell.ui";
         };
     }
 
@@ -628,7 +628,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
             case "legendary" -> "Legendary";
             default -> "Common";
         };
-        return "Vampirism/Common/ItemQualities/Slots/Slot" + name + ".png";
+        return "Vampirism/Assets/Common/ItemQualities/Slots/Slot" + name + ".png";
     }
 
     private static String raritySlotOverlayPath(String rarity) {
@@ -639,7 +639,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
             case "legendary" -> "Legendary";
             default -> "Common";
         };
-        return "Vampirism/Common/ItemQualities/Slots/Slot" + name + "_Overlay.png";
+        return "Vampirism/Assets/Common/ItemQualities/Slots/Slot" + name + "_Overlay.png";
     }
 
     private static String rarityLabel(String rarity) {

@@ -1,4 +1,4 @@
-$C = "../Common.ui";
+$C = "../../Common.ui";
 
 @BottomMargin = 30;
 @ContainerMargin = 6;
@@ -25,13 +25,13 @@ Group #MainContainer {
 
       Group #Icon {
         Anchor: (Left: 0, Width: 24, Height: 24);
-        Background: "BloodBar/HealthIcon.png";
+        Background: "Vampirism/Assets/Huds/BloodBar/HealthIcon.png";
         HitTestVisible: false;
       }
 
       Group #IconCreative {
         Anchor: (Left: 0, Width: 24, Height: 24);
-        Background: "BloodBar/CreativeHealthIcon.png";
+        Background: "Vampirism/Assets/Huds/BloodBar/CreativeHealthIcon.png";
         Visible: false;
         HitTestVisible: false;
       }
@@ -39,25 +39,25 @@ Group #MainContainer {
 
     Group #BarContainer {
       Anchor: (Left: 0, Width: 318, Height: 12);
-      Background: "BloodBar/HealthBackground.png";
+      Background: "Vampirism/Assets/Huds/BloodBar/HealthBackground.png";
       HitTestVisible: false;
 
       ProgressBar #ProgressBarHealth {
         Anchor: (Width: 318, Height: 12);
-        BarTexturePath: "BloodBar/HealthBarFill.png";
+        BarTexturePath: "Vampirism/Assets/Huds/BloodBar/HealthBarFill.png";
         Value: 1.0;
       }
 
       ProgressBar #ProgressBarHealthCreative {
         Anchor: (Width: 318, Height: 12);
-        BarTexturePath: "BloodBar/CreativeHealthBarFill.png";
+        BarTexturePath: "Vampirism/Assets/Huds/BloodBar/CreativeHealthBarFill.png";
         Value: 1.0;
         Visible: false;
       }
 
       ProgressBar #ProgressBarEffect {
         Anchor: (Width: 318, Height: 12);
-        BarTexturePath: "BloodBar/HealthBarEffect.png";
+        BarTexturePath: "Vampirism/Assets/Huds/BloodBar/HealthBarEffect.png";
         Value: 1.0;
       }
 

@@ -36,7 +36,7 @@
     }
   ],
   "Particle": {
-    "Texture": "Particles/Textures/Vampirism/VampireFang.png",
+    "Texture": "Particles/Vampirism/Textures/VampireFang.png",
     "FrameSize": {
       "Width": 64,
       "Height": 64

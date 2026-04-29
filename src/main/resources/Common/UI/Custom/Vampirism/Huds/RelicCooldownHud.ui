@@ -1,4 +1,4 @@
-$C = "../Common.ui";
+$C = "../../Common.ui";
 
 Group #RelicCooldownHudRoot {
   Anchor: (Right: 24, Bottom: 38, Width: 396, Height: 76);
@@ -11,21 +11,21 @@ Group #RelicCooldownHudRoot {
 
     Group #SlotHitArea {
       Anchor: (Full: 0);
-      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon.png");
+      Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon.png");
       HitTestVisible: false;
     }
 
     Group #SlotIcon {
       Anchor: (Full: 0);
       Visible: false;
-      Background: (TexturePath: "Vampirism/Common/WIPIcon.png");
+      Background: (TexturePath: "Vampirism/Assets/Common/WIPIcon.png");
       HitTestVisible: false;
     }
 
     Group #RarityOverlay {
       Anchor: (Full: 0);
       Visible: true;
-      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+      Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
       HitTestVisible: false;
     }
 
@@ -58,21 +58,21 @@ Group #RelicCooldownHudRoot {
 
     Group #SlotHitArea {
       Anchor: (Full: 0);
-      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon.png");
+      Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon.png");
       HitTestVisible: false;
     }
 
     Group #SlotIcon {
       Anchor: (Full: 0);
       Visible: false;
-      Background: (TexturePath: "Vampirism/Common/WIPIcon.png");
+      Background: (TexturePath: "Vampirism/Assets/Common/WIPIcon.png");
       HitTestVisible: false;
     }
 
     Group #RarityOverlay {
       Anchor: (Full: 0);
       Visible: true;
-      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+      Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
       HitTestVisible: false;
     }
 
@@ -105,21 +105,21 @@ Group #RelicCooldownHudRoot {
 
     Group #SlotHitArea {
       Anchor: (Full: 0);
-      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon.png");
+      Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon.png");
       HitTestVisible: false;
     }
 
     Group #SlotIcon {
       Anchor: (Full: 0);
       Visible: false;
-      Background: (TexturePath: "Vampirism/Common/WIPIcon.png");
+      Background: (TexturePath: "Vampirism/Assets/Common/WIPIcon.png");
       HitTestVisible: false;
     }
 
     Group #RarityOverlay {
       Anchor: (Full: 0);
       Visible: true;
-      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+      Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
       HitTestVisible: false;
     }
 
@@ -152,21 +152,21 @@ Group #RelicCooldownHudRoot {
 
     Group #SlotHitArea {
       Anchor: (Full: 0);
-      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon.png");
+      Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon.png");
       HitTestVisible: false;
     }
 
     Group #SlotIcon {
       Anchor: (Full: 0);
       Visible: false;
-      Background: (TexturePath: "Vampirism/Common/WIPIcon.png");
+      Background: (TexturePath: "Vampirism/Assets/Common/WIPIcon.png");
       HitTestVisible: false;
     }
 
     Group #RarityOverlay {
       Anchor: (Full: 0);
       Visible: true;
-      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+      Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
       HitTestVisible: false;
     }
 
@@ -199,21 +199,21 @@ Group #RelicCooldownHudRoot {
 
     Group #SlotHitArea {
       Anchor: (Full: 0);
-      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon.png");
+      Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon.png");
       HitTestVisible: false;
     }
 
     Group #SlotIcon {
       Anchor: (Full: 0);
       Visible: false;
-      Background: (TexturePath: "Vampirism/Common/WIPIcon.png");
+      Background: (TexturePath: "Vampirism/Assets/Common/WIPIcon.png");
       HitTestVisible: false;
     }
 
     Group #RarityOverlay {
       Anchor: (Full: 0);
       Visible: true;
-      Background: (TexturePath: "Vampirism/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+      Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
       HitTestVisible: false;
     }
 
