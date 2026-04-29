@@ -10,7 +10,7 @@ Group {
 
   Group #SkillTile {
     Anchor: (Full: 0);
-    Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon.png");
+    Background: (TexturePath: "../../Assets/Shared/ItemQualities/Slots/SlotCommon.png");
   }
 
   Group #SkillIcon {
@@ -21,7 +21,7 @@ Group {
   Group #RarityOverlay {
     Anchor: (Full: 0);
     Visible: true;
-    Background: (TexturePath: "Vampirism/Assets/Common/ItemQualities/Slots/SlotCommon_Overlay.png");
+    Background: (TexturePath: "../../Assets/Shared/ItemQualities/Slots/SlotCommon_Overlay.png");
     HitTestVisible: false;
   }
 
@@ -35,28 +35,28 @@ Group {
 
   Group #Indicator {
     Anchor: (Full: 0);
-    Background: (TexturePath: "Vampirism/Assets/Skills/Indicators/AvailableIndicator.png");
+    Background: (TexturePath: "../../Assets/Components/SkillGrid/Indicators/AvailableIndicator.png");
   }
 
   Group #Selected {
     Anchor: (Full: 0);
     Visible: false;
-    Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileSelected.png");
+    Background: (TexturePath: "../../Assets/Components/SkillGrid/Tiles/TileSelected.png");
   }
 
   Button #HitArea {
     Anchor: (Full: 0);
     TooltipText: "";
     TextTooltipStyle: TextTooltipStyle(
-      Background: PatchStyle(TexturePath: "Vampirism/Assets/Common/ItemQualities/Tooltips/ItemTooltipCommon.png", Border: 24),
+      Background: PatchStyle(TexturePath: "../../Assets/Shared/ItemQualities/Tooltips/ItemTooltipCommon.png", Border: 24),
       MaxWidth: 400,
       LabelStyle: LabelStyle(Wrap: true, FontSize: 16, TextColor: #cccccc),
       Padding: 24
     );
     Style: (
       Sounds: $Sounds.@CosmeticsTiles,
-      Hovered: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileHovered.png")),
-      Pressed: (Background: (TexturePath: "Vampirism/Assets/Skills/Tiles/TileSelected.png"))
+      Hovered: (Background: (TexturePath: "../../Assets/Components/SkillGrid/Tiles/TileHovered.png")),
+      Pressed: (Background: (TexturePath: "../../Assets/Components/SkillGrid/Tiles/TileSelected.png"))
     );
   }
 

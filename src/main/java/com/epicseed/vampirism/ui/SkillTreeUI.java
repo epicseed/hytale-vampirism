@@ -35,8 +35,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 /// Main Class for displaying the .ui in screen
 public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
-    private static final String WIP_ICON = "Vampirism/Assets/Common/WIPIcon.png";
-
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private static final int PIVOT_HALF  = 5000;  // half of #GridPivot's 10000px size
     private static final int PIVOT_SIZE  = 10000; // #GridPivot / #GridContent size
@@ -100,7 +98,7 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
             @NonNullDecl UIEventBuilder events,
             @NonNullDecl Store<EntityStore> store) {
 
-        cmd.append("Vampirism/Screens/SkillTree.ui");
+        cmd.append(VampirismUiPaths.SKILL_TREE_LAYOUT);
         cmd.set("#PointsPanel #PointsValue.Text",
                 String.valueOf(PlayerSkillRegistry.get().getSkillPoints(playerRef.getUuid())));
         this.buildGrid(cmd, events, ref, store);
@@ -266,30 +264,16 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
     }
 
     private static String raritySlotPath(String rarity) {
-        String name = rarity == null ? "Common" : switch (rarity.toLowerCase()) {
-            case "uncommon" -> "Uncommon";
-            case "rare" -> "Rare";
-            case "epic" -> "Epic";
-            case "legendary" -> "Legendary";
-            default -> "Common";
-        };
-        return "Vampirism/Assets/Common/ItemQualities/Slots/Slot" + name + ".png";
+        return VampirismUiPaths.raritySlot(rarity);
     }
 
     private static String raritySlotOverlayPath(String rarity) {
-        String name = rarity == null ? "Common" : switch (rarity.toLowerCase()) {
-            case "uncommon" -> "Uncommon";
-            case "rare" -> "Rare";
-            case "epic" -> "Epic";
-            case "legendary" -> "Legendary";
-            default -> "Common";
-        };
-        return "Vampirism/Assets/Common/ItemQualities/Slots/Slot" + name + "_Overlay.png";
+        return VampirismUiPaths.raritySlotOverlay(rarity);
     }
 
     private static String skillTreeOverlayPath(Skill skill) {
         if (!skill.enabled) {
-            return "Vampirism/Assets/Common/ItemQualities/Slots/SlotDeveloper_Overlay.png";
+            return VampirismUiPaths.DEVELOPER_SLOT_OVERLAY;
         }
         return raritySlotOverlayPath(skill.rarity);
     }
@@ -324,15 +308,7 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
     }
 
     private static String rarityGridCell(String rarity) {
-        if (rarity == null)
-            return "Vampirism/Components/SkillGrid/GridCell.ui";
-        return switch (rarity.toLowerCase()) {
-            case "uncommon" -> "Vampirism/Components/SkillGrid/GridCellUncommon.ui";
-            case "rare" -> "Vampirism/Components/SkillGrid/GridCellRare.ui";
-            case "epic" -> "Vampirism/Components/SkillGrid/GridCellEpic.ui";
-            case "legendary" -> "Vampirism/Components/SkillGrid/GridCellLegendary.ui";
-            default -> "Vampirism/Components/SkillGrid/GridCell.ui";
-        };
+        return VampirismUiPaths.rarityGridCell(rarity);
     }
 
     private void showSkillDetail(UICommandBuilder cmd, Skill skill, UUID uuid) {
@@ -345,9 +321,7 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
         cmd.set("#SkillDetail.Visible", true);
         cmd.set("#SkillDetail #SkillTile.Background", raritySlotPath(skill.rarity));
         cmd.set("#SkillDetail #SkillTileRarityOverlay.Background", skillTreeOverlayPath(skill));
-        String iconPath = (skill.iconPath != null && !skill.iconPath.isEmpty())
-                ? "Vampirism/Assets/Skills/Icons/" + skill.iconPath
-                : WIP_ICON;
+        String iconPath = VampirismUiPaths.skillIcon(skill.iconPath);
         cmd.set("#SkillDetail #SkillTileIcon.Background", iconPath);
         boolean hasOverlayText = skill.overlayText != null && !skill.overlayText.isBlank();
         cmd.set("#SkillDetail #SkillTileOverlayText.Visible", hasOverlayText);
@@ -374,9 +348,7 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
                 cmd.set(sel + ".Visible", true);
                 cmd.set(sel + " #MiniTile.Background", raritySlotPath(req.rarity));
                 cmd.set(sel + " #MiniRarityOverlay.Background", skillTreeOverlayPath(req));
-                String reqIcon = (req.iconPath != null && !req.iconPath.isEmpty())
-                        ? "Vampirism/Assets/Skills/Icons/" + req.iconPath
-                        : WIP_ICON;
+                String reqIcon = VampirismUiPaths.skillIcon(req.iconPath);
                 cmd.set(sel + " #MiniIcon.Background", reqIcon);
                 boolean reqHasOverlayText = req.overlayText != null && !req.overlayText.isBlank();
                 cmd.set(sel + " #MiniOverlayText.Visible", reqHasOverlayText);
@@ -398,9 +370,7 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
                 cmd.set(sel + ".Visible", true);
                 cmd.set(sel + " #MiniTile.Background", raritySlotPath(unl.rarity));
                 cmd.set(sel + " #MiniRarityOverlay.Background", skillTreeOverlayPath(unl));
-                String unlIcon = (unl.iconPath != null && !unl.iconPath.isEmpty())
-                        ? "Vampirism/Assets/Skills/Icons/" + unl.iconPath
-                        : WIP_ICON;
+                String unlIcon = VampirismUiPaths.skillIcon(unl.iconPath);
                 cmd.set(sel + " #MiniIcon.Background", unlIcon);
                 boolean unlHasOverlayText = unl.overlayText != null && !unl.overlayText.isBlank();
                 cmd.set(sel + " #MiniOverlayText.Visible", unlHasOverlayText);
@@ -566,7 +536,7 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
                 new EventData().append("Action", "reload_cancel"), false);
 
         for (int i = 0; i < maxMiniNodes; i++) {
-            cmd.append("#SkillDetail #SkillRequiresRow", "Vampirism/Components/SkillGrid/SkillNodeMini.ui");
+            cmd.append("#SkillDetail #SkillRequiresRow", VampirismUiPaths.SKILL_NODE_MINI_LAYOUT);
             cmd.setObject("#SkillDetail #SkillRequiresRow[" + i + "].Anchor", createAnchor(i * 44, 2, 40, 40));
             cmd.set("#SkillDetail #SkillRequiresRow[" + i + "].Visible", false);
             events.addEventBinding(CustomUIEventBindingType.Activating,
@@ -575,7 +545,7 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
         }
 
         for (int i = 0; i < maxMiniNodes; i++) {
-            cmd.append("#SkillDetail #SkillUnlocksRow", "Vampirism/Components/SkillGrid/SkillNodeMini.ui");
+            cmd.append("#SkillDetail #SkillUnlocksRow", VampirismUiPaths.SKILL_NODE_MINI_LAYOUT);
             cmd.setObject("#SkillDetail #SkillUnlocksRow[" + i + "].Anchor", createAnchor(i * 44, 2, 40, 40));
             cmd.set("#SkillDetail #SkillUnlocksRow[" + i + "].Visible", false);
             events.addEventBinding(CustomUIEventBindingType.Activating,
@@ -637,7 +607,7 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
 
                     String selector = "#GridContent[" + index + "]";
 
-                    cmd.append("#GridContent", "Vampirism/Screens/SkillDebug.ui");
+                    cmd.append("#GridContent", VampirismUiPaths.SKILL_DEBUG_LAYOUT);
                     cmd.setObject(selector + ".Anchor", createPixelAnchor(leftPx, topPx));
 
                     String labelText = "X: " + x + "\n" + "Y: " + y;
@@ -684,9 +654,7 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
                 skillCellIndex.put(skill.id, cellIndex);
                 cmd.set(selector + " #Indicator.Background.Color", indicatorColor(skill, playerRef.getUuid()));
 
-                String gridIconPath = (skill.iconPath != null && !skill.iconPath.isEmpty())
-                        ? "Vampirism/Assets/Skills/Icons/" + skill.iconPath
-                        : WIP_ICON;
+                String gridIconPath = VampirismUiPaths.skillIcon(skill.iconPath);
                 cmd.set(selector + " #SkillIcon.Background", gridIconPath);
                 cmd.set(selector + " #RarityOverlay.Background", skillTreeOverlayPath(skill));
                 boolean hasOverlayText = skill.overlayText != null && !skill.overlayText.isBlank();
@@ -774,7 +742,7 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
         int sz = step - 8;
         elementBasePositions.add(new int[]{ leftPx, topPx, sz, sz });
         elementGridCoords.add(new int[]{ gridX, gridY, tileKind(uiFile) });
-        cmd.append("#GridContent", "Vampirism/Components/SkillTree/Trails/" + uiFile + ".ui");
+        cmd.append("#GridContent", VampirismUiPaths.skillTreeTrail(uiFile));
         cmd.setObject("#GridContent[" + index + "].Anchor", createPixelAnchor(leftPx, topPx));
     }
 
@@ -788,7 +756,7 @@ public class SkillTreeUI extends InteractiveCustomUIPage<SkillTreeData> {
         elementGridCoords.add(new int[]{ gridX, gridY, tileKind(uiFile) });
         int tileType = uiFile.startsWith("TrailCorner") ? TILE_CORNER : TILE_STRAIGHT;
         connectionGlowTiles.computeIfAbsent(connKey, k -> new ArrayList<>()).add(new int[]{ index, tileType });
-        cmd.append("#GridContent", "Vampirism/Components/SkillTree/Trails/" + uiFile + ".ui");
+        cmd.append("#GridContent", VampirismUiPaths.skillTreeTrail(uiFile));
         cmd.setObject("#GridContent[" + index + "].Anchor", createPixelAnchor(leftPx, topPx));
     }
 

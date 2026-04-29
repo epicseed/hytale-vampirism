@@ -1,5 +1,5 @@
 {
-  "Model": "Entities/Vampirism/InvisibleCarrier/InvisibleCarrier.blockymodel",
+  "Model": "Characters/Vampirism/InvisibleCarrier/InvisibleCarrier.blockymodel",
   "Texture": "Characters/Empty_Cube_Texture.png",
   "HitBox": {
     "Max": {

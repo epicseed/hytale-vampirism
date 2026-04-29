@@ -2,6 +2,7 @@ package com.epicseed.vampirism.hud;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.vampirism.ui.VampirismUiPaths;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -11,7 +12,7 @@ public class BloodGaugeHud extends CustomUIHud {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private static final int DEFAULT_BLOOD_CAPACITY = 100;
-    private static final String LAYOUT_PATH = "Vampirism/Huds/BloodBar.ui";
+    private static final String LAYOUT_PATH = VampirismUiPaths.BLOOD_BAR_LAYOUT;
     private static final String NORMAL_ICON = "#Icon";
     private static final String CREATIVE_ICON = "#IconCreative";
     private static final String NORMAL_BAR = "#ProgressBarHealth";
