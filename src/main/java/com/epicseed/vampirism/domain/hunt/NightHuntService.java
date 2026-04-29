@@ -36,7 +36,7 @@ public final class NightHuntService {
         return NightMarkedVictimSystem.forceStart(uuid, playerRef, store);
     }
 
-    public static NightMarkedVictimSystem.HuntDebugInfo getDebugInfo(@Nullable UUID uuid) {
+    public static NightHuntDebugInfo getDebugInfo(@Nullable UUID uuid) {
         return NightMarkedVictimSystem.getDebugInfo(uuid);
     }
 
