@@ -1,16 +1,15 @@
 package com.epicseed.vampirism.systems;
 
 import com.epicseed.vampirism.Vampirism;
+import com.epicseed.vampirism.domain.blood.ConsumableMarkerService;
+import com.epicseed.vampirism.domain.blood.FeedChannelPresentationService;
+import com.epicseed.vampirism.domain.blood.FeedCompletionService;
 import com.epicseed.vampirism.domain.blood.FeedEligibility;
-import com.epicseed.vampirism.domain.hunt.NightHuntService;
-import com.epicseed.vampirism.hytale.DamageAdapter;
+import com.epicseed.vampirism.domain.blood.FeedSession;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.model.Ability;
-import com.epicseed.vampirism.skill.model.EffectDef;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
-import com.epicseed.vampirism.skill.runtime.PassiveService;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeDefinitions;
 import com.hypixel.hytale.component.ArchetypeChunk;
@@ -21,18 +20,12 @@ import com.hypixel.hytale.component.SystemGroup;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
-import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
-import com.hypixel.hytale.server.core.entity.AnimationUtils;
-import com.hypixel.hytale.server.core.asset.type.entityeffect.config.OverlapBehavior;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.physics.component.Velocity;
-import com.hypixel.hytale.server.core.util.TargetUtil;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.protocol.AnimationSlot;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -53,14 +46,8 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
     private static final float MIN_SPEED_MULTIPLIER = 0.1f;
     private static final double RANGE_EPSILON = 0.25d;
     private static final double CAST_CANCEL_MOVE_DISTANCE = 0.2d;
-    private static final String BLOOD_SUCKER_ABILITY_ID = "BloodSucker";
-    private static final String CONSUMABLE_MARKER_EFFECT_ID = "blood_feed_consumable_marker_effect";
-    private static final double CONSUMABLE_MARKER_RANGE = 8.0d;
-    private static final float CONSUMABLE_MARKER_SCAN_INTERVAL_S = 0.5f;
-    private static final float CONSUMABLE_MARKER_DURATION_S = 1.25f;
 
     private static final Map<UUID, FeedSession> activeFeeds = new ConcurrentHashMap<>();
-    private static final Map<UUID, Float> markerScanAccumulators = new ConcurrentHashMap<>();
 
     @Override
     public SystemGroup<EntityStore> getGroup() {
@@ -108,7 +95,7 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
 
         FeedSession previous = activeFeeds.remove(uuid);
         if (previous != null) {
-            cleanupChannelEffects(previous, ctx.store(), ctx.ref());
+            FeedChannelPresentationService.cleanup(previous, ctx.store(), ctx.ref());
         }
 
         FeedSession session = new FeedSession(
@@ -126,7 +113,7 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
                 action.get("casterAnimationId") instanceof String s && !s.isBlank() ? s : null,
                 action.get("casterEffectId") instanceof String s && !s.isBlank() ? s : null,
                 action.get("targetEffectId") instanceof String s && !s.isBlank() ? s : null);
-        applyChannelEffects(session, ctx.store(), ctx.ref());
+        FeedChannelPresentationService.apply(session, ctx.store(), ctx.ref());
         activeFeeds.put(uuid, session);
         return true;
     }
@@ -134,7 +121,7 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
     public static void clearPlayer(@Nullable UUID uuid) {
         if (uuid != null) {
             activeFeeds.remove(uuid);
-            markerScanAccumulators.remove(uuid);
+            ConsumableMarkerService.clearPlayer(uuid);
         }
     }
 
@@ -153,20 +140,20 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
         FeedSession session = activeFeeds.get(uuid);
 
         if (!VampireStatusRegistry.get().isVampire(uuid)) {
-            markerScanAccumulators.remove(uuid);
+            ConsumableMarkerService.clearPlayer(uuid);
             if (session == null) return;
             activeFeeds.remove(uuid);
-            cleanupChannelEffects(session, store, playerRef);
+            FeedChannelPresentationService.cleanup(session, store, playerRef);
             return;
         }
 
-        refreshConsumableMarkers(uuid, playerRef, dt, store);
+        ConsumableMarkerService.tick(uuid, playerRef, dt, store);
 
         if (session == null) return;
 
         if (!isSessionStillValid(playerRef, session, store)) {
             activeFeeds.remove(uuid);
-            cleanupChannelEffects(session, store, playerRef);
+            FeedChannelPresentationService.cleanup(session, store, playerRef);
             return;
         }
 
@@ -176,54 +163,7 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
         if (session.remainingSeconds > 0f) return;
 
         activeFeeds.remove(uuid);
-        commandBuffer.run(bufferStore -> completeFeed(uuid, playerRef, session, bufferStore));
-    }
-
-    private static void completeFeed(@Nonnull UUID uuid,
-                                     @Nonnull Ref<EntityStore> playerRef,
-                                     @Nonnull FeedSession session,
-                                     @Nonnull Store<EntityStore> store) {
-        SkillRuntimeContext baseCtx = new SkillRuntimeContext(uuid, playerRef, session.targetRef, store);
-        SkillRuntimeContext ctx = session.abilityId != null && !session.abilityId.isBlank()
-                ? baseCtx.withActivatedAbility(session.abilityId)
-                : baseCtx;
-
-        EntityStatValue health = FeedEligibility.resolveHealth(session.targetRef, ctx.store());
-        if (health == null || health.get() <= 0f) {
-            cleanupChannelEffects(session, store, playerRef);
-            return;
-        }
-
-        float executeThreshold = ModifierRegistry.get().compute(
-                session.executeThresholdStat,
-                session.executeThreshold,
-                ctx.modifierContext());
-        float hpPercent = health.getMax() > 0f ? health.get() / health.getMax() : 0f;
-        float damageAmount = hpPercent <= executeThreshold
-                ? Math.max(health.get(), health.getMax()) + 9999f
-                : Math.max(0f, session.damage);
-        if (!applyDamage(ctx.ref(), session.targetRef, damageAmount, store)) {
-            cleanupChannelEffects(session, store, playerRef);
-            return;
-        }
-        boolean targetKilled = isTargetDead(session.targetRef, store);
-
-        float bloodGainMultiplier = ModifierRegistry.get().compute(
-                session.bloodGainStat,
-                1f,
-                ctx.modifierContext());
-        int bloodGain = Math.max(0, Math.round(session.baseBloodGain * Math.max(0f, bloodGainMultiplier)));
-        if (bloodGain > 0) {
-            VampireVitalitySystem.addBlood(ctx.ref(), bloodGain);
-        }
-        cleanupChannelEffects(session, store, playerRef);
-        PassiveService.get().onFeed(ctx);
-        if (targetKilled) {
-            NightHuntService.onPlayerKilledMarkedPrey(uuid, playerRef, session.targetRef, store);
-            PlayerRef playerRefComponent = (PlayerRef) store.getComponent(playerRef, PlayerRef.getComponentType());
-            String playerName = playerRefComponent != null ? playerRefComponent.getUsername() : uuid.toString();
-            VampireInfectionSystem.completeAscension(uuid, playerName, playerRef, store);
-        }
+        commandBuffer.run(bufferStore -> FeedCompletionService.complete(uuid, playerRef, session, bufferStore));
     }
 
     private static boolean isSessionStillValid(@Nonnull Ref<EntityStore> playerRef,
@@ -234,43 +174,6 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
                 && health.get() > 0f
                 && !FeedEligibility.hasMovedFrom(playerRef, session.casterStartPosition, store, CAST_CANCEL_MOVE_DISTANCE)
                 && FeedEligibility.isWithinRange(playerRef, session.targetRef, store, session.maxRange, RANGE_EPSILON);
-    }
-
-    private static boolean applyDamage(@Nonnull Ref<EntityStore> sourceRef,
-                                       @Nonnull Ref<EntityStore> targetRef,
-                                       float amount,
-                                       @Nonnull Store<EntityStore> store) {
-        return DamageAdapter.executePhysicalDamage(sourceRef, targetRef, store, amount);
-    }
-
-    private static void applyChannelEffects(@Nonnull FeedSession session,
-                                            @Nonnull Store<EntityStore> store,
-                                            @Nonnull Ref<EntityStore> playerRef) {
-        playCasterAnimation(playerRef, session.casterAnimationId, store);
-        applyChannelEffect(playerRef, session.casterEffectId, session.remainingSeconds, store);
-        applyChannelEffect(session.targetRef, session.targetEffectId, session.remainingSeconds, store);
-    }
-
-    private static void cleanupChannelEffects(@Nonnull FeedSession session,
-                                              @Nonnull Store<EntityStore> store,
-                                              @Nonnull Ref<EntityStore> playerRef) {
-        stopCasterAnimation(playerRef, session.casterAnimationId, store);
-        removeChannelEffect(playerRef, session.casterEffectId, store);
-        removeChannelEffect(session.targetRef, session.targetEffectId, store);
-    }
-
-    private static void playCasterAnimation(@Nonnull Ref<EntityStore> playerRef,
-                                            @Nullable String animationId,
-                                            @Nonnull Store<EntityStore> store) {
-        if (animationId == null || animationId.isBlank()) return;
-        AnimationUtils.playAnimation(playerRef, AnimationSlot.Emote, null, animationId, true, store);
-    }
-
-    private static void stopCasterAnimation(@Nonnull Ref<EntityStore> playerRef,
-                                            @Nullable String animationId,
-                                            @Nonnull Store<EntityStore> store) {
-        if (animationId == null || animationId.isBlank()) return;
-        AnimationUtils.stopAnimation(playerRef, AnimationSlot.Emote, true, store);
     }
 
     @Nullable
@@ -298,109 +201,6 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
             velocity.setZero();
             velocity.setClient(0d, 0d, 0d);
         }
-    }
-
-    private static void refreshConsumableMarkers(@Nonnull UUID uuid,
-                                                 @Nonnull Ref<EntityStore> playerRef,
-                                                 float dt,
-                                                 @Nonnull Store<EntityStore> store) {
-        if (!PlayerSkillRegistry.get().hasSkill(uuid, BLOOD_SUCKER_ABILITY_ID)
-                && !VampireInfectionSystem.allowsTemporaryAbility(uuid, BLOOD_SUCKER_ABILITY_ID)) {
-            markerScanAccumulators.remove(uuid);
-            return;
-        }
-
-        float accumulated = markerScanAccumulators.getOrDefault(uuid, 0f) + Math.max(0f, dt);
-        if (accumulated < CONSUMABLE_MARKER_SCAN_INTERVAL_S) {
-            markerScanAccumulators.put(uuid, accumulated);
-            return;
-        }
-        markerScanAccumulators.put(uuid, 0f);
-
-        TransformComponent casterTransform = (TransformComponent) store.getComponent(playerRef, TransformComponent.getComponentType());
-        if (casterTransform == null) {
-            return;
-        }
-
-        SkillRuntimeContext ctx = new SkillRuntimeContext(uuid, playerRef, null, store).withActivatedAbility(BLOOD_SUCKER_ABILITY_ID);
-        float executeThreshold = resolveConsumableMarkerThreshold(ctx);
-        Vector3d center = new Vector3d(casterTransform.getPosition());
-
-        var nearby = TargetUtil.getAllEntitiesInSphere(center, CONSUMABLE_MARKER_RANGE, store);
-        if (nearby == null || nearby.isEmpty()) {
-            return;
-        }
-
-        for (Ref<EntityStore> targetRef : nearby) {
-            if (!FeedEligibility.isConsumableMarkerCandidate(playerRef, targetRef, executeThreshold, store)) {
-                continue;
-            }
-            applyTimedEffect(targetRef, CONSUMABLE_MARKER_EFFECT_ID, CONSUMABLE_MARKER_DURATION_S, OverlapBehavior.EXTEND, store);
-        }
-    }
-
-    private static float resolveConsumableMarkerThreshold(@Nonnull SkillRuntimeContext ctx) {
-        Ability ability = resolveAbility(BLOOD_SUCKER_ABILITY_ID);
-        Map<String, Object> action = resolveFeedAction(ability);
-        return ModifierRegistry.get().compute(
-                resolveStatName(action.get("executeThresholdStatId"), VampireStatType.ABILITY_EXECUTE_HEALTH_THRESHOLD),
-                resolveLiteral(action, "executeThreshold", DEFAULT_EXECUTE_THRESHOLD),
-                ctx.modifierContext());
-    }
-
-    @Nonnull
-    private static Map<String, Object> resolveFeedAction(@Nullable Ability ability) {
-        if (ability == null || ability.actions == null) {
-            return Map.of();
-        }
-        for (Map<String, Object> actionSpec : ability.actions) {
-            Map<String, Object> resolved = SkillRuntimeDefinitions.resolveAction(actionSpec);
-            if ("startFeedChannel".equals(resolved.get("type"))) {
-                return resolved;
-            }
-        }
-        return Map.of();
-    }
-
-    private static boolean isTargetDead(@Nonnull Ref<EntityStore> targetRef, @Nonnull Store<EntityStore> store) {
-        return !FeedEligibility.isAlive(targetRef, store);
-    }
-
-    private static void applyChannelEffect(@Nonnull Ref<EntityStore> ref,
-                                           @Nullable String effectDefId,
-                                           float durationSeconds,
-                                           @Nonnull Store<EntityStore> store) {
-        applyTimedEffect(ref, effectDefId, durationSeconds, OverlapBehavior.OVERWRITE, store);
-    }
-
-    private static void applyTimedEffect(@Nonnull Ref<EntityStore> ref,
-                                         @Nullable String effectDefId,
-                                         float durationSeconds,
-                                         @Nonnull OverlapBehavior overlapBehavior,
-                                         @Nonnull Store<EntityStore> store) {
-        if (effectDefId == null || effectDefId.isBlank()) return;
-        EffectDef effectDef = Vampirism.getInstance().GetEffectDefRegistry().Get(effectDefId);
-        if (effectDef == null) return;
-        int effectIndex = EntityEffect.getAssetMap().getIndex(effectDef.effectId);
-        if (effectIndex < 0) return;
-        EntityEffect effect = EntityEffect.getAssetMap().getAsset(effectIndex);
-        if (effect == null) return;
-        EffectControllerComponent ec = (EffectControllerComponent) store.getComponent(ref, EffectControllerComponent.getComponentType());
-        if (ec == null) return;
-        ec.addEffect(ref, effectIndex, effect, Math.max(0.1f, durationSeconds), overlapBehavior, store);
-    }
-
-    private static void removeChannelEffect(@Nonnull Ref<EntityStore> ref,
-                                            @Nullable String effectDefId,
-                                            @Nonnull Store<EntityStore> store) {
-        if (effectDefId == null || effectDefId.isBlank()) return;
-        EffectDef effectDef = Vampirism.getInstance().GetEffectDefRegistry().Get(effectDefId);
-        if (effectDef == null) return;
-        int effectIndex = EntityEffect.getAssetMap().getIndex(effectDef.effectId);
-        if (effectIndex < 0) return;
-        EffectControllerComponent ec = (EffectControllerComponent) store.getComponent(ref, EffectControllerComponent.getComponentType());
-        if (ec == null || !ec.hasEffect(effectIndex)) return;
-        ec.removeEffect(ref, effectIndex, store);
     }
 
     @Nullable
@@ -475,50 +275,4 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
         return fallback;
     }
 
-    private static final class FeedSession {
-        private final String abilityId;
-        private final Ref<EntityStore> targetRef;
-        private float remainingSeconds;
-        private final double maxRange;
-        private final Vector3d casterStartPosition;
-        private final Vector3d lockedPosition;
-        private final float damage;
-        private final int baseBloodGain;
-        private final VampireStatType bloodGainStat;
-        private final float executeThreshold;
-        private final VampireStatType executeThresholdStat;
-        private final String casterAnimationId;
-        private final String casterEffectId;
-        private final String targetEffectId;
-
-        private FeedSession(@Nullable String abilityId,
-                            @Nonnull Ref<EntityStore> targetRef,
-                            float remainingSeconds,
-                            double maxRange,
-                            @Nullable Vector3d casterStartPosition,
-                            @Nullable Vector3d lockedPosition,
-                            float damage,
-                            int baseBloodGain,
-                            @Nonnull VampireStatType bloodGainStat,
-                            float executeThreshold,
-                            @Nonnull VampireStatType executeThresholdStat,
-                            @Nullable String casterAnimationId,
-                            @Nullable String casterEffectId,
-                            @Nullable String targetEffectId) {
-            this.abilityId = abilityId;
-            this.targetRef = targetRef;
-            this.remainingSeconds = remainingSeconds;
-            this.maxRange = maxRange;
-            this.casterStartPosition = casterStartPosition;
-            this.lockedPosition = lockedPosition;
-            this.damage = damage;
-            this.baseBloodGain = baseBloodGain;
-            this.bloodGainStat = bloodGainStat;
-            this.executeThreshold = executeThreshold;
-            this.executeThresholdStat = executeThresholdStat;
-            this.casterAnimationId = casterAnimationId;
-            this.casterEffectId = casterEffectId;
-            this.targetEffectId = targetEffectId;
-        }
-    }
 }

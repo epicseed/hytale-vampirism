@@ -2,6 +2,8 @@ package com.epicseed.vampirism.systems;
 
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.hunt.NightHuntMessages;
+import com.epicseed.vampirism.domain.hunt.NightHuntRewardService;
+import com.epicseed.vampirism.domain.hunt.NightHuntTrackingService;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
@@ -77,11 +79,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
     private static final double GUIDE_WISP_MIN_TURN_BLEND = 0.10d;
     private static final double GUIDE_WISP_MAX_TURN_BLEND = 0.24d;
     private static final double GUIDE_WISP_TURN_BLEND_PER_SECOND = 5.5d;
-    private static final long PREY_HIT_CREDIT_WINDOW_MS = 5000L;
-
     private static final ConcurrentHashMap<UUID, HuntState> ACTIVE_HUNTS = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<UUID, UUID> PREY_OWNERS = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<UUID, PreyHitRecord> PREY_LAST_HITS = new ConcurrentHashMap<>();
 
     @Override
     public SystemGroup<EntityStore> getGroup() {
@@ -238,7 +236,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         if (victimUuid == null) {
             return;
         }
-        UUID ownerUuid = PREY_OWNERS.get(victimUuid);
+        UUID ownerUuid = NightHuntTrackingService.ownerOf(victimUuid);
         if (ownerUuid == null) {
             return;
         }
@@ -259,11 +257,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         if (victimUuid == null) {
             return;
         }
-        UUID ownerUuid = PREY_OWNERS.get(victimUuid);
-        if (ownerUuid == null || !ownerUuid.equals(attackerUuid)) {
-            return;
-        }
-        PREY_LAST_HITS.put(victimUuid, new PreyHitRecord(attackerUuid, System.currentTimeMillis()));
+        NightHuntTrackingService.recordHit(victimUuid, attackerUuid);
     }
 
     @Override
@@ -862,8 +856,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         state.summonRemainingSeconds = 0f;
         state.preyRewardPoints = Math.max(0, rewardPoints);
         state.visualTier = clampVisualTier(visualTier);
-        clearPreyTracking(preyUuid);
-        PREY_OWNERS.put(preyUuid, ownerUuid);
+        NightHuntTrackingService.trackPrey(preyUuid, ownerUuid);
         clearHelperRefs(state, null);
         spawnHelpers(state, preyRef, helperRoleId, helperCount, helperSpreadRadius, store);
         sendPlayerMessage(playerRef, store, onSpawnMessage != null ? onSpawnMessage : NightHuntMessages.SPAWN, "red");
@@ -1643,11 +1636,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
     }
 
     private static void clearPreyTracking(@Nullable UUID preyUuid) {
-        if (preyUuid == null) {
-            return;
-        }
-        PREY_OWNERS.remove(preyUuid);
-        PREY_LAST_HITS.remove(preyUuid);
+        NightHuntTrackingService.clearPrey(preyUuid);
     }
 
     private static boolean tryCompleteTrackedPreyKill(@Nonnull HuntState state,
@@ -1655,10 +1644,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         if (state.preyEntityUuid == null || state.ownerUuid == null) {
             return false;
         }
-        PreyHitRecord hitRecord = PREY_LAST_HITS.get(state.preyEntityUuid);
-        if (hitRecord == null
-                || !state.ownerUuid.equals(hitRecord.attackerUuid())
-                || System.currentTimeMillis() - hitRecord.hitAtMs() > PREY_HIT_CREDIT_WINDOW_MS) {
+        if (!NightHuntTrackingService.hasRecentOwnerHit(state.preyEntityUuid, state.ownerUuid)) {
             return false;
         }
         completeMarkedPreyKill(state.ownerUuid, state.ownerPlayerRef, state, store);
@@ -1701,13 +1687,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         state.forced = false;
         clearPendingRoute(state);
 
-        PlayerSkillRegistry.get().incrementCompletedNightHunts(ownerUuid);
-        if (rewardPoints > 0) {
-            PlayerSkillRegistry.get().addSkillPoints(ownerUuid, rewardPoints);
-            if (rewardRef != null && rewardRef.isValid()) {
-                sendPlayerMessage(rewardRef, store, NightHuntMessages.rewardText(rewardPoints), "green");
-            }
-        }
+        NightHuntRewardService.grantCompletionReward(ownerUuid, rewardRef, store, rewardPoints);
     }
 
     private static boolean isDead(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
@@ -1987,6 +1967,4 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
             this.currentDirection = currentDirection;
         }
     }
-
-    private record PreyHitRecord(@Nonnull UUID attackerUuid, long hitAtMs) {}
 }

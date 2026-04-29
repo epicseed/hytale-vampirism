@@ -1,11 +1,14 @@
 package com.epicseed.vampirism.systems;
 
 import com.epicseed.vampirism.Vampirism;
+import com.epicseed.vampirism.domain.blood.BloodConversionPresentationService;
+import com.epicseed.vampirism.domain.blood.BloodConversionPulseService;
+import com.epicseed.vampirism.domain.blood.BloodConversionSession;
+import com.epicseed.vampirism.domain.blood.FeedEligibility;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.model.Ability;
-import com.epicseed.vampirism.skill.model.EffectDef;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -15,16 +18,8 @@ import com.hypixel.hytale.component.SystemGroup;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.protocol.AnimationSlot;
-import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
-import com.hypixel.hytale.server.core.asset.type.entityeffect.config.OverlapBehavior;
-import com.hypixel.hytale.server.core.entity.AnimationUtils;
-import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
-import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
@@ -44,7 +39,7 @@ public class BloodConversionSystem extends EntityTickingSystem<EntityStore> {
     private static final double CAST_CANCEL_MOVE_DISTANCE = 0.2d;
     private static final float FLOAT_EPSILON = 0.0001f;
 
-    private static final Map<UUID, ConversionSession> activeChannels = new ConcurrentHashMap<>();
+    private static final Map<UUID, BloodConversionSession> activeChannels = new ConcurrentHashMap<>();
 
     @Override
     public SystemGroup<EntityStore> getGroup() {
@@ -72,19 +67,19 @@ public class BloodConversionSystem extends EntityTickingSystem<EntityStore> {
         if (durationSeconds <= 0f || tickIntervalSeconds <= 0f || healthCostPerTick <= 0f || bloodGainPerTick <= 0f) {
             return false;
         }
-        if (!canConvert(ctx.ref(), ctx.store(), minimumHealth)) {
+        if (!BloodConversionPulseService.canConvert(ctx.ref(), ctx.store(), minimumHealth)) {
             return false;
         }
         if (VampireVitalitySystem.getBlood(ctx.ref()) >= VampireVitalitySystem.getMaxBlood(ctx.ref())) {
             return false;
         }
 
-        ConversionSession previous = activeChannels.remove(uuid);
+        BloodConversionSession previous = activeChannels.remove(uuid);
         if (previous != null) {
-            cleanupChannelEffects(previous, ctx.store(), ctx.ref());
+            BloodConversionPresentationService.cleanup(previous, ctx.store(), ctx.ref());
         }
 
-        ConversionSession session = new ConversionSession(
+        BloodConversionSession session = new BloodConversionSession(
                 ctx.currentAbilityId(),
                 durationSeconds,
                 tickIntervalSeconds,
@@ -94,7 +89,7 @@ public class BloodConversionSystem extends EntityTickingSystem<EntityStore> {
                 lockPosition(ctx.ref(), ctx.store()),
                 action.get("casterAnimationId") instanceof String s && !s.isBlank() ? s : null,
                 action.get("casterEffectId") instanceof String s && !s.isBlank() ? s : null);
-        applyChannelEffects(session, ctx.store(), ctx.ref());
+        BloodConversionPresentationService.apply(session, ctx.store(), ctx.ref());
         activeChannels.put(uuid, session);
         return true;
     }
@@ -117,12 +112,12 @@ public class BloodConversionSystem extends EntityTickingSystem<EntityStore> {
         if (playerRefComponent == null) return;
 
         UUID uuid = playerRefComponent.getUuid();
-        ConversionSession session = activeChannels.get(uuid);
+        BloodConversionSession session = activeChannels.get(uuid);
         if (session == null) return;
 
         if (!VampireStatusRegistry.get().isVampire(uuid) || !isSessionStillValid(playerRef, session, store)) {
             activeChannels.remove(uuid);
-            cleanupChannelEffects(session, store, playerRef);
+            BloodConversionPresentationService.cleanup(session, store, playerRef);
             return;
         }
 
@@ -131,9 +126,9 @@ public class BloodConversionSystem extends EntityTickingSystem<EntityStore> {
 
         while (session.tickAccumulator + FLOAT_EPSILON >= session.tickIntervalSeconds) {
             session.tickAccumulator -= session.tickIntervalSeconds;
-            if (!applyConversionPulse(playerRef, session, store)) {
+            if (!BloodConversionPulseService.applyPulse(playerRef, session, store)) {
                 activeChannels.remove(uuid);
-                cleanupChannelEffects(session, store, playerRef);
+                BloodConversionPresentationService.cleanup(session, store, playerRef);
                 return;
             }
         }
@@ -143,144 +138,14 @@ public class BloodConversionSystem extends EntityTickingSystem<EntityStore> {
         }
 
         activeChannels.remove(uuid);
-        cleanupChannelEffects(session, store, playerRef);
+        BloodConversionPresentationService.cleanup(session, store, playerRef);
     }
 
     private static boolean isSessionStillValid(@Nonnull Ref<EntityStore> playerRef,
-                                               @Nonnull ConversionSession session,
+                                               @Nonnull BloodConversionSession session,
                                                @Nonnull Store<EntityStore> store) {
-        return !hasCasterMoved(playerRef, session, store) && canConvert(playerRef, store, session.minimumHealth);
-    }
-
-    private static boolean canConvert(@Nonnull Ref<EntityStore> playerRef,
-                                      @Nonnull Store<EntityStore> store,
-                                      float minimumHealth) {
-        EntityStatMap stats = (EntityStatMap) store.getComponent(playerRef, EntityStatMap.getComponentType());
-        if (stats == null) {
-            return false;
-        }
-        EntityStatValue health = stats.get(DefaultEntityStatTypes.getHealth());
-        if (health == null || health.getMax() <= 0f) {
-            return false;
-        }
-        return health.get() > minimumHealth + FLOAT_EPSILON;
-    }
-
-    private static boolean applyConversionPulse(@Nonnull Ref<EntityStore> playerRef,
-                                                @Nonnull ConversionSession session,
-                                                @Nonnull Store<EntityStore> store) {
-        EntityStatMap stats = (EntityStatMap) store.getComponent(playerRef, EntityStatMap.getComponentType());
-        if (stats == null) {
-            return false;
-        }
-        EntityStatValue health = stats.get(DefaultEntityStatTypes.getHealth());
-        if (health == null) {
-            return false;
-        }
-
-        float currentHealth = health.get();
-        float maxDrain = currentHealth - session.minimumHealth;
-        if (maxDrain <= FLOAT_EPSILON) {
-            return false;
-        }
-
-        int currentBlood = VampireVitalitySystem.getBlood(playerRef);
-        int maxBlood = VampireVitalitySystem.getMaxBlood(playerRef);
-        int missingBlood = Math.max(0, maxBlood - currentBlood);
-        if (missingBlood <= 0) {
-            return false;
-        }
-
-        float ratio = session.bloodGainPerTick / Math.max(FLOAT_EPSILON, session.healthCostPerTick);
-        float drain = Math.min(session.healthCostPerTick, maxDrain);
-        drain = Math.min(drain, missingBlood / Math.max(FLOAT_EPSILON, ratio));
-        if (drain <= FLOAT_EPSILON) {
-            return false;
-        }
-
-        int bloodGain = Math.min(missingBlood, Math.max(1, Math.round(drain * ratio)));
-        if (bloodGain <= 0) {
-            return false;
-        }
-
-        stats.addStatValue(DefaultEntityStatTypes.getHealth(), -drain);
-        VampireVitalitySystem.addBlood(playerRef, bloodGain);
-        return true;
-    }
-
-    private static boolean hasCasterMoved(@Nonnull Ref<EntityStore> playerRef,
-                                          @Nonnull ConversionSession session,
-                                          @Nonnull Store<EntityStore> store) {
-        if (session.casterStartPosition == null) {
-            return false;
-        }
-        TransformComponent transform = (TransformComponent) store.getComponent(playerRef, TransformComponent.getComponentType());
-        if (transform == null) {
-            return true;
-        }
-
-        Vector3d position = transform.getPosition();
-        double dx = position.x - session.casterStartPosition.x;
-        double dz = position.z - session.casterStartPosition.z;
-        double movedSq = dx * dx + dz * dz;
-        return movedSq > CAST_CANCEL_MOVE_DISTANCE * CAST_CANCEL_MOVE_DISTANCE;
-    }
-
-    private static void applyChannelEffects(@Nonnull ConversionSession session,
-                                            @Nonnull Store<EntityStore> store,
-                                            @Nonnull Ref<EntityStore> playerRef) {
-        playCasterAnimation(playerRef, session.casterAnimationId, store);
-        applyChannelEffect(playerRef, session.casterEffectId, session.remainingSeconds, store);
-    }
-
-    private static void cleanupChannelEffects(@Nonnull ConversionSession session,
-                                              @Nonnull Store<EntityStore> store,
-                                              @Nonnull Ref<EntityStore> playerRef) {
-        stopCasterAnimation(playerRef, session.casterAnimationId, store);
-        removeChannelEffect(playerRef, session.casterEffectId, store);
-    }
-
-    private static void playCasterAnimation(@Nonnull Ref<EntityStore> playerRef,
-                                            @Nullable String animationId,
-                                            @Nonnull Store<EntityStore> store) {
-        if (animationId == null || animationId.isBlank()) return;
-        AnimationUtils.playAnimation(playerRef, AnimationSlot.Emote, null, animationId, true, store);
-    }
-
-    private static void stopCasterAnimation(@Nonnull Ref<EntityStore> playerRef,
-                                            @Nullable String animationId,
-                                            @Nonnull Store<EntityStore> store) {
-        if (animationId == null || animationId.isBlank()) return;
-        AnimationUtils.stopAnimation(playerRef, AnimationSlot.Emote, true, store);
-    }
-
-    private static void applyChannelEffect(@Nonnull Ref<EntityStore> ref,
-                                           @Nullable String effectDefId,
-                                           float durationSeconds,
-                                           @Nonnull Store<EntityStore> store) {
-        if (effectDefId == null || effectDefId.isBlank()) return;
-        EffectDef effectDef = Vampirism.getInstance().GetEffectDefRegistry().Get(effectDefId);
-        if (effectDef == null) return;
-        int effectIndex = EntityEffect.getAssetMap().getIndex(effectDef.effectId);
-        if (effectIndex < 0) return;
-        EntityEffect effect = EntityEffect.getAssetMap().getAsset(effectIndex);
-        if (effect == null) return;
-        EffectControllerComponent ec = (EffectControllerComponent) store.getComponent(ref, EffectControllerComponent.getComponentType());
-        if (ec == null) return;
-        ec.addEffect(ref, effectIndex, effect, Math.max(0.1f, durationSeconds), OverlapBehavior.OVERWRITE, store);
-    }
-
-    private static void removeChannelEffect(@Nonnull Ref<EntityStore> ref,
-                                            @Nullable String effectDefId,
-                                            @Nonnull Store<EntityStore> store) {
-        if (effectDefId == null || effectDefId.isBlank()) return;
-        EffectDef effectDef = Vampirism.getInstance().GetEffectDefRegistry().Get(effectDefId);
-        if (effectDef == null) return;
-        int effectIndex = EntityEffect.getAssetMap().getIndex(effectDef.effectId);
-        if (effectIndex < 0) return;
-        EffectControllerComponent ec = (EffectControllerComponent) store.getComponent(ref, EffectControllerComponent.getComponentType());
-        if (ec == null || !ec.hasEffect(effectIndex)) return;
-        ec.removeEffect(ref, effectIndex, store);
+        return !FeedEligibility.hasMovedFrom(playerRef, session.casterStartPosition, store, CAST_CANCEL_MOVE_DISTANCE)
+                && BloodConversionPulseService.canConvert(playerRef, store, session.minimumHealth);
     }
 
     @Nullable
@@ -326,39 +191,5 @@ public class BloodConversionSystem extends EntityTickingSystem<EntityStore> {
     private static Vector3d lockPosition(@Nonnull Ref<EntityStore> playerRef, @Nonnull Store<EntityStore> store) {
         TransformComponent transform = (TransformComponent) store.getComponent(playerRef, TransformComponent.getComponentType());
         return transform != null ? new Vector3d(transform.getPosition()) : null;
-    }
-
-    private static final class ConversionSession {
-        private final String abilityId;
-        private float remainingSeconds;
-        private float tickAccumulator;
-        private final float tickIntervalSeconds;
-        private final float healthCostPerTick;
-        private final float bloodGainPerTick;
-        private final float minimumHealth;
-        private final Vector3d casterStartPosition;
-        private final String casterAnimationId;
-        private final String casterEffectId;
-
-        private ConversionSession(@Nullable String abilityId,
-                                  float remainingSeconds,
-                                  float tickIntervalSeconds,
-                                  float healthCostPerTick,
-                                  float bloodGainPerTick,
-                                  float minimumHealth,
-                                  @Nullable Vector3d casterStartPosition,
-                                  @Nullable String casterAnimationId,
-                                  @Nullable String casterEffectId) {
-            this.abilityId = abilityId;
-            this.remainingSeconds = remainingSeconds;
-            this.tickAccumulator = 0f;
-            this.tickIntervalSeconds = tickIntervalSeconds;
-            this.healthCostPerTick = healthCostPerTick;
-            this.bloodGainPerTick = bloodGainPerTick;
-            this.minimumHealth = minimumHealth;
-            this.casterStartPosition = casterStartPosition;
-            this.casterAnimationId = casterAnimationId;
-            this.casterEffectId = casterEffectId;
-        }
     }
 }
