@@ -31,6 +31,16 @@ public final class NightHuntRouteService {
         return findHuntDestination(origin, baseYaw, world, minDistance, maxDistance, true);
     }
 
+    @Nullable
+    public static NightHuntRouteResolution resolveHuntDestinationAllowLoading(@Nonnull Vector3d origin,
+                                                                              float baseYaw,
+                                                                              @Nonnull World world,
+                                                                              double minDistance,
+                                                                              double maxDistance) {
+        Vector3d destination = findHuntDestinationAllowLoading(origin, baseYaw, world, minDistance, maxDistance);
+        return destination != null ? new NightHuntRouteResolution(destination, yawBetween(origin, destination)) : null;
+    }
+
     public static long beginPendingRoute(@Nonnull HuntState state, @Nonnull PendingRouteKind kind) {
         state.phase = HuntPhase.ROUTE_PENDING;
         state.pendingRouteKind = kind;
@@ -75,18 +85,12 @@ public final class NightHuntRouteService {
             if (safe == null) {
                 continue;
             }
-            if (horizontalDistance(origin, safe) < minDistance - 1.0d) {
+            if (NightHuntGeometry.horizontalDistance(origin, safe) < minDistance - 1.0d) {
                 continue;
             }
             return safe;
         }
 
         return null;
-    }
-
-    private static double horizontalDistance(@Nonnull Vector3d a, @Nonnull Vector3d b) {
-        double dx = a.x - b.x;
-        double dz = a.z - b.z;
-        return Math.sqrt(dx * dx + dz * dz);
     }
 }

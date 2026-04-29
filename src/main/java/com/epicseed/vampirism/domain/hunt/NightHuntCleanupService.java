@@ -3,6 +3,7 @@ package com.epicseed.vampirism.domain.hunt;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.vampirism.hytale.WorldStoreAdapter;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
@@ -142,7 +143,6 @@ public final class NightHuntCleanupService {
 
     @Nullable
     private static World resolveWorld(@Nonnull Store<EntityStore> store) {
-        EntityStore entityStore = store.getExternalData();
-        return entityStore != null ? entityStore.getWorld() : null;
+        return WorldStoreAdapter.resolveWorld(store);
     }
 }
