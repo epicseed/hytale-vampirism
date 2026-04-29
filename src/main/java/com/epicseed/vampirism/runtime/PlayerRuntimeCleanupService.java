@@ -30,6 +30,7 @@ public final class PlayerRuntimeCleanupService {
     public static void cleanupDisconnectedPlayer(UUID uuid) {
         MorphFlySystem.captureDisconnectState(uuid);
         VampireVitalitySystem.captureDisconnectState(uuid);
+        VampireVitalitySystem.clearPlayer(uuid);
         PlayerSkillRegistry.get().setPersistedAbilityCooldowns(uuid, AbilityCooldownTracker.snapshotRemaining(uuid));
         NightHuntService.captureDisconnectState(uuid);
         SkillTreeManager.get().evictPlayer(uuid);

@@ -142,6 +142,10 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
         BloodService.captureDisconnectState(uuid);
     }
 
+    public static void clearPlayer(@Nonnull UUID uuid) {
+        BloodService.clearPlayer(uuid);
+    }
+
     @Override
     public SystemGroup<EntityStore> getGroup() {
         return null;
@@ -229,7 +233,6 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
                                @Nonnull Player player,
                                PlayerRef playerRefComponent) {
         if (playerRefComponent != null) {
-            BloodService.unregisterRef(playerRefComponent.getUuid());
             EntityRefTracker.unregister(playerRefComponent.getUuid());
         }
         BloodHudService.cleanup(playerRef, player, playerRefComponent, stateInputBindingsHidden(playerRef));
