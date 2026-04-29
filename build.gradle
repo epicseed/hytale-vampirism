@@ -81,11 +81,18 @@ repositories {
     }
 }
 
-// Updates the manifest.json file with the latest properties defined in the
-// build.properties file. Currently we update the version and if packs are
-// included with the plugin.
-tasks.register('updatePluginManifest') {
-    def manifestFile = file('src/main/resources/manifest.json')
+// Generates the packaged manifest from the source manifest without mutating
+// version-controlled resources.
+def generatedPluginManifest = layout.buildDirectory.file('generated/plugin-manifest/manifest.json')
+def sourcePluginManifest = file('src/main/resources/manifest.json')
+
+tasks.register('generatePluginManifest') {
+    def manifestFile = sourcePluginManifest
+    inputs.file(manifestFile)
+    inputs.property('version', version)
+    inputs.property('hytale_build', hytale_build)
+    inputs.property('includes_pack', includes_pack)
+    outputs.file(generatedPluginManifest)
     doLast {
         if (!manifestFile.exists()) {
             throw new GradleException("Could not find manifest.json at ${manifestFile.path}!")
@@ -94,7 +101,9 @@ tasks.register('updatePluginManifest') {
         manifestJson.Version = version
         manifestJson.ServerVersion = hytale_build
         manifestJson.IncludesAssetPack = includes_pack.toBoolean()
-        manifestFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(manifestJson))
+        def outputFile = generatedPluginManifest.get().asFile
+        outputFile.parentFile.mkdirs()
+        outputFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(manifestJson))
     }
 }
 
@@ -338,9 +347,26 @@ tasks.register('validateHytaleAssetRefs') {
     }
 }
 
-// Makes sure the plugin manifest is up to date.
+// Makes sure the packaged plugin manifest is up to date without changing the
+// source manifest.
 tasks.named('processResources') {
-    dependsOn 'updatePluginManifest'
+    dependsOn 'generatePluginManifest'
+    exclude { details ->
+        details.file.canonicalFile == sourcePluginManifest.canonicalFile
+    }
+    from(generatedPluginManifest) {
+        into ''
+    }
+}
+
+tasks.register('validateSkillData', JavaExec) {
+    dependsOn 'classes'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.epicseed.vampirism.skill.data.SkillDataValidationCli'
+}
+
+tasks.named('check') {
+    dependsOn 'validateSkillData'
 }
 
 tasks.named('shadowJar') {
