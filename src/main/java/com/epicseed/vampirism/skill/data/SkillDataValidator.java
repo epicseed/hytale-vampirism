@@ -118,6 +118,9 @@ public final class SkillDataValidator {
             for (String effectId : safeList(dto.effects)) {
                 validateRequiredRef("abilities", owner, "effects", effectId, index.effectIds, "effects", result);
             }
+            if (dto.actions != null && !dto.actions.isEmpty() && (dto.targeting == null || dto.targeting.isEmpty())) {
+                result.add("abilities", owner, "targeting", "is required when ability has actions");
+            }
             validateObjectRefs("abilities", owner, "requirements", dto.requirements, index, result);
             validateObjectRefs("abilities", owner, "targeting", dto.targeting, index, result);
             validateObjectRefs("abilities", owner, "actions", dto.actions, index, result);
@@ -160,6 +163,48 @@ public final class SkillDataValidator {
                 result.add(section, owner, "definition.type", "is required");
             }
             validateObjectRefs(section, owner, "definition", dto.definition, index, result);
+            validateReusableDefinitionContract(section, owner, dto.definition, index, result);
+        }
+    }
+
+    private void validateReusableDefinitionContract(String section,
+                                                    String owner,
+                                                    Map<String, Object> definition,
+                                                    SkillDataIndex index,
+                                                    SkillDataValidationResult result) {
+        String type = asString(definition.get("type"));
+        if (isBlank(type)) return;
+
+        if ("actions".equals(section)) {
+            if ("applyEffect".equals(type) || "removeEffect".equals(type) || "toggleEffect".equals(type)) {
+                validateRequiredRef(section, owner, "definition.effectId", asString(definition.get("effectId")),
+                        index.effectIds, "effects", result);
+            } else if ("activateAbility".equals(type)) {
+                validateRequiredRef(section, owner, "definition.abilityId", asString(definition.get("abilityId")),
+                        index.abilityIds, "abilities", result);
+            }
+            return;
+        }
+
+        if ("conditions".equals(section) && "state".equals(type)) {
+            validateRequiredRef(section, owner, "definition.stateId", asString(definition.get("stateId")),
+                    index.stateIds, "states", result);
+            return;
+        }
+
+        if ("requirements".equals(section) && "condition".equals(type)) {
+            validateRequiredRef(section, owner, "definition.conditionId", asString(definition.get("conditionId")),
+                    index.conditionIds, "conditions", result);
+            return;
+        }
+
+        if ("triggers".equals(section) && "onCondition".equals(type)) {
+            boolean hasConditionId = !isBlank(asString(definition.get("conditionId")));
+            Object conditions = definition.get("conditions");
+            boolean hasInlineConditions = conditions instanceof List<?> list && !list.isEmpty();
+            if (!hasConditionId && !hasInlineConditions) {
+                result.add(section, owner, "definition.conditionId", "is required for onCondition trigger without inline conditions");
+            }
         }
     }
 
