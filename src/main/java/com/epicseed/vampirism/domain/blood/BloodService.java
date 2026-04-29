@@ -43,18 +43,14 @@ public final class BloodService {
             BloodState loaded = new BloodState();
             loaded.blood = PlayerSkillRegistry.get().getPersistedBlood(uuid);
             loaded.maxBlood = resolveCapacityUnits(playerRef, store);
-            loaded.blood = clamp(loaded.blood, 0, loaded.maxBlood);
+            BloodStateOperations.clampBlood(loaded);
             loaded.isStarving = loaded.blood <= VampirismConfig.get().getSatietyStarvingThreshold();
             return loaded;
         });
     }
 
     public static BloodState getState(@Nonnull Ref<EntityStore> playerRef) {
-        UUID uuid = refToUuid.get(playerRef);
-        if (uuid != null) {
-            return playerStates.get(uuid);
-        }
-        return legacyRefStates.get(playerRef);
+        return stateForRef(playerRef);
     }
 
     public static void removeState(@Nonnull Ref<EntityStore> playerRef) {
@@ -90,17 +86,17 @@ public final class BloodService {
     }
 
     public static boolean isStarving(@Nonnull Ref<EntityStore> playerRef) {
-        BloodState state = playerStates.get(playerRef);
+        BloodState state = stateForRef(playerRef);
         return state != null && state.isStarving;
     }
 
     public static int getBlood(@Nonnull Ref<EntityStore> playerRef) {
-        BloodState state = playerStates.get(playerRef);
+        BloodState state = stateForRef(playerRef);
         return state != null ? state.blood : BASE_BLOOD_CAPACITY_UNITS;
     }
 
     public static int getMaxBlood(@Nonnull Ref<EntityStore> playerRef) {
-        BloodState state = playerStates.get(playerRef);
+        BloodState state = stateForRef(playerRef);
         return state != null ? Math.max(1, state.maxBlood) : BASE_BLOOD_CAPACITY_UNITS;
     }
 
@@ -111,22 +107,12 @@ public final class BloodService {
 
     public static BloodState spendBlood(@Nonnull Ref<EntityStore> playerRef, int bloodCost) {
         BloodState state = getOrCreate(playerRef);
-        if (bloodCost > 0) {
-            state.blood = Math.max(0, state.blood - bloodCost);
-        }
-        return state;
+        return BloodStateOperations.spend(state, bloodCost);
     }
 
     public static BloodState addBlood(@Nonnull Ref<EntityStore> playerRef, int bloodGain) {
         BloodState state = getOrCreate(playerRef);
-        if (bloodGain <= 0) {
-            return state;
-        }
-        state.blood = Math.min(state.maxBlood, state.blood + bloodGain);
-        if (state.isStarving && state.blood >= VampirismConfig.get().getSatietyRecoveryThreshold()) {
-            state.isStarving = false;
-        }
-        return state;
+        return BloodStateOperations.add(state, bloodGain, VampirismConfig.get().getSatietyRecoveryThreshold());
     }
 
     public static int getBloodByUuid(@Nonnull UUID uuid) {
@@ -174,25 +160,29 @@ public final class BloodService {
     }
 
     public static void refreshCapacity(@Nonnull BloodState state,
-                                       @Nonnull Ref<EntityStore> playerRef,
-                                       @Nonnull Store<EntityStore> store) {
-        state.maxBlood = resolveCapacityUnits(playerRef, store);
-        if (state.blood > state.maxBlood) {
-            state.blood = state.maxBlood;
-        }
+                                        @Nonnull Ref<EntityStore> playerRef,
+                                        @Nonnull Store<EntityStore> store) {
+        BloodStateOperations.refreshCapacity(state, resolveCapacityUnits(playerRef, store));
     }
 
     public static boolean isOverfed(@Nonnull Ref<EntityStore> playerRef) {
-        return getBlood(playerRef) >= getMaxBlood(playerRef);
+        BloodState state = stateForRef(playerRef);
+        return state != null
+                ? BloodStateOperations.isOverfed(state)
+                : getBlood(playerRef) >= getMaxBlood(playerRef);
     }
 
     public static boolean isBloodStateNormal(@Nonnull Ref<EntityStore> playerRef) {
-        int blood = getBlood(playerRef);
-        return blood > VampirismConfig.get().getSatietyStarvingThreshold()
-                && blood < getMaxBlood(playerRef);
+        BloodState state = stateForRef(playerRef);
+        return state != null
+                && BloodStateOperations.isNormal(state, VampirismConfig.get().getSatietyStarvingThreshold());
     }
 
-    private static int clamp(int value, int min, int max) {
-        return Math.max(min, Math.min(max, value));
+    private static BloodState stateForRef(@Nonnull Ref<EntityStore> playerRef) {
+        UUID uuid = refToUuid.get(playerRef);
+        if (uuid != null) {
+            return playerStates.get(uuid);
+        }
+        return legacyRefStates.get(playerRef);
     }
 }
