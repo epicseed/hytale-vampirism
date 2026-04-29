@@ -91,40 +91,21 @@ public final class SkillConditionEvaluator {
     }
 
     private static boolean evaluateState(Map<String, Object> condition, SkillRuntimeContext ctx) {
-        Object stateId = condition.get("stateId");
-        if (!(stateId instanceof String state)) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] state condition missing stateId: " + condition);
+        String state = stateId(condition);
+        if (state == null) {
             return false;
         }
-        String operator = condition.get("operator") instanceof String value ? value : "isTrue";
         boolean active = SkillRuntimeStateResolver.isStateActive(state, ctx);
-        return switch (operator) {
-            case "isTrue" -> active;
-            case "isFalse" -> !active;
-            default -> {
-                LOGGER.atWarning().log("[SkillConditionEvaluator] Unsupported state operator: " + operator);
-                yield false;
-            }
-        };
+        return evaluateStateOperator(stateOperator(condition), active);
     }
 
     private static boolean evaluateState(Map<String, Object> condition, ModifierContext ctx) {
-        Object stateId = condition.get("stateId");
-        if (!(stateId instanceof String state)) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] state condition missing stateId: " + condition);
+        String state = stateId(condition);
+        if (state == null) {
             return false;
         }
-
-        String operator = condition.get("operator") instanceof String value ? value : "isTrue";
         boolean active = SkillRuntimeStateResolver.isStateActive(state, ctx);
-        return switch (operator) {
-            case "isTrue" -> active;
-            case "isFalse" -> !active;
-            default -> {
-                LOGGER.atWarning().log("[SkillConditionEvaluator] Unsupported state operator: " + operator);
-                yield false;
-            }
-        };
+        return evaluateStateOperator(stateOperator(condition), active);
     }
 
     private static boolean evaluateEffectActive(Map<String, Object> condition, SkillRuntimeContext ctx) {
@@ -273,7 +254,8 @@ public final class SkillConditionEvaluator {
         }
         String op = condition.get("op") instanceof String s ? s : "gte";
         int current = VampireVitalitySystem.getBlood(ctx.ref());
-        return compareOp(op, current, normalizeBloodValue(n));
+        return compareOp(op, current, ConditionEvaluationOperations.normalizeBloodValue(
+                n, VampireVitalitySystem.BASE_BLOOD_CAPACITY_UNITS));
     }
 
     private static boolean evaluateBloodCompare(Map<String, Object> condition, ModifierContext ctx) {
@@ -283,7 +265,8 @@ public final class SkillConditionEvaluator {
         }
         String op = condition.get("op") instanceof String s ? s : "gte";
         int current = VampireVitalitySystem.getBlood(ctx.ref());
-        return compareOp(op, current, normalizeBloodValue(n));
+        return compareOp(op, current, ConditionEvaluationOperations.normalizeBloodValue(
+                n, VampireVitalitySystem.BASE_BLOOD_CAPACITY_UNITS));
     }
 
     private static boolean evaluateStatCompare(Map<String, Object> condition, SkillRuntimeContext ctx) {
@@ -338,24 +321,31 @@ public final class SkillConditionEvaluator {
     }
 
     private static boolean compareOp(String op, float current, float value) {
-        return switch (op) {
-            case "gte", ">=" -> current >= value;
-            case "lte", "<=" -> current <= value;
-            case "gt",  ">"  -> current >  value;
-            case "lt",  "<"  -> current <  value;
-            case "eq",  "==", "=" -> Math.abs(current - value) < 0.0001f;
-            default -> {
-                LOGGER.atWarning().log("[SkillConditionEvaluator] Unsupported compare op: " + op);
-                yield false;
-            }
-        };
+        if (!ConditionEvaluationOperations.isCompareOperatorSupported(op)) {
+            LOGGER.atWarning().log("[SkillConditionEvaluator] Unsupported compare op: " + op);
+            return false;
+        }
+        return ConditionEvaluationOperations.compare(op, current, value);
     }
 
-    private static float normalizeBloodValue(Number value) {
-        float raw = value.floatValue();
-        if (Math.abs(raw) <= 1f) {
-            raw *= VampireVitalitySystem.BASE_BLOOD_CAPACITY_UNITS;
+    private static boolean evaluateStateOperator(String operator, boolean active) {
+        if (!ConditionEvaluationOperations.isStateOperatorSupported(operator)) {
+            LOGGER.atWarning().log("[SkillConditionEvaluator] Unsupported state operator: " + operator);
+            return false;
         }
-        return raw;
+        return ConditionEvaluationOperations.evaluateStateOperator(operator, active);
+    }
+
+    private static String stateId(Map<String, Object> condition) {
+        Object stateId = condition.get("stateId");
+        if (stateId instanceof String state) {
+            return state;
+        }
+        LOGGER.atWarning().log("[SkillConditionEvaluator] state condition missing stateId: " + condition);
+        return null;
+    }
+
+    private static String stateOperator(Map<String, Object> condition) {
+        return condition.get("operator") instanceof String value ? value : "isTrue";
     }
 }
