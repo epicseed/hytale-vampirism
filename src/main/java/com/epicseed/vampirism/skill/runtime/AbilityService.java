@@ -75,6 +75,17 @@ public final class AbilityService {
     }
 
     @Nonnull
+    public static SkillActivationResult activateFromAction(@Nonnull String abilityId,
+                                                           @Nonnull SkillRuntimeContext ctx) {
+        SkillRuntimeContext nextCtx = tryEnterAbility(abilityId, ctx);
+        if (nextCtx == null) {
+            return SkillActivationResult.failed(SkillActivationResult.Status.DENIED,
+                    "Recursive ability activation blocked: " + abilityId);
+        }
+        return activate(abilityId, nextCtx);
+    }
+
+    @Nonnull
     static SkillActivationResult activate(@Nonnull String abilityId, @Nonnull SkillRuntimeContext ctx) {
 
         // 1. Look up ability definition

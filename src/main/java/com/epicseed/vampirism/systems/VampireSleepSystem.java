@@ -18,6 +18,7 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.protocol.BlockMountType;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -52,7 +53,7 @@ public class VampireSleepSystem extends EntityTickingSystem<EntityStore> {
 
     @Override
     public Query<EntityStore> getQuery() {
-        return Query.any();
+        return Query.and(Player.getComponentType());
     }
 
     @Override

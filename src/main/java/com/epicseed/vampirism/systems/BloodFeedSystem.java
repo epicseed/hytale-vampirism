@@ -1,7 +1,9 @@
 package com.epicseed.vampirism.systems;
 
 import com.epicseed.vampirism.Vampirism;
+import com.epicseed.vampirism.domain.blood.FeedEligibility;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
+import com.epicseed.vampirism.hytale.DamageAdapter;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
@@ -25,13 +27,7 @@ import com.hypixel.hytale.server.core.entity.AnimationUtils;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.OverlapBehavior;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
-import com.hypixel.hytale.server.core.modules.entity.component.NPCMarkerComponent;
-import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
-import com.hypixel.hytale.server.core.modules.entity.damage.DamageCause;
-import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
-import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.modules.physics.component.Velocity;
 import com.hypixel.hytale.server.core.util.TargetUtil;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -73,7 +69,7 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
 
     @Override
     public Query<EntityStore> getQuery() {
-        return Query.any();
+        return Query.and(Player.getComponentType());
     }
 
     public static boolean startChannel(@Nonnull SkillRuntimeContext ctx, @Nonnull Map<String, Object> action) {
@@ -85,15 +81,11 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
 
         Ability ability = resolveAbility(ctx.currentAbilityId());
         double maxRange = resolveMaxRange(action, ability);
-        if (!isWithinRange(ctx.ref(), targetRef, ctx.store(), maxRange)) {
+        if (!FeedEligibility.isWithinRange(ctx.ref(), targetRef, ctx.store(), maxRange, RANGE_EPSILON)) {
             return false;
         }
 
-        EntityStatMap targetStats = (EntityStatMap) ctx.store().getComponent(targetRef, EntityStatMap.getComponentType());
-        if (targetStats == null) {
-            return false;
-        }
-        EntityStatValue health = targetStats.get(DefaultEntityStatTypes.getHealth());
+        EntityStatValue health = FeedEligibility.resolveHealth(targetRef, ctx.store());
         if (health == null || health.get() <= 0f) {
             return false;
         }
@@ -196,12 +188,7 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
                 ? baseCtx.withActivatedAbility(session.abilityId)
                 : baseCtx;
 
-        EntityStatMap targetStats = (EntityStatMap) ctx.store().getComponent(session.targetRef, EntityStatMap.getComponentType());
-        if (targetStats == null) {
-            return;
-        }
-
-        EntityStatValue health = targetStats.get(DefaultEntityStatTypes.getHealth());
+        EntityStatValue health = FeedEligibility.resolveHealth(session.targetRef, ctx.store());
         if (health == null || health.get() <= 0f) {
             cleanupChannelEffects(session, store, playerRef);
             return;
@@ -242,65 +229,18 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
     private static boolean isSessionStillValid(@Nonnull Ref<EntityStore> playerRef,
                                                @Nonnull FeedSession session,
                                                @Nonnull Store<EntityStore> store) {
-        EntityStatMap targetStats = (EntityStatMap) store.getComponent(session.targetRef, EntityStatMap.getComponentType());
-        if (targetStats == null) {
-            return false;
-        }
-        EntityStatValue health = targetStats.get(DefaultEntityStatTypes.getHealth());
+        EntityStatValue health = FeedEligibility.resolveHealth(session.targetRef, store);
         return health != null
                 && health.get() > 0f
-                && !hasCasterMoved(playerRef, session, store)
-                && isWithinRange(playerRef, session.targetRef, store, session.maxRange);
-    }
-
-    private static boolean hasCasterMoved(@Nonnull Ref<EntityStore> playerRef,
-                                          @Nonnull FeedSession session,
-                                          @Nonnull Store<EntityStore> store) {
-        if (session.casterStartPosition == null) {
-            return false;
-        }
-        TransformComponent transform = (TransformComponent) store.getComponent(playerRef, TransformComponent.getComponentType());
-        if (transform == null) {
-            return true;
-        }
-
-        var position = transform.getPosition();
-        double dx = position.x - session.casterStartPosition.x;
-        double dz = position.z - session.casterStartPosition.z;
-        double movedSq = dx * dx + dz * dz;
-        return movedSq > CAST_CANCEL_MOVE_DISTANCE * CAST_CANCEL_MOVE_DISTANCE;
-    }
-
-    private static boolean isWithinRange(@Nonnull Ref<EntityStore> sourceRef,
-                                         @Nonnull Ref<EntityStore> targetRef,
-                                         @Nonnull Store<EntityStore> store,
-                                         double maxRange) {
-        TransformComponent sourceTransform = (TransformComponent) store.getComponent(sourceRef, TransformComponent.getComponentType());
-        TransformComponent targetTransform = (TransformComponent) store.getComponent(targetRef, TransformComponent.getComponentType());
-        if (sourceTransform == null || targetTransform == null) {
-            return false;
-        }
-
-        var source = sourceTransform.getPosition();
-        var target = targetTransform.getPosition();
-        double dx = source.x - target.x;
-        double dy = source.y - target.y;
-        double dz = source.z - target.z;
-        double distanceSq = dx * dx + dy * dy + dz * dz;
-        double allowed = maxRange + RANGE_EPSILON;
-        return distanceSq <= allowed * allowed;
+                && !FeedEligibility.hasMovedFrom(playerRef, session.casterStartPosition, store, CAST_CANCEL_MOVE_DISTANCE)
+                && FeedEligibility.isWithinRange(playerRef, session.targetRef, store, session.maxRange, RANGE_EPSILON);
     }
 
     private static boolean applyDamage(@Nonnull Ref<EntityStore> sourceRef,
                                        @Nonnull Ref<EntityStore> targetRef,
                                        float amount,
                                        @Nonnull Store<EntityStore> store) {
-        if (amount <= 0f) {
-            return false;
-        }
-        Damage damage = new Damage(new Damage.EntitySource(sourceRef), DamageCause.PHYSICAL, amount);
-        DamageSystems.executeDamage(targetRef, store, damage);
-        return true;
+        return DamageAdapter.executePhysicalDamage(sourceRef, targetRef, store, amount);
     }
 
     private static void applyChannelEffects(@Nonnull FeedSession session,
@@ -392,7 +332,7 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
         }
 
         for (Ref<EntityStore> targetRef : nearby) {
-            if (!isConsumableMarkerCandidate(playerRef, targetRef, executeThreshold, store)) {
+            if (!FeedEligibility.isConsumableMarkerCandidate(playerRef, targetRef, executeThreshold, store)) {
                 continue;
             }
             applyTimedEffect(targetRef, CONSUMABLE_MARKER_EFFECT_ID, CONSUMABLE_MARKER_DURATION_S, OverlapBehavior.EXTEND, store);
@@ -422,40 +362,8 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
         return Map.of();
     }
 
-    private static boolean isConsumableMarkerCandidate(@Nonnull Ref<EntityStore> playerRef,
-                                                       @Nonnull Ref<EntityStore> targetRef,
-                                                       float executeThreshold,
-                                                       @Nonnull Store<EntityStore> store) {
-        if (targetRef.equals(playerRef)) {
-            return false;
-        }
-        if (store.getComponent(targetRef, Player.getComponentType()) != null) {
-            return false;
-        }
-        if (store.getComponent(targetRef, NPCMarkerComponent.getComponentType()) == null) {
-            return false;
-        }
-
-        EntityStatMap targetStats = (EntityStatMap) store.getComponent(targetRef, EntityStatMap.getComponentType());
-        if (targetStats == null) {
-            return false;
-        }
-        EntityStatValue health = targetStats.get(DefaultEntityStatTypes.getHealth());
-        if (health == null || health.get() <= 0f || health.getMax() <= 0f) {
-            return false;
-        }
-
-        float hpPercent = health.get() / health.getMax();
-        return hpPercent <= Math.max(0f, executeThreshold);
-    }
-
     private static boolean isTargetDead(@Nonnull Ref<EntityStore> targetRef, @Nonnull Store<EntityStore> store) {
-        EntityStatMap targetStats = (EntityStatMap) store.getComponent(targetRef, EntityStatMap.getComponentType());
-        if (targetStats == null) {
-            return true;
-        }
-        EntityStatValue health = targetStats.get(DefaultEntityStatTypes.getHealth());
-        return health == null || health.get() <= 0f;
+        return !FeedEligibility.isAlive(targetRef, store);
     }
 
     private static void applyChannelEffect(@Nonnull Ref<EntityStore> ref,

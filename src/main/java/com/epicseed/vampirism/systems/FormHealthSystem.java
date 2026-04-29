@@ -47,7 +47,7 @@ public class FormHealthSystem extends EntityTickingSystem<EntityStore> {
 
     @Override
     public Query<EntityStore> getQuery() {
-        return Query.any();
+        return Query.and(Player.getComponentType());
     }
 
     @Override

@@ -1,12 +1,18 @@
 package com.epicseed.vampirism.skill.runtime;
 
 import com.epicseed.vampirism.Vampirism;
-import com.epicseed.vampirism.domain.blood.BloodConversionService;
-import com.epicseed.vampirism.domain.blood.FeedService;
+import com.epicseed.vampirism.hytale.DamageAdapter;
+import com.epicseed.vampirism.hytale.EffectAdapter;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
+import com.epicseed.vampirism.skill.runtime.actions.AbilityActionHandler;
 import com.epicseed.vampirism.skill.runtime.actions.ActionHandlerRegistry;
+import com.epicseed.vampirism.skill.runtime.actions.BloodActionHandler;
+import com.epicseed.vampirism.skill.runtime.actions.ChannelActionHandlers;
+import com.epicseed.vampirism.skill.runtime.actions.ModifierActionHandler;
+import com.epicseed.vampirism.skill.runtime.actions.PresentationActionHandlers;
 import com.epicseed.vampirism.skill.runtime.actions.SkillActionHandler;
+import com.epicseed.vampirism.skill.runtime.actions.StatActionHandler;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.epicseed.vampirism.util.WorldPositionHelper;
 import com.hypixel.hytale.component.AddReason;
@@ -19,35 +25,23 @@ import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.BlockMaterial;
-import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
-import com.hypixel.hytale.server.core.asset.type.entityeffect.config.OverlapBehavior;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSystem;
-import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.entities.ProjectileComponent;
-import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.BoundingBox;
 import com.hypixel.hytale.server.core.modules.entity.component.HeadRotation;
 import com.hypixel.hytale.server.core.modules.entity.component.Intangible;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
-import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
-import com.hypixel.hytale.server.core.modules.entity.damage.DamageCause;
-import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.modules.physics.SimplePhysicsProvider;
 import com.hypixel.hytale.server.core.modules.time.TimeResource;
-import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.ParticleUtil;
-import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.TargetUtil;
-import com.hypixel.hytale.protocol.SoundCategory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -103,21 +97,21 @@ public final class SkillActionExecutor {
                 .register("applyEffect", SkillActionExecutor::applyEffect)
                 .register("removeEffect", SkillActionExecutor::removeEffect)
                 .register("toggleEffect", SkillActionExecutor::toggleEffect)
-                .register("healSelf", SkillActionExecutor::healSelf)
+                .register("healSelf", StatActionHandler::healSelf)
                 .register("dealDamage", SkillActionExecutor::dealDamage)
                 .register("executeFinalBlow", SkillActionExecutor::executeFinalBlow)
-                .register("startFeedChannel", SkillActionExecutor::startFeedChannel)
-                .register("startHealthToBloodChannel", SkillActionExecutor::startHealthToBloodChannel)
+                .register("startFeedChannel", ChannelActionHandlers::startFeedChannel)
+                .register("startHealthToBloodChannel", ChannelActionHandlers::startHealthToBloodChannel)
                 .register("spawnProjectile", SkillActionExecutor::spawnProjectile)
                 .register("teleport", SkillActionExecutor::teleport)
-                .register("activateAbility", SkillActionExecutor::activateAbility)
-                .register("grantTemporaryModifier", SkillActionExecutor::grantTemporaryModifier)
-                .register("modifyStat", SkillActionExecutor::modifyStat)
-                .register("modifyBlood", SkillActionExecutor::modifyBlood)
-                .register("playSound", SkillActionExecutor::playSound)
-                .register("spawnParticles", SkillActionExecutor::spawnParticles)
-                .register("sendMessage", SkillActionExecutor::sendMessage)
-                .register("applyTimedSpeedBoost", SkillActionExecutor::grantTemporaryModifierLegacySpeed)
+                .register("activateAbility", AbilityActionHandler::activateAbility)
+                .register("grantTemporaryModifier", ModifierActionHandler::grantTemporaryModifier)
+                .register("modifyStat", StatActionHandler::modifyStat)
+                .register("modifyBlood", BloodActionHandler::modifyBlood)
+                .register("playSound", PresentationActionHandlers::playSound)
+                .register("spawnParticles", PresentationActionHandlers::spawnParticles)
+                .register("sendMessage", PresentationActionHandlers::sendMessage)
+                .register("applyTimedSpeedBoost", ModifierActionHandler::grantTemporaryModifierLegacySpeed)
                 .register("applyControlEffect", SkillActionExecutor::deprecatedApplyControlEffect)
                 .register("highlightEnemies", SkillActionExecutor::deprecatedHighlightEnemies);
     }
@@ -149,13 +143,13 @@ public final class SkillActionExecutor {
             return false;
         }
 
-        int effectIndex = EntityEffect.getAssetMap().getIndex(effectDef.effectId);
+        int effectIndex = EffectAdapter.resolveEffectIndex(effectDef.effectId);
         if (effectIndex < 0) {
             LOGGER.atWarning().log("[SkillActionExecutor] Hytale effect not found: " + effectDef.effectId);
             return false;
         }
 
-        EntityEffect effect = EntityEffect.getAssetMap().getAsset(effectIndex);
+        var effect = EffectAdapter.resolveEffect(effectIndex);
         if (effect == null) {
             LOGGER.atWarning().log("[SkillActionExecutor] Hytale effect asset missing: " + effectDef.effectId);
             return false;
@@ -186,15 +180,7 @@ public final class SkillActionExecutor {
                 SkillRuntimeContext targetCtx = ctx.withTarget(targetRef);
                 if (!SkillConditionEvaluator.evaluate(Map.of("conditionId", conditionId), targetCtx)) continue;
             }
-            EffectControllerComponent ec = (EffectControllerComponent) ctx.store().getComponent(
-                    targetRef, EffectControllerComponent.getComponentType());
-            if (ec == null) continue;
-            if (duration > 0f) {
-                ec.addEffect(targetRef, effectIndex, effect, duration, OverlapBehavior.OVERWRITE, ctx.store());
-            } else {
-                ec.addInfiniteEffect(targetRef, effectIndex, effect, ctx.store());
-            }
-            anyApplied = true;
+            anyApplied |= EffectAdapter.applyOrReplace(targetRef, effectIndex, effect, duration, ctx.store());
         }
         return anyApplied;
     }
@@ -212,7 +198,7 @@ public final class SkillActionExecutor {
         }
         EffectDef effectDef = Vampirism.getInstance().GetEffectDefRegistry().Get(effectId);
         String hytaleEffectId = effectDef != null ? effectDef.effectId : effectId;
-        int effectIndex = EntityEffect.getAssetMap().getIndex(hytaleEffectId);
+        int effectIndex = EffectAdapter.resolveEffectIndex(hytaleEffectId);
         if (effectIndex < 0) {
             LOGGER.atWarning().log("[SkillActionExecutor] removeEffect: Hytale effect not found: " + hytaleEffectId);
             return false;
@@ -230,11 +216,7 @@ public final class SkillActionExecutor {
 
         boolean anyRemoved = false;
         for (Ref<EntityStore> targetRef : targets) {
-            EffectControllerComponent ec = (EffectControllerComponent) ctx.store().getComponent(
-                    targetRef, EffectControllerComponent.getComponentType());
-            if (ec == null || !ec.hasEffect(effectIndex)) continue;
-            ec.removeEffect(targetRef, effectIndex, ctx.store());
-            anyRemoved = true;
+            anyRemoved |= EffectAdapter.removeIfPresent(targetRef, effectIndex, ctx.store());
         }
         return anyRemoved;
     }
@@ -252,13 +234,13 @@ public final class SkillActionExecutor {
             return false;
         }
 
-        int effectIndex = EntityEffect.getAssetMap().getIndex(effectDef.effectId);
+        int effectIndex = EffectAdapter.resolveEffectIndex(effectDef.effectId);
         if (effectIndex < 0) {
             LOGGER.atWarning().log("[SkillActionExecutor] Hytale effect not found: " + effectDef.effectId);
             return false;
         }
 
-        EntityEffect effect = EntityEffect.getAssetMap().getAsset(effectIndex);
+        var effect = EffectAdapter.resolveEffect(effectIndex);
         if (effect == null) {
             LOGGER.atWarning().log("[SkillActionExecutor] Hytale effect asset missing: " + effectDef.effectId);
             return false;
@@ -266,22 +248,12 @@ public final class SkillActionExecutor {
 
         Ref<EntityStore> targetRef = ctx.targetRef() != null ? ctx.targetRef() : ctx.ref();
 
-        EffectControllerComponent ec = (EffectControllerComponent) ctx.store().getComponent(
-                targetRef, EffectControllerComponent.getComponentType());
-        if (ec == null) {
+        boolean wasActive = EffectAdapter.hasEffect(targetRef, effectIndex, ctx.store());
+        if (wasActive) {
+            EffectAdapter.removeIfPresent(targetRef, effectIndex, ctx.store());
+        } else if (!EffectAdapter.applyOrReplace(targetRef, effectIndex, effect, resolveEffectDuration(effectDef, ctx), ctx.store())) {
             LOGGER.atWarning().log("[SkillActionExecutor] Target has no EffectControllerComponent for toggleEffect: " + action);
             return false;
-        }
-
-        if (ec.hasEffect(effectIndex)) {
-            ec.removeEffect(targetRef, effectIndex, ctx.store());
-        } else {
-            float duration = resolveEffectDuration(effectDef, ctx);
-            if (duration > 0f) {
-                ec.addEffect(targetRef, effectIndex, effect, duration, OverlapBehavior.OVERWRITE, ctx.store());
-            } else {
-                ec.addInfiniteEffect(targetRef, effectIndex, effect, ctx.store());
-            }
         }
         return true;
     }
@@ -409,14 +381,6 @@ public final class SkillActionExecutor {
         PassiveService.get().onFeed(ctx);
         LOGGER.atInfo().log("[SkillActionExecutor] executeFinalBlow: target executed");
         return true;
-    }
-
-    private static boolean startFeedChannel(Map<String, Object> action, SkillRuntimeContext ctx) {
-        return FeedService.startChannel(ctx, action);
-    }
-
-    private static boolean startHealthToBloodChannel(Map<String, Object> action, SkillRuntimeContext ctx) {
-        return BloodConversionService.startChannel(ctx, action);
     }
 
     // -------------------------------------------------------------------------
@@ -652,39 +616,6 @@ public final class SkillActionExecutor {
     }
 
     // -------------------------------------------------------------------------
-    // Activate another ability (auto_enter_bat_form / Emergency Retreat)
-    // -------------------------------------------------------------------------
-
-    /**
-     * Activates another named ability through {@link AbilityService}, respecting cooldown and
-     * blood cost, for the same caster.
-     *
-     * <p>Action spec: {@code { "type": "activateAbility", "abilityId": "BatForm" }}
-     */
-    private static boolean activateAbility(Map<String, Object> action, SkillRuntimeContext ctx) {
-        Object abilityIdObj = action.get("abilityId");
-        if (!(abilityIdObj instanceof String abilityId) || abilityId.isBlank()) {
-            LOGGER.atWarning().log("[SkillActionExecutor] activateAbility missing abilityId: " + action);
-            return false;
-        }
-        if (ctx.uuid() == null) {
-            LOGGER.atWarning().log("[SkillActionExecutor] activateAbility: no UUID in context");
-            return false;
-        }
-
-        SkillRuntimeContext nextCtx = AbilityService.tryEnterAbility(abilityId, ctx);
-        if (nextCtx == null) {
-            return false;
-        }
-
-        var result = AbilityService.activate(abilityId, nextCtx);
-        if (result.isFailure()) {
-            LOGGER.atInfo().log("[SkillActionExecutor] activateAbility '" + abilityId + "': " + result.reason());
-        }
-        return result.isSuccess();
-    }
-
-    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
@@ -726,342 +657,11 @@ public final class SkillActionExecutor {
         return effectDef.duration * multiplier;
     }
 
-    // -------------------------------------------------------------------------
-    // healSelf — restores HP equal to a VampireStatType modifier value
-    // -------------------------------------------------------------------------
-
-    /**
-     * Heals the caster by the value of the named {@link VampireStatType} modifier.
-     *
-     * <p>Action spec: {@code { "type": "healSelf", "statId": "BITE_HEAL_AMOUNT" }}
-     */
-    private static boolean healSelf(Map<String, Object> action, SkillRuntimeContext ctx) {
-        Object statIdObj = action.get("statId");
-        if (!(statIdObj instanceof String statId) || statId.isBlank()) {
-            LOGGER.atWarning().log("[SkillActionExecutor] healSelf missing statId: " + action);
-            return false;
-        }
-
-        VampireStatType statType;
-        try {
-            statType = VampireStatType.valueOf(statId);
-        } catch (IllegalArgumentException e) {
-            LOGGER.atWarning().log("[SkillActionExecutor] healSelf unknown statId: " + statId);
-            return false;
-        }
-
-        float healAmount = ModifierRegistry.get().compute(statType, 0f, ctx.modifierContext());
-        float healingReceived = Math.max(0f, ModifierRegistry.get().compute(
-                VampireStatType.HEALING_RECEIVED, 1f, ctx.modifierContext()));
-        healAmount *= healingReceived;
-        if (healAmount <= 0f) return false;
-
-        EntityStatMap stats = (EntityStatMap) ctx.store().getComponent(
-                ctx.ref(), EntityStatMap.getComponentType());
-        if (stats == null) {
-            LOGGER.atWarning().log("[SkillActionExecutor] healSelf: no EntityStatMap for " + ctx.uuid());
-            return false;
-        }
-
-        stats.addStatValue(DefaultEntityStatTypes.getHealth(), healAmount);
-        LOGGER.atFine().log("[SkillActionExecutor] healSelf: +" + healAmount + " HP for " + ctx.uuid());
-        return true;
-    }
-
-    // -------------------------------------------------------------------------
-    // grantTemporaryModifier — generic temporary stat boost (replaces applyTimedSpeedBoost)
-    // -------------------------------------------------------------------------
-
-    /**
-     * Registers a temporary stat boost with {@link TemporaryModifierTracker}.
-     *
-     * <p>Action spec fields:
-     * <ul>
-     *   <li>{@code statId} (required) — {@link VampireStatType} name to boost.</li>
-     *   <li>{@code amount} (optional) — additive delta. Mutually exclusive with {@code multiplier}.</li>
-     *   <li>{@code multiplier} (optional) — multiplicative factor applied on top of the stat.</li>
-     *   <li>{@code duration} (seconds, required) — lifetime of the boost.</li>
-     *   <li>{@code stacking} (optional) — {@code replace|refresh|stack}; default {@code replace}.</li>
-     *   <li>{@code amountStatId} / {@code durationStatId} (optional) — read amount/duration from
-     *       a modifier stat instead of a literal.</li>
-     * </ul>
-     */
-    private static boolean grantTemporaryModifier(Map<String, Object> action, SkillRuntimeContext ctx) {
-        if (ctx.uuid() == null) return false;
-
-        String statId = action.get("statId") instanceof String s ? s : null;
-        if (statId == null || statId.isBlank()) {
-            LOGGER.atWarning().log("[SkillActionExecutor] grantTemporaryModifier missing statId: " + action);
-            return false;
-        }
-        VampireStatType stat;
-        try {
-            stat = VampireStatType.valueOf(statId);
-        } catch (IllegalArgumentException e) {
-            LOGGER.atWarning().log("[SkillActionExecutor] grantTemporaryModifier unknown statId: " + statId);
-            return false;
-        }
-
-        boolean isMultiplicative = action.containsKey("multiplier");
-        TemporaryModifierTracker.Op op = isMultiplicative
-                ? TemporaryModifierTracker.Op.MULTIPLICATIVE
-                : TemporaryModifierTracker.Op.ADDITIVE;
-
-        float amount = isMultiplicative
-                ? resolveStatOrLiteral(action, "amountStatId", "multiplier", 1f, ctx)
-                : resolveStatOrLiteral(action, "amountStatId", "amount", 0f, ctx);
-        float duration = resolveStatOrLiteral(action, "durationStatId", "duration", 10f, ctx);
-
-        if (!isMultiplicative && amount == 0f) {
-            LOGGER.atWarning().log("[SkillActionExecutor] grantTemporaryModifier: resolved amount is 0 for " + statId);
-            return false;
-        }
-        if (duration <= 0f) return false;
-
-        TemporaryModifierTracker.Stacking stacking = resolveStacking(action);
-        TemporaryModifierTracker.addBoost(ctx.uuid(), stat, amount, duration, stacking, op);
-        LOGGER.atFine().log("[SkillActionExecutor] grantTemporaryModifier: " + statId + " "
-                + (isMultiplicative ? "x" : "+") + amount + " for " + duration + "s → " + ctx.uuid());
-        return true;
-    }
-
-    /** Backwards-compatible bridge for the deprecated {@code applyTimedSpeedBoost} action. */
-    private static boolean grantTemporaryModifierLegacySpeed(Map<String, Object> action, SkillRuntimeContext ctx) {
-        Map<String, Object> rewritten = new java.util.LinkedHashMap<>(action);
-        rewritten.putIfAbsent("statId", "SPEED");
-        // Old action used "speedBoostStatId" → new generic "amountStatId".
-        Object boostStat = rewritten.remove("speedBoostStatId");
-        if (boostStat != null) rewritten.putIfAbsent("amountStatId", boostStat);
-        return grantTemporaryModifier(rewritten, ctx);
-    }
-
-    private static TemporaryModifierTracker.Stacking resolveStacking(Map<String, Object> action) {
-        Object raw = action.get("stacking");
-        if (raw instanceof String s) {
-            try {
-                return TemporaryModifierTracker.Stacking.valueOf(s.toUpperCase());
-            } catch (IllegalArgumentException ignored) {
-                LOGGER.atWarning().log("[SkillActionExecutor] Unknown stacking policy: " + s);
-            }
-        }
-        return TemporaryModifierTracker.Stacking.REPLACE;
-    }
-
-    // -------------------------------------------------------------------------
-    // modifyStat / modifyBlood — instant adjustments
-    // -------------------------------------------------------------------------
-
-    /**
-     * Instantly adjusts an entity stat on the caster.  Currently supports
-     * {@link DefaultEntityStatTypes#getHealth()} as the only persistent ECS stat; other
-     * {@link VampireStatType} values are computed via modifiers and cannot be "set" here.
-     *
-     * <p>Action spec: {@code { "type":"modifyStat", "statId":"HEALTH", "op":"add", "amount":5 }}
-     */
-    private static boolean modifyStat(Map<String, Object> action, SkillRuntimeContext ctx) {
-        String statId = action.get("statId") instanceof String s ? s : null;
-        if (statId == null || statId.isBlank()) {
-            LOGGER.atWarning().log("[SkillActionExecutor] modifyStat missing statId: " + action);
-            return false;
-        }
-        String op = action.get("op") instanceof String s ? s : "add";
-        float amount = action.get("amount") instanceof Number n ? n.floatValue() : 0f;
-
-        if ("HEALTH".equalsIgnoreCase(statId)) {
-            EntityStatMap stats = (EntityStatMap) ctx.store().getComponent(
-                    ctx.ref(), EntityStatMap.getComponentType());
-            if (stats == null) return false;
-            EntityStatValue health = stats.get(DefaultEntityStatTypes.getHealth());
-            if (health == null) return false;
-            switch (op) {
-                case "add" -> stats.addStatValue(DefaultEntityStatTypes.getHealth(), amount);
-                case "set" -> stats.addStatValue(DefaultEntityStatTypes.getHealth(), amount - health.get());
-                case "mul" -> stats.addStatValue(DefaultEntityStatTypes.getHealth(), health.get() * (amount - 1f));
-                default -> {
-                    LOGGER.atWarning().log("[SkillActionExecutor] modifyStat unsupported op: " + op);
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        LOGGER.atWarning().log("[SkillActionExecutor] modifyStat: statId '" + statId + "' is a derived VampireStatType; use grantTemporaryModifier instead.");
-        return false;
-    }
-
-    /**
-     * Adjusts the caster's blood bar.
-     *
-     * <p>Action spec fields:
-     * <ul>
-     *   <li>{@code amount} (integer blood units; legacy fractional values are scaled from 0..1 to 0..100), or</li>
-     *   <li>{@code percent} (legacy percent/fraction of max blood).</li>
-     *   <li>{@code op} — one of {@code add} (default) or {@code set}.</li>
-     * </ul>
-     */
-    private static boolean modifyBlood(Map<String, Object> action, SkillRuntimeContext ctx) {
-        int amount;
-        if (action.get("amount") instanceof Number n) {
-            amount = normalizeBloodAmount(n.floatValue());
-        } else if (action.get("percent") instanceof Number n) {
-            amount = normalizeBloodPercent(n.floatValue(), VampireVitalitySystem.getMaxBlood(ctx.ref()));
-        } else {
-            LOGGER.atWarning().log("[SkillActionExecutor] modifyBlood missing amount/percent: " + action);
-            return false;
-        }
-        String op = action.get("op") instanceof String s ? s : "add";
-        switch (op) {
-            case "add" -> {
-                if (amount >= 0) {
-                    com.epicseed.vampirism.systems.VampireVitalitySystem.addBlood(ctx.ref(), amount);
-                } else {
-                    com.epicseed.vampirism.systems.VampireVitalitySystem.spendBlood(ctx.ref(), -amount);
-                }
-            }
-            case "set" -> {
-                int current = com.epicseed.vampirism.systems.VampireVitalitySystem.getBlood(ctx.ref());
-                int delta = amount - current;
-                if (delta >= 0) {
-                    com.epicseed.vampirism.systems.VampireVitalitySystem.addBlood(ctx.ref(), delta);
-                } else {
-                    com.epicseed.vampirism.systems.VampireVitalitySystem.spendBlood(ctx.ref(), -delta);
-                }
-            }
-            default -> {
-                LOGGER.atWarning().log("[SkillActionExecutor] modifyBlood unsupported op: " + op);
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static int normalizeBloodAmount(float value) {
-        float normalized = value;
-        if (Math.abs(normalized) <= 1f) {
-            normalized *= VampireVitalitySystem.BASE_BLOOD_CAPACITY_UNITS;
-        }
-        return Math.round(normalized);
-    }
-
-    private static int normalizeBloodPercent(float value, int maxBlood) {
-        float normalized = Math.abs(value) <= 1f ? value : value / 100f;
-        return Math.round(normalized * Math.max(1, maxBlood));
-    }
-
-    // -------------------------------------------------------------------------
-    // playSound / spawnParticles / sendMessage — presentation primitives
-    // -------------------------------------------------------------------------
-
-    private static boolean playSound(Map<String, Object> action, SkillRuntimeContext ctx) {
-        String soundId = action.get("soundId") instanceof String s ? s : null;
-        if (soundId == null || soundId.isBlank()) {
-            LOGGER.atWarning().log("[SkillActionExecutor] playSound missing soundId: " + action);
-            return false;
-        }
-
-        int soundIndex = SoundEvent.getAssetMap().getIndex(soundId);
-        if (soundIndex < 0) {
-            LOGGER.atWarning().log("[SkillActionExecutor] playSound: sound asset not found " + soundId);
-            return false;
-        }
-
-        String scope = action.get("scope") instanceof String s ? s : "world";
-        SoundCategory category = resolveSoundCategory(action, soundIndex);
-        float volume = action.get("volume") instanceof Number n ? n.floatValue() : 1.0f;
-        float pitch = action.get("pitch") instanceof Number n ? n.floatValue() : 1.0f;
-
-        if ("local".equalsIgnoreCase(scope)) {
-            PlayerRef playerRef = (PlayerRef) ctx.store().getComponent(ctx.ref(), PlayerRef.getComponentType());
-            if (playerRef == null) {
-                LOGGER.atWarning().log("[SkillActionExecutor] playSound: local scope requires PlayerRef");
-                return false;
-            }
-            SoundUtil.playSoundEvent2dToPlayer(playerRef, soundIndex, category, volume, pitch);
-            return true;
-        }
-
-        Vector3d position = resolvePresentationPosition(action, ctx);
-        if (position == null) {
-            LOGGER.atWarning().log("[SkillActionExecutor] playSound: failed to resolve playback position for " + soundId);
-            return false;
-        }
-        SoundUtil.playSoundEvent3d(soundIndex, category, position.getX(), position.getY(), position.getZ(), volume, pitch, ctx.store());
-        return true;
-    }
-
-    private static boolean spawnParticles(Map<String, Object> action, SkillRuntimeContext ctx) {
-        String particleId = action.get("particleId") instanceof String s ? s : null;
-        if (particleId == null || particleId.isBlank()) {
-            LOGGER.atWarning().log("[SkillActionExecutor] spawnParticles missing particleId: " + action);
-            return false;
-        }
-
-        if (ParticleSystem.getAssetMap().getAsset(particleId) == null) {
-            LOGGER.atWarning().log("[SkillActionExecutor] spawnParticles: particle asset not found " + particleId);
-            return false;
-        }
-
-        Vector3d position = resolvePresentationPosition(action, ctx);
-        if (position == null) {
-            LOGGER.atWarning().log("[SkillActionExecutor] spawnParticles: failed to resolve spawn position for " + particleId);
-            return false;
-        }
-        ParticleUtil.spawnParticleEffect(particleId, position, ctx.store());
-        return true;
-    }
-
-    /**
-     * Sends a chat message to the caster.
-     *
-     * <p>Action spec: {@code { "type":"sendMessage", "text":"...", "color":"red" }}
-     */
-    private static boolean sendMessage(Map<String, Object> action, SkillRuntimeContext ctx) {
-        String text = action.get("text") instanceof String s ? s : null;
-        if (text == null || text.isBlank()) {
-            LOGGER.atWarning().log("[SkillActionExecutor] sendMessage missing text: " + action);
-            return false;
-        }
-        com.hypixel.hytale.server.core.entity.entities.Player player =
-                (com.hypixel.hytale.server.core.entity.entities.Player) ctx.store().getComponent(
-                        ctx.ref(), com.hypixel.hytale.server.core.entity.entities.Player.getComponentType());
-        if (player == null) return false;
-        com.hypixel.hytale.server.core.Message msg = com.hypixel.hytale.server.core.Message.raw(text);
-        if (action.get("color") instanceof String color && !color.isBlank()) {
-            msg.color(color);
-        }
-        player.sendMessage(msg);
-        return true;
-    }
-
-    /**
-     * Helper: reads a value either from a named {@link VampireStatType} modifier or from a literal
-     * numeric key in the action map.
-     */
-    private static float resolveStatOrLiteral(Map<String, Object> action,
-                                              String statIdKey, String literalKey,
-                                              float fallback,
-                                              SkillRuntimeContext ctx) {
-        Object statIdObj = action.get(statIdKey);
-        if (statIdObj instanceof String statId && !statId.isBlank()) {
-            try {
-                VampireStatType st = VampireStatType.valueOf(statId);
-                return ModifierRegistry.get().compute(st, fallback, ctx.modifierContext());
-            } catch (IllegalArgumentException e) {
-                LOGGER.atWarning().log("[SkillActionExecutor] Unknown stat for key '" + statIdKey + "': " + statId);
-            }
-        }
-        Object lit = action.get(literalKey);
-        return lit instanceof Number n ? n.floatValue() : fallback;
-    }
-
     private static boolean applyDamage(@Nonnull Ref<EntityStore> sourceRef,
                                        @Nonnull Ref<EntityStore> targetRef,
                                        float amount,
                                        @Nonnull SkillRuntimeContext ctx) {
-        if (amount <= 0f) return false;
-        Damage damage = new Damage(new Damage.EntitySource(sourceRef), DamageCause.PHYSICAL, amount);
-        DamageSystems.executeDamage(targetRef, ctx.store(), damage);
-        return true;
+        return DamageAdapter.executePhysicalDamage(sourceRef, targetRef, ctx.store(), amount);
     }
 
     private static void tuneProjectileFromStats(@Nonnull Holder<EntityStore> holder,
@@ -1097,85 +697,6 @@ public final class SkillActionExecutor {
             double terminalVelocity = projectile.getProjectile().getTerminalVelocity() * speedMultiplier;
             physics.setTerminalVelocities(terminalVelocity, terminalVelocity, boundingBox);
         }
-    }
-
-    private static SoundCategory resolveSoundCategory(Map<String, Object> action, int soundIndex) {
-        String categoryValue = action.get("category") instanceof String s ? s : null;
-        if (categoryValue == null || categoryValue.isBlank()) {
-            SoundEvent soundEvent = SoundEvent.getAssetMap().getAsset(soundIndex);
-            categoryValue = soundEvent != null ? soundEvent.getAudioCategoryId() : null;
-        }
-        if (categoryValue != null) {
-            for (SoundCategory category : SoundCategory.values()) {
-                if (category.name().equalsIgnoreCase(categoryValue)) {
-                    return category;
-                }
-            }
-        }
-        return SoundCategory.SFX;
-    }
-
-    private static Vector3d resolvePresentationPosition(Map<String, Object> action, SkillRuntimeContext ctx) {
-        Object targetingIdObj = action.get("targetingId");
-        if (targetingIdObj instanceof String targetingId && !targetingId.isBlank()) {
-            Map<String, Object> targetingSpec = SkillRuntimeDefinitions.resolveTargeting(Map.of("targetingId", targetingId));
-            Vector3d targetPosition = resolveTargetingPosition(targetingSpec, ctx);
-            if (targetPosition != null) {
-                return targetPosition;
-            }
-        }
-
-        Ref<EntityStore> entityRef = ctx.targetRef() != null ? ctx.targetRef() : ctx.ref();
-        Vector3d entityPosition = resolveEntityPosition(entityRef, ctx);
-        if (entityPosition != null) {
-            return entityPosition;
-        }
-
-        Transform look = TargetUtil.getLook(ctx.ref(), ctx.store());
-        return look != null ? new Vector3d(look.getPosition()) : null;
-    }
-
-    private static Vector3d resolveTargetingPosition(Map<String, Object> targetingSpec, SkillRuntimeContext ctx) {
-        Object typeObj = targetingSpec.get("type");
-        if (!(typeObj instanceof String typeId) || typeId.isBlank()) {
-            return null;
-        }
-
-        return switch (typeId) {
-            case "self", "area" -> resolveEntityPosition(ctx.ref(), ctx);
-            case "target" -> resolveEntityPosition(ctx.targetRef(), ctx);
-            case "lookRaycast" -> {
-                TargetingResult result = TargetingResolver.resolve(targetingSpec, ctx);
-                yield resolveEntityPosition(result.first(), ctx);
-            }
-            case "areaAtLook" -> resolveLookPosition(ctx, targetingSpec, 24.0);
-            case "lookPosition" -> resolveLookPosition(ctx, targetingSpec, DEFAULT_TELEPORT_RANGE);
-            case "projectile" -> {
-                Transform look = TargetUtil.getLook(ctx.ref(), ctx.store());
-                yield look != null ? new Vector3d(look.getPosition()) : null;
-            }
-            default -> null;
-        };
-    }
-
-    private static Vector3d resolveLookPosition(SkillRuntimeContext ctx,
-                                                Map<String, Object> targetingSpec,
-                                                double defaultRange) {
-        Transform look = TargetUtil.getLook(ctx.ref(), ctx.store());
-        if (look == null) {
-            return resolveEntityPosition(ctx.ref(), ctx);
-        }
-        double maxRange = targetingSpec.get("maxRange") instanceof Number r ? r.doubleValue() : defaultRange;
-        return new Vector3d(look.getPosition()).addScaled(look.getDirection(), maxRange);
-    }
-
-    private static Vector3d resolveEntityPosition(Ref<EntityStore> entityRef, SkillRuntimeContext ctx) {
-        if (entityRef == null) {
-            return null;
-        }
-        TransformComponent transform = (TransformComponent) ctx.store().getComponent(
-                entityRef, TransformComponent.getComponentType());
-        return transform != null ? new Vector3d(transform.getPosition()) : null;
     }
 
     private static VampireStatType resolveStatType(Object rawId, VampireStatType fallback) {

@@ -1,23 +1,17 @@
 package com.epicseed.vampirism.systems;
 
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import com.epicseed.vampirism.domain.blood.BloodHudService;
 import com.epicseed.vampirism.domain.blood.BloodService;
 import com.epicseed.vampirism.domain.blood.BloodState;
+import com.epicseed.vampirism.domain.blood.RelicOwnershipSyncService;
+import com.epicseed.vampirism.domain.blood.VampireThroneRecoveryService;
 import com.epicseed.vampirism.config.VampirismConfig;
-import com.epicseed.vampirism.hud.BloodGaugeHud;
-import com.epicseed.vampirism.hud.RelicCooldownHud;
-import com.epicseed.vampirism.hytale.MultipleHudAdapter;
 import com.epicseed.vampirism.ui.RelicBindingsUI;
 import com.epicseed.vampirism.ui.SkillTreeUI;
-import com.hypixel.hytale.builtin.mounts.BlockMountComponent;
-import com.hypixel.hytale.builtin.mounts.MountedComponent;
 import com.epicseed.vampirism.modifier.ContextKey;
 import com.epicseed.vampirism.modifier.ModifierTag;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
@@ -34,8 +28,6 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.GameMode;
-import com.hypixel.hytale.protocol.packets.interface_.HudComponent;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
@@ -44,22 +36,13 @@ import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
-    private static final String BLOOD_GAUGE_HUD_KEY = "vampiric_blood_gauge";
-    private static final String RELIC_COOLDOWN_HUD_KEY = "vampiric_relic_cooldowns";
-    private static final String VAMPIRE_THRONE_BLOCK_ID = "VampireThrone";
-    private static final float VAMPIRE_THRONE_REGEN_INTERVAL_SECONDS = 2.5f;
     public static final int BASE_BLOOD_CAPACITY_UNITS = BloodService.BASE_BLOOD_CAPACITY_UNITS;
-
-    private static final Map<Ref<EntityStore>, BloodGaugeHud> bloodGaugeHuds = new ConcurrentHashMap<>();
-    private static final Map<Ref<EntityStore>, RelicCooldownHud> relicCooldownHuds = new ConcurrentHashMap<>();
 
     /**
      * Called when a vampire lands a killing blow. Grants blood, kill heal bonus, and may trigger infection.
@@ -94,10 +77,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
                     "A vampiric infection takes hold of your body.");
         }
 
-        BloodGaugeHud hud = bloodGaugeHuds.get(attackerRef);
-        if (hud != null) {
-            hud.syncBlood(state.blood, state.maxBlood);
-        }
+        BloodHudService.syncBlood(attackerRef, state);
         LOGGER.atInfo().log("[Satiety] Kill registered! Blood: " + state.blood + "/" + state.maxBlood);
     }
 
@@ -120,8 +100,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
     public static void spendBlood(@Nonnull Ref<EntityStore> playerRef, int bloodCost) {
         if (bloodCost <= 0) return;
         BloodState state = BloodService.spendBlood(playerRef, bloodCost);
-        BloodGaugeHud hud = bloodGaugeHuds.get(playerRef);
-        if (hud != null) hud.syncBlood(state.blood, state.maxBlood);
+        BloodHudService.syncBlood(playerRef, state);
     }
 
     public static int addBlood(@Nonnull Ref<EntityStore> playerRef, int bloodGain) {
@@ -129,8 +108,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
             return getBlood(playerRef);
         }
         BloodState state = BloodService.addBlood(playerRef, bloodGain);
-        BloodGaugeHud hud = bloodGaugeHuds.get(playerRef);
-        if (hud != null) hud.syncBlood(state.blood, state.maxBlood);
+        BloodHudService.syncBlood(playerRef, state);
         return state.blood;
     }
 
@@ -157,8 +135,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
     }
 
     public static boolean isHudActiveByUuid(@Nonnull UUID uuid) {
-        Ref<EntityStore> ref = BloodService.getRefByUuid(uuid);
-        return ref != null && bloodGaugeHuds.containsKey(ref);
+        return BloodHudService.isHudActiveByUuid(uuid);
     }
 
     public static void captureDisconnectState(@Nonnull UUID uuid) {
@@ -201,7 +178,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
             boolean isVampire = VampireStatusRegistry.get().isVampire(playerRefComponent.getUuid());
 
             if (!isVampire) {
-                RelicInventoryService.syncOwnership(playerRef, store, false);
+                RelicOwnershipSyncService.syncNonVampire(playerRef, store);
                 cleanupPlayer(playerRef, player, playerRefComponent);
                 return;
             }
@@ -211,59 +188,26 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
 
             BloodState state = BloodService.getOrCreateLoaded(playerRef, playerRefComponent.getUuid(), store);
 
-            RelicInventoryService.SyncResult relicSync = RelicInventoryService.syncOwnership(
-                    playerRef,
-                    store,
-                    true,
-                    !RelicInventoryService.isAutoGrantSuppressed(playerRef));
-            if (relicSync.inventoryFull()) {
-                if (!state.relicInventoryFullNotified) {
-                    String message = relicSync.firstStrandedLocation() != null
-                            ? "Your Vampirism Relic is stuck in " + relicSync.firstStrandedLocation().describe()
-                            + ". Free a visible inventory slot and use /vampirismrelic get."
-                            : "Your inventory is full, so your Vampirism Relic could not be returned. Free a visible inventory slot and use /vampirismrelic get.";
-                    player.sendMessage(Message.raw(message).color("yellow"));
-                    state.relicInventoryFullNotified = true;
-                }
-            } else {
-                state.relicInventoryFullNotified = false;
-            }
+            RelicOwnershipSyncService.syncVampire(playerRef, store, player, state);
 
             BloodService.refreshCapacity(state, playerRef, store);
 
             long now = System.currentTimeMillis();
 
             // HUD initialization
-            if ((!bloodGaugeHuds.containsKey(playerRef) || !relicCooldownHuds.containsKey(playerRef)) && !state.hudInitFailed
-                    && now - state.firstSeenTime >= VampirismConfig.get().getHudInitDelayMs()) {
-                state.hudInitFailed = true;
-                initHuds(playerRef, player, playerRefComponent, store, state);
-            }
+            BloodHudService.tryInitialize(playerRef, player, playerRefComponent, store, state, now);
 
-            RelicCooldownHud relicHud = relicCooldownHuds.get(playerRef);
-            long cooldownHudInterval = VampirismConfig.get().getCooldownHudUpdateIntervalMs();
             boolean relicInHand = isRelicInHand(playerRef, store);
-            syncInputBindingsHud(player, playerRefComponent, state, relicInHand);
-            if (relicHud != null
-                    && !blockRelicHudRefresh
-                    && !skillTreeOpen
-                    && (cooldownHudInterval <= 0L
-                    || now - state.lastCooldownHudUpdateTime >= cooldownHudInterval)) {
-                state.lastCooldownHudUpdateTime = now;
-                relicHud.refresh(playerRef, store);
-            }
-
-            BloodGaugeHud hud = bloodGaugeHuds.get(playerRef);
-            if (hud != null) {
-                hud.syncCreativeMode(creativeMode);
-            }
+            BloodHudService.syncInputBindings(player, playerRefComponent, state, relicInHand);
+            BloodHudService.refreshRelicCooldowns(playerRef, store, state, now, blockRelicHudRefresh, skillTreeOpen);
+            BloodHudService.syncCreativeMode(playerRef, creativeMode);
 
             if (now - state.lastUpdateTime < VampirismConfig.get().getSatietyUpdateIntervalMs()) return;
 
             float elapsedSeconds = (float)(now - state.lastUpdateTime) / 1000f;
             state.lastUpdateTime = now;
 
-            applyVampireThroneRecovery(playerRef, player, store, state, elapsedSeconds);
+            VampireThroneRecoveryService.apply(playerRef, player, store, state, elapsedSeconds);
 
             // Starvation check
             if (!state.isStarving && state.blood <= VampirismConfig.get().getSatietyStarvingThreshold()) {
@@ -274,9 +218,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
                 LOGGER.atInfo().log("[Satiety] Player " + playerRef + " recovered from starvation.");
             }
 
-            if (hud != null) {
-                hud.sync(state.blood, state.maxBlood, creativeMode);
-            }
+            BloodHudService.syncBloodGauge(playerRef, state, creativeMode);
 
         } catch (Exception e) {
             LOGGER.atSevere().log("[VampireVitalitySystem] Error: " + e.getMessage());
@@ -290,40 +232,8 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
             BloodService.unregisterRef(playerRefComponent.getUuid());
             EntityRefTracker.unregister(playerRefComponent.getUuid());
         }
-        bloodGaugeHuds.remove(playerRef);
-        relicCooldownHuds.remove(playerRef);
-        if (stateInputBindingsHidden(playerRef)) {
-            restoreInputBindings(player, playerRefComponent);
-        }
-        if (MultipleHudAdapter.isAvailable() && playerRefComponent != null) {
-            World world = player.getWorld();
-            if (world != null) {
-                Player p = player;
-                PlayerRef pr = playerRefComponent;
-                CompletableFuture.runAsync(() -> {
-                    MultipleHudAdapter.hideCustomHud(p, pr, BLOOD_GAUGE_HUD_KEY);
-                    MultipleHudAdapter.hideCustomHud(p, pr, RELIC_COOLDOWN_HUD_KEY);
-                }, (Executor) world);
-            }
-        }
+        BloodHudService.cleanup(playerRef, player, playerRefComponent, stateInputBindingsHidden(playerRef));
         BloodService.removeState(playerRef);
-    }
-
-    private void syncInputBindingsHud(@Nonnull Player player,
-                                       PlayerRef playerRefComponent,
-                                       @Nonnull BloodState state,
-                                      boolean relicInHand) {
-        if (playerRefComponent == null) return;
-        if (relicInHand == state.inputBindingsHidden) {
-            return;
-        }
-        if (relicInHand) {
-            player.getHudManager().hideHudComponents(playerRefComponent, HudComponent.InputBindings);
-            state.inputBindingsHidden = true;
-        } else {
-            player.getHudManager().showHudComponents(playerRefComponent, HudComponent.InputBindings);
-            state.inputBindingsHidden = false;
-        }
     }
 
     private boolean stateInputBindingsHidden(@Nonnull Ref<EntityStore> playerRef) {
@@ -331,116 +241,10 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
         return state != null && state.inputBindingsHidden;
     }
 
-    private void restoreInputBindings(@Nonnull Player player, PlayerRef playerRefComponent) {
-        if (playerRefComponent == null) return;
-        player.getHudManager().showHudComponents(playerRefComponent, HudComponent.InputBindings);
-    }
-
     private boolean isRelicInHand(@Nonnull Ref<EntityStore> playerRef,
-                                  @Nonnull Store<EntityStore> store) {
+                                   @Nonnull Store<EntityStore> store) {
         ItemStack stack = InventoryComponent.getItemInHand(store, playerRef);
         return stack != null && RelicInventoryService.RELIC_ITEM_ID.equals(stack.getItemId());
-    }
-
-    private void initHuds(@Nonnull Ref<EntityStore> playerRef,
-                          @Nonnull Player player,
-                           PlayerRef playerRefComponent,
-                           @Nonnull Store<EntityStore> store,
-                           @Nonnull BloodState state) {
-        if (!MultipleHudAdapter.isAvailable() || playerRefComponent == null) return;
-        World world = player.getWorld();
-        if (world == null) return;
-
-        Ref<EntityStore> pRef = playerRef;
-        Player p = player;
-        PlayerRef pr = playerRefComponent;
-
-        CompletableFuture.runAsync(() -> {
-            boolean bloodGaugeReady = bloodGaugeHuds.containsKey(pRef);
-            if (!bloodGaugeReady) {
-                BloodGaugeHud hud = new BloodGaugeHud(pr);
-                bloodGaugeReady = MultipleHudAdapter.setCustomHud(p, pr, BLOOD_GAUGE_HUD_KEY, hud);
-                if (bloodGaugeReady) {
-                    bloodGaugeHuds.put(pRef, hud);
-                    hud.sync(state.blood, state.maxBlood, p.getGameMode() == GameMode.Creative);
-                }
-            }
-
-            boolean cooldownReady = relicCooldownHuds.containsKey(pRef);
-            if (!cooldownReady) {
-                RelicCooldownHud relicHud = new RelicCooldownHud(pr);
-                relicHud.primeState(pRef, store);
-                cooldownReady = MultipleHudAdapter.setCustomHud(p, pr, RELIC_COOLDOWN_HUD_KEY, relicHud);
-                if (cooldownReady) {
-                    relicCooldownHuds.put(pRef, relicHud);
-                }
-            }
-
-            if (bloodGaugeReady && cooldownReady) {
-                state.hudInitFailed = false;
-                LOGGER.atInfo().log("[Vitality] HUDs initialized for " + pRef);
-            } else {
-                state.hudInitFailed = false;
-                LOGGER.atWarning().log("[Vitality] Failed to init one or more HUDs for " + pRef + "; retrying.");
-            }
-        }, (Executor) world);
-    }
-
-    private void applyVampireThroneRecovery(@Nonnull Ref<EntityStore> playerRef,
-                                             @Nonnull Player player,
-                                             @Nonnull Store<EntityStore> store,
-                                             @Nonnull BloodState state,
-                                            float elapsedSeconds) {
-        if (!isMountedOnVampireThrone(playerRef, player, store)) {
-            state.vampireThroneRecoveryAccumulator = 0f;
-            return;
-        }
-        if (state.blood >= state.maxBlood) {
-            state.vampireThroneRecoveryAccumulator = 0f;
-            return;
-        }
-
-        state.vampireThroneRecoveryAccumulator += elapsedSeconds;
-        if (state.vampireThroneRecoveryAccumulator < VAMPIRE_THRONE_REGEN_INTERVAL_SECONDS) {
-            return;
-        }
-
-        int recoveryTicks = (int) (state.vampireThroneRecoveryAccumulator / VAMPIRE_THRONE_REGEN_INTERVAL_SECONDS);
-        state.vampireThroneRecoveryAccumulator -= recoveryTicks * VAMPIRE_THRONE_REGEN_INTERVAL_SECONDS;
-        addBlood(playerRef, recoveryTicks * VampirismConfig.get().getVampireThroneRecoveryBlood());
-    }
-
-    private boolean isMountedOnVampireThrone(@Nonnull Ref<EntityStore> playerRef,
-                                             @Nonnull Player player,
-                                             @Nonnull Store<EntityStore> store) {
-        MountedComponent mounted = store.getComponent(playerRef, MountedComponent.getComponentType());
-        if (mounted == null || mounted.getMountedToBlock() == null || !mounted.getMountedToBlock().isValid()) {
-            return false;
-        }
-
-        World world = player.getWorld();
-        if (world == null) {
-            return false;
-        }
-
-        ChunkStore chunkStore = world.getChunkStore();
-        if (chunkStore == null || chunkStore.getStore() == null) {
-            return false;
-        }
-
-        BlockMountComponent blockMount;
-        try {
-            blockMount = chunkStore.getStore().getComponent(
-                    mounted.getMountedToBlock(),
-                    BlockMountComponent.getComponentType());
-        } catch (IllegalStateException ignored) {
-            return false;
-        }
-        if (blockMount == null || blockMount.getExpectedBlockType() == null) {
-            return false;
-        }
-
-        return VAMPIRE_THRONE_BLOCK_ID.equals(blockMount.getExpectedBlockType().getId());
     }
 
     /** Context key for "is the player starving" — cached per compute() call. */
