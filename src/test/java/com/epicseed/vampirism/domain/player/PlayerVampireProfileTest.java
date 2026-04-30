@@ -44,6 +44,8 @@ class PlayerVampireProfileTest {
         profile.skillPoints = 7;
         profile.totalSpent = 3;
         profile.unlockedSkills.add("blood-dash");
+        profile.activeRelicPreset = 1;
+        profile.relicPresets.put("1", new LinkedHashMap<>(java.util.Map.of("ability1", "BatSwarm")));
         profile.abilityCooldowns.put("bat-form", 1500L);
 
         PlayerProgressProfile progress = profile.progressProfile();
@@ -51,6 +53,8 @@ class PlayerVampireProfileTest {
         assertEquals(7, progress.skillPoints);
         assertEquals(3, progress.totalSpent);
         assertTrue(progress.unlockedSkills.contains("blood-dash"));
+        assertEquals(1, progress.activeRelicPreset);
+        assertEquals("BatSwarm", progress.relicPresets.get("1").get("ability1"));
         assertEquals(1500L, progress.abilityCooldowns.get("bat-form"));
     }
 
@@ -60,6 +64,8 @@ class PlayerVampireProfileTest {
         progress.skillPoints = 11;
         progress.totalSpent = 5;
         progress.unlockedSkills.add("night-sense");
+        progress.activeRelicPreset = 2;
+        progress.relicPresets.put("2", new LinkedHashMap<>(java.util.Map.of("ability2", "MistStep")));
         progress.abilityCooldowns.put("mist-step", 2200L);
 
         PlayerVampireProfile profile = new PlayerVampireProfile();
@@ -68,6 +74,8 @@ class PlayerVampireProfileTest {
         assertEquals(11, profile.skillPoints);
         assertEquals(5, profile.totalSpent);
         assertTrue(profile.unlockedSkills.contains("night-sense"));
+        assertEquals(2, profile.activeRelicPreset);
+        assertEquals("MistStep", profile.relicPresets.get("2").get("ability2"));
         assertEquals(2200L, profile.abilityCooldowns.get("mist-step"));
     }
 }

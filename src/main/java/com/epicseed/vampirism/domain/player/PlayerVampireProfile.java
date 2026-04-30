@@ -1,6 +1,7 @@
 package com.epicseed.vampirism.domain.player;
 
 import com.epicseed.epiccore.player.PlayerProgressProfile;
+import com.epicseed.epiccore.player.PlayerProgressProfileHost;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -11,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class PlayerVampireProfile {
+public class PlayerVampireProfile implements PlayerProgressProfileHost {
 
     @JsonProperty("points")
     public int skillPoints = 0;
@@ -57,17 +58,9 @@ public class PlayerVampireProfile {
         if (infectionExpiresAtMs > 0L && infectionExpiresAtMs <= System.currentTimeMillis()) {
             infectionExpiresAtMs = 0L;
         }
-
-        activeRelicPreset = Math.max(0, activeRelicPreset);
-        relicBindings = sanitizeStringMap(relicBindings);
-        relicPresets = sanitizeNestedStringMap(relicPresets);
-        if (relicPresets.isEmpty() && !relicBindings.isEmpty()) {
-            relicPresets.put(relicPresetKey(0), new LinkedHashMap<>(relicBindings));
-        }
-        relicPresets.computeIfAbsent(relicPresetKey(activeRelicPreset), ignored -> new LinkedHashMap<>());
-        relicBindings = new LinkedHashMap<>(relicBindingsFor(activeRelicPreset));
     }
 
+    @Override
     public PlayerProgressProfile progressProfile() {
         PlayerProgressProfile progress = new PlayerProgressProfile();
         progress.skillPoints = skillPoints;
@@ -75,15 +68,22 @@ public class PlayerVampireProfile {
         if (unlockedSkills != null) {
             progress.unlockedSkills.addAll(unlockedSkills);
         }
+        progress.relicBindings = new LinkedHashMap<>(relicBindings != null ? relicBindings : Map.of());
+        progress.activeRelicPreset = activeRelicPreset;
+        progress.relicPresets = PlayerProgressProfile.sanitizeNestedStringMap(relicPresets);
         progress.abilityCooldowns = new LinkedHashMap<>(abilityCooldowns != null ? abilityCooldowns : Map.of());
         return progress;
     }
 
+    @Override
     public void applyProgressProfile(PlayerProgressProfile progress) {
         if (progress == null) {
             skillPoints = 0;
             totalSpent = 0;
             unlockedSkills = ConcurrentHashMap.newKeySet();
+            relicBindings = new LinkedHashMap<>();
+            activeRelicPreset = 0;
+            relicPresets = new LinkedHashMap<>();
             abilityCooldowns = new LinkedHashMap<>();
             return;
         }
@@ -95,6 +95,9 @@ public class PlayerVampireProfile {
             unlockedCopy.addAll(progress.unlockedSkills);
         }
         unlockedSkills = unlockedCopy;
+        relicBindings = new LinkedHashMap<>(progress.relicBindings != null ? progress.relicBindings : Map.of());
+        activeRelicPreset = Math.max(0, progress.activeRelicPreset);
+        relicPresets = PlayerProgressProfile.sanitizeNestedStringMap(progress.relicPresets);
         abilityCooldowns = new LinkedHashMap<>(progress.abilityCooldowns != null ? progress.abilityCooldowns : Map.of());
     }
 
@@ -110,34 +113,6 @@ public class PlayerVampireProfile {
     }
 
     public static String relicPresetKey(int presetIndex) {
-        return Integer.toString(Math.max(0, presetIndex));
-    }
-
-    private static LinkedHashMap<String, String> sanitizeStringMap(Map<String, String> input) {
-        LinkedHashMap<String, String> result = new LinkedHashMap<>();
-        if (input == null) {
-            return result;
-        }
-        input.forEach((key, value) -> {
-            if (key != null && !key.isBlank() && value != null) {
-                result.put(key, value);
-            }
-        });
-        return result;
-    }
-
-    private static LinkedHashMap<String, LinkedHashMap<String, String>> sanitizeNestedStringMap(
-            Map<String, ? extends Map<String, String>> input) {
-        LinkedHashMap<String, LinkedHashMap<String, String>> result = new LinkedHashMap<>();
-        if (input == null) {
-            return result;
-        }
-        input.forEach((presetKey, bindings) -> {
-            if (presetKey == null || presetKey.isBlank()) {
-                return;
-            }
-            result.put(presetKey, sanitizeStringMap(bindings));
-        });
-        return result;
+        return PlayerProgressProfile.relicPresetKey(presetIndex);
     }
 }

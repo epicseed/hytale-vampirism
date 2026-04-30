@@ -1,5 +1,7 @@
 package com.epicseed.vampirism.domain.player;
 
+import com.epicseed.epiccore.player.PlayerProfileRepository;
+
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
@@ -14,7 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.hypixel.hytale.logger.HytaleLogger;
 
-public final class PlayerVampireProfileRepository {
+public final class PlayerVampireProfileRepository implements PlayerProfileRepository<PlayerVampireProfile> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 

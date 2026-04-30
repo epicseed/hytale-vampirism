@@ -8,9 +8,8 @@ import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.hytale.WorldMapTrackerAdapter;
 import com.epicseed.vampirism.runtime.PlayerRuntimeCleanupService;
+import com.epicseed.vampirism.runtime.ProgressionLifecycleService;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
-import com.epicseed.vampirism.skill.runtime.AbilityCooldownTracker;
 import com.epicseed.vampirism.systems.EffectModifierSystem;
 import com.epicseed.vampirism.systems.MorphFlySystem;
 import com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent;
@@ -27,9 +26,8 @@ public final class PlayerLifecycleCoordinator {
     public static void register(@Nonnull Vampirism plugin) {
         plugin.getEventRegistry().register(PlayerConnectEvent.class, e -> {
             UUID uuid = e.getPlayerRef().getUuid();
-            PlayerSkillRegistry.get().onPlayerConnect(uuid);
+            ProgressionLifecycleService.onPlayerConnect(uuid);
             NightHuntService.onPlayerConnect(uuid);
-            AbilityCooldownTracker.restorePlayer(uuid, PlayerSkillRegistry.get().getPersistedAbilityCooldowns(uuid));
             EffectModifierSystem.clearPlayer(uuid);
             SkillTreeManager.get().reloadModifiers(uuid);
             // Passive connect-time effects are applied lazily by PassiveEffectSystem once the
