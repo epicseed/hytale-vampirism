@@ -7,9 +7,9 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.skill.runtime.SkillActivationResult;
 import com.epicseed.vampirism.skill.runtime.AbilityCooldownTracker;
 import com.epicseed.vampirism.skill.runtime.AbilityService;
-import com.epicseed.vampirism.skill.runtime.SkillActivationResult;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;

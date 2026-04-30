@@ -1,57 +1,43 @@
 package com.epicseed.vampirism.skill.runtime;
 
-import com.epicseed.vampirism.skill.runtime.actions.DamageActionHandler;
-import com.epicseed.vampirism.skill.runtime.actions.EffectActionHandler;
+import java.util.List;
+import java.util.Map;
+
 import com.epicseed.vampirism.skill.runtime.actions.AbilityActionHandler;
 import com.epicseed.vampirism.skill.runtime.actions.ActionHandlerRegistry;
 import com.epicseed.vampirism.skill.runtime.actions.BloodActionHandler;
 import com.epicseed.vampirism.skill.runtime.actions.ChannelActionHandlers;
+import com.epicseed.vampirism.skill.runtime.actions.DamageActionHandler;
+import com.epicseed.vampirism.skill.runtime.actions.EffectActionHandler;
 import com.epicseed.vampirism.skill.runtime.actions.ModifierActionHandler;
 import com.epicseed.vampirism.skill.runtime.actions.PresentationActionHandlers;
 import com.epicseed.vampirism.skill.runtime.actions.ProjectileActionHandler;
-import com.epicseed.vampirism.skill.runtime.actions.SkillActionHandler;
 import com.epicseed.vampirism.skill.runtime.actions.StatActionHandler;
 import com.epicseed.vampirism.skill.runtime.actions.TeleportActionHandler;
 import com.hypixel.hytale.logger.HytaleLogger;
-
-import javax.annotation.Nonnull;
-import java.util.List;
-import java.util.Map;
 
 public final class SkillActionExecutor {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
-    private static final ActionHandlerRegistry ACTION_HANDLERS = createActionHandlers();
+    private static final com.epicseed.epiccore.skill.runtime.actions.SkillActionExecutor<SkillRuntimeContext> EXECUTOR =
+            new com.epicseed.epiccore.skill.runtime.actions.SkillActionExecutor<>(
+                    createActionHandlers(),
+                    SkillConditionEvaluator::evaluateAll);
 
-    private SkillActionExecutor() {}
+    private SkillActionExecutor() {
+    }
 
     public static boolean executeAll(List<Map<String, Object>> actions, SkillRuntimeContext ctx) {
-        if (actions == null || actions.isEmpty()) return false;
-        boolean executedAny = false;
-        for (Map<String, Object> action : actions) {
-            executedAny |= execute(action, ctx);
-        }
-        return executedAny;
+        return EXECUTOR.executeAll(actions, ctx);
     }
 
     public static boolean execute(Map<String, Object> action, SkillRuntimeContext ctx) {
-        Map<String, Object> resolved = SkillRuntimeDefinitions.resolveAction(action);
-        Object type = resolved.get("type");
-        if (!(type instanceof String typeId) || typeId.isBlank()) {
-            LOGGER.atWarning().log("[SkillActionExecutor] Action without type: " + resolved);
-            return false;
-        }
-        if (!evaluateActionConditions(resolved, ctx)) {
-            return false;
-        }
+        return EXECUTOR.execute(action, ctx);
+    }
 
-        SkillActionHandler handler = ACTION_HANDLERS.find(typeId);
-        if (handler == null) {
-            LOGGER.atWarning().log("[SkillActionExecutor] Unsupported action type: " + typeId);
-            return false;
-        }
-        return handler.execute(resolved, ctx);
+    public static com.epicseed.epiccore.skill.runtime.actions.SkillActionExecutor<SkillRuntimeContext> sharedExecutor() {
+        return EXECUTOR;
     }
 
     private static ActionHandlerRegistry createActionHandlers() {
@@ -87,23 +73,4 @@ public final class SkillActionExecutor {
         LOGGER.atWarning().log("[SkillActionExecutor] 'highlightEnemies' is deprecated; migrate to 'applyEffect' with an effectId + targetingId: " + action);
         return false;
     }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
-    @SuppressWarnings("unchecked")
-    private static boolean evaluateActionConditions(Map<String, Object> action, SkillRuntimeContext ctx) {
-        Object conditionsObj = action.get("conditions");
-        if (!(conditionsObj instanceof List<?> rawConditions) || rawConditions.isEmpty()) {
-            return true;
-        }
-        try {
-            return SkillConditionEvaluator.evaluateAll((List<Map<String, Object>>) rawConditions, ctx);
-        } catch (ClassCastException e) {
-            LOGGER.atWarning().log("[SkillActionExecutor] Malformed action conditions: " + action);
-            return false;
-        }
-    }
-
 }

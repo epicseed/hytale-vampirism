@@ -1,65 +1,35 @@
 package com.epicseed.vampirism.skill.runtime;
 
-import com.epicseed.epiccore.skill.model.ReusableDef;
-import com.epicseed.epiccore.skill.runtime.ReusableDefinitionProvider;
-import com.hypixel.hytale.logger.HytaleLogger;
-
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
+
+import com.epicseed.epiccore.skill.runtime.ReusableDefinitionProvider;
 
 public final class SkillRuntimeDefinitions {
 
-    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-    private static ReusableDefinitionProvider provider = (kind, id) -> null;
-
-    private SkillRuntimeDefinitions() {}
+    private SkillRuntimeDefinitions() {
+    }
 
     public static void init(ReusableDefinitionProvider provider) {
-        SkillRuntimeDefinitions.provider = provider != null ? provider : (kind, id) -> null;
+        com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions.init(provider);
     }
 
     public static Map<String, Object> resolveCondition(Map<String, Object> spec) {
-        return resolve(spec, "conditionId", "condition");
+        return com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions.resolveCondition(spec);
     }
 
     public static Map<String, Object> resolveRequirement(Map<String, Object> spec) {
-        return resolve(spec, "requirementId", "requirement");
+        return com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions.resolveRequirement(spec);
     }
 
     public static Map<String, Object> resolveTrigger(Map<String, Object> spec) {
-        return resolve(spec, "triggerId", "trigger");
+        return com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions.resolveTrigger(spec);
     }
 
     public static Map<String, Object> resolveAction(Map<String, Object> spec) {
-        return resolve(spec, "actionId", "action");
+        return com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions.resolveAction(spec);
     }
 
     public static Map<String, Object> resolveTargeting(Map<String, Object> spec) {
-        return resolve(spec, "targetingId", "targeting");
-    }
-
-    private static Map<String, Object> resolve(Map<String, Object> spec, String refKey, String kind) {
-        if (spec == null || spec.isEmpty()) return Collections.emptyMap();
-        if (spec.containsKey("type")) return new LinkedHashMap<>(spec);
-
-        Object refValue = spec.get(refKey);
-        if (!(refValue instanceof String refId) || refId.isBlank()) {
-            return new LinkedHashMap<>(spec);
-        }
-
-        ReusableDef entry = provider.get(kind, refId);
-        if (entry == null) {
-            LOGGER.atWarning().log("[SkillRuntimeDefinitions] Unknown " + refKey + ": " + refId);
-            return new LinkedHashMap<>(spec);
-        }
-
-        Map<String, Object> resolved = new LinkedHashMap<>(entry.copyDefinition());
-        for (Map.Entry<String, Object> value : spec.entrySet()) {
-            if (!refKey.equals(value.getKey())) {
-                resolved.put(value.getKey(), value.getValue());
-            }
-        }
-        return resolved;
+        return com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions.resolveTargeting(spec);
     }
 }

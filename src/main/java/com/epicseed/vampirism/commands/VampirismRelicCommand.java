@@ -6,11 +6,11 @@ import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nonnull;
 
 import com.epicseed.epiccore.skill.runtime.AbilitySlotBindings;
+import com.epicseed.epiccore.skill.runtime.SkillActivationResult;
 import com.epicseed.vampirism.domain.relic.RelicBindingService;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.relic.RelicInventoryService;
 import com.epicseed.vampirism.skill.runtime.AbilityService;
-import com.epicseed.vampirism.skill.runtime.SkillActivationResult;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
