@@ -21,7 +21,7 @@ package com.epicseed.vampirism.modifier;
  * <p>{@link ModifierRegistry#unregisterByTagPrefix} compares via {@link #key()},
  * so dynamic tags created from the same string are treated as equal.
  */
-public interface ModifierTag {
+public interface ModifierTag extends com.epicseed.epiccore.modifier.ModifierTag {
 
     /** Unique string key for this tag. Used for prefix-based bulk unregistration. */
     String key();

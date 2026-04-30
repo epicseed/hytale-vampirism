@@ -57,6 +57,7 @@ javadoc {
 // compile against their code without bundling it. When a local install is
 // present, we still use its jar for launching the server in IDE run configs.
 dependencies {
+    implementation(project(':EpicCore:epiccore-model'))
     compileOnly("com.hypixel.hytale:Server:$hytale_build")
     if (hasHytaleServerJar) {
         runtimeOnly(files(serverJarFile))
@@ -524,6 +525,27 @@ tasks.named('shadowJar') {
     mergeServiceFiles()
 }
 
+def devModsDir = layout.buildDirectory.dir('dev-mods')
+def devServerRunDir = layout.buildDirectory.dir('dev-run')
+
+tasks.register('prepareDevMods', Sync) {
+    dependsOn 'shadowJar'
+    from(tasks.named('shadowJar'))
+    into(devModsDir)
+}
+
+tasks.register('prepareHytaleServerDebug') {
+    dependsOn 'prepareDevMods'
+    doLast {
+        def runDir = devServerRunDir.get().asFile
+        def modsDir = new File(runDir, 'mods')
+        if (modsDir.exists()) {
+            delete modsDir
+        }
+        runDir.mkdirs()
+    }
+}
+
 // Ensure the shaded jar is produced during a normal build.
 tasks.named('build') {
     dependsOn 'shadowJar'
@@ -532,16 +554,34 @@ tasks.named('build') {
 
 if (hasHytaleAssets && hasHytaleServerJar) {
     // Create the working directory to run the server if it does not already exist.
-    def serverRunDir = file("$projectDir/run")
+    def serverRunDir = devServerRunDir.get().asFile
     if (!serverRunDir.exists()) {
         serverRunDir.mkdirs()
     }
 
-    def createServerRunArguments = { String srcDir ->
+    def createDevModsPath = { String basePath ->
+        return basePath + "/build/dev-mods"
+    }
+
+    def createServerJarPath = { String basePath ->
+        return basePath + "/bin/server/install/release/package/game/latest/Server/HytaleServer.jar"
+    }
+
+    def createVsCodeClassPaths = { String basePath ->
+        def classPaths = [createServerJarPath(basePath)]
+        fileTree("$projectDir/libs").matching {
+            include '*.jar'
+        }.files.sort { a, b -> a.name <=> b.name }.each { jarFile ->
+            classPaths << basePath + "/libs/" + jarFile.name
+        }
+        return classPaths
+    }
+
+    def createServerRunArguments = { String modPath ->
         def programParameters = '--allow-op --disable-sentry --assets="' + assetsZipFile.absolutePath + '"'
         def modPaths = []
-        if (includes_pack.toBoolean()) {
-            modPaths << srcDir
+        if (modPath != null && !modPath.isBlank()) {
+            modPaths << modPath
         }
         if (load_user_mods.toBoolean() && installedHytalePackageDir.exists()) {
             modPaths << "${hytaleHome}/UserData/Mods"
@@ -558,20 +598,22 @@ if (hasHytaleAssets && hasHytaleServerJar) {
         'HytaleServer'(org.jetbrains.gradle.ext.Application) {
             mainClass = 'com.hypixel.hytale.Main'
             moduleName = project.idea.module.name + '.main'
-            programParameters = createServerRunArguments(sourceSets.main.java.srcDirs.first().parentFile.absolutePath)
+            programParameters = createServerRunArguments(createDevModsPath(projectDir.absolutePath))
             workingDirectory = serverRunDir.absolutePath
         }
     }
 
-    // Creates a launch.json file for VSCode with the same configuration
+    // Creates VS Code debug files with an explicit classpath so the Java
+    // debugger doesn't also load this workspace as a classpath plugin.
     tasks.register('generateVSCodeLaunch') {
         def vscodeDir = file("$projectDir/.vscode")
         def launchFile = file("$vscodeDir/launch.json")
+        def tasksFile = file("$vscodeDir/tasks.json")
         doLast {
             if (!vscodeDir.exists()) {
                 vscodeDir.mkdirs()
             }
-            def programParams = createServerRunArguments("\${workspaceFolder}")
+            def programParams = createServerRunArguments(createDevModsPath("\${workspaceFolder}"))
             def launchConfig = [
                     version: "0.2.0",
                     configurations: [
@@ -580,12 +622,45 @@ if (hasHytaleAssets && hasHytaleServerJar) {
                                     name: "HytaleServer",
                                     request: "launch",
                                     mainClass: "com.hypixel.hytale.Main",
+                                    classPaths: createVsCodeClassPaths("\${workspaceFolder}"),
+                                    preLaunchTask: "Prepare HytaleServer Debug",
                                     args: programParams,
-                                    cwd: "\${workspaceFolder}/run"
+                                    cwd: "\${workspaceFolder}/build/dev-run"
                             ]
+                    ]
             ]
+            def tasksConfig = [
+                    version: "2.0.0",
+                    tasks  : [
+                            [
+                                    label         : "Prepare HytaleServer Debug",
+                                    type          : "shell",
+                                    command       : "./gradlew",
+                                    args          : [
+                                            "prepareHytaleServerDebug",
+                                            "generateVSCodeLaunch",
+                                            "--no-daemon",
+                                            "--console=plain"
+                                    ],
+                                    options       : [
+                                            cwd: "\${workspaceFolder}"
+                                    ],
+                                    problemMatcher: [],
+                                    group         : "build",
+                                    linux         : [
+                                            command: "./gradlew"
+                                    ],
+                                    osx           : [
+                                            command: "./gradlew"
+                                    ],
+                                    windows       : [
+                                            command: ".\\\\gradlew.bat"
+                                    ]
+                            ]
+                    ]
             ]
             launchFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(launchConfig))
+            tasksFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(tasksConfig))
         }
     }
 } else {

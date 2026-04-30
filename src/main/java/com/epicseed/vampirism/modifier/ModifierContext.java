@@ -19,7 +19,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
  * <p>Uses {@link IdentityHashMap} so {@link ContextKey} singletons are looked up by
  * reference equality (no {@code hashCode}/{@code equals} contract needed on the key).
  */
-public final class ModifierContext {
+public final class ModifierContext implements com.epicseed.epiccore.modifier.ModifierSubject {
 
     private final UUID uuid;
     private final Ref<EntityStore> ref;

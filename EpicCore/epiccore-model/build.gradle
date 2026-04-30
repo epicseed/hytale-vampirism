@@ -1,0 +1,29 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'com.epicseed.epiccore'
+version = rootProject.version
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(java_version)
+    withSourcesJar()
+    withJavadocJar()
+}
+
+javadoc {
+    options.addStringOption('Xdoclint:-missing', '-quiet')
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

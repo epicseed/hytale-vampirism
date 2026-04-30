@@ -8,4 +8,4 @@ package com.epicseed.vampirism.modifier;
  * Future systems can define their own enums implementing this interface without
  * touching the central registry.
  */
-public interface StatType {}
+public interface StatType extends com.epicseed.epiccore.modifier.StatType {}

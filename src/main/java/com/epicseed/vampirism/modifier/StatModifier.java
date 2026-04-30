@@ -22,7 +22,7 @@ package com.epicseed.vampirism.modifier;
  * </pre>
  */
 @FunctionalInterface
-public interface StatModifier {
+public interface StatModifier extends com.epicseed.epiccore.modifier.ValueModifier<ModifierContext> {
 
     /**
      * Applies this modifier.

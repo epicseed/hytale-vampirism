@@ -13,6 +13,6 @@ package com.epicseed.vampirism.modifier;
  *
  * @param <T> the type of the cached value
  */
-public interface ContextKey<T> {
+public interface ContextKey<T> extends com.epicseed.epiccore.modifier.ContextKey<T> {
     // Marker interface — identity (reference) equality is intentional.
 }
