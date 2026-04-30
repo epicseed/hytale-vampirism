@@ -35,4 +35,18 @@ class RelicBindingServiceTest {
         assertEquals("Ability 3", RelicBindingService.slotLabel("ability3"));
         assertEquals("custom", RelicBindingService.slotLabel("custom"));
     }
+
+    @Test
+    void presetHelpersExposeHumanLabelAndClampBounds() {
+        assertEquals("Preset 1", RelicBindingService.presetLabel(0));
+        assertEquals("Preset 4", RelicBindingService.presetLabel(3));
+        assertEquals("No Offhand", RelicBindingService.presetLabel(4));
+        assertEquals("Utility inactive", RelicBindingService.presetSubtitle(4, 4));
+        assertEquals(0, RelicBindingService.clampPresetIndex(-1, 5));
+        assertEquals(4, RelicBindingService.clampPresetIndex(7, 5));
+        assertEquals(4, RelicBindingService.inactiveOffhandPresetIndex(4));
+        assertEquals(2, RelicBindingService.presetIndexForUtilitySelection(2, -1, 4));
+        assertEquals(4, RelicBindingService.presetIndexForUtilitySelection(-1, -1, 4));
+        assertEquals(-1, RelicBindingService.presetIndexForUtilitySelection(9, -1, 4));
+    }
 }

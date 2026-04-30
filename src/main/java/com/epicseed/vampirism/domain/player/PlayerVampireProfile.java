@@ -23,6 +23,12 @@ public class PlayerVampireProfile {
     @JsonProperty("relicBindings")
     public LinkedHashMap<String, String> relicBindings = new LinkedHashMap<>();
 
+    @JsonProperty("activeRelicPreset")
+    public int activeRelicPreset = 0;
+
+    @JsonProperty("relicPresets")
+    public LinkedHashMap<String, LinkedHashMap<String, String>> relicPresets = new LinkedHashMap<>();
+
     @JsonProperty("blood")
     public int blood = 100;
 
@@ -57,8 +63,30 @@ public class PlayerVampireProfile {
             unlockedSkills = copy;
         }
 
+        activeRelicPreset = Math.max(0, activeRelicPreset);
         relicBindings = sanitizeStringMap(relicBindings);
+        relicPresets = sanitizeNestedStringMap(relicPresets);
+        if (relicPresets.isEmpty() && !relicBindings.isEmpty()) {
+            relicPresets.put(relicPresetKey(0), new LinkedHashMap<>(relicBindings));
+        }
+        relicPresets.computeIfAbsent(relicPresetKey(activeRelicPreset), ignored -> new LinkedHashMap<>());
+        relicBindings = new LinkedHashMap<>(relicBindingsFor(activeRelicPreset));
         abilityCooldowns = sanitizeLongMap(abilityCooldowns);
+    }
+
+    public LinkedHashMap<String, String> activeRelicBindings() {
+        return relicBindingsFor(activeRelicPreset);
+    }
+
+    public LinkedHashMap<String, String> relicBindingsFor(int presetIndex) {
+        if (relicPresets == null) {
+            relicPresets = new LinkedHashMap<>();
+        }
+        return relicPresets.computeIfAbsent(relicPresetKey(presetIndex), ignored -> new LinkedHashMap<>());
+    }
+
+    public static String relicPresetKey(int presetIndex) {
+        return Integer.toString(Math.max(0, presetIndex));
     }
 
     private static LinkedHashMap<String, String> sanitizeStringMap(Map<String, String> input) {
@@ -83,6 +111,21 @@ public class PlayerVampireProfile {
             if (key != null && !key.isBlank() && value != null && value > 0L) {
                 result.put(key, value);
             }
+        });
+        return result;
+    }
+
+    private static LinkedHashMap<String, LinkedHashMap<String, String>> sanitizeNestedStringMap(
+            Map<String, ? extends Map<String, String>> input) {
+        LinkedHashMap<String, LinkedHashMap<String, String>> result = new LinkedHashMap<>();
+        if (input == null) {
+            return result;
+        }
+        input.forEach((presetKey, bindings) -> {
+            if (presetKey == null || presetKey.isBlank()) {
+                return;
+            }
+            result.put(presetKey, sanitizeStringMap(bindings));
         });
         return result;
     }

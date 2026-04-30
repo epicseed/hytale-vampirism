@@ -39,7 +39,26 @@ public class PlayerRelicBindings {
     /** Returns a defensive copy of the player's overrides (never null). */
     @Nonnull
     public Map<String, String> bindingsFor(@Nonnull UUID uuid) {
-        return PlayerSkillRegistry.get().getRelicBindings(uuid);
+        return bindingsFor(uuid, activePresetIndex(uuid));
+    }
+
+    @Nonnull
+    public Map<String, String> bindingsFor(@Nonnull UUID uuid, int presetIndex) {
+        return PlayerSkillRegistry.get().getRelicBindings(uuid, presetIndex);
+    }
+
+    public int activePresetIndex(@Nonnull UUID uuid) {
+        return PlayerSkillRegistry.get().getActiveRelicPresetIndex(uuid);
+    }
+
+    public void setActivePreset(@Nonnull UUID uuid, int presetIndex) {
+        PlayerSkillRegistry.get().setActiveRelicPresetIndex(uuid, presetIndex);
+    }
+
+    public void setAll(@Nonnull UUID uuid,
+                       @Nonnull Map<Integer, ? extends Map<String, String>> presetBindings,
+                       int activePresetIndex) {
+        PlayerSkillRegistry.get().setRelicBindings(uuid, presetBindings, activePresetIndex);
     }
 
     /**
@@ -51,25 +70,46 @@ public class PlayerRelicBindings {
      */
     @Nullable
     public String abilityFor(@Nonnull UUID uuid, @Nonnull String slot) {
-        String v = PlayerSkillRegistry.get().getRelicBinding(uuid, slot);
+        return abilityFor(uuid, activePresetIndex(uuid), slot);
+    }
+
+    @Nullable
+    public String abilityFor(@Nonnull UUID uuid, int presetIndex, @Nonnull String slot) {
+        String v = PlayerSkillRegistry.get().getRelicBinding(uuid, presetIndex, slot);
         if (v != null) return v.isBlank() ? null : v;
         return RelicBindings.abilityFor(slot);
     }
 
     public void set(@Nonnull UUID uuid, @Nonnull String slot, @Nonnull String abilityId) {
-        PlayerSkillRegistry.get().setRelicBinding(uuid, slot, abilityId);
+        set(uuid, activePresetIndex(uuid), slot, abilityId);
+    }
+
+    public void set(@Nonnull UUID uuid, int presetIndex, @Nonnull String slot, @Nonnull String abilityId) {
+        PlayerSkillRegistry.get().setRelicBinding(uuid, presetIndex, slot, abilityId);
     }
 
     public void setAll(@Nonnull UUID uuid, @Nonnull Map<String, String> bindings) {
-        PlayerSkillRegistry.get().setRelicBindings(uuid, bindings);
+        setAll(uuid, activePresetIndex(uuid), bindings);
+    }
+
+    public void setAll(@Nonnull UUID uuid, int presetIndex, @Nonnull Map<String, String> bindings) {
+        PlayerSkillRegistry.get().setRelicBindings(uuid, presetIndex, bindings);
     }
 
     public void clear(@Nonnull UUID uuid, @Nonnull String slot) {
-        PlayerSkillRegistry.get().clearRelicBinding(uuid, slot);
+        clear(uuid, activePresetIndex(uuid), slot);
+    }
+
+    public void clear(@Nonnull UUID uuid, int presetIndex, @Nonnull String slot) {
+        PlayerSkillRegistry.get().clearRelicBinding(uuid, presetIndex, slot);
     }
 
     public void resetAll(@Nonnull UUID uuid) {
-        PlayerSkillRegistry.get().resetRelicBindings(uuid);
+        resetAll(uuid, activePresetIndex(uuid));
+    }
+
+    public void resetAll(@Nonnull UUID uuid, int presetIndex) {
+        PlayerSkillRegistry.get().resetRelicBindings(uuid, presetIndex);
     }
 
     /** Persists the current in-memory state to disk. */

@@ -10,6 +10,7 @@ public class RelicBindingsData {
     public String action;
     public String abilityId;
     public String slot;
+    public String presetIndex;
 
     public static final BuilderCodec<RelicBindingsData> CODEC =
             BuilderCodec.builder(RelicBindingsData.class, RelicBindingsData::new)
@@ -29,6 +30,12 @@ public class RelicBindingsData {
                             new KeyedCodec<>("Slot", Codec.STRING),
                             (obj, val) -> obj.slot = val,
                             obj -> obj.slot
+                    )
+                    .add()
+                    .append(
+                            new KeyedCodec<>("PresetIndex", Codec.STRING),
+                            (obj, val) -> obj.presetIndex = val,
+                            obj -> obj.presetIndex
                     )
                     .add()
                     .build();

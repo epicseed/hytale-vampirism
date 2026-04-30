@@ -101,41 +101,101 @@ public class PlayerSkillRegistry {
 
     @Nonnull
     public Map<String, String> getRelicBindings(@Nonnull UUID uuid) {
+        return getRelicBindings(uuid, getActiveRelicPresetIndex(uuid));
+    }
+
+    @Nonnull
+    public Map<String, String> getRelicBindings(@Nonnull UUID uuid, int presetIndex) {
         PlayerVampireProfile profile = getOrLoad(uuid);
         synchronized (profile) {
-            return new LinkedHashMap<>(profile.relicBindings);
+            return new LinkedHashMap<>(profile.relicBindingsFor(presetIndex));
         }
     }
 
     @Nullable
     public String getRelicBinding(@Nonnull UUID uuid, @Nonnull String slot) {
+        return getRelicBinding(uuid, getActiveRelicPresetIndex(uuid), slot);
+    }
+
+    @Nullable
+    public String getRelicBinding(@Nonnull UUID uuid, int presetIndex, @Nonnull String slot) {
         PlayerVampireProfile profile = getOrLoad(uuid);
         synchronized (profile) {
-            return profile.relicBindings.get(slot);
+            return profile.relicBindingsFor(presetIndex).get(slot);
         }
     }
 
     public void setRelicBinding(@Nonnull UUID uuid, @Nonnull String slot, @Nonnull String abilityId) {
-        mutateAndSave(uuid, profile -> profile.relicBindings.put(slot, abilityId));
+        setRelicBinding(uuid, getActiveRelicPresetIndex(uuid), slot, abilityId);
+    }
+
+    public void setRelicBinding(@Nonnull UUID uuid, int presetIndex, @Nonnull String slot, @Nonnull String abilityId) {
+        mutateAndSave(uuid, profile -> profile.relicBindingsFor(presetIndex).put(slot, abilityId));
     }
 
     public void setRelicBindings(@Nonnull UUID uuid, @Nonnull Map<String, String> bindings) {
+        setRelicBindings(uuid, getActiveRelicPresetIndex(uuid), bindings);
+    }
+
+    public void setRelicBindings(@Nonnull UUID uuid, int presetIndex, @Nonnull Map<String, String> bindings) {
         mutateAndSave(uuid, profile -> {
-            profile.relicBindings.clear();
+            Map<String, String> presetBindings = profile.relicBindingsFor(presetIndex);
+            presetBindings.clear();
             bindings.forEach((slot, abilityId) -> {
                 if (slot != null && !slot.isBlank() && abilityId != null) {
-                    profile.relicBindings.put(slot, abilityId);
+                    presetBindings.put(slot, abilityId);
                 }
             });
         });
     }
 
+    public void setRelicBindings(@Nonnull UUID uuid,
+                                 @Nonnull Map<Integer, ? extends Map<String, String>> presetBindings,
+                                 int activePresetIndex) {
+        mutateAndSave(uuid, profile -> {
+            profile.relicPresets.clear();
+            presetBindings.forEach((presetIndex, bindings) -> {
+                if (presetIndex == null || bindings == null) {
+                    return;
+                }
+                LinkedHashMap<String, String> sanitized = new LinkedHashMap<>();
+                bindings.forEach((slot, abilityId) -> {
+                    if (slot == null || slot.isBlank() || abilityId == null) {
+                        return;
+                    }
+                    sanitized.put(slot, abilityId);
+                });
+                profile.relicPresets.put(PlayerVampireProfile.relicPresetKey(presetIndex), sanitized);
+            });
+            profile.activeRelicPreset = Math.max(0, activePresetIndex);
+        });
+    }
+
     public void clearRelicBinding(@Nonnull UUID uuid, @Nonnull String slot) {
-        mutateAndSave(uuid, profile -> profile.relicBindings.remove(slot));
+        clearRelicBinding(uuid, getActiveRelicPresetIndex(uuid), slot);
+    }
+
+    public void clearRelicBinding(@Nonnull UUID uuid, int presetIndex, @Nonnull String slot) {
+        mutateAndSave(uuid, profile -> profile.relicBindingsFor(presetIndex).remove(slot));
     }
 
     public void resetRelicBindings(@Nonnull UUID uuid) {
-        mutateAndSave(uuid, profile -> profile.relicBindings.clear());
+        resetRelicBindings(uuid, getActiveRelicPresetIndex(uuid));
+    }
+
+    public void resetRelicBindings(@Nonnull UUID uuid, int presetIndex) {
+        mutateAndSave(uuid, profile -> profile.relicBindingsFor(presetIndex).clear());
+    }
+
+    public int getActiveRelicPresetIndex(@Nonnull UUID uuid) {
+        PlayerVampireProfile profile = getOrLoad(uuid);
+        synchronized (profile) {
+            return Math.max(0, profile.activeRelicPreset);
+        }
+    }
+
+    public void setActiveRelicPresetIndex(@Nonnull UUID uuid, int presetIndex) {
+        mutate(uuid, profile -> profile.activeRelicPreset = Math.max(0, presetIndex));
     }
 
     public int getPersistedBlood(@Nonnull UUID uuid) {

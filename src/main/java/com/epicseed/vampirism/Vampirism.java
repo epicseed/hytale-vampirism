@@ -6,6 +6,7 @@ import com.epicseed.vampirism.bootstrap.CommandRegistrar;
 import com.epicseed.vampirism.bootstrap.PlayerLifecycleCoordinator;
 import com.epicseed.vampirism.bootstrap.SystemRegistrar;
 import com.epicseed.vampirism.config.VampirismConfig;
+import com.epicseed.vampirism.hytale.RelicPresetSelectionAdapter;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
 import com.epicseed.vampirism.registry.PlayerRelicBindings;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
@@ -81,6 +82,7 @@ public class Vampirism extends JavaPlugin {
         VampireCombatSystem.registerModifiers();
 
         PlayerLifecycleCoordinator.register(this);
+        RelicPresetSelectionAdapter.init();
 
         LOGGER.atInfo().log("[Vampirism] Registering systems and commands...");
 
@@ -144,6 +146,7 @@ public class Vampirism extends JavaPlugin {
 
     @Override
     protected void shutdown() {
+        RelicPresetSelectionAdapter.shutdown();
         LOGGER.atInfo().log("[Vampirism] Plugin disabled.");
     }
 
