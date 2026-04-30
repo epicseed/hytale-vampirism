@@ -14,12 +14,12 @@ import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.relic.RelicBindingService;
 import com.epicseed.vampirism.relic.RelicPresetProjectionService;
+import com.epicseed.epiccore.skill.runtime.AbilitySlotBindings;
 import com.epicseed.vampirism.skill.model.Ability;
 import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.epicseed.vampirism.skill.registry.SkillRegistry;
 import com.epicseed.vampirism.skill.runtime.AbilityCooldownTracker;
-import com.epicseed.vampirism.skill.runtime.RelicBindings;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -36,7 +36,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 /// Per-player relic binding editor — overrides the global
-/// {@link com.epicseed.vampirism.skill.runtime.RelicBindings} defaults.
+/// {@link com.epicseed.epiccore.skill.runtime.AbilitySlotBindings} defaults.
 public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
@@ -323,7 +323,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
                 List<String> skippedSlots = new ArrayList<>();
                 for (String slot : SLOT_KEYS) {
                     String currentAbilityId = normalizedBinding(currentSavedState().get(slot));
-                    String defaultAbilityId = normalizedBinding(RelicBindings.abilityFor(slot));
+                    String defaultAbilityId = normalizedBinding(AbilitySlotBindings.abilityFor(slot));
                     boolean currentLocked = currentAbilityId != null && isAbilityOnCooldown(uuid, currentAbilityId);
                     boolean defaultLocked = defaultAbilityId != null
                             && !Objects.equals(defaultAbilityId, currentAbilityId)

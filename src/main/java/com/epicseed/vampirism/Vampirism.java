@@ -12,6 +12,7 @@ import com.epicseed.vampirism.registry.PlayerRelicBindings;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.data.SkillLoader;
 import com.epicseed.vampirism.skill.data.SkillDataPaths;
+import com.epicseed.vampirism.skill.data.VampirismSkillDataLoadHooks;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
 import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.vampirism.skill.runtime.RegistryBackedReusableDefinitionProvider;
@@ -126,7 +127,9 @@ public class Vampirism extends JavaPlugin {
                 actionRegistry,
                 targetingRegistry));
 
-        SkillLoader skillLoader = new SkillLoader(SkillDataPaths.vampirismDefaults());
+        SkillLoader skillLoader = new SkillLoader(
+                SkillDataPaths.vampirismDefaults(),
+                new VampirismSkillDataLoadHooks());
 
         List<Skill> skills = skillLoader.LoadSkills(skillRegistry);
         for (Skill skill : skills) {

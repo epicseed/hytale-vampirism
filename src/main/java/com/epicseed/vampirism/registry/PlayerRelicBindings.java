@@ -7,12 +7,12 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.epiccore.skill.runtime.AbilitySlotBindings;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
-import com.epicseed.vampirism.skill.runtime.RelicBindings;
 import com.hypixel.hytale.logger.HytaleLogger;
 
 /**
- * Per-player override of the global {@link RelicBindings} relic-slot map.
+ * Per-player override of the global {@link AbilitySlotBindings} relic-slot map.
  *
  * <p>Bindings are persisted inside each player's
  * {@code PlayerSkills/{uuid}.json} via {@link PlayerSkillRegistry}.
@@ -63,7 +63,7 @@ public class PlayerRelicBindings {
 
     /**
      * Resolves the effective binding for {@code slot}: per-player override first,
-     * then the global {@link RelicBindings}, then null.
+     * then the global {@link AbilitySlotBindings}, then null.
      *
      * <p>An override of {@code ""} means the slot is intentionally empty — it returns
      * {@code null} without falling back to the global default.
@@ -77,7 +77,7 @@ public class PlayerRelicBindings {
     public String abilityFor(@Nonnull UUID uuid, int presetIndex, @Nonnull String slot) {
         String v = PlayerSkillRegistry.get().getRelicBinding(uuid, presetIndex, slot);
         if (v != null) return v.isBlank() ? null : v;
-        return RelicBindings.abilityFor(slot);
+        return AbilitySlotBindings.abilityFor(slot);
     }
 
     public void set(@Nonnull UUID uuid, @Nonnull String slot, @Nonnull String abilityId) {

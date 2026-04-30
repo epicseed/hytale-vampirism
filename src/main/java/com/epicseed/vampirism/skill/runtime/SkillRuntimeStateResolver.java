@@ -1,5 +1,6 @@
 package com.epicseed.vampirism.skill.runtime;
 
+import com.epicseed.epiccore.skill.runtime.StateEffectBindings;
 import com.epicseed.vampirism.modifier.ContextKey;
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.epiccore.skill.model.EffectDef;

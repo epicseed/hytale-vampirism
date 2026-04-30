@@ -7,18 +7,17 @@ import com.epicseed.epiccore.skill.data.ModifierDefDTO;
 import com.epicseed.epiccore.skill.data.PassiveDTO;
 import com.epicseed.epiccore.skill.data.ReusableDefDTO;
 import com.epicseed.epiccore.skill.data.SkillDTO;
+import com.epicseed.epiccore.skill.data.SkillDataLoadHooks;
 import com.epicseed.epiccore.skill.data.SkillDataValidator;
 import com.epicseed.epiccore.skill.data.SkillTreeDataTransfer;
 import com.epicseed.epiccore.skill.data.StateDTO;
 import com.epicseed.epiccore.skill.data.StateEffectBindingDTO;
 import com.epicseed.epiccore.skill.data.StatDefDTO;
+import com.epicseed.epiccore.skill.helpers.Position;
 import com.epicseed.epiccore.skill.model.EffectDef;
 import com.epicseed.epiccore.skill.model.InlineModifier;
 import com.epicseed.epiccore.skill.model.Passive;
 import com.epicseed.epiccore.skill.model.Skill;
-import com.epicseed.vampirism.modifier.StatType;
-import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.skill.helpers.Position;
 import com.epicseed.vampirism.skill.model.Ability;
 import com.epicseed.vampirism.skill.model.ModifierDef;
 import com.epicseed.vampirism.skill.model.ReusableDef;
@@ -32,8 +31,6 @@ import com.epicseed.vampirism.skill.registry.ReusableDefRegistry;
 import com.epicseed.vampirism.skill.registry.SkillRegistry;
 import com.epicseed.vampirism.skill.registry.StateRegistry;
 import com.epicseed.vampirism.skill.registry.StatDefRegistry;
-import com.epicseed.vampirism.skill.runtime.RelicBindings;
-import com.epicseed.vampirism.skill.runtime.StateEffectBindings;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
@@ -50,13 +47,25 @@ public class SkillLoader {
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final SkillDataPaths dataPaths;
+    private final SkillLoaderModelAdapter modelAdapter;
+    private final SkillDataLoadHooks loadHooks;
 
     public SkillLoader() {
-        this(SkillDataPaths.vampirismDefaults());
+        this(SkillDataPaths.vampirismDefaults(), new VampirismSkillLoaderModelAdapter(), SkillDataLoadHooks.noop());
     }
 
     public SkillLoader(SkillDataPaths dataPaths) {
+        this(dataPaths, new VampirismSkillLoaderModelAdapter(), SkillDataLoadHooks.noop());
+    }
+
+    public SkillLoader(SkillDataPaths dataPaths, SkillDataLoadHooks loadHooks) {
+        this(dataPaths, new VampirismSkillLoaderModelAdapter(), loadHooks);
+    }
+
+    public SkillLoader(SkillDataPaths dataPaths, SkillLoaderModelAdapter modelAdapter, SkillDataLoadHooks loadHooks) {
         this.dataPaths = dataPaths;
+        this.modelAdapter = modelAdapter != null ? modelAdapter : new VampirismSkillLoaderModelAdapter();
+        this.loadHooks = loadHooks != null ? loadHooks : SkillDataLoadHooks.noop();
     }
 
     // -------------------------------------------------------------------------
@@ -161,11 +170,11 @@ public class SkillLoader {
             if (dto.effectId == null || dto.effectId.isBlank()) continue;
             stateMap.put(dto.stateId, dto.effectId);
         }
-        StateEffectBindings.set(stateMap);
+        loadHooks.applyStateEffectBindings(stateMap);
 
-        // Relic bindings: slot-key -> ability-id used by VampirismRelicCommand.
+        // Ability slot bindings: slot-key -> ability-id defaults consumed by the module runtime.
         Map<String, String> relicMap = data.relicBindings != null ? data.relicBindings : Collections.emptyMap();
-        RelicBindings.set(relicMap);
+        loadHooks.applyAbilitySlotBindings(relicMap);
     }
 
     // -------------------------------------------------------------------------
@@ -218,7 +227,7 @@ public class SkillLoader {
     }
 
     private Ability toAbility(AbilityDTO dto) {
-        Ability ability = new Ability();
+        Ability ability = modelAdapter.newAbility();
         ability.id              = dto.id;
         ability.displayName     = dto.displayName != null ? dto.displayName : dto.id;
         ability.description     = dto.description;
@@ -238,7 +247,7 @@ public class SkillLoader {
     }
 
     private ModifierDef toModifierDef(ModifierDefDTO dto) {
-        ModifierDef mod = new ModifierDef();
+        ModifierDef mod = modelAdapter.newModifierDef();
         mod.id          = dto.id;
         mod.displayName = dto.displayName;
         mod.description = dto.description;
@@ -260,7 +269,7 @@ public class SkillLoader {
     }
 
     private VampireState toState(StateDTO dto) {
-        VampireState state = new VampireState();
+        VampireState state = modelAdapter.newState();
         state.id          = dto.id;
         state.displayName = dto.displayName;
         state.description = dto.description;
@@ -268,7 +277,7 @@ public class SkillLoader {
     }
 
     private StatDef toStatDef(StatDefDTO dto) {
-        StatDef stat = new StatDef();
+        StatDef stat = modelAdapter.newStatDef();
         stat.id          = dto.id;
         stat.displayName = dto.displayName;
         stat.description = dto.description;
@@ -276,7 +285,7 @@ public class SkillLoader {
     }
 
     private ReusableDef toReusableDef(ReusableDefDTO dto) {
-        ReusableDef def = new ReusableDef();
+        ReusableDef def = modelAdapter.newReusableDef();
         def.id          = dto.id;
         def.displayName = dto.displayName;
         def.description = dto.description;
@@ -319,22 +328,13 @@ public class SkillLoader {
         InlineModifier mod = new InlineModifier();
         mod.modifierId = dto.modifierId;
         mod.statId     = dto.statId;
-        mod.stat       = resolveStatType(dto.statId);
+        mod.stat       = modelAdapter.resolveStatType(dto.statId);
         mod.operation  = operation;
         mod.value      = dto.value;
         mod.priority   = (dto.priority != null && dto.priority >= 0) ? dto.priority : defaultPriority;
         mod.conditions = copyObjectList(dto.conditions);
         mod.target     = copyObjectMap(dto.target);
         return mod;
-    }
-
-    private StatType resolveStatType(String statId) {
-        if (statId == null || statId.isBlank()) return null;
-        try {
-            return VampireStatType.valueOf(statId.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
     }
 
     private void resolveRequirements(SkillDTO dto, Skill skill, SkillRegistry registry) {

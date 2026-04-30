@@ -58,6 +58,7 @@ javadoc {
 // present, we still use its jar for launching the server in IDE run configs.
 dependencies {
     implementation(project(':EpicCore:epiccore-model'))
+    implementation(project(':EpicCore:epiccore-hytale'))
     compileOnly("com.hypixel.hytale:Server:$hytale_build")
     if (hasHytaleServerJar) {
         runtimeOnly(files(serverJarFile))

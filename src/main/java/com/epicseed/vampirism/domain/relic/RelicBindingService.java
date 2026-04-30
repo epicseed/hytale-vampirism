@@ -10,6 +10,7 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.epiccore.skill.runtime.AbilitySlotBindings;
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.registry.PlayerRelicBindings;
 import com.epicseed.vampirism.skill.model.Ability;
@@ -17,7 +18,6 @@ import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.epicseed.vampirism.skill.registry.SkillRegistry;
 import com.epicseed.vampirism.skill.runtime.AbilityCooldownTracker;
-import com.epicseed.vampirism.skill.runtime.RelicBindings;
 import com.epicseed.vampirism.systems.VampireInfectionSystem;
 
 public final class RelicBindingService {
@@ -43,7 +43,7 @@ public final class RelicBindingService {
             if (overrides.containsKey(slot)) {
                 abilityId = normalized(overrides.get(slot)).orElse(null);
             } else {
-                abilityId = normalized(RelicBindings.abilityFor(slot)).orElse(null);
+                abilityId = normalized(AbilitySlotBindings.abilityFor(slot)).orElse(null);
             }
             if (abilityId != null) {
                 effective.put(slot, abilityId);
@@ -63,7 +63,7 @@ public final class RelicBindingService {
         if (overrides.containsKey(slot)) {
             return normalized(overrides.get(slot));
         }
-        return normalized(RelicBindings.abilityFor(slot));
+        return normalized(AbilitySlotBindings.abilityFor(slot));
     }
 
     @Nonnull
