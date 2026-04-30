@@ -8,7 +8,7 @@ import javax.annotation.Nonnull;
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.registry.PlayerRelicBindings;
 import com.epicseed.vampirism.skill.model.Ability;
-import com.epicseed.vampirism.skill.model.Skill;
+import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.vampirism.skill.runtime.AbilityCooldownTracker;
 import com.epicseed.vampirism.skill.registry.SkillRegistry;
 import com.epicseed.vampirism.ui.VampirismUiPaths;

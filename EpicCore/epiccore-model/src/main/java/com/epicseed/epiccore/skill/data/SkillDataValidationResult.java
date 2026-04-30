@@ -1,4 +1,4 @@
-package com.epicseed.vampirism.skill.data;
+package com.epicseed.epiccore.skill.data;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,9 +21,11 @@ public final class SkillDataValidationResult {
     }
 
     public void throwIfInvalid() {
-        if (isValid()) return;
+        if (isValid()) {
+            return;
+        }
 
-        StringBuilder message = new StringBuilder("Invalid Vampirism skill data:");
+        StringBuilder message = new StringBuilder("Invalid skill data:");
         for (SkillDataValidationIssue issue : issues) {
             message.append(System.lineSeparator()).append("- ").append(issue);
         }

@@ -1,4 +1,4 @@
-package com.epicseed.vampirism.skill.data;
+package com.epicseed.epiccore.skill.data;
 
 import java.util.Collections;
 import java.util.List;

@@ -13,7 +13,7 @@ import com.epicseed.vampirism.domain.skill.SkillNodeState;
 import com.epicseed.vampirism.domain.skill.SkillTreePresenter;
 import com.epicseed.vampirism.domain.skill.SkillUnlockResult;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
-import com.epicseed.vampirism.skill.model.Skill;
+import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.epicseed.vampirism.skill.registry.SkillRegistry;
 import com.hypixel.hytale.component.Ref;

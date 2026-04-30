@@ -1,24 +1,23 @@
 package com.epicseed.vampirism.skill.registry;
 
-import com.epicseed.vampirism.skill.model.Passive;
+import com.epicseed.epiccore.registry.IdRegistry;
+import com.epicseed.epiccore.skill.model.Passive;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+public class PassiveRegistry extends IdRegistry<Passive> {
 
-public class PassiveRegistry {
-
-    private final Map<String, Passive> map = new HashMap<>();
+    public PassiveRegistry() {
+        super(entry -> entry.id);
+    }
 
     public void Register(Passive entry) {
-        map.put(entry.id, entry);
+        register(entry);
     }
 
     public Passive Get(String id) {
-        return map.get(id);
+        return get(id);
     }
 
-    public Collection<Passive> GetAll() {
-        return map.values();
+    public java.util.Collection<Passive> GetAll() {
+        return getAll();
     }
 }

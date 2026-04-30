@@ -1,6 +1,6 @@
-package com.epicseed.vampirism.skill.data;
+package com.epicseed.epiccore.skill.model;
 
-public class StateDTO {
+public class StatDef {
 
     public String id;
     public String displayName;

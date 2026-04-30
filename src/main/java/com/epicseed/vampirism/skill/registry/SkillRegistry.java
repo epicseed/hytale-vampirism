@@ -1,40 +1,24 @@
 package com.epicseed.vampirism.skill.registry;
 
-import com.epicseed.vampirism.skill.model.Skill;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import com.epicseed.epiccore.registry.IdRegistry;
+import com.epicseed.epiccore.skill.model.Skill;
 
 /// Has the list that holds the Skill data
-public class SkillRegistry {
+public class SkillRegistry extends IdRegistry<Skill> {
 
-    private final Map<String, Skill> skillHashMap = new HashMap<>();
+    public SkillRegistry() {
+        super(skill -> skill.id);
+    }
 
     public void Register(Skill skill){
-
-        skillHashMap.put(skill.id, skill);
+        register(skill);
     }
 
     public Skill GetSkill(String id){
-
-        return skillHashMap.get(id);
+        return get(id);
     }
 
-//    public Skill GetSkillAt(Position position){
-//
-//        for(Skill skill : skillHashMap.values()){
-//
-//            if(position == skill.position){
-//                return skill;
-//            }
-//        }
-//
-//        return
-//    }
-
-    public Collection<Skill> GetAll(){
-
-        return skillHashMap.values();
+    public java.util.Collection<Skill> GetAll(){
+        return getAll();
     }
 }

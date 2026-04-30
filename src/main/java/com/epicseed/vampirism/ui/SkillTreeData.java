@@ -1,6 +1,6 @@
 package com.epicseed.vampirism.ui;
 
-import com.epicseed.vampirism.skill.model.Skill;
+import com.epicseed.epiccore.skill.model.Skill;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;

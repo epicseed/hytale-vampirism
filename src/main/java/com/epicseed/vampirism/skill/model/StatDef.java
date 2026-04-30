@@ -1,8 +1,4 @@
 package com.epicseed.vampirism.skill.model;
 
-public class StatDef {
-
-    public String id;
-    public String displayName;
-    public String description;
+public class StatDef extends com.epicseed.epiccore.skill.model.StatDef {
 }

@@ -4,7 +4,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.epicseed.vampirism.Vampirism;
-import com.epicseed.vampirism.skill.model.EffectDef;
+import com.epicseed.epiccore.skill.model.EffectDef;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.AnimationSlot;

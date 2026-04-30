@@ -9,7 +9,7 @@ import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.hytale.EffectAdapter;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.skill.model.EffectDef;
+import com.epicseed.epiccore.skill.model.EffectDef;
 import com.epicseed.vampirism.skill.runtime.SkillConditionEvaluator;
 import com.epicseed.vampirism.skill.runtime.SkillRequirementEvaluator;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;

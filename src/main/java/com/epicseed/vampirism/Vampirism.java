@@ -11,8 +11,9 @@ import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
 import com.epicseed.vampirism.registry.PlayerRelicBindings;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.data.SkillLoader;
+import com.epicseed.vampirism.skill.data.SkillDataPaths;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
-import com.epicseed.vampirism.skill.model.Skill;
+import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.vampirism.skill.registry.EffectDefRegistry;
 import com.epicseed.vampirism.skill.registry.AbilityRegistry;
 import com.epicseed.vampirism.skill.registry.ModifierDefRegistry;
@@ -109,7 +110,7 @@ public class Vampirism extends JavaPlugin {
         this.actionRegistry      = new ReusableDefRegistry();
         this.targetingRegistry   = new ReusableDefRegistry();
 
-        SkillLoader skillLoader = new SkillLoader();
+        SkillLoader skillLoader = new SkillLoader(SkillDataPaths.vampirismDefaults());
 
         List<Skill> skills = skillLoader.LoadSkills(skillRegistry);
         for (Skill skill : skills) {

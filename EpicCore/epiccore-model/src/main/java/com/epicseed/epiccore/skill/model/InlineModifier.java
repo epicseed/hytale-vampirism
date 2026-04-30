@@ -1,12 +1,11 @@
-package com.epicseed.vampirism.skill.model;
+package com.epicseed.epiccore.skill.model;
 
-import com.epicseed.vampirism.modifier.StatType;
+import com.epicseed.epiccore.modifier.StatType;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-// Full mechanical definition of a modifier application, embedded directly on a tree node, passive, or effect.
 public class InlineModifier {
 
     public enum Operation { ADD, MULTIPLY, OVERRIDE }

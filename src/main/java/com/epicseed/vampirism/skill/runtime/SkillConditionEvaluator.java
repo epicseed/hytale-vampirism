@@ -5,7 +5,7 @@ import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.skill.model.Ability;
-import com.epicseed.vampirism.skill.model.EffectDef;
+import com.epicseed.epiccore.skill.model.EffectDef;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;

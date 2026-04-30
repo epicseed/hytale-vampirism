@@ -1,4 +1,4 @@
-package com.epicseed.vampirism.skill.data;
+package com.epicseed.epiccore.skill.data;
 
 public final class SkillDataValidationIssue {
 

@@ -1,8 +1,4 @@
 package com.epicseed.vampirism.skill.model;
 
-public class VampireState {
-
-    public String id;
-    public String displayName;
-    public String description;
+public class VampireState extends com.epicseed.epiccore.skill.model.StateDef {
 }

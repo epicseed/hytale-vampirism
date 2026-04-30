@@ -7,8 +7,8 @@ import javax.annotation.Nonnull;
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
 import com.epicseed.vampirism.skill.model.Ability;
-import com.epicseed.vampirism.skill.model.Passive;
-import com.epicseed.vampirism.skill.model.Skill;
+import com.epicseed.epiccore.skill.model.Passive;
+import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 
 public final class SkillTreePresenter {

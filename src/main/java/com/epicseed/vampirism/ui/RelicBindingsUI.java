@@ -15,7 +15,7 @@ import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.relic.RelicBindingService;
 import com.epicseed.vampirism.relic.RelicPresetProjectionService;
 import com.epicseed.vampirism.skill.model.Ability;
-import com.epicseed.vampirism.skill.model.Skill;
+import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.epicseed.vampirism.skill.registry.SkillRegistry;
 import com.epicseed.vampirism.skill.runtime.AbilityCooldownTracker;

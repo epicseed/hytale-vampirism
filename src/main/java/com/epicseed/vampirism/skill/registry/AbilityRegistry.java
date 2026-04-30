@@ -1,24 +1,23 @@
 package com.epicseed.vampirism.skill.registry;
 
+import com.epicseed.epiccore.registry.IdRegistry;
 import com.epicseed.vampirism.skill.model.Ability;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+public class AbilityRegistry extends IdRegistry<Ability> {
 
-public class AbilityRegistry {
-
-    private final Map<String, Ability> map = new HashMap<>();
+    public AbilityRegistry() {
+        super(entry -> entry.id);
+    }
 
     public void Register(Ability entry) {
-        map.put(entry.id, entry);
+        register(entry);
     }
 
     public Ability Get(String id) {
-        return map.get(id);
+        return get(id);
     }
 
-    public Collection<Ability> GetAll() {
-        return map.values();
+    public java.util.Collection<Ability> GetAll() {
+        return getAll();
     }
 }

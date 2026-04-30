@@ -1,24 +1,23 @@
 package com.epicseed.vampirism.skill.registry;
 
+import com.epicseed.epiccore.registry.IdRegistry;
 import com.epicseed.vampirism.skill.model.ReusableDef;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+public class ReusableDefRegistry extends IdRegistry<ReusableDef> {
 
-public class ReusableDefRegistry {
-
-    private final Map<String, ReusableDef> map = new HashMap<>();
+    public ReusableDefRegistry() {
+        super(entry -> entry.id);
+    }
 
     public void Register(ReusableDef entry) {
-        map.put(entry.id, entry);
+        register(entry);
     }
 
     public ReusableDef Get(String id) {
-        return map.get(id);
+        return get(id);
     }
 
-    public Collection<ReusableDef> GetAll() {
-        return map.values();
+    public java.util.Collection<ReusableDef> GetAll() {
+        return getAll();
     }
 }

@@ -1,7 +1,7 @@
 package com.epicseed.vampirism.skill.runtime;
 
 import com.epicseed.vampirism.modifier.ModifierContext;
-import com.epicseed.vampirism.skill.model.InlineModifier;
+import com.epicseed.epiccore.skill.model.InlineModifier;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

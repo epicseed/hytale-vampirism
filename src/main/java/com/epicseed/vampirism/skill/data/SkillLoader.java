@@ -1,14 +1,27 @@
 package com.epicseed.vampirism.skill.data;
 
+import com.epicseed.epiccore.skill.data.AbilityDTO;
+import com.epicseed.epiccore.skill.data.EffectDefDTO;
+import com.epicseed.epiccore.skill.data.InlineModifierDTO;
+import com.epicseed.epiccore.skill.data.ModifierDefDTO;
+import com.epicseed.epiccore.skill.data.PassiveDTO;
+import com.epicseed.epiccore.skill.data.ReusableDefDTO;
+import com.epicseed.epiccore.skill.data.SkillDTO;
+import com.epicseed.epiccore.skill.data.SkillDataValidator;
+import com.epicseed.epiccore.skill.data.SkillTreeDataTransfer;
+import com.epicseed.epiccore.skill.data.StateDTO;
+import com.epicseed.epiccore.skill.data.StateEffectBindingDTO;
+import com.epicseed.epiccore.skill.data.StatDefDTO;
+import com.epicseed.epiccore.skill.model.EffectDef;
+import com.epicseed.epiccore.skill.model.InlineModifier;
+import com.epicseed.epiccore.skill.model.Passive;
+import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.vampirism.modifier.StatType;
 import com.epicseed.vampirism.modifier.VampireStatType;
+import com.epicseed.vampirism.skill.helpers.Position;
 import com.epicseed.vampirism.skill.model.Ability;
-import com.epicseed.vampirism.skill.model.EffectDef;
-import com.epicseed.vampirism.skill.model.InlineModifier;
 import com.epicseed.vampirism.skill.model.ModifierDef;
-import com.epicseed.vampirism.skill.model.Passive;
 import com.epicseed.vampirism.skill.model.ReusableDef;
-import com.epicseed.vampirism.skill.model.Skill;
 import com.epicseed.vampirism.skill.model.StatDef;
 import com.epicseed.vampirism.skill.model.VampireState;
 import com.epicseed.vampirism.skill.registry.AbilityRegistry;
@@ -36,10 +49,15 @@ import java.util.Set;
 public class SkillLoader {
 
     private final ObjectMapper mapper = new ObjectMapper();
+    private final SkillDataPaths dataPaths;
 
-    private static final String DATA_DIR = "data/vampirism/skills";
-    private static final String LEGACY_DATA_DIR = "Common/UI/Custom/Vampirism/Data/SkillsData";
-    private static final String LEGACY_JSON_PATH = "Common/UI/Custom/Vampirism/Data/SkillsData.json";
+    public SkillLoader() {
+        this(SkillDataPaths.vampirismDefaults());
+    }
+
+    public SkillLoader(SkillDataPaths dataPaths) {
+        this.dataPaths = dataPaths;
+    }
 
     // -------------------------------------------------------------------------
     // Tree (skill graph)
@@ -161,7 +179,7 @@ public class SkillLoader {
         skill.description = dto.description;
         skill.enabled     = dto.enabled == null || dto.enabled;
         skill.cost        = dto.cost;
-        skill.position    = dto.position;
+        skill.position    = copyPosition(dto.position);
         skill.type        = dto.type;
         skill.rarity      = dto.rarity != null ? dto.rarity : "common";
         skill.iconPath    = dto.iconPath;
@@ -173,6 +191,16 @@ public class SkillLoader {
         skill.triggers    = copyObjectList(dto.triggers);
         skill.actions     = copyObjectList(dto.actions);
         return skill;
+    }
+
+    private Position copyPosition(com.epicseed.epiccore.skill.helpers.Position position) {
+        if (position == null) {
+            return null;
+        }
+        Position copy = new Position();
+        copy.x = position.x;
+        copy.y = position.y;
+        return copy;
     }
 
     private Passive toPassive(PassiveDTO dto) {
@@ -404,9 +432,12 @@ public class SkillLoader {
     }
 
     private SkillTreeDataTransfer readLegacyJson() {
-        InputStream json = getClass().getClassLoader().getResourceAsStream(LEGACY_JSON_PATH);
+        InputStream json = getClass().getClassLoader().getResourceAsStream(dataPaths.legacyJsonPath());
         if (json == null) {
-            throw new RuntimeException("Skill data not found at: " + DATA_DIR + ", " + LEGACY_DATA_DIR + " or " + LEGACY_JSON_PATH);
+            throw new RuntimeException("Skill data not found at: "
+                    + dataPaths.primaryDataDir() + ", "
+                    + dataPaths.fallbackDataDir() + " or "
+                    + dataPaths.legacyJsonPath());
         }
         try {
             return mapper.readValue(json, SkillTreeDataTransfer.class);
@@ -422,11 +453,11 @@ public class SkillLoader {
     }
 
     private String splitDataDir() {
-        if (resourceExists(sectionPath(DATA_DIR, "tree.json"))) {
-            return DATA_DIR;
+        if (resourceExists(sectionPath(dataPaths.primaryDataDir(), "tree.json"))) {
+            return dataPaths.primaryDataDir();
         }
-        if (resourceExists(sectionPath(LEGACY_DATA_DIR, "tree.json"))) {
-            return LEGACY_DATA_DIR;
+        if (resourceExists(sectionPath(dataPaths.fallbackDataDir(), "tree.json"))) {
+            return dataPaths.fallbackDataDir();
         }
         return null;
     }

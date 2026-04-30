@@ -3,12 +3,21 @@ package com.epicseed.vampirism.skill.data;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.epicseed.epiccore.skill.data.AbilityDTO;
+import com.epicseed.epiccore.skill.data.EffectDefDTO;
+import com.epicseed.epiccore.skill.data.ReusableDefDTO;
+import com.epicseed.epiccore.skill.data.SkillDTO;
+import com.epicseed.epiccore.skill.data.SkillDataValidationResult;
+import com.epicseed.epiccore.skill.data.SkillDataValidator;
+import com.epicseed.epiccore.skill.data.SkillTreeDataTransfer;
+import com.epicseed.epiccore.skill.data.StateEffectBindingDTO;
+import com.epicseed.epiccore.skill.helpers.Position;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.epicseed.vampirism.skill.helpers.Position;
 import org.junit.jupiter.api.Test;
 
 class SkillDataValidatorTest {

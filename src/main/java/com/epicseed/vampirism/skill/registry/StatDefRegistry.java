@@ -1,24 +1,23 @@
 package com.epicseed.vampirism.skill.registry;
 
+import com.epicseed.epiccore.registry.IdRegistry;
 import com.epicseed.vampirism.skill.model.StatDef;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+public class StatDefRegistry extends IdRegistry<StatDef> {
 
-public class StatDefRegistry {
-
-    private final Map<String, StatDef> map = new HashMap<>();
+    public StatDefRegistry() {
+        super(entry -> entry.id);
+    }
 
     public void Register(StatDef entry) {
-        map.put(entry.id, entry);
+        register(entry);
     }
 
     public StatDef Get(String id) {
-        return map.get(id);
+        return get(id);
     }
 
-    public Collection<StatDef> GetAll() {
-        return map.values();
+    public java.util.Collection<StatDef> GetAll() {
+        return getAll();
     }
 }

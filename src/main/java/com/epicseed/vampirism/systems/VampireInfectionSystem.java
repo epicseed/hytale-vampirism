@@ -4,7 +4,7 @@ import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
-import com.epicseed.vampirism.skill.model.Skill;
+import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;

@@ -1,24 +1,23 @@
 package com.epicseed.vampirism.skill.registry;
 
-import com.epicseed.vampirism.skill.model.EffectDef;
+import com.epicseed.epiccore.registry.IdRegistry;
+import com.epicseed.epiccore.skill.model.EffectDef;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+public class EffectDefRegistry extends IdRegistry<EffectDef> {
 
-public class EffectDefRegistry {
-
-    private final Map<String, EffectDef> map = new HashMap<>();
+    public EffectDefRegistry() {
+        super(entry -> entry.id);
+    }
 
     public void Register(EffectDef entry) {
-        map.put(entry.id, entry);
+        register(entry);
     }
 
     public EffectDef Get(String id) {
-        return map.get(id);
+        return get(id);
     }
 
-    public Collection<EffectDef> GetAll() {
-        return map.values();
+    public java.util.Collection<EffectDef> GetAll() {
+        return getAll();
     }
 }

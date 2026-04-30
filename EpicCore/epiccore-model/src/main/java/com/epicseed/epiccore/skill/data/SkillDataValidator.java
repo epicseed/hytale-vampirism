@@ -1,4 +1,4 @@
-package com.epicseed.vampirism.skill.data;
+package com.epicseed.epiccore.skill.data;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -173,7 +173,9 @@ public final class SkillDataValidator {
                                                     SkillDataIndex index,
                                                     SkillDataValidationResult result) {
         String type = asString(definition.get("type"));
-        if (isBlank(type)) return;
+        if (isBlank(type)) {
+            return;
+        }
 
         if ("actions".equals(section)) {
             if ("applyEffect".equals(type) || "removeEffect".equals(type) || "toggleEffect".equals(type)) {
@@ -226,7 +228,9 @@ public final class SkillDataValidator {
     private void validateRelicBindings(Map<String, String> bindings,
                                        SkillDataIndex index,
                                        SkillDataValidationResult result) {
-        if (bindings == null) return;
+        if (bindings == null) {
+            return;
+        }
         for (Map.Entry<String, String> entry : bindings.entrySet()) {
             String slot = entry.getKey();
             String owner = isBlank(slot) ? "<blank slot>" : slot;
@@ -264,7 +268,9 @@ public final class SkillDataValidator {
                                     Object value,
                                     SkillDataIndex index,
                                     SkillDataValidationResult result) {
-        if (value == null) return;
+        if (value == null) {
+            return;
+        }
 
         if (value instanceof Map<?, ?> map) {
             for (Map.Entry<?, ?> entry : map.entrySet()) {
@@ -355,7 +361,9 @@ public final class SkillDataValidator {
         int i = 0;
         for (EffectDefDTO effect : effects) {
             String owner = owner("effect", effect != null ? effect.id : null, i++);
-            if (effect == null) continue;
+            if (effect == null) {
+                continue;
+            }
             String effectId = trimToNull(effect.effectId);
             if (effectId == null) {
                 result.add("effects", owner, "effectId", "is required");
@@ -373,7 +381,9 @@ public final class SkillDataValidator {
                                      Set<String> ids,
                                      String targetSection,
                                      SkillDataValidationResult result) {
-        if (isBlank(value)) return;
+        if (isBlank(value)) {
+            return;
+        }
         validateRequiredRef(section, owner, field, value, ids, targetSection, result);
     }
 
@@ -424,7 +434,9 @@ public final class SkillDataValidator {
     }
 
     private String trimToNull(String value) {
-        if (value == null) return null;
+        if (value == null) {
+            return null;
+        }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }

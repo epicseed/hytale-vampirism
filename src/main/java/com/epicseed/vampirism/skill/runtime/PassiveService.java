@@ -1,8 +1,8 @@
 package com.epicseed.vampirism.skill.runtime;
 
 import com.epicseed.vampirism.Vampirism;
-import com.epicseed.vampirism.skill.model.Passive;
-import com.epicseed.vampirism.skill.model.Skill;
+import com.epicseed.epiccore.skill.model.Passive;
+import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.vampirism.skill.registry.PassiveRegistry;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.epicseed.vampirism.skill.registry.SkillRegistry;

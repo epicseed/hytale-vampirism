@@ -1,24 +1,23 @@
 package com.epicseed.vampirism.skill.registry;
 
+import com.epicseed.epiccore.registry.IdRegistry;
 import com.epicseed.vampirism.skill.model.VampireState;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+public class StateRegistry extends IdRegistry<VampireState> {
 
-public class StateRegistry {
-
-    private final Map<String, VampireState> map = new HashMap<>();
+    public StateRegistry() {
+        super(entry -> entry.id);
+    }
 
     public void Register(VampireState entry) {
-        map.put(entry.id, entry);
+        register(entry);
     }
 
     public VampireState Get(String id) {
-        return map.get(id);
+        return get(id);
     }
 
-    public Collection<VampireState> GetAll() {
-        return map.values();
+    public java.util.Collection<VampireState> GetAll() {
+        return getAll();
     }
 }
