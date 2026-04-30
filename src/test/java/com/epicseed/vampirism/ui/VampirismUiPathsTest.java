@@ -15,17 +15,17 @@ class VampirismUiPathsTest {
 
     @Test
     void resolvesRaritySlotsFromSharedItemQualities() {
-        assertEquals("Vampirism/Assets/Shared/ItemQualities/Slots/SlotCommon.png",
+        assertEquals("EpicCore/Assets/Shared/ItemQualities/Slots/SlotCommon.png",
                 VampirismUiPaths.raritySlot(null));
-        assertEquals("Vampirism/Assets/Shared/ItemQualities/Slots/SlotEpic_Overlay.png",
+        assertEquals("EpicCore/Assets/Shared/ItemQualities/Slots/SlotEpic_Overlay.png",
                 VampirismUiPaths.raritySlotOverlay("epic"));
     }
 
     @Test
     void resolvesGridCellsAndTrailLayouts() {
-        assertEquals("Vampirism/Components/SkillGrid/GridCellLegendary.ui",
+        assertEquals("EpicCore/Components/SkillGrid/GridCellLegendary.ui",
                 VampirismUiPaths.rarityGridCell("legendary"));
-        assertEquals("Vampirism/Components/SkillTree/Trails/TrailCornerNEGlow.ui",
+        assertEquals("EpicCore/Components/SkillTree/Trails/TrailCornerNEGlow.ui",
                 VampirismUiPaths.skillTreeTrail("TrailCornerNEGlow"));
     }
 }
