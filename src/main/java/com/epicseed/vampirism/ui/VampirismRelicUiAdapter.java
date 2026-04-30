@@ -8,17 +8,15 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.runtime.AbilitySlotBindings;
 import com.epicseed.epiccore.skill.ui.RelicAbilityView;
 import com.epicseed.epiccore.skill.ui.RelicUiAdapter;
-import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.relic.RelicBindingService;
 import com.epicseed.vampirism.relic.RelicPresetProjectionService;
-import com.epicseed.vampirism.registry.PlayerRelicBindings;
-import com.epicseed.vampirism.skill.model.Ability;
 import com.epicseed.epiccore.skill.model.Skill;
-import com.epicseed.vampirism.skill.registry.SkillRegistry;
+import com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
@@ -29,6 +27,7 @@ public final class VampirismRelicUiAdapter implements RelicUiAdapter {
 
     private static final String RELIC_ITEM_ID = "VampirismRelic";
     private static final VampirismRelicUiAdapter INSTANCE = new VampirismRelicUiAdapter();
+    private static final ProgressionDefinitionProvider DEFINITIONS = VampirismProgressionDefinitionProvider.instance();
 
     private VampirismRelicUiAdapter() {
     }
@@ -100,9 +99,9 @@ public final class VampirismRelicUiAdapter implements RelicUiAdapter {
         if (abilityId == null || abilityId.isBlank()) {
             return null;
         }
-        Skill skill = findSkillByAbilityId(abilityId);
+        Skill skill = DEFINITIONS.findSkillByAbilityId(abilityId);
         if (skill == null) {
-            Ability ability = Vampirism.getInstance().GetAbilityRegistry().Get(abilityId);
+            com.epicseed.epiccore.skill.model.Ability ability = DEFINITIONS.getAbility(abilityId);
             if (ability == null) {
                 return null;
             }
@@ -123,7 +122,7 @@ public final class VampirismRelicUiAdapter implements RelicUiAdapter {
     @Override
     @Nullable
     public String activeAbilityForSlot(@Nonnull UUID uuid, @Nonnull String slot) {
-        return PlayerRelicBindings.get().abilityFor(uuid, slot);
+        return RelicBindingService.resolveAbilityForSlot(uuid, slot).orElse(null);
     }
 
     @Override
@@ -201,7 +200,7 @@ public final class VampirismRelicUiAdapter implements RelicUiAdapter {
         if (skill == null || skill.abilityId == null || skill.abilityId.isBlank()) {
             return null;
         }
-        Ability ability = Vampirism.getInstance().GetAbilityRegistry().Get(skill.abilityId);
+        com.epicseed.epiccore.skill.model.Ability ability = DEFINITIONS.getAbility(skill.abilityId);
         String displayName = ability != null && ability.displayName != null && !ability.displayName.isBlank()
                 ? ability.displayName
                 : skill.displayName;
@@ -211,14 +210,4 @@ public final class VampirismRelicUiAdapter implements RelicUiAdapter {
         return new RelicAbilityView(skill.abilityId, displayName, description, skill.rarity, skill.iconPath);
     }
 
-    @Nullable
-    private Skill findSkillByAbilityId(@Nonnull String abilityId) {
-        SkillRegistry registry = Vampirism.getInstance().GetSkillRegistry();
-        for (Skill skill : registry.GetAll()) {
-            if (abilityId.equals(skill.abilityId)) {
-                return skill;
-            }
-        }
-        return null;
-    }
 }

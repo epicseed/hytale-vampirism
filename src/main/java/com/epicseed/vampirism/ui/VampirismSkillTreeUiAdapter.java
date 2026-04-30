@@ -8,21 +8,26 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.skill.model.Skill;
+import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
+import com.epicseed.epiccore.skill.progression.SkillNodeState;
+import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
+import com.epicseed.epiccore.skill.progression.SkillUnlockResult;
 import com.epicseed.epiccore.skill.ui.SkillTreeLayoutBounds;
 import com.epicseed.epiccore.skill.ui.SkillTreeNodeStateView;
 import com.epicseed.epiccore.skill.ui.SkillTreeUiAdapter;
 import com.epicseed.epiccore.skill.ui.SkillTreeUnlockResultView;
 import com.epicseed.vampirism.Vampirism;
-import com.epicseed.vampirism.domain.skill.SkillNodeState;
 import com.epicseed.vampirism.domain.skill.SkillTreePresenter;
-import com.epicseed.vampirism.domain.skill.SkillUnlockResult;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
+import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
+import com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider;
 import com.hypixel.hytale.math.vector.Vector2d;
 
 public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
 
     private static final VampirismSkillTreeUiAdapter INSTANCE = new VampirismSkillTreeUiAdapter();
+    private static final ProgressionDefinitionProvider DEFINITIONS = VampirismProgressionDefinitionProvider.instance();
+    private static final SkillProgressionAccess PROGRESSION = PlayerRegistrySkillProgressionAccess.instance();
 
     private VampirismSkillTreeUiAdapter() {
     }
@@ -34,13 +39,13 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
     @Override
     @Nonnull
     public List<Skill> allSkills() {
-        return new ArrayList<>(Vampirism.getInstance().GetSkillRegistry().GetAll());
+        return new ArrayList<>(DEFINITIONS.getAllSkills());
     }
 
     @Override
     @Nullable
     public Skill skill(@Nonnull String skillId) {
-        return Vampirism.getInstance().GetSkillRegistry().GetSkill(skillId);
+        return DEFINITIONS.getSkill(skillId);
     }
 
     @Override
@@ -52,12 +57,12 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
 
     @Override
     public int availablePoints(@Nonnull UUID uuid) {
-        return PlayerSkillRegistry.get().getSkillPoints(uuid);
+        return PROGRESSION.getSkillPoints(uuid);
     }
 
     @Override
     public boolean hasSkill(@Nonnull UUID uuid, @Nonnull String skillId) {
-        return PlayerSkillRegistry.get().hasSkill(uuid, skillId);
+        return PROGRESSION.hasSkill(uuid, skillId);
     }
 
     @Override

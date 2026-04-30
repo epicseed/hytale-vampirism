@@ -1,4 +1,4 @@
-package com.epicseed.vampirism.domain.skill;
+package com.epicseed.epiccore.skill.progression;
 
 public enum SkillUnlockStatus {
     CAN_UNLOCK,
