@@ -10,7 +10,7 @@ public final class VampirismUiPaths {
     private static final ProgressionUiPaths THEME = new ProgressionUiPaths() {
         @Override
         public String bloodBarLayout() {
-            return VAMPIRISM_PATHS.bloodBarLayout();
+            return CORE_PATHS.bloodBarLayout();
         }
 
         @Override

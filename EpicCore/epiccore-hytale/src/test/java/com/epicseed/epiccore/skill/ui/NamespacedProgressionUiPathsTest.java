@@ -13,6 +13,7 @@ class NamespacedProgressionUiPathsTest {
 
         assertEquals("EpicCore/Screens/SkillTree.ui", paths.skillTreeLayout());
         assertEquals("EpicCore/Screens/RelicBindings.ui", paths.relicBindingsLayout());
+        assertEquals("EpicCore/Huds/ResourceGaugeHud.ui", paths.bloodBarLayout());
         assertEquals("EpicCore/Huds/RelicCooldownHud.ui", paths.relicCooldownHudLayout());
         assertEquals("EpicCore/Components/SkillGrid/GridCellEpic.ui", paths.rarityGridCell("epic"));
         assertEquals("EpicCore/Assets/Shared/ItemQualities/Slots/SlotRare.png", paths.raritySlot("rare"));

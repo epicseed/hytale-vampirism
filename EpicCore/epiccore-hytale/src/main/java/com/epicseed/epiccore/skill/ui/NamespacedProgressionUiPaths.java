@@ -35,7 +35,7 @@ public final class NamespacedProgressionUiPaths implements ProgressionUiPaths {
 
     @Override
     public String bloodBarLayout() {
-        return hudsRoot + "/BloodBar.ui";
+        return hudsRoot + "/ResourceGaugeHud.ui";
     }
 
     @Override

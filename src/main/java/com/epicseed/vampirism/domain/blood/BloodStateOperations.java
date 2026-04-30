@@ -2,6 +2,8 @@ package com.epicseed.vampirism.domain.blood;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.resource.ResourceStateMath;
+
 final class BloodStateOperations {
     private BloodStateOperations() {
     }
@@ -10,7 +12,7 @@ final class BloodStateOperations {
         if (amount <= 0) {
             return state;
         }
-        state.blood = Math.max(0, state.blood - amount);
+        state.blood = ResourceStateMath.spend(state.blood, amount);
         return state;
     }
 
@@ -18,7 +20,7 @@ final class BloodStateOperations {
         if (amount <= 0) {
             return state;
         }
-        state.blood = Math.min(maxBlood(state), state.blood + amount);
+        state.blood = ResourceStateMath.add(state.blood, state.maxBlood, amount);
         if (state.isStarving && state.blood >= recoveryThreshold) {
             state.isStarving = false;
         }
@@ -26,24 +28,20 @@ final class BloodStateOperations {
     }
 
     static void refreshCapacity(@Nonnull BloodState state, int newCapacity) {
-        state.maxBlood = Math.max(1, newCapacity);
+        state.maxBlood = ResourceStateMath.sanitizeMax(newCapacity);
         clampBlood(state);
     }
 
     static void clampBlood(@Nonnull BloodState state) {
-        state.maxBlood = maxBlood(state);
-        state.blood = Math.max(0, Math.min(state.blood, state.maxBlood));
+        state.maxBlood = ResourceStateMath.sanitizeMax(state.maxBlood);
+        state.blood = ResourceStateMath.clampCurrent(state.blood, state.maxBlood);
     }
 
     static boolean isOverfed(@Nonnull BloodState state) {
-        return state.blood >= maxBlood(state);
+        return state.blood >= ResourceStateMath.sanitizeMax(state.maxBlood);
     }
 
     static boolean isNormal(@Nonnull BloodState state, int starvingThreshold) {
-        return state.blood > starvingThreshold && state.blood < maxBlood(state);
-    }
-
-    private static int maxBlood(@Nonnull BloodState state) {
-        return Math.max(1, state.maxBlood);
+        return state.blood > starvingThreshold && state.blood < ResourceStateMath.sanitizeMax(state.maxBlood);
     }
 }

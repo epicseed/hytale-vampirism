@@ -7,6 +7,11 @@ import org.junit.jupiter.api.Test;
 class VampirismUiPathsTest {
 
     @Test
+    void resolvesBloodBarLayoutFromEpicCore() {
+        assertEquals("EpicCore/Huds/ResourceGaugeHud.ui", VampirismUiPaths.BLOOD_BAR_LAYOUT);
+    }
+
+    @Test
     void resolvesSkillIconsFromSharedSkillBucket() {
         assertEquals("Vampirism/Assets/Shared/Skills/Icons/Icon_BloodThrow.png",
                 VampirismUiPaths.skillIcon("Icon_BloodThrow.png"));

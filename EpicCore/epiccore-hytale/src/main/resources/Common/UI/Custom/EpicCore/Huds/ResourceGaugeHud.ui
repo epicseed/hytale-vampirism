@@ -14,7 +14,7 @@ Group #MainContainer {
   Anchor: (Bottom: @InventoryClosedContainerMargin + @HotbarHeight + 26, Width: @HotbarWidthHud, Height: 24);
   HitTestVisible: false;
 
-  Group #BloodBarRow {
+  Group #ResourceGaugeRow {
     Anchor: (Left: 0, Top: 0, Width: @HotbarWidthHud, Height: 24);
     LayoutMode: Left;
     HitTestVisible: false;
@@ -25,13 +25,13 @@ Group #MainContainer {
 
       Group #Icon {
         Anchor: (Left: 0, Width: 24, Height: 24);
-        Background: "../Assets/Huds/BloodBar/HealthIcon.png";
+        Background: "../Assets/Huds/ResourceGauge/PrimaryIcon.png";
         HitTestVisible: false;
       }
 
-      Group #IconCreative {
+      Group #IconAlternate {
         Anchor: (Left: 0, Width: 24, Height: 24);
-        Background: "../Assets/Huds/BloodBar/CreativeHealthIcon.png";
+        Background: "../Assets/Huds/ResourceGauge/AlternateIcon.png";
         Visible: false;
         HitTestVisible: false;
       }
@@ -39,29 +39,29 @@ Group #MainContainer {
 
     Group #BarContainer {
       Anchor: (Left: 0, Width: 318, Height: 12);
-      Background: "../Assets/Huds/BloodBar/HealthBackground.png";
+      Background: "../Assets/Huds/ResourceGauge/GaugeBackground.png";
       HitTestVisible: false;
 
-      ProgressBar #ProgressBarHealth {
+      ProgressBar #ProgressBarPrimary {
         Anchor: (Width: 318, Height: 12);
-        BarTexturePath: "../Assets/Huds/BloodBar/HealthBarFill.png";
+        BarTexturePath: "../Assets/Huds/ResourceGauge/GaugeFill.png";
         Value: 1.0;
       }
 
-      ProgressBar #ProgressBarHealthCreative {
+      ProgressBar #ProgressBarAlternate {
         Anchor: (Width: 318, Height: 12);
-        BarTexturePath: "../Assets/Huds/BloodBar/CreativeHealthBarFill.png";
+        BarTexturePath: "../Assets/Huds/ResourceGauge/GaugeAlternateFill.png";
         Value: 1.0;
         Visible: false;
       }
 
       ProgressBar #ProgressBarEffect {
         Anchor: (Width: 318, Height: 12);
-        BarTexturePath: "../Assets/Huds/BloodBar/HealthBarEffect.png";
+        BarTexturePath: "../Assets/Huds/ResourceGauge/GaugeEffect.png";
         Value: 1.0;
       }
 
-      Label #BloodValueMarker {
+      Label #ValueMarker {
         Anchor: (Left: 0, Right: 0, Top: -1, Height: 12);
         Text: "100 / 100";
         Style: (FontSize: 10, TextColor: #ffd7d7, RenderBold: true, Alignment: Center);
