@@ -5,6 +5,7 @@ import java.util.Map;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.skill.ui.ProgressionUiPaths;
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.registry.PlayerRelicBindings;
 import com.epicseed.vampirism.skill.model.Ability;
@@ -38,17 +39,24 @@ public class RelicCooldownHud extends CustomUIHud {
     };
 
     private final PlayerRef ownerRef;
-    private RelicCooldownDisplayState state = RelicCooldownDisplayState.defaultState();
+    private final ProgressionUiPaths uiPaths;
+    private RelicCooldownDisplayState state;
     private final long suppressUpdatesUntilMs = System.currentTimeMillis() + INITIAL_UPDATE_GRACE_MS;
 
     public RelicCooldownHud(@Nonnull PlayerRef playerRef) {
+        this(playerRef, VampirismUiPaths.theme());
+    }
+
+    public RelicCooldownHud(@Nonnull PlayerRef playerRef, @Nonnull ProgressionUiPaths uiPaths) {
         super(playerRef);
         this.ownerRef = playerRef;
+        this.uiPaths = uiPaths;
+        this.state = RelicCooldownDisplayState.defaultState(uiPaths);
     }
 
     @Override
     protected void build(@Nonnull UICommandBuilder builder) {
-        builder.append(VampirismUiPaths.RELIC_COOLDOWN_HUD_LAYOUT);
+        builder.append(uiPaths.relicCooldownHudLayout());
         writeState(builder, state);
     }
 
@@ -97,7 +105,7 @@ public class RelicCooldownHud extends CustomUIHud {
                     raritySlotPath(owner != null ? owner.rarity : null),
                     raritySlotOverlayPath(owner != null ? owner.rarity : null),
                     hasBinding,
-                    hasBinding ? iconPath(owner) : VampirismUiPaths.WIP_ICON,
+                    hasBinding ? iconPath(owner) : uiPaths.wipIcon(),
                     onCooldown,
                     onCooldown ? formatCooldown(remainingMs) : "",
                     slotHint(slotKey));
@@ -127,8 +135,8 @@ public class RelicCooldownHud extends CustomUIHud {
     }
 
     @Nonnull
-    private static String iconPath(Skill owner) {
-        return owner != null ? VampirismUiPaths.skillIcon(owner.iconPath) : VampirismUiPaths.WIP_ICON;
+    private String iconPath(Skill owner) {
+        return owner != null ? uiPaths.skillIcon(owner.iconPath) : uiPaths.wipIcon();
     }
 
     @Nonnull
@@ -150,13 +158,13 @@ public class RelicCooldownHud extends CustomUIHud {
     }
 
     @Nonnull
-    private static String raritySlotPath(String rarity) {
-        return VampirismUiPaths.raritySlot(rarity);
+    private String raritySlotPath(String rarity) {
+        return uiPaths.raritySlot(rarity);
     }
 
     @Nonnull
-    private static String raritySlotOverlayPath(String rarity) {
-        return VampirismUiPaths.raritySlotOverlay(rarity);
+    private String raritySlotOverlayPath(String rarity) {
+        return uiPaths.raritySlotOverlay(rarity);
     }
 
     @Nonnull
@@ -181,10 +189,10 @@ public class RelicCooldownHud extends CustomUIHud {
         }
 
         @Nonnull
-        private static RelicCooldownDisplayState defaultState() {
+        private static RelicCooldownDisplayState defaultState(@Nonnull ProgressionUiPaths uiPaths) {
             SlotDisplayState[] slots = new SlotDisplayState[SLOT_KEYS.length];
             for (int i = 0; i < SLOT_KEYS.length; i++) {
-                slots[i] = SlotDisplayState.defaultState(slotHint(SLOT_KEYS[i]));
+                slots[i] = SlotDisplayState.defaultState(uiPaths, slotHint(SLOT_KEYS[i]));
             }
             return new RelicCooldownDisplayState(false, slots);
         }
@@ -228,12 +236,12 @@ public class RelicCooldownHud extends CustomUIHud {
         }
 
         @Nonnull
-        private static SlotDisplayState defaultState(@Nonnull String slotHint) {
+        private static SlotDisplayState defaultState(@Nonnull ProgressionUiPaths uiPaths, @Nonnull String slotHint) {
             return new SlotDisplayState(
-                    raritySlotPath(null),
-                    raritySlotOverlayPath(null),
+                    uiPaths.raritySlot(null),
+                    uiPaths.raritySlotOverlay(null),
                     false,
-                    VampirismUiPaths.WIP_ICON,
+                    uiPaths.wipIcon(),
                     false,
                     "",
                     slotHint);

@@ -1,6 +1,7 @@
 package com.epicseed.vampirism.commands;
 
 import com.epicseed.vampirism.ui.SkillTreeUI;
+import com.epicseed.vampirism.ui.VampirismProgressionPageFactory;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
@@ -35,7 +36,7 @@ public class VampirismSkillTreeCommand extends AbstractPlayerCommand {
             return;
         }
 
-        SkillTreeUI skillTreeUI = new SkillTreeUI(playerRef);
-        player.getPageManager().openCustomPage(ref, store, skillTreeUI);
+        player.getPageManager().openCustomPage(ref, store,
+                VampirismProgressionPageFactory.instance().createSkillTreePage(playerRef));
     }
 }

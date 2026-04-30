@@ -1,21 +1,18 @@
-package com.epicseed.vampirism.ui;
+package com.epicseed.epiccore.skill.ui;
 
-import com.epicseed.epiccore.skill.model.Skill;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 
-/// Will be used to recieve information from clicked buttons
-public class SkillTreeData {
+public class SkillTreeEventData {
 
-    public Skill skill;
     public String id;
     public String action;
     public String skillId;
     public String miniIndex;
 
-    public static final BuilderCodec<SkillTreeData> CODEC =
-            BuilderCodec.builder(SkillTreeData.class, SkillTreeData::new)
+    public static final BuilderCodec<SkillTreeEventData> CODEC =
+            BuilderCodec.builder(SkillTreeEventData.class, SkillTreeEventData::new)
                     .append(
                             new KeyedCodec<>("@BecomeAVampire", Codec.STRING),
                             (obj, val) -> obj.id = val,

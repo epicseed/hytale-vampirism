@@ -10,6 +10,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.skill.ui.ProgressionPageFactory;
+import com.epicseed.epiccore.skill.ui.ProgressionUiPaths;
+import com.epicseed.epiccore.skill.ui.RelicBindingsEventData;
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.relic.RelicBindingService;
@@ -37,7 +40,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 /// Per-player relic binding editor — overrides the global
 /// {@link com.epicseed.epiccore.skill.runtime.AbilitySlotBindings} defaults.
-public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> {
+public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsEventData> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private static final Map<UUID, RelicBindingsUI> OPEN_PAGES = new ConcurrentHashMap<>();
@@ -46,6 +49,8 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
     /** Slot keys in display order. */
     private static final String[] SLOT_KEYS = { "primary", "secondary", "ability1", "ability2", "ability3" };
 
+    private final ProgressionUiPaths uiPaths;
+    private final ProgressionPageFactory pageFactory;
     private final LinkedHashMap<Integer, LinkedHashMap<String, String>> pendingByPreset = new LinkedHashMap<>();
     private final LinkedHashMap<Integer, LinkedHashMap<String, String>> savedStateByPreset = new LinkedHashMap<>();
 
@@ -67,7 +72,15 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
     private long refreshReadyAt;
 
     public RelicBindingsUI(@Nonnull PlayerRef playerRef) {
-        super(playerRef, CustomPageLifetime.CanDismiss, RelicBindingsData.CODEC);
+        this(playerRef, VampirismUiPaths.theme(), VampirismProgressionPageFactory.instance());
+    }
+
+    public RelicBindingsUI(@Nonnull PlayerRef playerRef,
+                           @Nonnull ProgressionUiPaths uiPaths,
+                           @Nonnull ProgressionPageFactory pageFactory) {
+        super(playerRef, CustomPageLifetime.CanDismiss, RelicBindingsEventData.CODEC);
+        this.uiPaths = uiPaths;
+        this.pageFactory = pageFactory;
     }
 
     @Override
@@ -76,7 +89,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
                       @Nonnull UIEventBuilder events,
                       @Nonnull Store<EntityStore> store) {
 
-        cmd.append(VampirismUiPaths.RELIC_BINDINGS_LAYOUT);
+        cmd.append(uiPaths.relicBindingsLayout());
 
         UUID uuid = playerRef.getUuid();
 
@@ -141,7 +154,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
             // Hide the availability indicator — not relevant in this context
             cmd.set(selector + " #Indicator.Visible", false);
 
-            String abilityIconPath = VampirismUiPaths.skillIcon(s.iconPath);
+            String abilityIconPath = uiPaths.skillIcon(s.iconPath);
             cmd.set(selector + " #SkillIcon.Background", abilityIconPath);
 
             Ability ab = Vampirism.getInstance().GetAbilityRegistry().Get(s.abilityId);
@@ -169,7 +182,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
     @Override
     public void handleDataEvent(@Nonnull Ref<EntityStore> ref,
                                 @Nonnull Store<EntityStore> store,
-                                @Nonnull RelicBindingsData data) {
+                                @Nonnull RelicBindingsEventData data) {
         if (data.action == null) {
             sendUpdate();
             return;
@@ -201,7 +214,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
                 }
                 Player p = store.getComponent(ref, Player.getComponentType());
                 unregisterOpenPage();
-                if (p != null) p.getPageManager().openCustomPage(ref, store, new SkillTreeUI(playerRef));
+                if (p != null) p.getPageManager().openCustomPage(ref, store, pageFactory.createSkillTreePage(playerRef));
                 sendUpdate();
                 return;
             }
@@ -404,7 +417,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
         Player p = store.getComponent(ref, Player.getComponentType());
         if (p == null) { sendUpdate(); return; }
         if ("openSkillTree".equals(action)) {
-            p.getPageManager().openCustomPage(ref, store, new SkillTreeUI(playerRef));
+            p.getPageManager().openCustomPage(ref, store, pageFactory.createSkillTreePage(playerRef));
         } else {
             p.getPageManager().setPage(ref, store, Page.None);
         }
@@ -436,7 +449,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
 
         Skill owner = findSkillByAbilityId(abilityId);
         String rarity = owner != null ? owner.rarity : null;
-        String iconPath = owner != null ? VampirismUiPaths.skillIcon(owner.iconPath) : VampirismUiPaths.WIP_ICON;
+        String iconPath = owner != null ? uiPaths.skillIcon(owner.iconPath) : uiPaths.wipIcon();
 
         cmd.set(selector + " #SlotTile.Background", raritySlotPath(rarity));
         cmd.set(selector + " #RarityOverlay.Background", raritySlotOverlayPath(rarity));
@@ -712,8 +725,8 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
         return byPreset.computeIfAbsent(presetIndex, ignored -> new LinkedHashMap<>());
     }
 
-    private static String rarityGridCell(String rarity) {
-        return VampirismUiPaths.rarityGridCell(rarity);
+    private String rarityGridCell(String rarity) {
+        return uiPaths.rarityGridCell(rarity);
     }
 
     private static List<Skill> collectUnlockedAbilitySkills(@Nonnull SkillRegistry registry, @Nonnull UUID uuid) {
@@ -734,12 +747,12 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
         return null;
     }
 
-    private static String raritySlotPath(String rarity) {
-        return VampirismUiPaths.raritySlot(rarity);
+    private String raritySlotPath(String rarity) {
+        return uiPaths.raritySlot(rarity);
     }
 
-    private static String raritySlotOverlayPath(String rarity) {
-        return VampirismUiPaths.raritySlotOverlay(rarity);
+    private String raritySlotOverlayPath(String rarity) {
+        return uiPaths.raritySlotOverlay(rarity);
     }
 
     private static String rarityLabel(String rarity) {

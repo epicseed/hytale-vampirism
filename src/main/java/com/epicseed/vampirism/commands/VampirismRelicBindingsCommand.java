@@ -1,6 +1,7 @@
 package com.epicseed.vampirism.commands;
 
 import com.epicseed.vampirism.ui.RelicBindingsUI;
+import com.epicseed.vampirism.ui.VampirismProgressionPageFactory;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
@@ -40,7 +41,7 @@ public class VampirismRelicBindingsCommand extends AbstractPlayerCommand {
             return;
         }
 
-        RelicBindingsUI ui = new RelicBindingsUI(playerRef);
-        player.getPageManager().openCustomPage(ref, store, ui);
+        player.getPageManager().openCustomPage(ref, store,
+                VampirismProgressionPageFactory.instance().createRelicBindingsPage(playerRef));
     }
 }

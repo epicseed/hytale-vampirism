@@ -1,19 +1,18 @@
-package com.epicseed.vampirism.ui;
+package com.epicseed.epiccore.skill.ui;
 
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 
-/// Event payload for the Relic Bindings UI.
-public class RelicBindingsData {
+public class RelicBindingsEventData {
 
     public String action;
     public String abilityId;
     public String slot;
     public String presetIndex;
 
-    public static final BuilderCodec<RelicBindingsData> CODEC =
-            BuilderCodec.builder(RelicBindingsData.class, RelicBindingsData::new)
+    public static final BuilderCodec<RelicBindingsEventData> CODEC =
+            BuilderCodec.builder(RelicBindingsEventData.class, RelicBindingsEventData::new)
                     .append(
                             new KeyedCodec<>("Action", Codec.STRING),
                             (obj, val) -> obj.action = val,
