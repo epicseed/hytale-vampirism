@@ -9,10 +9,12 @@ import java.util.concurrent.Executor;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.epiccore.hytale.MultipleHudAdapter;
+import com.epicseed.epiccore.resource.ResourceGaugeValue;
+import com.epicseed.epiccore.resource.ui.ResourceGaugeHudManager;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.hud.BloodGaugeHud;
 import com.epicseed.vampirism.hud.RelicCooldownHud;
-import com.epicseed.vampirism.hytale.MultipleHudAdapter;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -29,7 +31,8 @@ public final class BloodHudService {
     private static final String BLOOD_GAUGE_HUD_KEY = "vampiric_blood_gauge";
     private static final String RELIC_COOLDOWN_HUD_KEY = "vampiric_relic_cooldowns";
 
-    private static final Map<Ref<EntityStore>, BloodGaugeHud> bloodGaugeHuds = new ConcurrentHashMap<>();
+    private static final ResourceGaugeHudManager<BloodGaugeHud> bloodGaugeHudManager =
+            new ResourceGaugeHudManager<>(BLOOD_GAUGE_HUD_KEY, BloodGaugeHud::new);
     private static final Map<Ref<EntityStore>, RelicCooldownHud> relicCooldownHuds = new ConcurrentHashMap<>();
 
     private BloodHudService() {
@@ -37,30 +40,21 @@ public final class BloodHudService {
 
     public static boolean isHudActiveByUuid(@Nonnull UUID uuid) {
         Ref<EntityStore> ref = BloodService.getRefByUuid(uuid);
-        return ref != null && bloodGaugeHuds.containsKey(ref);
+        return ref != null && bloodGaugeHudManager.isActive(ref);
     }
 
     public static void syncBlood(@Nonnull Ref<EntityStore> playerRef, @Nonnull BloodState state) {
-        BloodGaugeHud hud = bloodGaugeHuds.get(playerRef);
-        if (hud != null) {
-            hud.syncBlood(state.blood, state.maxBlood);
-        }
+        bloodGaugeHudManager.sync(playerRef, state.blood, state.maxBlood);
     }
 
     public static void syncBloodGauge(@Nonnull Ref<EntityStore> playerRef,
                                       @Nonnull BloodState state,
                                       boolean creativeMode) {
-        BloodGaugeHud hud = bloodGaugeHuds.get(playerRef);
-        if (hud != null) {
-            hud.sync(state.blood, state.maxBlood, creativeMode);
-        }
+        bloodGaugeHudManager.sync(playerRef, state.blood, state.maxBlood, creativeMode);
     }
 
     public static void syncCreativeMode(@Nonnull Ref<EntityStore> playerRef, boolean creativeMode) {
-        BloodGaugeHud hud = bloodGaugeHuds.get(playerRef);
-        if (hud != null) {
-            hud.syncCreativeMode(creativeMode);
-        }
+        bloodGaugeHudManager.syncAlternateMode(playerRef, creativeMode);
     }
 
     public static void tryInitialize(@Nonnull Ref<EntityStore> playerRef,
@@ -69,7 +63,7 @@ public final class BloodHudService {
                                      @Nonnull Store<EntityStore> store,
                                      @Nonnull BloodState state,
                                      long now) {
-        if ((bloodGaugeHuds.containsKey(playerRef) && relicCooldownHuds.containsKey(playerRef))
+        if ((bloodGaugeHudManager.isActive(playerRef) && relicCooldownHuds.containsKey(playerRef))
                 || state.hudInitFailed
                 || now - state.firstSeenTime < VampirismConfig.get().getHudInitDelayMs()) {
             return;
@@ -115,7 +109,7 @@ public final class BloodHudService {
                                @Nonnull Player player,
                                @Nullable PlayerRef playerRefComponent,
                                boolean inputBindingsHidden) {
-        bloodGaugeHuds.remove(playerRef);
+        bloodGaugeHudManager.cleanup(playerRef, player, playerRefComponent);
         relicCooldownHuds.remove(playerRef);
         if (inputBindingsHidden && playerRefComponent != null) {
             player.getHudManager().showHudComponents(playerRefComponent, HudComponent.InputBindings);
@@ -130,7 +124,6 @@ public final class BloodHudService {
         Player playerForTask = player;
         PlayerRef refForTask = playerRefComponent;
         CompletableFuture.runAsync(() -> {
-            MultipleHudAdapter.hideCustomHud(playerForTask, refForTask, BLOOD_GAUGE_HUD_KEY);
             MultipleHudAdapter.hideCustomHud(playerForTask, refForTask, RELIC_COOLDOWN_HUD_KEY);
         }, (Executor) world);
     }
@@ -149,16 +142,12 @@ public final class BloodHudService {
         PlayerRef playerRefForTask = playerRefComponent;
 
         CompletableFuture.runAsync(() -> {
-            boolean bloodGaugeReady = bloodGaugeHuds.containsKey(refForTask);
-            if (!bloodGaugeReady) {
-                BloodGaugeHud hud = new BloodGaugeHud(playerRefForTask);
-                bloodGaugeReady = MultipleHudAdapter.setCustomHud(
-                        playerForTask, playerRefForTask, BLOOD_GAUGE_HUD_KEY, hud);
-                if (bloodGaugeReady) {
-                    bloodGaugeHuds.put(refForTask, hud);
-                    hud.sync(state.blood, state.maxBlood, playerForTask.getGameMode() == GameMode.Creative);
-                }
-            }
+            boolean bloodGaugeReady = bloodGaugeHudManager.ensureInstalled(
+                    refForTask,
+                    playerForTask,
+                    playerRefForTask,
+                    new ResourceGaugeValue(state.blood, state.maxBlood),
+                    playerForTask.getGameMode() == GameMode.Creative);
 
             boolean cooldownReady = relicCooldownHuds.containsKey(refForTask);
             if (!cooldownReady) {

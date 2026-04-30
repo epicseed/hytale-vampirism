@@ -1,4 +1,4 @@
-package com.epicseed.vampirism.hytale;
+package com.epicseed.epiccore.hytale;
 
 import java.lang.reflect.Method;
 
