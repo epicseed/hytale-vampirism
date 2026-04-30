@@ -1,9 +1,10 @@
 plugins {
     id 'java-library'
+    id 'maven-publish'
 }
 
-group = 'com.epicseed.epiccore'
-version = rootProject.version
+group = findProperty('epiccore_maven_group') ?: 'com.epicseed.epiccore'
+version = findProperty('epiccore_version') ?: rootProject.version
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(java_version)
@@ -26,4 +27,19 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifactId = 'epiccore-model'
+        }
+    }
+    repositories {
+        maven {
+            name = 'epiccoreBuild'
+            url = uri(rootProject.layout.buildDirectory.dir('repos/epiccore'))
+        }
+    }
 }

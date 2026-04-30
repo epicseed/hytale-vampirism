@@ -37,6 +37,11 @@ def assetsZipFile = hytalePackageDir != null ? file("${hytalePackageDir}/Assets.
 def serverJarFile = hytalePackageDir != null ? file("${hytalePackageDir}/Server/HytaleServer.jar") : null
 def hasHytaleAssets = assetsZipFile != null && assetsZipFile.exists()
 def hasHytaleServerJar = serverJarFile != null && serverJarFile.exists()
+def epiccoreBuildRepoDir = layout.buildDirectory.dir('repos/epiccore').get().asFile
+def usePublishedEpicCore = providers.gradleProperty('use_published_epiccore')
+        .map { it.toBoolean() }
+        .orElse(false)
+        .get()
 
 if (!hasHytaleAssets) {
     logger.lifecycle("Hytale assets not detected; asset indexing/validation and run configs will be skipped. Set -Phytale_home=/path/to/Hytale or provide bin/server/install/release/package/game/latest/Assets.zip.")
@@ -57,8 +62,13 @@ javadoc {
 // compile against their code without bundling it. When a local install is
 // present, we still use its jar for launching the server in IDE run configs.
 dependencies {
-    implementation(project(':EpicCore:epiccore-model'))
-    implementation(project(':EpicCore:epiccore-hytale'))
+    if (usePublishedEpicCore) {
+        implementation("${epiccore_maven_group}:epiccore-model:${epiccore_version}")
+        implementation("${epiccore_maven_group}:epiccore-hytale:${epiccore_version}")
+    } else {
+        implementation(project(':EpicCore:epiccore-model'))
+        implementation(project(':EpicCore:epiccore-hytale'))
+    }
     compileOnly("com.hypixel.hytale:Server:$hytale_build")
     if (hasHytaleServerJar) {
         runtimeOnly(files(serverJarFile))
@@ -76,6 +86,10 @@ dependencies {
 repositories {
     mavenCentral()
     maven {
+        name = 'epiccore-build'
+        url = uri(epiccoreBuildRepoDir)
+    }
+    maven {
         name = "hytale-release"
         url = uri("https://maven.hytale.com/release")
     }
@@ -83,6 +97,15 @@ repositories {
         name = "hytale-pre-release"
         url = uri("https://maven.hytale.com/pre-release")
     }
+}
+
+tasks.register('publishEpicCoreToBuildRepo') {
+    group = 'publishing'
+    description = 'Publishes epiccore-model and epiccore-hytale to build/repos/epiccore.'
+    dependsOn(
+            ':EpicCore:epiccore-model:publishMavenJavaPublicationToEpiccoreBuildRepository',
+            ':EpicCore:epiccore-hytale:publishMavenJavaPublicationToEpiccoreBuildRepository'
+    )
 }
 
 // Generates the packaged manifest from the source manifest without mutating
