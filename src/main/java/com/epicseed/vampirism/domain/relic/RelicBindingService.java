@@ -23,13 +23,20 @@ import com.epicseed.vampirism.systems.VampireInfectionSystem;
 public final class RelicBindingService {
 
     public static final String[] SLOT_KEYS = { "primary", "secondary", "ability1", "ability2", "ability3" };
+    public static final int DEFAULT_UTILITY_PRESET_COUNT = 4;
+    public static final int DEFAULT_PRESET_COUNT = DEFAULT_UTILITY_PRESET_COUNT + 1;
 
     private RelicBindingService() {
     }
 
     @Nonnull
     public static LinkedHashMap<String, String> getEffectiveBindings(@Nonnull UUID uuid) {
-        Map<String, String> overrides = PlayerRelicBindings.get().bindingsFor(uuid);
+        return getEffectiveBindings(uuid, activePresetIndex(uuid));
+    }
+
+    @Nonnull
+    public static LinkedHashMap<String, String> getEffectiveBindings(@Nonnull UUID uuid, int presetIndex) {
+        Map<String, String> overrides = PlayerRelicBindings.get().bindingsFor(uuid, presetIndex);
         LinkedHashMap<String, String> effective = new LinkedHashMap<>();
         for (String slot : SLOT_KEYS) {
             String abilityId;
@@ -47,7 +54,12 @@ public final class RelicBindingService {
 
     @Nonnull
     public static Optional<String> resolveAbilityForSlot(@Nonnull UUID uuid, @Nonnull String slot) {
-        Map<String, String> overrides = PlayerRelicBindings.get().bindingsFor(uuid);
+        return resolveAbilityForSlot(uuid, activePresetIndex(uuid), slot);
+    }
+
+    @Nonnull
+    public static Optional<String> resolveAbilityForSlot(@Nonnull UUID uuid, int presetIndex, @Nonnull String slot) {
+        Map<String, String> overrides = PlayerRelicBindings.get().bindingsFor(uuid, presetIndex);
         if (overrides.containsKey(slot)) {
             return normalized(overrides.get(slot));
         }
@@ -67,11 +79,40 @@ public final class RelicBindingService {
     }
 
     public static void applyBindings(@Nonnull UUID uuid, @Nonnull Map<String, String> pending) {
+        applyBindings(uuid, activePresetIndex(uuid), pending);
+    }
+
+    public static void applyBindings(@Nonnull UUID uuid, int presetIndex, @Nonnull Map<String, String> pending) {
         LinkedHashMap<String, String> bindingsToSave = new LinkedHashMap<>();
         for (String slot : SLOT_KEYS) {
             bindingsToSave.put(slot, normalized(pending.get(slot)).orElse(""));
         }
-        PlayerRelicBindings.get().setAll(uuid, bindingsToSave);
+        PlayerRelicBindings.get().setAll(uuid, presetIndex, bindingsToSave);
+    }
+
+    public static void applyAllBindings(@Nonnull UUID uuid,
+                                        @Nonnull Map<Integer, ? extends Map<String, String>> pendingByPreset,
+                                        int activePresetIndex) {
+        LinkedHashMap<Integer, LinkedHashMap<String, String>> normalizedByPreset = new LinkedHashMap<>();
+        pendingByPreset.forEach((presetIndex, pending) -> {
+            if (presetIndex == null || pending == null) {
+                return;
+            }
+            LinkedHashMap<String, String> bindingsToSave = new LinkedHashMap<>();
+            for (String slot : SLOT_KEYS) {
+                bindingsToSave.put(slot, normalized(pending.get(slot)).orElse(""));
+            }
+            normalizedByPreset.put(presetIndex, bindingsToSave);
+        });
+        PlayerRelicBindings.get().setAll(uuid, normalizedByPreset, activePresetIndex);
+    }
+
+    public static int activePresetIndex(@Nonnull UUID uuid) {
+        return PlayerRelicBindings.get().activePresetIndex(uuid);
+    }
+
+    public static void setActivePreset(@Nonnull UUID uuid, int presetIndex) {
+        PlayerRelicBindings.get().setActivePreset(uuid, presetIndex);
     }
 
     @Nonnull
@@ -180,6 +221,52 @@ public final class RelicBindingService {
             case "ability3" -> "Ability 3";
             default -> slot;
         };
+    }
+
+    @Nonnull
+    public static String presetLabel(int presetIndex) {
+        return presetLabel(presetIndex, DEFAULT_UTILITY_PRESET_COUNT);
+    }
+
+    @Nonnull
+    public static String presetLabel(int presetIndex, int utilityPresetCount) {
+        if (isInactiveOffhandPreset(presetIndex, utilityPresetCount)) {
+            return "No Offhand";
+        }
+        return "Preset " + (Math.max(0, presetIndex) + 1);
+    }
+
+    @Nonnull
+    public static String presetSubtitle(int presetIndex, int utilityPresetCount) {
+        if (isInactiveOffhandPreset(presetIndex, utilityPresetCount)) {
+            return "Utility inactive";
+        }
+        return "Utility Slot " + (presetIndex + 1);
+    }
+
+    public static int clampPresetIndex(int presetIndex, int presetCount) {
+        if (presetCount <= 0) {
+            return 0;
+        }
+        return Math.max(0, Math.min(presetCount - 1, presetIndex));
+    }
+
+    public static int inactiveOffhandPresetIndex(int utilityPresetCount) {
+        return Math.max(0, utilityPresetCount);
+    }
+
+    public static int presetIndexForUtilitySelection(int selectedSlot, int inactiveSlotIndex, int utilityPresetCount) {
+        if (selectedSlot == inactiveSlotIndex) {
+            return inactiveOffhandPresetIndex(utilityPresetCount);
+        }
+        if (selectedSlot >= 0 && selectedSlot < utilityPresetCount) {
+            return selectedSlot;
+        }
+        return -1;
+    }
+
+    public static boolean isInactiveOffhandPreset(int presetIndex, int utilityPresetCount) {
+        return presetIndex == inactiveOffhandPresetIndex(utilityPresetCount);
     }
 
     private static Skill findSkillByAbilityId(@Nonnull String abilityId) {

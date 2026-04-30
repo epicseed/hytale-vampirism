@@ -46,7 +46,7 @@ public final class PlayerLifecycleCoordinator {
         });
         plugin.getEventRegistry().register(PlayerDisconnectEvent.class, e -> {
             UUID uuid = e.getPlayerRef().getUuid();
-            PlayerRuntimeCleanupService.cleanupDisconnectedPlayer(uuid);
+            PlayerRuntimeCleanupService.cleanupDisconnectedPlayer(uuid, e.getPlayerRef().getReference());
         });
     }
 }

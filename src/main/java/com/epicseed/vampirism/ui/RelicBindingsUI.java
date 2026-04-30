@@ -13,6 +13,7 @@ import javax.annotation.Nonnull;
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.relic.RelicBindingService;
+import com.epicseed.vampirism.relic.RelicPresetProjectionService;
 import com.epicseed.vampirism.skill.model.Ability;
 import com.epicseed.vampirism.skill.model.Skill;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
@@ -45,11 +46,8 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
     /** Slot keys in display order. */
     private static final String[] SLOT_KEYS = { "primary", "secondary", "ability1", "ability2", "ability3" };
 
-    /** Pending binding map being edited (slot -> abilityId). */
-    private final LinkedHashMap<String, String> pending = new LinkedHashMap<>();
-
-    /** Snapshot of bindings as they were when the page opened (or after last Apply). Used to detect unsaved changes. */
-    private final LinkedHashMap<String, String> savedState = new LinkedHashMap<>();
+    private final LinkedHashMap<Integer, LinkedHashMap<String, String>> pendingByPreset = new LinkedHashMap<>();
+    private final LinkedHashMap<Integer, LinkedHashMap<String, String>> savedStateByPreset = new LinkedHashMap<>();
 
     /** Ability rows displayed (parallel to #AbilityListPanel children). */
     private final List<AbilityRow> abilityRows = new ArrayList<>();
@@ -59,6 +57,8 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
 
     /** Currently-selected ability id (server-side state). */
     private String selectedAbilityId;
+    private int presetCount = RelicBindingService.DEFAULT_PRESET_COUNT;
+    private int selectedPresetIndex;
 
     /** Navigation action deferred until user confirms leaving with unsaved changes ("close" or "openSkillTree"). */
     private String pendingNavAction;
@@ -80,13 +80,13 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
 
         UUID uuid = playerRef.getUuid();
 
-        pending.putAll(RelicBindingService.getEffectiveBindings(uuid));
-        savedState.putAll(pending); // snapshot of the saved state for dirty-detection
+        presetCount = RelicPresetProjectionService.totalPresetCount(ref, store);
+        selectedPresetIndex = RelicBindingService.clampPresetIndex(RelicBindingService.activePresetIndex(uuid), presetCount);
+        loadPresetState(uuid);
+        renderPresetTabs(cmd);
 
         // Render slot tiles
-        for (String slot : SLOT_KEYS) {
-            renderSlot(cmd, slot, pending.get(slot));
-        }
+        refreshAllSlots(cmd);
         updateCooldownRefreshState();
         refreshReadyAt = System.currentTimeMillis() + PAGE_MOUNT_GRACE_MS;
         OPEN_PAGES.put(uuid, this);
@@ -101,6 +101,11 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
                 new EventData().append("Action", "reset"), false);
         events.addEventBinding(CustomUIEventBindingType.Activating, "#ApplyBtn",
                 new EventData().append("Action", "apply"), false);
+        for (int presetIndex = 0; presetIndex < RelicBindingService.DEFAULT_PRESET_COUNT; presetIndex++) {
+            events.addEventBinding(CustomUIEventBindingType.Activating,
+                    presetSelector(presetIndex) + " #PresetButton",
+                    new EventData().append("Action", "selectPreset").append("PresetIndex", Integer.toString(presetIndex)), false);
+        }
 
         // Unsaved-changes modal buttons
         events.addEventBinding(CustomUIEventBindingType.Activating, "#SaveAndLeaveBtn",
@@ -154,6 +159,10 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
         if (unlocked.isEmpty()) {
             cmd.set("#SelectionHint.Text",
                     "You have no unlocked active abilities yet. Unlock skills in the Skill Tree first.");
+        } else {
+            cmd.set("#SelectionHint.Text",
+                    "Editing " + RelicBindingService.presetLabel(selectedPresetIndex)
+                            + ". Select an unlocked ability, then click a slot to bind it.");
         }
     }
 
@@ -225,7 +234,33 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
                 refreshAbilityHighlight(cmd);
                 Ability ab = Vampirism.getInstance().GetAbilityRegistry().Get(selectedAbilityId);
                 String name = (ab != null && ab.displayName != null) ? ab.displayName : selectedAbilityId;
-                cmd.set("#SelectionHint.Text", "Selected: " + name + ". Click a slot to bind it.");
+                cmd.set("#SelectionHint.Text", "Selected: " + name + ". Click a slot in "
+                        + presetLabel(selectedPresetIndex) + " to bind it.");
+            }
+
+            case "selectPreset" -> {
+                if (data.presetIndex == null || data.presetIndex.isBlank()) {
+                    sendUpdate();
+                    return;
+                }
+                int requestedPresetIndex;
+                try {
+                    requestedPresetIndex = Integer.parseInt(data.presetIndex);
+                } catch (NumberFormatException e) {
+                    sendUpdate();
+                    return;
+                }
+                int nextPresetIndex = RelicBindingService.clampPresetIndex(requestedPresetIndex, presetCount);
+                if (nextPresetIndex == selectedPresetIndex) {
+                    sendUpdate();
+                    return;
+                }
+                selectedPresetIndex = nextPresetIndex;
+                RelicBindingService.setActivePreset(uuid, selectedPresetIndex);
+                renderPresetTabs(cmd);
+                refreshAllSlots(cmd);
+                updateCooldownRefreshState();
+                cmd.set("#SelectionHint.Text", "Editing " + presetLabel(selectedPresetIndex) + ".");
             }
 
             case "bindSlot" -> {
@@ -238,7 +273,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
                     sendUpdate(cmd);
                     return;
                 }
-                String currentAbilityId = normalizedBinding(pending.get(data.slot));
+                String currentAbilityId = normalizedBinding(currentPending().get(data.slot));
                 if (Objects.equals(currentAbilityId, selectedAbilityId)) {
                     cmd.set("#SelectionHint.Text", "'" + abilityLabel(selectedAbilityId) + "' is already bound to '"
                             + slotLabel(data.slot) + "'.");
@@ -255,12 +290,12 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
                     sendUpdate(cmd);
                     return;
                 }
-                pending.put(data.slot, selectedAbilityId);
+                currentPending().put(data.slot, selectedAbilityId);
                 renderSlot(cmd, data.slot, selectedAbilityId);
                 Ability ab = Vampirism.getInstance().GetAbilityRegistry().Get(selectedAbilityId);
                 String name = (ab != null && ab.displayName != null) ? ab.displayName : selectedAbilityId;
                 cmd.set("#SelectionHint.Text", "Bound '" + name + "' to slot '" + slotLabel(data.slot)
-                        + "'. Click Apply to save.");
+                        + "' in " + presetLabel(selectedPresetIndex) + ". Click Apply to save.");
             }
 
             case "clearSlot" -> {
@@ -268,7 +303,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
                     sendUpdate();
                     return;
                 }
-                if (normalizedBinding(pending.get(data.slot)) == null) {
+                if (normalizedBinding(currentPending().get(data.slot)) == null) {
                     cmd.set("#SelectionHint.Text", "Slot '" + slotLabel(data.slot) + "' is already empty.");
                     sendUpdate(cmd);
                     return;
@@ -278,16 +313,16 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
                     sendUpdate(cmd);
                     return;
                 }
-                pending.remove(data.slot);
+                currentPending().remove(data.slot);
                 renderSlot(cmd, data.slot, null);
                 cmd.set("#SelectionHint.Text", "Cleared slot '" + slotLabel(data.slot)
-                        + "'. Click Apply to save.");
+                        + "' in " + presetLabel(selectedPresetIndex) + ". Click Apply to save.");
             }
 
             case "reset" -> {
                 List<String> skippedSlots = new ArrayList<>();
                 for (String slot : SLOT_KEYS) {
-                    String currentAbilityId = normalizedBinding(savedState.get(slot));
+                    String currentAbilityId = normalizedBinding(currentSavedState().get(slot));
                     String defaultAbilityId = normalizedBinding(RelicBindings.abilityFor(slot));
                     boolean currentLocked = currentAbilityId != null && isAbilityOnCooldown(uuid, currentAbilityId);
                     boolean defaultLocked = defaultAbilityId != null
@@ -295,27 +330,29 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
                             && isAbilityOnCooldown(uuid, defaultAbilityId);
                     if (currentLocked || defaultLocked) {
                         skippedSlots.add(slotLabel(slot));
-                        renderSlot(cmd, slot, pending.get(slot));
+                        renderSlot(cmd, slot, currentPending().get(slot));
                         continue;
                     }
                     if (defaultAbilityId != null) {
-                        pending.put(slot, defaultAbilityId);
+                        currentPending().put(slot, defaultAbilityId);
                     } else {
-                        pending.remove(slot);
+                        currentPending().remove(slot);
                     }
-                    renderSlot(cmd, slot, pending.get(slot));
+                    renderSlot(cmd, slot, currentPending().get(slot));
                 }
                 if (skippedSlots.isEmpty()) {
-                    cmd.set("#SelectionHint.Text", "Reset to defaults. Click Apply to save.");
+                    cmd.set("#SelectionHint.Text", "Reset " + presetLabel(selectedPresetIndex)
+                            + " to defaults. Click Apply to save.");
                 } else {
                     cmd.set("#SelectionHint.Text",
-                            "Reset applied to unlocked slots. Locked by cooldown: " + String.join(", ", skippedSlots) + ".");
+                            "Reset applied to unlocked slots in " + presetLabel(selectedPresetIndex)
+                                    + ". Locked by cooldown: " + String.join(", ", skippedSlots) + ".");
                 }
             }
 
             case "apply" -> {
                 if (applyBindings(uuid, cmd)) {
-                    cmd.set("#SelectionHint.Text", "Saved relic bindings.");
+                    cmd.set("#SelectionHint.Text", "Saved relic presets.");
                 }
             }
 
@@ -329,28 +366,32 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
 
     /** Returns true if {@code pending} differs from {@code savedState}. */
     private boolean isDirty() {
-        if (pending.size() != savedState.size()) return true;
-        for (String slot : SLOT_KEYS) {
-            String p = pending.get(slot);
-            String s = savedState.get(slot);
-            if (p == null ? s != null : !p.equals(s)) return true;
+        for (int presetIndex = 0; presetIndex < presetCount; presetIndex++) {
+            Map<String, String> pending = presetBindings(pendingByPreset, presetIndex);
+            Map<String, String> savedState = presetBindings(savedStateByPreset, presetIndex);
+            if (pending.size() != savedState.size()) return true;
+            for (String slot : SLOT_KEYS) {
+                String p = pending.get(slot);
+                String s = savedState.get(slot);
+                if (p == null ? s != null : !p.equals(s)) return true;
+            }
         }
         return false;
     }
 
     /** Persists {@code pending} to disk and updates {@code savedState}. */
     private boolean applyBindings(@Nonnull UUID uuid, @Nonnull UICommandBuilder cmd) {
-        String blockedReason = validatePendingBindings(uuid);
+        String blockedReason = validateAllPendingBindings(uuid);
         if (blockedReason != null) {
             cmd.set("#SelectionHint.Text", blockedReason);
             return false;
         }
-        RelicBindingService.applyBindings(uuid, pending);
-        savedState.clear();
-        savedState.putAll(pending);
+        RelicBindingService.applyAllBindings(uuid, pendingByPreset, selectedPresetIndex);
+        syncSavedState();
+        renderPresetTabs(cmd);
         refreshAllSlots(cmd);
         updateCooldownRefreshState();
-        LOGGER.atInfo().log("[RelicBindingsUI] " + playerRef.getUsername() + " saved bindings: " + pending);
+        LOGGER.atInfo().log("[RelicBindingsUI] " + playerRef.getUsername() + " saved relic presets: " + pendingByPreset);
         return true;
     }
 
@@ -417,12 +458,12 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
 
     private void refreshAllSlots(@Nonnull UICommandBuilder cmd) {
         for (String slot : SLOT_KEYS) {
-            renderSlot(cmd, slot, pending.get(slot));
+            renderSlot(cmd, slot, currentPending().get(slot));
         }
     }
 
     private long slotBindingRemainingMs(@Nonnull UUID uuid, @Nonnull String slot) {
-        return RelicBindingService.slotBindingRemainingMs(uuid, savedState, slot);
+        return RelicBindingService.slotBindingRemainingMs(uuid, currentSavedState(), slot);
     }
 
     private boolean hasActiveCooldowns() {
@@ -447,9 +488,15 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
         cooldownRefreshActive = false;
     }
 
-    public static void refreshOpenCooldowns(@Nonnull UUID uuid) {
+    public static void refreshOpenState(@Nonnull UUID uuid) {
         RelicBindingsUI page = OPEN_PAGES.get(uuid);
-        if (page == null || !page.cooldownRefreshActive) {
+        if (page == null) {
+            return;
+        }
+        if (page.refreshActivePresetSelection()) {
+            return;
+        }
+        if (!page.cooldownRefreshActive) {
             return;
         }
         long now = System.currentTimeMillis();
@@ -469,7 +516,7 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
         boolean changed = false;
         UUID uuid = playerRef.getUuid();
         for (String slot : SLOT_KEYS) {
-            String abilityId = normalizedBinding(pending.get(slot));
+            String abilityId = normalizedBinding(currentPending().get(slot));
             long remainingMs = slotBindingRemainingMs(uuid, slot);
             boolean onCooldown = abilityId != null && remainingMs > 0L;
             String cooldownText = onCooldown ? formatCooldown(remainingMs) : "";
@@ -526,13 +573,22 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
         return RelicBindingService.isAbilityOnCooldown(uuid, abilityId);
     }
 
-    private String validatePendingBindings(@Nonnull UUID uuid) {
-        return RelicBindingService.validatePendingBindings(uuid, savedState, pending);
+    private String validateAllPendingBindings(@Nonnull UUID uuid) {
+        for (int presetIndex = 0; presetIndex < presetCount; presetIndex++) {
+            String blockedReason = RelicBindingService.validatePendingBindings(
+                    uuid,
+                    presetBindings(savedStateByPreset, presetIndex),
+                    presetBindings(pendingByPreset, presetIndex));
+            if (blockedReason != null) {
+                return presetLabel(presetIndex) + ": " + blockedReason;
+            }
+        }
+        return null;
     }
 
     @Nonnull
     private String slotCooldownMessage(@Nonnull UUID uuid, @Nonnull String slot) {
-        String abilityId = normalizedBinding(savedState.get(slot));
+        String abilityId = normalizedBinding(currentSavedState().get(slot));
         if (abilityId == null) {
             return "Slot '" + slotLabel(slot) + "' is locked by cooldown.";
         }
@@ -581,6 +637,79 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
             boolean sel = selectedAbilityId != null && selectedAbilityId.equals(row.abilityId);
             cmd.set("#AbilityListPanel[" + row.index + "] #Selected.Visible", sel);
         }
+    }
+
+    private boolean refreshActivePresetSelection() {
+        int activePreset = RelicBindingService.clampPresetIndex(RelicBindingService.activePresetIndex(playerRef.getUuid()), presetCount);
+        if (activePreset == selectedPresetIndex) {
+            return false;
+        }
+        selectedPresetIndex = activePreset;
+        updateCooldownRefreshState();
+        UICommandBuilder cmd = new UICommandBuilder();
+        renderPresetTabs(cmd);
+        refreshAllSlots(cmd);
+        cmd.set("#SelectionHint.Text", "Editing " + presetLabel(selectedPresetIndex) + ".");
+        try {
+            sendUpdate(cmd);
+        } catch (Exception e) {
+            unregisterOpenPage();
+            LOGGER.atWarning().log("[RelicBindingsUI] Failed to refresh preset state for "
+                    + playerRef.getUsername() + ": " + e.getMessage());
+        }
+        return true;
+    }
+
+    private void renderPresetTabs(@Nonnull UICommandBuilder cmd) {
+        for (int presetIndex = 0; presetIndex < RelicBindingService.DEFAULT_PRESET_COUNT; presetIndex++) {
+            String selector = presetSelector(presetIndex);
+            boolean visible = presetIndex < presetCount;
+            boolean selected = visible && presetIndex == selectedPresetIndex;
+            cmd.set(selector + ".Visible", visible);
+            if (!visible) {
+                continue;
+            }
+            cmd.set(selector + " #PresetCard.Background", selected ? "#2b4f73" : "#14202c");
+            cmd.set(selector + " #PresetButton.Disabled", false);
+            cmd.set(selector + " #PresetTitle.Text", presetLabel(presetIndex));
+            cmd.set(selector + " #PresetSubtitle.Text", presetSubtitle(presetIndex));
+            cmd.set(selector + " #PresetTitle.Style.TextColor", selected ? "#ffffff" : "#d0d8df");
+            cmd.set(selector + " #PresetSubtitle.Style.TextColor", selected ? "#dfefff" : "#8ea2b5");
+        }
+    }
+
+    private void loadPresetState(@Nonnull UUID uuid) {
+        pendingByPreset.clear();
+        savedStateByPreset.clear();
+        for (int presetIndex = 0; presetIndex < presetCount; presetIndex++) {
+            LinkedHashMap<String, String> bindings = RelicBindingService.getEffectiveBindings(uuid, presetIndex);
+            pendingByPreset.put(presetIndex, new LinkedHashMap<>(bindings));
+            savedStateByPreset.put(presetIndex, new LinkedHashMap<>(bindings));
+        }
+    }
+
+    private void syncSavedState() {
+        savedStateByPreset.clear();
+        for (int presetIndex = 0; presetIndex < presetCount; presetIndex++) {
+            savedStateByPreset.put(presetIndex, new LinkedHashMap<>(presetBindings(pendingByPreset, presetIndex)));
+        }
+    }
+
+    @Nonnull
+    private LinkedHashMap<String, String> currentPending() {
+        return presetBindings(pendingByPreset, selectedPresetIndex);
+    }
+
+    @Nonnull
+    private LinkedHashMap<String, String> currentSavedState() {
+        return presetBindings(savedStateByPreset, selectedPresetIndex);
+    }
+
+    @Nonnull
+    private static LinkedHashMap<String, String> presetBindings(
+            @Nonnull Map<Integer, LinkedHashMap<String, String>> byPreset,
+            int presetIndex) {
+        return byPreset.computeIfAbsent(presetIndex, ignored -> new LinkedHashMap<>());
     }
 
     private static String rarityGridCell(String rarity) {
@@ -639,6 +768,24 @@ public class RelicBindingsUI extends InteractiveCustomUIPage<RelicBindingsData> 
             case "ability3" -> "Ability3";
             default -> slot;
         };
+    }
+
+    @Nonnull
+    private String presetLabel(int presetIndex) {
+        return RelicBindingService.presetLabel(presetIndex, utilityPresetCount());
+    }
+
+    @Nonnull
+    private String presetSubtitle(int presetIndex) {
+        return RelicBindingService.presetSubtitle(presetIndex, utilityPresetCount());
+    }
+
+    private int utilityPresetCount() {
+        return Math.max(0, presetCount - 1);
+    }
+
+    private static String presetSelector(int presetIndex) {
+        return "#Preset" + presetIndex;
     }
 
     private static com.hypixel.hytale.server.core.ui.Anchor anchor(int left, int top, int width, int height) {

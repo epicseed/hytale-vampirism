@@ -2,12 +2,19 @@ package com.epicseed.vampirism.runtime;
 
 import java.util.UUID;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
+import com.epicseed.vampirism.hytale.WorldStoreAdapter;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
+import com.epicseed.vampirism.relic.RelicPresetProjectionService;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.epicseed.vampirism.skill.runtime.AbilityCooldownTracker;
 import com.epicseed.vampirism.skill.runtime.TemporaryModifierTracker;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.epicseed.vampirism.systems.BloodConversionSystem;
 import com.epicseed.vampirism.systems.BloodFeedSystem;
 import com.epicseed.vampirism.systems.CrimsonUmbrellaVisualSystem;
@@ -21,13 +28,16 @@ import com.epicseed.vampirism.systems.VampireCombatSystem;
 import com.epicseed.vampirism.systems.VampireInfectionSystem;
 import com.epicseed.vampirism.systems.VampireMovementSystem;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class PlayerRuntimeCleanupService {
 
     private PlayerRuntimeCleanupService() {
     }
 
-    public static void cleanupDisconnectedPlayer(UUID uuid) {
+    public static void cleanupDisconnectedPlayer(UUID uuid, @Nullable Ref<EntityStore> playerRef) {
+        cleanupProjectedRelicInventory(uuid, playerRef);
         MorphFlySystem.captureDisconnectState(uuid);
         VampireVitalitySystem.captureDisconnectState(uuid);
         VampireVitalitySystem.clearPlayer(uuid);
@@ -51,5 +61,29 @@ public final class PlayerRuntimeCleanupService {
         AbilityCooldownTracker.clearPlayer(uuid);
         TemporaryModifierTracker.clearPlayer(uuid);
         PassiveEffectSystem.onPlayerDisconnect(uuid);
+    }
+
+    private static void cleanupProjectedRelicInventory(@Nonnull UUID uuid,
+                                                       @Nullable Ref<EntityStore> playerRef) {
+        if (playerRef == null) {
+            RelicPresetProjectionService.clearPlayer(uuid);
+            return;
+        }
+        Store<EntityStore> store = playerRef.getStore();
+        if (store == null) {
+            RelicPresetProjectionService.clearPlayer(uuid);
+            return;
+        }
+        World world = WorldStoreAdapter.resolveWorld(store);
+        if (world == null) {
+            RelicPresetProjectionService.clearPlayer(uuid);
+            return;
+        }
+        Runnable action = () -> RelicPresetProjectionService.sync(uuid, playerRef, store, false);
+        if (world.isInThread()) {
+            action.run();
+            return;
+        }
+        world.execute(action);
     }
 }

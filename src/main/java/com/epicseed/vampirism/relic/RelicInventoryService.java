@@ -57,7 +57,7 @@ public final class RelicInventoryService {
             short capacity = container.getCapacity();
             for (short slot = 0; slot < capacity; slot++) {
                 ItemStack stack = container.getItemStack(slot);
-                if (ItemStack.isEmpty(stack) || !RELIC_ITEM_ID.equals(stack.getItemId())) {
+                if (!isOwnedRelicStack(stack)) {
                     continue;
                 }
                 int quantity = Math.max(0, stack.getQuantity());
@@ -87,7 +87,7 @@ public final class RelicInventoryService {
                 short capacity = container.getCapacity();
                 for (short slot = 0; slot < capacity; slot++) {
                     ItemStack stack = container.getItemStack(slot);
-                    if (ItemStack.isEmpty(stack) || !RELIC_ITEM_ID.equals(stack.getItemId())) {
+                    if (!isOwnedRelicStack(stack)) {
                         continue;
                     }
                     strandedQuantity += Math.max(0, stack.getQuantity());
@@ -106,7 +106,7 @@ public final class RelicInventoryService {
                 short capacity = container.getCapacity();
                 for (short slot = 0; slot < capacity; slot++) {
                     ItemStack stack = container.getItemStack(slot);
-                    if (ItemStack.isEmpty(stack) || !RELIC_ITEM_ID.equals(stack.getItemId())) {
+                    if (!isOwnedRelicStack(stack)) {
                         continue;
                     }
                     container.removeItemStackFromSlot(slot, Math.max(1, stack.getQuantity()));
@@ -198,7 +198,7 @@ public final class RelicInventoryService {
             short capacity = container.getCapacity();
             for (short slot = 0; slot < capacity; slot++) {
                 ItemStack stack = container.getItemStack(slot);
-                if (ItemStack.isEmpty(stack) || !RELIC_ITEM_ID.equals(stack.getItemId())) {
+                if (!isOwnedRelicStack(stack)) {
                     continue;
                 }
                 container.removeItemStackFromSlot(slot, Math.max(1, stack.getQuantity()));
@@ -212,6 +212,13 @@ public final class RelicInventoryService {
                                                            @Nonnull Store<EntityStore> store,
                                                            int sectionId) {
         return InventoryAdapter.getInventorySection(playerRef, store, sectionId);
+    }
+
+    private static boolean isOwnedRelicStack(@Nullable ItemStack stack) {
+        return stack != null
+                && !ItemStack.isEmpty(stack)
+                && RELIC_ITEM_ID.equals(stack.getItemId())
+                && !RelicPresetProjectionService.isPresetProxy(stack);
     }
 
     public record SyncResult(boolean hasRequiredRelic,

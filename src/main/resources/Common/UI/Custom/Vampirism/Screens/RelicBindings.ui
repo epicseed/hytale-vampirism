@@ -44,7 +44,7 @@ Group #HeaderBtns {
   Anchor: (Right: 16, Top: 14, Width: 220, Height: 38);
 
   $C.@SecondaryTextButton #ResetBtn {
-    @Text = "Reset";
+    @Text = "Reset Preset";
     @Anchor = (Right: 110, Width: 100, Height: 32);
   }
 
@@ -54,10 +54,109 @@ Group #HeaderBtns {
   }
 }
 
+Group #PresetBar {
+  Anchor: (Left: 0, Right: 0, Top: 64, Height: 58);
+  LayoutMode: CenterMiddle;
+
+  Group {
+    Anchor: (Width: 708, Height: 58);
+
+    Group #Preset0 {
+      Anchor: (Left: 0, Top: 0, Width: 132, Height: 58);
+      Group #PresetCard { Anchor: (Full: 0); Background: #14202c; HitTestVisible: false; }
+      Button #PresetButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+      Label #PresetTitle {
+        Anchor: (Left: 0, Right: 0, Top: 8, Height: 18);
+        Text: "Preset 1";
+        Style: (FontSize: 12, TextColor: #d0d8df, RenderBold: true, HorizontalAlignment: Center);
+        HitTestVisible: false;
+      }
+      Label #PresetSubtitle {
+        Anchor: (Left: 0, Right: 0, Top: 30, Height: 16);
+        Text: "Utility Slot 1";
+        Style: (FontSize: 10, TextColor: #8ea2b5, HorizontalAlignment: Center);
+        HitTestVisible: false;
+      }
+    }
+
+    Group #Preset1 {
+      Anchor: (Left: 144, Top: 0, Width: 132, Height: 58);
+      Group #PresetCard { Anchor: (Full: 0); Background: #14202c; HitTestVisible: false; }
+      Button #PresetButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+      Label #PresetTitle {
+        Anchor: (Left: 0, Right: 0, Top: 8, Height: 18);
+        Text: "Preset 2";
+        Style: (FontSize: 12, TextColor: #d0d8df, RenderBold: true, HorizontalAlignment: Center);
+        HitTestVisible: false;
+      }
+      Label #PresetSubtitle {
+        Anchor: (Left: 0, Right: 0, Top: 30, Height: 16);
+        Text: "Utility Slot 2";
+        Style: (FontSize: 10, TextColor: #8ea2b5, HorizontalAlignment: Center);
+        HitTestVisible: false;
+      }
+    }
+
+    Group #Preset2 {
+      Anchor: (Left: 288, Top: 0, Width: 132, Height: 58);
+      Group #PresetCard { Anchor: (Full: 0); Background: #14202c; HitTestVisible: false; }
+      Button #PresetButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+      Label #PresetTitle {
+        Anchor: (Left: 0, Right: 0, Top: 8, Height: 18);
+        Text: "Preset 3";
+        Style: (FontSize: 12, TextColor: #d0d8df, RenderBold: true, HorizontalAlignment: Center);
+        HitTestVisible: false;
+      }
+      Label #PresetSubtitle {
+        Anchor: (Left: 0, Right: 0, Top: 30, Height: 16);
+        Text: "Utility Slot 3";
+        Style: (FontSize: 10, TextColor: #8ea2b5, HorizontalAlignment: Center);
+        HitTestVisible: false;
+      }
+    }
+
+    Group #Preset3 {
+      Anchor: (Left: 432, Top: 0, Width: 132, Height: 58);
+      Group #PresetCard { Anchor: (Full: 0); Background: #14202c; HitTestVisible: false; }
+      Button #PresetButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+      Label #PresetTitle {
+        Anchor: (Left: 0, Right: 0, Top: 8, Height: 18);
+        Text: "Preset 4";
+        Style: (FontSize: 12, TextColor: #d0d8df, RenderBold: true, HorizontalAlignment: Center);
+        HitTestVisible: false;
+      }
+      Label #PresetSubtitle {
+        Anchor: (Left: 0, Right: 0, Top: 30, Height: 16);
+        Text: "Utility Slot 4";
+        Style: (FontSize: 10, TextColor: #8ea2b5, HorizontalAlignment: Center);
+        HitTestVisible: false;
+      }
+    }
+
+    Group #Preset4 {
+      Anchor: (Left: 576, Top: 0, Width: 132, Height: 58);
+      Group #PresetCard { Anchor: (Full: 0); Background: #14202c; HitTestVisible: false; }
+      Button #PresetButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+      Label #PresetTitle {
+        Anchor: (Left: 0, Right: 0, Top: 8, Height: 18);
+        Text: "No Offhand";
+        Style: (FontSize: 12, TextColor: #d0d8df, RenderBold: true, HorizontalAlignment: Center);
+        HitTestVisible: false;
+      }
+      Label #PresetSubtitle {
+        Anchor: (Left: 0, Right: 0, Top: 30, Height: 16);
+        Text: "Utility inactive";
+        Style: (FontSize: 10, TextColor: #8ea2b5, HorizontalAlignment: Center);
+        HitTestVisible: false;
+      }
+    }
+  }
+}
+
 // 5 fixed slot tiles — GridCell pattern: background on Button, icon sibling on top.
 // 5 tiles * 96 + 4 gaps * 12 = 528.
 Group #SlotsBar {
-  Anchor: (Left: 0, Right: 0, Top: 80, Height: 130);
+  Anchor: (Left: 0, Right: 0, Top: 132, Height: 130);
   LayoutMode: CenterMiddle;
 
   Group {
@@ -412,7 +511,7 @@ Group #SlotsBar {
 
 // Selection hint label below the slot bar
 Label #SelectionHint {
-  Anchor: (Left: 0, Right: 0, Top: 218, Height: 22);
+  Anchor: (Left: 0, Right: 0, Top: 270, Height: 22);
   Text: "Select an unlocked ability, then click a slot to bind it.";
   Style: (FontSize: 12, TextColor: #cccccc, HorizontalAlignment: Center);
 }
@@ -420,7 +519,7 @@ Label #SelectionHint {
 // Ability list panel — central container, cards appended dynamically by Java.
 // Plain Group (no LayoutMode) so Java can position children via setObject Anchor.
 Group #AbilityListPanel {
-  Anchor: (Left: 60, Right: 60, Top: 252, Bottom: 88);
+  Anchor: (Left: 60, Right: 60, Top: 304, Bottom: 88);
   Background: #000000(0.3);
 }
 

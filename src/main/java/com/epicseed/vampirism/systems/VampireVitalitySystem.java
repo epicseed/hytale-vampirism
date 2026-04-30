@@ -18,6 +18,7 @@ import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.relic.RelicInventoryService;
+import com.epicseed.vampirism.relic.RelicPresetProjectionService;
 import com.epicseed.vampirism.skill.runtime.EntityRefTracker;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -173,15 +174,17 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
 
             PlayerRef playerRefComponent = (PlayerRef) store.getComponent(playerRef, PlayerRef.getComponentType());
             if (playerRefComponent != null && relicBindingsOpen) {
-                RelicBindingsUI.refreshOpenCooldowns(playerRefComponent.getUuid());
+                RelicBindingsUI.refreshOpenState(playerRefComponent.getUuid());
             }
             if (playerRefComponent == null) {
                 return;
             }
             boolean creativeMode = player.getGameMode() == GameMode.Creative;
             boolean isVampire = VampireStatusRegistry.get().isVampire(playerRefComponent.getUuid());
+            boolean relicInHand = isRelicInHand(playerRef, store);
 
             if (!isVampire) {
+                RelicPresetProjectionService.sync(playerRefComponent.getUuid(), playerRef, store, false);
                 RelicOwnershipSyncService.syncNonVampire(playerRef, store);
                 cleanupPlayer(playerRef, player, playerRefComponent);
                 return;
@@ -193,6 +196,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
             BloodState state = BloodService.getOrCreateLoaded(playerRef, playerRefComponent.getUuid(), store);
 
             RelicOwnershipSyncService.syncVampire(playerRef, store, player, state);
+            RelicPresetProjectionService.sync(playerRefComponent.getUuid(), playerRef, store, relicInHand);
 
             BloodService.refreshCapacity(state, playerRef, store);
 
@@ -201,7 +205,6 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
             // HUD initialization
             BloodHudService.tryInitialize(playerRef, player, playerRefComponent, store, state, now);
 
-            boolean relicInHand = isRelicInHand(playerRef, store);
             BloodHudService.syncInputBindings(player, playerRefComponent, state, relicInHand);
             BloodHudService.refreshRelicCooldowns(playerRef, store, state, now, blockRelicHudRefresh, skillTreeOpen);
             BloodHudService.syncCreativeMode(playerRef, creativeMode);
