@@ -14,6 +14,12 @@ import com.epicseed.vampirism.skill.data.SkillLoader;
 import com.epicseed.vampirism.skill.data.SkillDataPaths;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
 import com.epicseed.epiccore.skill.model.Skill;
+import com.epicseed.vampirism.skill.runtime.RegistryBackedReusableDefinitionProvider;
+import com.epicseed.vampirism.skill.runtime.RegistryBackedAbilityDefinitionProvider;
+import com.epicseed.vampirism.skill.runtime.AbilityService;
+import com.epicseed.vampirism.skill.runtime.SkillRuntimeDefinitions;
+import com.epicseed.vampirism.skill.runtime.VampireVitalityAbilityResourcePort;
+import com.epicseed.vampirism.skill.runtime.VampirismAbilityAccessProvider;
 import com.epicseed.vampirism.skill.registry.EffectDefRegistry;
 import com.epicseed.vampirism.skill.registry.AbilityRegistry;
 import com.epicseed.vampirism.skill.registry.ModifierDefRegistry;
@@ -74,6 +80,10 @@ public class Vampirism extends JavaPlugin {
         VampireStatusRegistry.init(this.getDataDirectory());
         PlayerRelicBindings.init(this.getDataDirectory());
         PlayerSkillRegistry.init(this.getDataDirectory());
+        AbilityService.init(
+                new RegistryBackedAbilityDefinitionProvider(abilityRegistry, skillRegistry, effectDefRegistry),
+                new VampirismAbilityAccessProvider(PlayerSkillRegistry.get()),
+                new VampireVitalityAbilityResourcePort());
         NightHuntSpawnRegistry.init();
         PassiveService.init();
         this.skillTreeManager = new SkillTreeManager(skillRegistry);
@@ -109,6 +119,12 @@ public class Vampirism extends JavaPlugin {
         this.triggerRegistry     = new ReusableDefRegistry();
         this.actionRegistry      = new ReusableDefRegistry();
         this.targetingRegistry   = new ReusableDefRegistry();
+        SkillRuntimeDefinitions.init(new RegistryBackedReusableDefinitionProvider(
+                conditionRegistry,
+                requirementRegistry,
+                triggerRegistry,
+                actionRegistry,
+                targetingRegistry));
 
         SkillLoader skillLoader = new SkillLoader(SkillDataPaths.vampirismDefaults());
 

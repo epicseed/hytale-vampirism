@@ -1,5 +1,6 @@
 package com.epicseed.vampirism.skill.registry;
 
+import com.epicseed.epiccore.player.PlayerProgressProfile;
 import com.epicseed.vampirism.domain.player.PlayerVampireProfile;
 import com.epicseed.vampirism.domain.player.PlayerVampireProfileRepository;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -14,6 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Compatibility facade for player vampirism profile data.
@@ -65,22 +67,19 @@ public class PlayerSkillRegistry {
     }
 
     public int getSkillPoints(@Nonnull UUID uuid) {
-        return getOrLoad(uuid).skillPoints;
+        return readProgress(uuid, progress -> progress.skillPoints);
     }
 
     public int getAcquiredSkillPoints(@Nonnull UUID uuid) {
-        PlayerVampireProfile profile = getOrLoad(uuid);
-        synchronized (profile) {
-            return Math.max(0, profile.skillPoints + profile.totalSpent);
-        }
+        return readProgress(uuid, progress -> Math.max(0, progress.skillPoints + progress.totalSpent));
     }
 
     public void addSkillPoints(@Nonnull UUID uuid, int amount) {
-        mutateAndSave(uuid, profile -> profile.skillPoints = Math.max(0, profile.skillPoints + amount));
+        mutateAndSaveProgress(uuid, progress -> progress.skillPoints = Math.max(0, progress.skillPoints + amount));
     }
 
     public void setSkillPoints(@Nonnull UUID uuid, int amount) {
-        mutateAndSave(uuid, profile -> profile.skillPoints = Math.max(0, amount));
+        mutateAndSaveProgress(uuid, progress -> progress.skillPoints = Math.max(0, amount));
     }
 
     /**
@@ -88,15 +87,15 @@ public class PlayerSkillRegistry {
      * Uses the cost stored when each skill was purchased, so tree edits don't affect refunds.
      */
     public void resetSkills(@Nonnull UUID uuid) {
-        mutateAndSave(uuid, profile -> {
-            profile.skillPoints = Math.max(0, profile.skillPoints + profile.totalSpent);
-            profile.totalSpent = 0;
-            profile.unlockedSkills.clear();
+        mutateAndSaveProgress(uuid, progress -> {
+            progress.skillPoints = Math.max(0, progress.skillPoints + progress.totalSpent);
+            progress.totalSpent = 0;
+            progress.unlockedSkills.clear();
         });
     }
 
     public boolean hasSkill(@Nonnull UUID uuid, @Nonnull String skillId) {
-        return getOrLoad(uuid).unlockedSkills.contains(skillId);
+        return readProgress(uuid, progress -> progress.unlockedSkills.contains(skillId));
     }
 
     @Nonnull
@@ -222,20 +221,17 @@ public class PlayerSkillRegistry {
 
     @Nonnull
     public Map<String, Long> getPersistedAbilityCooldowns(@Nonnull UUID uuid) {
-        PlayerVampireProfile profile = getOrLoad(uuid);
-        synchronized (profile) {
-            return new LinkedHashMap<>(profile.abilityCooldowns);
-        }
+        return readProgress(uuid, progress -> new LinkedHashMap<>(progress.abilityCooldowns));
     }
 
     public void setPersistedAbilityCooldowns(@Nonnull UUID uuid, @Nonnull Map<String, Long> cooldowns) {
-        mutate(uuid, profile -> {
-            profile.abilityCooldowns.clear();
+        mutateProgress(uuid, progress -> {
+            progress.abilityCooldowns.clear();
             cooldowns.forEach((abilityId, remainingMs) -> {
                 if (abilityId == null || abilityId.isBlank() || remainingMs == null || remainingMs <= 0L) {
                     return;
                 }
-                profile.abilityCooldowns.put(abilityId, remainingMs);
+                progress.abilityCooldowns.put(abilityId, remainingMs);
             });
         });
     }
@@ -284,14 +280,17 @@ public class PlayerSkillRegistry {
         PlayerVampireProfile profile = getOrLoad(uuid);
         boolean success;
         synchronized (profile) {
-            if (profile.unlockedSkills.contains(skillId)) return false;
-            if (profile.skillPoints < cost) return false;
+            PlayerProgressProfile progress = profile.progressProfile();
+            if (progress.unlockedSkills.contains(skillId)) return false;
+            if (progress.skillPoints < cost) return false;
             for (String req : requirementIds) {
-                if (!profile.unlockedSkills.contains(req)) return false;
+                if (!progress.unlockedSkills.contains(req)) return false;
             }
-            profile.skillPoints -= cost;
-            profile.totalSpent += cost;
-            profile.unlockedSkills.add(skillId);
+            progress.skillPoints -= cost;
+            progress.totalSpent += cost;
+            progress.unlockedSkills.add(skillId);
+            progress.sanitize();
+            profile.applyProgressProfile(progress);
             success = true;
         }
         if (success) {
@@ -304,8 +303,11 @@ public class PlayerSkillRegistry {
     public boolean grantSkill(@Nonnull UUID uuid, @Nonnull String skillId) {
         PlayerVampireProfile profile = getOrLoad(uuid);
         synchronized (profile) {
-            if (profile.unlockedSkills.contains(skillId)) return false;
-            profile.unlockedSkills.add(skillId);
+            PlayerProgressProfile progress = profile.progressProfile();
+            if (progress.unlockedSkills.contains(skillId)) return false;
+            progress.unlockedSkills.add(skillId);
+            progress.sanitize();
+            profile.applyProgressProfile(progress);
         }
         repository.save(uuid, profile);
         evictIfOffline(uuid);
@@ -315,23 +317,19 @@ public class PlayerSkillRegistry {
     /** Non-mutating check — safe to call for UI display. */
     public boolean canUnlock(@Nonnull UUID uuid, @Nonnull String skillId, int cost,
                              @Nonnull Iterable<String> requirementIds) {
-        PlayerVampireProfile profile = getOrLoad(uuid);
-        synchronized (profile) {
-            if (profile.unlockedSkills.contains(skillId)) return false;
-            if (profile.skillPoints < cost) return false;
+        return readProgress(uuid, progress -> {
+            if (progress.unlockedSkills.contains(skillId)) return false;
+            if (progress.skillPoints < cost) return false;
             for (String req : requirementIds) {
-                if (!profile.unlockedSkills.contains(req)) return false;
+                if (!progress.unlockedSkills.contains(req)) return false;
             }
-        }
-        return true;
+            return true;
+        });
     }
 
     @Nonnull
     public Set<String> getUnlockedSkills(@Nonnull UUID uuid) {
-        PlayerVampireProfile profile = getOrLoad(uuid);
-        synchronized (profile) {
-            return new HashSet<>(profile.unlockedSkills);
-        }
+        return readProgress(uuid, progress -> new HashSet<>(progress.unlockedSkills));
     }
 
     public void updateProfile(@Nonnull UUID uuid, @Nonnull Consumer<PlayerVampireProfile> updater) {
@@ -348,6 +346,31 @@ public class PlayerSkillRegistry {
     @Nonnull
     private PlayerVampireProfile getOrLoad(@Nonnull UUID uuid) {
         return cache.computeIfAbsent(uuid, repository::load);
+    }
+
+    private <T> T readProgress(@Nonnull UUID uuid, @Nonnull Function<PlayerProgressProfile, T> reader) {
+        PlayerVampireProfile profile = getOrLoad(uuid);
+        synchronized (profile) {
+            return reader.apply(profile.progressProfile());
+        }
+    }
+
+    private void mutateProgress(@Nonnull UUID uuid, @Nonnull Consumer<PlayerProgressProfile> updater) {
+        mutate(uuid, profile -> {
+            PlayerProgressProfile progress = profile.progressProfile();
+            updater.accept(progress);
+            progress.sanitize();
+            profile.applyProgressProfile(progress);
+        });
+    }
+
+    private void mutateAndSaveProgress(@Nonnull UUID uuid, @Nonnull Consumer<PlayerProgressProfile> updater) {
+        mutateAndSave(uuid, profile -> {
+            PlayerProgressProfile progress = profile.progressProfile();
+            updater.accept(progress);
+            progress.sanitize();
+            profile.applyProgressProfile(progress);
+        });
     }
 
     private void mutate(@Nonnull UUID uuid, @Nonnull Consumer<PlayerVampireProfile> updater) {

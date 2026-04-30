@@ -1,14 +1,12 @@
 package com.epicseed.vampirism.skill.runtime;
 
-import com.epicseed.vampirism.Vampirism;
+import com.epicseed.epiccore.skill.model.Ability;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.skill.model.Ability;
+import com.epicseed.epiccore.skill.runtime.AbilityAccessProvider;
+import com.epicseed.epiccore.skill.runtime.AbilityDefinitionProvider;
 import com.epicseed.epiccore.skill.model.EffectDef;
 import com.epicseed.epiccore.skill.model.Skill;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
-import com.epicseed.vampirism.systems.VampireInfectionSystem;
-import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -19,6 +17,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -46,8 +45,62 @@ public final class AbilityService {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private static final int MAX_ABILITY_ACTIVATION_DEPTH = 8;
+    private static final AbilityDefinitionProvider UNINITIALIZED_DEFINITION_PROVIDER = new AbilityDefinitionProvider() {
+        @Override
+        public Ability getAbility(String id) {
+            return null;
+        }
+
+        @Override
+        public Skill getSkill(String id) {
+            return null;
+        }
+
+        @Override
+        public EffectDef getEffect(String id) {
+            return null;
+        }
+    };
+    private static final AbilityAccessProvider UNINITIALIZED_ACCESS_PROVIDER = new AbilityAccessProvider() {
+        @Override
+        public boolean allowsTemporaryAbility(UUID uuid, String abilityId) {
+            return false;
+        }
+
+        @Override
+        public Set<String> getUnlockedSkillIds(UUID uuid) {
+            return Set.of();
+        }
+    };
+    private static final AbilityResourcePort UNINITIALIZED_RESOURCE_PORT = new AbilityResourcePort() {
+        @Override
+        public boolean canAffordBlood(Ref<EntityStore> casterRef, int bloodCost) {
+            return false;
+        }
+
+        @Override
+        public void spendBlood(Ref<EntityStore> casterRef, int bloodCost) {
+        }
+    };
+    private static AbilityDefinitionProvider definitionProvider = UNINITIALIZED_DEFINITION_PROVIDER;
+    private static AbilityAccessProvider accessProvider = UNINITIALIZED_ACCESS_PROVIDER;
+    private static AbilityResourcePort resourcePort = UNINITIALIZED_RESOURCE_PORT;
 
     private AbilityService() {}
+
+    public static void init(AbilityDefinitionProvider definitionProvider,
+                            AbilityAccessProvider accessProvider,
+                            AbilityResourcePort resourcePort) {
+        AbilityService.definitionProvider = definitionProvider != null
+                ? definitionProvider
+                : UNINITIALIZED_DEFINITION_PROVIDER;
+        AbilityService.accessProvider = accessProvider != null
+                ? accessProvider
+                : UNINITIALIZED_ACCESS_PROVIDER;
+        AbilityService.resourcePort = resourcePort != null
+                ? resourcePort
+                : UNINITIALIZED_RESOURCE_PORT;
+    }
 
     /**
      * Attempts to activate an ability for a player.
@@ -89,7 +142,7 @@ public final class AbilityService {
     static SkillActivationResult activate(@Nonnull String abilityId, @Nonnull SkillRuntimeContext ctx) {
 
         // 1. Look up ability definition
-        Ability ability = Vampirism.getInstance().GetAbilityRegistry().Get(abilityId);
+        Ability ability = definitionProvider.getAbility(abilityId);
         if (ability == null) {
             return SkillActivationResult.unknownAbility(abilityId);
         }
@@ -126,7 +179,7 @@ public final class AbilityService {
         try {
             // 6. Blood cost check
             int bloodCost = toggleOffActivation ? 0 : computeBloodCost(ability, ctx);
-            if (bloodCost > 0 && !VampireVitalitySystem.canAffordBlood(casterRef, bloodCost)) {
+            if (bloodCost > 0 && !resourcePort.canAffordBlood(casterRef, bloodCost)) {
                 return SkillActivationResult.requirementNotMet(
                         String.format("Insufficient blood for %s (need %d)", abilityId, bloodCost));
             }
@@ -163,7 +216,7 @@ public final class AbilityService {
 
             // 9. Commit: deduct blood and keep the reserved cooldown
             if (bloodCost > 0) {
-                VampireVitalitySystem.spendBlood(casterRef, bloodCost);
+                resourcePort.spendBlood(casterRef, bloodCost);
             }
             cooldownReserved = false;
             TriggerDispatcher.dispatch(TriggerEvent.onActivate(ctx, abilityId));
@@ -202,11 +255,11 @@ public final class AbilityService {
 
     /** Returns {@code true} if any of the player's unlocked skill nodes references this abilityId. */
     private static boolean isAbilityUnlocked(@Nonnull UUID uuid, @Nonnull String abilityId) {
-        if (VampireInfectionSystem.allowsTemporaryAbility(uuid, abilityId)) {
+        if (accessProvider.allowsTemporaryAbility(uuid, abilityId)) {
             return true;
         }
-        for (String skillId : PlayerSkillRegistry.get().getUnlockedSkills(uuid)) {
-            Skill skill = Vampirism.getInstance().GetSkillRegistry().GetSkill(skillId);
+        for (String skillId : accessProvider.getUnlockedSkillIds(uuid)) {
+            Skill skill = definitionProvider.getSkill(skillId);
             if (skill != null && abilityId.equals(skill.abilityId)) return true;
         }
         return false;
@@ -297,7 +350,7 @@ public final class AbilityService {
             return false;
         }
 
-        EffectDef effectDef = Vampirism.getInstance().GetEffectDefRegistry().Get(effectId);
+        EffectDef effectDef = definitionProvider.getEffect(effectId);
         if (effectDef == null) {
             return false;
         }

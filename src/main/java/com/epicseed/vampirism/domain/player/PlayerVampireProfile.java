@@ -1,5 +1,7 @@
 package com.epicseed.vampirism.domain.player;
 
+import com.epicseed.epiccore.player.PlayerProgressProfile;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -45,22 +47,15 @@ public class PlayerVampireProfile {
     public LinkedHashMap<String, Long> abilityCooldowns = new LinkedHashMap<>();
 
     public void sanitize() {
-        skillPoints = Math.max(0, skillPoints);
-        totalSpent = Math.max(0, totalSpent);
+        PlayerProgressProfile progress = progressProfile();
+        progress.sanitize();
+        applyProgressProfile(progress);
         blood = Math.max(0, blood);
         completedNightHunts = Math.max(0, completedNightHunts);
         nightHuntCooldownMs = Math.max(0L, nightHuntCooldownMs);
         infectionExpiresAtMs = Math.max(0L, infectionExpiresAtMs);
         if (infectionExpiresAtMs > 0L && infectionExpiresAtMs <= System.currentTimeMillis()) {
             infectionExpiresAtMs = 0L;
-        }
-
-        if (unlockedSkills == null) {
-            unlockedSkills = ConcurrentHashMap.newKeySet();
-        } else if (!(unlockedSkills instanceof java.util.concurrent.ConcurrentHashMap.KeySetView<?, ?>)) {
-            Set<String> copy = ConcurrentHashMap.newKeySet();
-            copy.addAll(unlockedSkills);
-            unlockedSkills = copy;
         }
 
         activeRelicPreset = Math.max(0, activeRelicPreset);
@@ -71,7 +66,36 @@ public class PlayerVampireProfile {
         }
         relicPresets.computeIfAbsent(relicPresetKey(activeRelicPreset), ignored -> new LinkedHashMap<>());
         relicBindings = new LinkedHashMap<>(relicBindingsFor(activeRelicPreset));
-        abilityCooldowns = sanitizeLongMap(abilityCooldowns);
+    }
+
+    public PlayerProgressProfile progressProfile() {
+        PlayerProgressProfile progress = new PlayerProgressProfile();
+        progress.skillPoints = skillPoints;
+        progress.totalSpent = totalSpent;
+        if (unlockedSkills != null) {
+            progress.unlockedSkills.addAll(unlockedSkills);
+        }
+        progress.abilityCooldowns = new LinkedHashMap<>(abilityCooldowns != null ? abilityCooldowns : Map.of());
+        return progress;
+    }
+
+    public void applyProgressProfile(PlayerProgressProfile progress) {
+        if (progress == null) {
+            skillPoints = 0;
+            totalSpent = 0;
+            unlockedSkills = ConcurrentHashMap.newKeySet();
+            abilityCooldowns = new LinkedHashMap<>();
+            return;
+        }
+        skillPoints = Math.max(0, progress.skillPoints);
+        totalSpent = Math.max(0, progress.totalSpent);
+
+        Set<String> unlockedCopy = ConcurrentHashMap.newKeySet();
+        if (progress.unlockedSkills != null) {
+            unlockedCopy.addAll(progress.unlockedSkills);
+        }
+        unlockedSkills = unlockedCopy;
+        abilityCooldowns = new LinkedHashMap<>(progress.abilityCooldowns != null ? progress.abilityCooldowns : Map.of());
     }
 
     public LinkedHashMap<String, String> activeRelicBindings() {
@@ -96,19 +120,6 @@ public class PlayerVampireProfile {
         }
         input.forEach((key, value) -> {
             if (key != null && !key.isBlank() && value != null) {
-                result.put(key, value);
-            }
-        });
-        return result;
-    }
-
-    private static LinkedHashMap<String, Long> sanitizeLongMap(Map<String, Long> input) {
-        LinkedHashMap<String, Long> result = new LinkedHashMap<>();
-        if (input == null) {
-            return result;
-        }
-        input.forEach((key, value) -> {
-            if (key != null && !key.isBlank() && value != null && value > 0L) {
                 result.put(key, value);
             }
         });
