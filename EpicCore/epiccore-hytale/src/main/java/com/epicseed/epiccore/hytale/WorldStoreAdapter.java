@@ -1,4 +1,4 @@
-package com.epicseed.vampirism.hytale;
+package com.epicseed.epiccore.hytale;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -8,11 +8,13 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class WorldStoreAdapter {
+
     private WorldStoreAdapter() {
     }
 
     @Nullable
     public static World resolveWorld(@Nonnull Store<EntityStore> store) {
-        return com.epicseed.epiccore.hytale.WorldStoreAdapter.resolveWorld(store);
+        EntityStore entityStore = store.getExternalData();
+        return entityStore != null ? entityStore.getWorld() : null;
     }
 }
