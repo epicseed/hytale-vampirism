@@ -7,10 +7,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 
 import com.epicseed.vampirism.config.VampirismConfig;
+import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -41,7 +41,7 @@ public final class BloodService {
         registerRef(uuid, playerRef);
         return playerStates.computeIfAbsent(uuid, ignored -> {
             BloodState loaded = new BloodState();
-            loaded.blood = PlayerSkillRegistry.get().getPersistedBlood(uuid);
+            loaded.blood = VampirePlayerStateStore.get().getPersistedBlood(uuid);
             loaded.maxBlood = resolveCapacityUnits(playerRef, store);
             BloodStateOperations.clampBlood(loaded);
             loaded.isStarving = loaded.blood <= VampirismConfig.get().getSatietyStarvingThreshold();
@@ -133,7 +133,7 @@ public final class BloodService {
     public static void captureDisconnectState(@Nonnull UUID uuid) {
         BloodState state = playerStates.get(uuid);
         if (state == null) return;
-        PlayerSkillRegistry.get().setPersistedBlood(uuid, state.blood);
+        VampirePlayerStateStore.get().setPersistedBlood(uuid, state.blood);
     }
 
     public static void clearPlayer(@Nonnull UUID uuid) {

@@ -5,6 +5,7 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -18,7 +19,7 @@ public final class NightHuntRewardService {
                                              @Nullable Ref<EntityStore> rewardRef,
                                              @Nonnull Store<EntityStore> store,
                                              int rewardPoints) {
-        PlayerSkillRegistry.get().incrementCompletedNightHunts(ownerUuid);
+        VampirePlayerStateStore.get().incrementCompletedNightHunts(ownerUuid);
         if (rewardPoints <= 0) {
             return;
         }

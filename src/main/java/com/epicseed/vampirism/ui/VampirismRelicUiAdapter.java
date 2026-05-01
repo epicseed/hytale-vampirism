@@ -9,7 +9,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
-import com.epicseed.epiccore.skill.runtime.AbilitySlotBindings;
 import com.epicseed.epiccore.skill.ui.RelicAbilityView;
 import com.epicseed.epiccore.skill.ui.RelicUiAdapter;
 import com.epicseed.vampirism.config.VampirismConfig;
@@ -116,7 +115,7 @@ public final class VampirismRelicUiAdapter implements RelicUiAdapter {
     @Override
     @Nullable
     public String defaultAbilityId(@Nonnull String slot) {
-        return RelicBindingService.normalized(AbilitySlotBindings.abilityFor(slot)).orElse(null);
+        return RelicBindingService.normalized(RelicBindingService.defaultAbilityId(slot)).orElse(null);
     }
 
     @Override

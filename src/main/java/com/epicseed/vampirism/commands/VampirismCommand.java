@@ -13,9 +13,9 @@ import com.epicseed.vampirism.commands.admin.MorphAdminCommands;
 import com.epicseed.vampirism.commands.admin.SkillAdminCommands;
 import com.epicseed.vampirism.commands.admin.VampireAdminCommands;
 import com.epicseed.vampirism.config.VampirismConfig;
+import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
@@ -149,7 +149,7 @@ public class VampirismCommand extends AbstractCommand {
 
             boolean isVampire = VampireStatusRegistry.get().isVampire(uuid);
             boolean permanentVampire = VampireStatusRegistry.get().isPermanentVampire(uuid);
-            long infectionRemainingMs = PlayerSkillRegistry.get().getInfectionRemainingMs(uuid);
+            long infectionRemainingMs = VampirePlayerStateStore.get().getInfectionRemainingMs(uuid);
             ctx.sendMessage(Message.raw("=== Status: " + target.getUsername() + " ===").color("dark_red"));
             ctx.sendMessage(Message.raw("Vampire: " + isVampire).color(isVampire ? "red" : "green"));
             ctx.sendMessage(Message.raw("Permanent: " + permanentVampire).color(permanentVampire ? "red" : "gray"));
@@ -189,7 +189,7 @@ public class VampirismCommand extends AbstractCommand {
 
             boolean isVampire = VampireStatusRegistry.get().isVampire(uuid);
             boolean permanentVampire = VampireStatusRegistry.get().isPermanentVampire(uuid);
-            long infectionRemainingMs = PlayerSkillRegistry.get().getInfectionRemainingMs(uuid);
+            long infectionRemainingMs = VampirePlayerStateStore.get().getInfectionRemainingMs(uuid);
             int blood = VampireVitalitySystem.getBloodByUuid(uuid);
             int maxBlood = VampireVitalitySystem.getMaxBloodByUuid(uuid);
             boolean starving = VampireVitalitySystem.isStarvingByUuid(uuid);

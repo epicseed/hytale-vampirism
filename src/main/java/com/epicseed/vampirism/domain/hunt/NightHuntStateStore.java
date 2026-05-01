@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
+import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
 
 public final class NightHuntStateStore {
     private static final ConcurrentHashMap<UUID, HuntState> ACTIVE_HUNTS = new ConcurrentHashMap<>();
@@ -49,13 +49,13 @@ public final class NightHuntStateStore {
         if (state.phase != HuntPhase.IDLE) {
             cooldownMs = Math.max(cooldownMs, secondsToMillis(failedCooldownSeconds));
         }
-        PlayerSkillRegistry.get().setPersistedNightHuntCooldownMs(uuid, cooldownMs);
+        VampirePlayerStateStore.get().setPersistedNightHuntCooldownMs(uuid, cooldownMs);
     }
 
     @Nonnull
     private static HuntState createRestoredState(@Nonnull UUID uuid, @Nonnull Supplier<Float> idleDelaySupplier) {
         HuntState state = new HuntState(idleDelaySupplier.get());
-        long cooldownMs = PlayerSkillRegistry.get().getPersistedNightHuntCooldownMs(uuid);
+        long cooldownMs = VampirePlayerStateStore.get().getPersistedNightHuntCooldownMs(uuid);
         if (cooldownMs >= 0L) {
             state.cooldownRemainingSeconds = millisToSeconds(cooldownMs);
         }

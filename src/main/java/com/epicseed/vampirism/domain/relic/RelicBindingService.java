@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -17,9 +18,9 @@ import com.epicseed.epiccore.skill.progression.RelicBindingDefaults;
 import com.epicseed.epiccore.skill.progression.RelicBindingOperations;
 import com.epicseed.epiccore.skill.progression.RelicBindingStore;
 import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
-import com.epicseed.epiccore.skill.runtime.AbilitySlotBindings;
 import com.epicseed.epiccore.skill.model.Skill;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
+import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindings;
+import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.skill.runtime.CooldownTrackerAbilityCooldownAccess;
 import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
 import com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider;
@@ -30,6 +31,7 @@ public final class RelicBindingService {
     public static final String[] SLOT_KEYS = { "primary", "secondary", "ability1", "ability2", "ability3" };
     public static final int DEFAULT_UTILITY_PRESET_COUNT = 4;
     public static final int DEFAULT_PRESET_COUNT = DEFAULT_UTILITY_PRESET_COUNT + 1;
+    private static volatile Supplier<SkillRuntimeBindings> RUNTIME_BINDINGS = SkillRuntimeBindings::empty;
     private static final RelicBindingStore STORE = PlayerRelicBindingsStore.instance();
     private static final AbilityCooldownAccess COOLDOWNS = CooldownTrackerAbilityCooldownAccess.instance();
     private static final SkillProgressionAccess PROGRESSION = PlayerRegistrySkillProgressionAccess.instance();
@@ -45,11 +47,20 @@ public final class RelicBindingService {
 
         @Override
         public String defaultAbilityId(@Nonnull String slot) {
-            return AbilitySlotBindings.abilityFor(slot);
+            return RelicBindingService.defaultAbilityId(slot);
         }
     };
 
     private RelicBindingService() {
+    }
+
+    public static void init(@Nonnull Supplier<SkillRuntimeBindings> runtimeBindingsSupplier) {
+        RUNTIME_BINDINGS = runtimeBindingsSupplier != null ? runtimeBindingsSupplier : SkillRuntimeBindings::empty;
+    }
+
+    @Nullable
+    public static String defaultAbilityId(@Nonnull String slot) {
+        return runtimeBindings().abilityFor(slot);
     }
 
     @Nonnull
@@ -78,7 +89,7 @@ public final class RelicBindingService {
         if (abilityId.isPresent()) {
             return abilityId;
         }
-        if (PlayerSkillRegistry.get().isInfected(uuid)) {
+        if (VampirePlayerStateStore.get().isInfected(uuid)) {
             return Optional.of(VampireInfectionSystem.BLOOD_SUCKER_ABILITY_ID);
         }
         return Optional.empty();
@@ -163,6 +174,10 @@ public final class RelicBindingService {
     @Nonnull
     public static Optional<String> normalized(String abilityId) {
         return RelicBindingOperations.normalized(abilityId);
+    }
+
+    private static SkillRuntimeBindings runtimeBindings() {
+        return RUNTIME_BINDINGS.get();
     }
 
     @Nonnull

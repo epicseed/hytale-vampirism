@@ -3,9 +3,19 @@ package com.epicseed.vampirism.domain.relic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import java.util.Map;
+
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindings;
+
 class RelicBindingServiceTest {
+
+    @AfterEach
+    void resetRuntimeBindings() {
+        RelicBindingService.init(SkillRuntimeBindings::empty);
+    }
 
     @Test
     void normalizedRejectsNullAndBlankValues() {
@@ -34,6 +44,13 @@ class RelicBindingServiceTest {
         assertEquals("Ability 2", RelicBindingService.slotLabel("ability2"));
         assertEquals("Ability 3", RelicBindingService.slotLabel("ability3"));
         assertEquals("custom", RelicBindingService.slotLabel("custom"));
+    }
+
+    @Test
+    void defaultAbilityIdUsesScopedRuntimeBindings() {
+        RelicBindingService.init(() -> SkillRuntimeBindings.of(Map.of(), Map.of("primary", "BloodSucker")));
+
+        assertEquals("BloodSucker", RelicBindingService.defaultAbilityId("primary"));
     }
 
     @Test

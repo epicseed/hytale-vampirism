@@ -1,24 +1,28 @@
 package com.epicseed.vampirism.skill.registry;
 
-import com.epicseed.epiccore.player.PlayerProgressProfile;
 import com.epicseed.epiccore.player.PlayerProgressStore;
 import com.epicseed.vampirism.domain.player.PlayerVampireProfile;
 import com.epicseed.vampirism.domain.player.PlayerVampireProfileRepository;
+import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
 import com.hypixel.hytale.logger.HytaleLogger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 /**
- * Compatibility facade for player vampirism profile data.
- * Each player's data is stored in its own PlayerSkills/{uuid}.json file.
+ * Progression and relic-binding facade for vampirism player data.
+ * Handles skill points, unlocked skills, and relic preset bindings backed
+ * by EpicCore's {@link PlayerProgressStore}.
+ *
+ * <p>Vampirism-specific persisted state (blood, infection, night hunt cooldowns)
+ * lives in {@link com.epicseed.vampirism.domain.player.VampirePlayerStateStore},
+ * which is initialized alongside this registry and shares the same underlying store.</p>
+ *
+ * <p>Each player's data is stored in its own PlayerSkills/{uuid}.json file.</p>
  */
 public class PlayerSkillRegistry {
 
@@ -36,6 +40,7 @@ public class PlayerSkillRegistry {
 
     public static void init(@Nonnull Path dataDirectory) {
         instance = new PlayerSkillRegistry(dataDirectory);
+        VampirePlayerStateStore.init(instance.progressStore);
         LOGGER.atInfo().log("[PlayerSkillRegistry] Initialized. Per-player data directory: " + instance.repository.profilesDirectory());
     }
 
@@ -150,23 +155,6 @@ public class PlayerSkillRegistry {
         progressStore.setActiveRelicPresetIndex(uuid, presetIndex);
     }
 
-    public int getPersistedBlood(@Nonnull UUID uuid) {
-        return progressStore.readProfile(uuid, profile -> profile.blood);
-    }
-
-    public int getCompletedNightHunts(@Nonnull UUID uuid) {
-        return progressStore.readProfile(uuid, profile -> profile.completedNightHunts);
-    }
-
-    public void incrementCompletedNightHunts(@Nonnull UUID uuid) {
-        progressStore.mutateAndSaveProfile(uuid,
-                profile -> profile.completedNightHunts = Math.max(0, profile.completedNightHunts + 1));
-    }
-
-    public void setPersistedBlood(@Nonnull UUID uuid, int blood) {
-        progressStore.mutateProfile(uuid, profile -> profile.blood = Math.max(0, blood));
-    }
-
     @Nonnull
     public Map<String, Long> getPersistedAbilityCooldowns(@Nonnull UUID uuid) {
         return progressStore.getPersistedAbilityCooldowns(uuid);
@@ -174,34 +162,6 @@ public class PlayerSkillRegistry {
 
     public void setPersistedAbilityCooldowns(@Nonnull UUID uuid, @Nonnull Map<String, Long> cooldowns) {
         progressStore.setPersistedAbilityCooldowns(uuid, cooldowns);
-    }
-
-    public long getPersistedNightHuntCooldownMs(@Nonnull UUID uuid) {
-        return progressStore.readProfile(uuid, profile -> profile.nightHuntCooldownMs);
-    }
-
-    public void setPersistedNightHuntCooldownMs(@Nonnull UUID uuid, long cooldownMs) {
-        progressStore.mutateProfile(uuid, profile -> profile.nightHuntCooldownMs = Math.max(0L, cooldownMs));
-    }
-
-    public long getInfectionExpiresAtMs(@Nonnull UUID uuid) {
-        return progressStore.readProfile(uuid, profile -> Math.max(0L, profile.infectionExpiresAtMs));
-    }
-
-    public long getInfectionRemainingMs(@Nonnull UUID uuid) {
-        return Math.max(0L, getInfectionExpiresAtMs(uuid) - System.currentTimeMillis());
-    }
-
-    public boolean isInfected(@Nonnull UUID uuid) {
-        return getInfectionRemainingMs(uuid) > 0L;
-    }
-
-    public void setInfectionExpiresAtMs(@Nonnull UUID uuid, long expiresAtMs) {
-        progressStore.mutateAndSaveProfile(uuid, profile -> profile.infectionExpiresAtMs = Math.max(0L, expiresAtMs));
-    }
-
-    public void clearInfection(@Nonnull UUID uuid) {
-        setInfectionExpiresAtMs(uuid, 0L);
     }
 
     /**
@@ -227,9 +187,5 @@ public class PlayerSkillRegistry {
     @Nonnull
     public Set<String> getUnlockedSkills(@Nonnull UUID uuid) {
         return progressStore.getUnlockedSkills(uuid);
-    }
-
-    public void updateProfile(@Nonnull UUID uuid, @Nonnull Consumer<PlayerVampireProfile> updater) {
-        progressStore.mutateAndSaveProfile(uuid, updater);
     }
 }

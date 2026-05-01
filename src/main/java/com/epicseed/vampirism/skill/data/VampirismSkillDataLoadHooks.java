@@ -1,20 +1,21 @@
 package com.epicseed.vampirism.skill.data;
 
 import com.epicseed.epiccore.skill.data.SkillDataLoadHooks;
-import com.epicseed.epiccore.skill.runtime.AbilitySlotBindings;
-import com.epicseed.epiccore.skill.runtime.StateEffectBindings;
+import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindings;
+import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindingsHolder;
 
-import java.util.Map;
+import java.util.Objects;
 
 public final class VampirismSkillDataLoadHooks implements SkillDataLoadHooks {
 
-    @Override
-    public void applyStateEffectBindings(Map<String, String> stateEffectBindings) {
-        StateEffectBindings.set(stateEffectBindings);
+    private final SkillRuntimeBindingsHolder runtimeBindings;
+
+    public VampirismSkillDataLoadHooks(SkillRuntimeBindingsHolder runtimeBindings) {
+        this.runtimeBindings = Objects.requireNonNull(runtimeBindings, "runtimeBindings");
     }
 
     @Override
-    public void applyAbilitySlotBindings(Map<String, String> abilitySlotBindings) {
-        AbilitySlotBindings.set(abilitySlotBindings);
+    public void applyRuntimeBindings(SkillRuntimeBindings runtimeBindings) {
+        this.runtimeBindings.replace(runtimeBindings);
     }
 }

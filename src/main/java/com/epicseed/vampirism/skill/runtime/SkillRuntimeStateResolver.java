@@ -1,14 +1,14 @@
 package com.epicseed.vampirism.skill.runtime;
 
-import com.epicseed.epiccore.skill.runtime.StateEffectBindings;
+import com.epicseed.epiccore.skill.model.EffectDef;
+import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindings;
+import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.modifier.ContextKey;
 import com.epicseed.vampirism.modifier.ModifierContext;
-import com.epicseed.epiccore.skill.model.EffectDef;
-import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.epicseed.vampirism.systems.MorphFlySystem;
 import com.epicseed.vampirism.systems.SneakSystem;
 import com.epicseed.vampirism.systems.SunburnSystem;
-import com.epicseed.vampirism.Vampirism;
+import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
@@ -17,19 +17,21 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * Data-driven state resolver.
  *
  * <p>Effect-backed states are declared in {@code stateRegistry.json} and loaded by
  * {@link com.epicseed.vampirism.skill.data.SkillLoader}
- * into {@link StateEffectBindings}.  States that require computation (e.g. {@code IS_NIGHT},
+ * into {@link SkillRuntimeBindings}. States that require computation (e.g. {@code IS_NIGHT},
  * {@code IS_SNEAKING}, {@code IN_SUNLIGHT}, etc.) remain hard-coded here because their value
  * is not a simple "effect is active".
  */
 public final class SkillRuntimeStateResolver {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+    private static volatile Supplier<SkillRuntimeBindings> runtimeBindings = SkillRuntimeBindings::empty;
 
     /** Cached Hytale asset-map indices keyed by effect id. */
     private static final Map<String, Integer> EFFECT_IDX_CACHE = new ConcurrentHashMap<>();
@@ -40,6 +42,10 @@ public final class SkillRuntimeStateResolver {
     public static final ContextKey<Boolean> IS_NIGHT = keyFor("IS_NIGHT");
 
     private SkillRuntimeStateResolver() {}
+
+    public static void init(Supplier<SkillRuntimeBindings> runtimeBindingsSupplier) {
+        runtimeBindings = runtimeBindingsSupplier != null ? runtimeBindingsSupplier : SkillRuntimeBindings::empty;
+    }
 
     /**
      * Store-aware variant — used when a {@link SkillRuntimeContext} is available.
@@ -88,7 +94,7 @@ public final class SkillRuntimeStateResolver {
     // -------------------------------------------------------------------------
 
     private static boolean resolveEffectBacked(String stateId, SkillRuntimeContext ctx) {
-        String hytaleEffectId = StateEffectBindings.effectIdFor(stateId);
+        String hytaleEffectId = runtimeBindings().effectIdFor(stateId);
         if (hytaleEffectId == null) {
             LOGGER.atWarning().log("[SkillRuntimeStateResolver] Unknown stateId (not in stateRegistry): " + stateId);
             return false;
@@ -98,7 +104,7 @@ public final class SkillRuntimeStateResolver {
     }
 
     private static boolean resolveEffectBacked(String stateId, ModifierContext ctx) {
-        String hytaleEffectId = StateEffectBindings.effectIdFor(stateId);
+        String hytaleEffectId = runtimeBindings().effectIdFor(stateId);
         if (hytaleEffectId == null) {
             LOGGER.atWarning().log("[SkillRuntimeStateResolver] Unknown stateId (not in stateRegistry): " + stateId);
             return false;
@@ -108,6 +114,10 @@ public final class SkillRuntimeStateResolver {
 
     private static ContextKey<Boolean> keyFor(String stateId) {
         return STATE_KEYS.computeIfAbsent(stateId, id -> new ContextKey<>() {});
+    }
+
+    private static SkillRuntimeBindings runtimeBindings() {
+        return runtimeBindings.get();
     }
 
     private static boolean hasEffect(String hytaleEffectId, SkillRuntimeContext ctx) {

@@ -5,7 +5,6 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 
-import com.epicseed.epiccore.skill.runtime.AbilitySlotBindings;
 import com.epicseed.epiccore.skill.runtime.SkillActivationResult;
 import com.epicseed.vampirism.domain.relic.RelicBindingService;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
@@ -27,7 +26,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
  *
  * <p>Each of the five slot subcommands ({@code primary}, {@code secondary}, {@code ability1},
  * {@code ability2}, {@code ability3}) resolves its ability id from the data-driven
- * {@link AbilitySlotBindings} map loaded from {@code relicBindings.json}.
+ * runtime slot bindings loaded from {@code relicBindings.json}.
  *
  * <p>Adding a new relic ability therefore requires only a JSON edit — no Java changes.
  * The five subcommand classes are retained so Hytale's static subcommand registration keeps
@@ -54,7 +53,7 @@ public class VampirismRelicCommand extends AbstractCommand {
 
     /**
      * Single generic binding handler. The subcommand name is the binding key looked up in the
-     * {@link AbilitySlotBindings} map. Every slot resolves the caster's current aim-target so targeted
+     * runtime binding map. Every slot resolves the caster's current aim-target so targeted
      * abilities such as BloodSucker can be bound anywhere, while self/area abilities still ignore
      * the optional target ref.
      */

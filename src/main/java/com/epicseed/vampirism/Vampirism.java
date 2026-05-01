@@ -6,6 +6,7 @@ import com.epicseed.vampirism.bootstrap.CommandRegistrar;
 import com.epicseed.vampirism.bootstrap.PlayerLifecycleCoordinator;
 import com.epicseed.vampirism.bootstrap.SystemRegistrar;
 import com.epicseed.vampirism.config.VampirismConfig;
+import com.epicseed.vampirism.domain.relic.RelicBindingService;
 import com.epicseed.vampirism.hytale.RelicPresetSelectionAdapter;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
 import com.epicseed.vampirism.registry.PlayerRelicBindings;
@@ -15,10 +16,12 @@ import com.epicseed.vampirism.skill.data.SkillDataPaths;
 import com.epicseed.vampirism.skill.data.VampirismSkillDataLoadHooks;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
 import com.epicseed.epiccore.skill.model.Skill;
+import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindingsHolder;
 import com.epicseed.vampirism.skill.runtime.RegistryBackedReusableDefinitionProvider;
 import com.epicseed.vampirism.skill.runtime.RegistryBackedAbilityDefinitionProvider;
 import com.epicseed.vampirism.skill.runtime.AbilityService;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeDefinitions;
+import com.epicseed.vampirism.skill.runtime.SkillRuntimeStateResolver;
 import com.epicseed.vampirism.skill.runtime.VampireVitalityAbilityResourcePort;
 import com.epicseed.vampirism.skill.runtime.VampirismAbilityAccessProvider;
 import com.epicseed.vampirism.skill.registry.EffectDefRegistry;
@@ -65,6 +68,7 @@ public class Vampirism extends JavaPlugin {
     private ReusableDefRegistry targetingRegistry;
     private SkillTreeManager skillTreeManager;
     private Vector2d highestPosition;
+    private final SkillRuntimeBindingsHolder runtimeBindings = new SkillRuntimeBindingsHolder();
 
     public Vampirism(@Nonnull JavaPluginInit init) {
         super(init);
@@ -72,6 +76,8 @@ public class Vampirism extends JavaPlugin {
 
         Config<VampirismConfig> config = this.withConfig("Vampirism", VampirismConfig.CODEC);
         VampirismConfig.init(config);
+        RelicBindingService.init(runtimeBindings::snapshot);
+        SkillRuntimeStateResolver.init(runtimeBindings::snapshot);
 
         RegisterSkills();
     }
@@ -129,7 +135,7 @@ public class Vampirism extends JavaPlugin {
 
         SkillLoader skillLoader = new SkillLoader(
                 SkillDataPaths.vampirismDefaults(),
-                new VampirismSkillDataLoadHooks());
+                new VampirismSkillDataLoadHooks(runtimeBindings));
 
         List<Skill> skills = skillLoader.LoadSkills(skillRegistry);
         for (Skill skill : skills) {

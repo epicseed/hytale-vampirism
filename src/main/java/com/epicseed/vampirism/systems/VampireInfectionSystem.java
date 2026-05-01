@@ -2,10 +2,10 @@ package com.epicseed.vampirism.systems;
 
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.config.VampirismConfig;
+import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
 import com.epicseed.epiccore.skill.model.Skill;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -64,7 +64,7 @@ public class VampireInfectionSystem extends EntityTickingSystem<EntityStore> {
         }
 
         UUID uuid = playerRefComponent.getUuid();
-        long expiresAtMs = PlayerSkillRegistry.get().getInfectionExpiresAtMs(uuid);
+        long expiresAtMs = VampirePlayerStateStore.get().getInfectionExpiresAtMs(uuid);
         if (expiresAtMs <= 0L || VampireStatusRegistry.get().isPermanentVampire(uuid)) {
             removeInfectionEffect(playerRef, store);
             clearPlayer(uuid);
@@ -73,7 +73,7 @@ public class VampireInfectionSystem extends EntityTickingSystem<EntityStore> {
 
         long now = System.currentTimeMillis();
         if (expiresAtMs <= now) {
-            PlayerSkillRegistry.get().clearInfection(uuid);
+            VampirePlayerStateStore.get().clearInfection(uuid);
             removeInfectionEffect(playerRef, store);
             clearPlayer(uuid);
             player.sendMessage(Message.raw(
@@ -91,7 +91,7 @@ public class VampireInfectionSystem extends EntityTickingSystem<EntityStore> {
     }
 
     public static boolean allowsTemporaryAbility(@Nonnull UUID uuid, @Nonnull String abilityId) {
-        return BLOOD_SUCKER_ABILITY_ID.equals(abilityId) && PlayerSkillRegistry.get().isInfected(uuid);
+        return BLOOD_SUCKER_ABILITY_ID.equals(abilityId) && VampirePlayerStateStore.get().isInfected(uuid);
     }
 
     public static boolean beginInfection(@Nonnull UUID uuid,
@@ -103,10 +103,10 @@ public class VampireInfectionSystem extends EntityTickingSystem<EntityStore> {
             return false;
         }
 
-        boolean alreadyInfected = PlayerSkillRegistry.get().isInfected(uuid);
+        boolean alreadyInfected = VampirePlayerStateStore.get().isInfected(uuid);
         long expiresAtMs = System.currentTimeMillis()
                 + Math.max(1000L, Math.round(VampirismConfig.get().getInfectionDurationSeconds() * 1000f));
-        PlayerSkillRegistry.get().setInfectionExpiresAtMs(uuid, expiresAtMs);
+        VampirePlayerStateStore.get().setInfectionExpiresAtMs(uuid, expiresAtMs);
         if (playerRef != null && store != null) {
             applyInfectionEffect(playerRef, store, expiresAtMs - System.currentTimeMillis(), true);
         }
@@ -128,7 +128,7 @@ public class VampireInfectionSystem extends EntityTickingSystem<EntityStore> {
                                             @Nonnull String name,
                                             @Nullable Ref<EntityStore> playerRef,
                                             @Nullable Store<EntityStore> store) {
-        if (!PlayerSkillRegistry.get().isInfected(uuid)) {
+        if (!VampirePlayerStateStore.get().isInfected(uuid)) {
             return false;
         }
 

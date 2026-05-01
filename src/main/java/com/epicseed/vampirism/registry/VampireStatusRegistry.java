@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 
 import com.epicseed.vampirism.config.VampirismConfig;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
+import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
 import com.hypixel.hytale.logger.HytaleLogger;
 
 public class VampireStatusRegistry {
@@ -75,7 +75,7 @@ public class VampireStatusRegistry {
     }
 
     public boolean isVampire(@Nonnull UUID uuid) {
-        return isPermanentVampire(uuid) || PlayerSkillRegistry.get().isInfected(uuid);
+        return isPermanentVampire(uuid) || VampirePlayerStateStore.get().isInfected(uuid);
     }
 
     public boolean isPermanentVampire(@Nonnull UUID uuid) {
@@ -88,9 +88,9 @@ public class VampireStatusRegistry {
         playerNames.put(uuid, name);
         boolean defaultEnabled = VampirismConfig.get().isVampireDefaultEnabled();
         boolean changed = defaultEnabled ? entries.remove(uuid) : entries.add(uuid);
-        boolean infectionCleared = PlayerSkillRegistry.get().getInfectionExpiresAtMs(uuid) > 0L;
+        boolean infectionCleared = VampirePlayerStateStore.get().getInfectionExpiresAtMs(uuid) > 0L;
         if (infectionCleared) {
-            PlayerSkillRegistry.get().clearInfection(uuid);
+            VampirePlayerStateStore.get().clearInfection(uuid);
         }
         if (changed) {
             save();
@@ -104,9 +104,9 @@ public class VampireStatusRegistry {
         playerNames.put(uuid, name);
         boolean defaultEnabled = VampirismConfig.get().isVampireDefaultEnabled();
         boolean changed = defaultEnabled ? entries.add(uuid) : entries.remove(uuid);
-        boolean infectionCleared = PlayerSkillRegistry.get().getInfectionExpiresAtMs(uuid) > 0L;
+        boolean infectionCleared = VampirePlayerStateStore.get().getInfectionExpiresAtMs(uuid) > 0L;
         if (infectionCleared) {
-            PlayerSkillRegistry.get().clearInfection(uuid);
+            VampirePlayerStateStore.get().clearInfection(uuid);
         }
         if (changed) {
             save();
