@@ -1,7 +1,7 @@
 rootProject.name = 'Vampirism'
 
-include(':EpicCore:epiccore-model')
-include(':EpicCore:epiccore-hytale')
-
-project(':EpicCore:epiccore-model').projectDir = file('EpicCore/epiccore-model')
-project(':EpicCore:epiccore-hytale').projectDir = file('EpicCore/epiccore-hytale')
+def usePublishedEpicCore = gradle.startParameter.projectProperties.get('use_published_epiccore')?.toBoolean() ?: false
+def epicCoreRepoDir = file('../hytale-epiccore')
+if (!usePublishedEpicCore && epicCoreRepoDir.exists()) {
+    includeBuild(epicCoreRepoDir)
+}

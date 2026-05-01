@@ -1,4 +1,0 @@
-Group {
-  // Anchor set dynamically by SkillTreeUI — used as a thin line segment between skill nodes
-  Background: #4a90d9(0.6);
-}

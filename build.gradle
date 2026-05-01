@@ -38,10 +38,7 @@ def serverJarFile = hytalePackageDir != null ? file("${hytalePackageDir}/Server/
 def hasHytaleAssets = assetsZipFile != null && assetsZipFile.exists()
 def hasHytaleServerJar = serverJarFile != null && serverJarFile.exists()
 def epiccoreBuildRepoDir = layout.buildDirectory.dir('repos/epiccore').get().asFile
-def usePublishedEpicCore = providers.gradleProperty('use_published_epiccore')
-        .map { it.toBoolean() }
-        .orElse(false)
-        .get()
+def epiccoreExternalRepoDir = file('../hytale-epiccore')
 
 if (!hasHytaleAssets) {
     logger.lifecycle("Hytale assets not detected; asset indexing/validation and run configs will be skipped. Set -Phytale_home=/path/to/Hytale or provide bin/server/install/release/package/game/latest/Assets.zip.")
@@ -62,13 +59,8 @@ javadoc {
 // compile against their code without bundling it. When a local install is
 // present, we still use its jar for launching the server in IDE run configs.
 dependencies {
-    if (usePublishedEpicCore) {
-        implementation("${epiccore_maven_group}:epiccore-model:${epiccore_version}")
-        implementation("${epiccore_maven_group}:epiccore-hytale:${epiccore_version}")
-    } else {
-        implementation(project(':EpicCore:epiccore-model'))
-        implementation(project(':EpicCore:epiccore-hytale'))
-    }
+    implementation("${epiccore_maven_group}:epiccore-model:${epiccore_version}")
+    implementation("${epiccore_maven_group}:epiccore-hytale:${epiccore_version}")
     compileOnly("com.hypixel.hytale:Server:$hytale_build")
     if (hasHytaleServerJar) {
         runtimeOnly(files(serverJarFile))
@@ -99,13 +91,22 @@ repositories {
     }
 }
 
-tasks.register('publishEpicCoreToBuildRepo') {
+tasks.register('publishEpicCoreToBuildRepo', Exec) {
     group = 'publishing'
-    description = 'Publishes epiccore-model and epiccore-hytale to build/repos/epiccore.'
-    dependsOn(
-            ':EpicCore:epiccore-model:publishMavenJavaPublicationToEpiccoreBuildRepository',
-            ':EpicCore:epiccore-hytale:publishMavenJavaPublicationToEpiccoreBuildRepository'
-    )
+    description = 'Publishes epiccore-model and epiccore-hytale from ../hytale-epiccore to build/repos/epiccore.'
+    doFirst {
+        if (!epiccoreExternalRepoDir.exists()) {
+            throw new GradleException("Could not find external EpicCore repository at ${epiccoreExternalRepoDir}.")
+        }
+    }
+    workingDir(epiccoreExternalRepoDir)
+    if (OperatingSystem.current().isWindows()) {
+        commandLine 'cmd', '/c', 'gradlew.bat', 'publishEpicCoreToBuildRepo', '--no-daemon', '--console=plain',
+                "-Pepiccore_publish_repo=${epiccoreBuildRepoDir.absolutePath}"
+    } else {
+        commandLine './gradlew', 'publishEpicCoreToBuildRepo', '--no-daemon', '--console=plain',
+                "-Pepiccore_publish_repo=${epiccoreBuildRepoDir.absolutePath}"
+    }
 }
 
 // Generates the packaged manifest from the source manifest without mutating

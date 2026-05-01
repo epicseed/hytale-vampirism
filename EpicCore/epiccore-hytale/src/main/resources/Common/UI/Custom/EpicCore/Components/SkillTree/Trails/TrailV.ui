@@ -1,6 +1,0 @@
-Group {
-  Group #Strip {
-    Anchor: (Left: 28, Width: 8, Top: 0, Bottom: 0);
-    Background: #4a90d9(1);
-  }
-}
