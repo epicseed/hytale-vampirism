@@ -1,35 +1,31 @@
 package com.epicseed.vampirism.relic;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.epicseed.vampirism.hytale.InventoryAdapter;
+import com.epicseed.epiccore.loadout.GrantSuppressionTracker;
+import com.epicseed.epiccore.loadout.hytale.OwnedItemInventoryConfig;
+import com.epicseed.epiccore.loadout.hytale.OwnedItemInventoryService;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
-import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class RelicInventoryService {
 
     public static final String RELIC_ITEM_ID = "VampirismRelic";
-    private static final Map<Ref<EntityStore>, Long> AUTO_GRANT_SUPPRESSED_UNTIL = new ConcurrentHashMap<>();
 
-
-    // - -1 hotbar
-    // - -2 storage
-    // - -3 armor
-    // - -5 utility
-    // - -8 tools
-    // - -9 backpack
     private static final int[] RELIC_VALID_SECTION_IDS = { -1, -2, -5 };
     private static final int[] RELIC_STRANDED_SECTION_IDS = { -3, -8, -9 };
+    private static final OwnedItemInventoryConfig CONFIG = new OwnedItemInventoryConfig(
+            RELIC_ITEM_ID,
+            RELIC_VALID_SECTION_IDS,
+            RELIC_STRANDED_SECTION_IDS);
+    private static final OwnedItemInventoryService SERVICE = new OwnedItemInventoryService();
+    private static final GrantSuppressionTracker<Ref<EntityStore>> AUTO_GRANT_SUPPRESSION = new GrantSuppressionTracker<>();
 
-    private RelicInventoryService() {}
+    private RelicInventoryService() {
+    }
 
     @Nonnull
     public static SyncResult syncOwnership(@Nonnull Ref<EntityStore> playerRef,
@@ -43,103 +39,15 @@ public final class RelicInventoryService {
                                            @Nonnull Store<EntityStore> store,
                                            boolean shouldHaveRelic,
                                            boolean allowAdditions) {
-        int allowedQuantity = shouldHaveRelic ? 1 : 0;
-        boolean removedAny = false;
-        int validQuantity = 0;
-        RelicLocation firstValidLocation = null;
-
-        for (int sectionId : RELIC_VALID_SECTION_IDS) {
-            InventoryComponent section = getInventorySection(playerRef, store, sectionId);
-            if (section == null) {
-                continue;
-            }
-            ItemContainer container = section.getInventory();
-            short capacity = container.getCapacity();
-            for (short slot = 0; slot < capacity; slot++) {
-                ItemStack stack = container.getItemStack(slot);
-                if (!isOwnedRelicStack(stack)) {
-                    continue;
-                }
-                int quantity = Math.max(0, stack.getQuantity());
-                validQuantity += quantity;
-                if (firstValidLocation == null) {
-                    firstValidLocation = new RelicLocation(sectionId, slot);
-                }
-                int keep = Math.min(allowedQuantity, quantity);
-                int remove = quantity - keep;
-                if (remove > 0) {
-                    container.removeItemStackFromSlot(slot, remove);
-                    removedAny = true;
-                }
-                allowedQuantity -= keep;
-            }
-        }
-
-        int strandedQuantity = 0;
-        RelicLocation firstStrandedLocation = null;
-        if (shouldHaveRelic) {
-            for (int sectionId : RELIC_STRANDED_SECTION_IDS) {
-                InventoryComponent section = getInventorySection(playerRef, store, sectionId);
-                if (section == null) {
-                    continue;
-                }
-                ItemContainer container = section.getInventory();
-                short capacity = container.getCapacity();
-                for (short slot = 0; slot < capacity; slot++) {
-                    ItemStack stack = container.getItemStack(slot);
-                    if (!isOwnedRelicStack(stack)) {
-                        continue;
-                    }
-                    strandedQuantity += Math.max(0, stack.getQuantity());
-                    if (firstStrandedLocation == null) {
-                        firstStrandedLocation = new RelicLocation(sectionId, slot);
-                    }
-                }
-            }
-        } else {
-            for (int sectionId : RELIC_STRANDED_SECTION_IDS) {
-                InventoryComponent section = getInventorySection(playerRef, store, sectionId);
-                if (section == null) {
-                    continue;
-                }
-                ItemContainer container = section.getInventory();
-                short capacity = container.getCapacity();
-                for (short slot = 0; slot < capacity; slot++) {
-                    ItemStack stack = container.getItemStack(slot);
-                    if (!isOwnedRelicStack(stack)) {
-                        continue;
-                    }
-                    container.removeItemStackFromSlot(slot, Math.max(1, stack.getQuantity()));
-                    removedAny = true;
-                }
-            }
-        }
-
-        boolean added = false;
-        boolean inventoryFull = false;
-        if (allowedQuantity > 0 && allowAdditions) {
-            added = addRelicToInventory(playerRef, store, allowedQuantity);
-            inventoryFull = !added;
-        }
-
-        if (shouldHaveRelic && (added || validQuantity > 0)) {
-            removedAny |= removeStrandedRelics(playerRef, store);
-            strandedQuantity = 0;
-            firstStrandedLocation = null;
-        }
-
-        boolean hasRequiredRelic = shouldHaveRelic ? allowedQuantity <= 0 || added : false;
-        int foundQuantity = validQuantity + strandedQuantity;
-        RelicLocation firstLocation = firstValidLocation != null ? firstValidLocation : firstStrandedLocation;
-        return new SyncResult(
-                hasRequiredRelic,
-                inventoryFull,
-                added,
-                removedAny,
-                foundQuantity,
-                firstLocation,
-                strandedQuantity,
-                firstStrandedLocation);
+        OwnedItemInventoryService.SyncResult result = SERVICE.syncOwnership(
+                playerRef,
+                store,
+                CONFIG,
+                RelicInventoryService::isOwnedRelicStack,
+                quantity -> new ItemStack(RELIC_ITEM_ID, quantity),
+                shouldHaveRelic,
+                allowAdditions);
+        return mapResult(result);
     }
 
     @Nonnull
@@ -149,69 +57,11 @@ public final class RelicInventoryService {
     }
 
     public static void suppressAutoGrant(@Nonnull Ref<EntityStore> playerRef, long durationMs) {
-        if (durationMs <= 0L) {
-            return;
-        }
-        AUTO_GRANT_SUPPRESSED_UNTIL.put(playerRef, System.currentTimeMillis() + durationMs);
+        AUTO_GRANT_SUPPRESSION.suppress(playerRef, durationMs);
     }
 
     public static boolean isAutoGrantSuppressed(@Nonnull Ref<EntityStore> playerRef) {
-        Long suppressedUntil = AUTO_GRANT_SUPPRESSED_UNTIL.get(playerRef);
-        if (suppressedUntil == null) {
-            return false;
-        }
-        if (suppressedUntil <= System.currentTimeMillis()) {
-            AUTO_GRANT_SUPPRESSED_UNTIL.remove(playerRef, suppressedUntil);
-            return false;
-        }
-        return true;
-    }
-
-    private static boolean addRelicToInventory(@Nonnull Ref<EntityStore> playerRef,
-                                               @Nonnull Store<EntityStore> store,
-                                               int quantity) {
-        ItemStack relicStack = new ItemStack(RELIC_ITEM_ID, quantity);
-        for (int sectionId : RELIC_VALID_SECTION_IDS) {
-            InventoryComponent section = getInventorySection(playerRef, store, sectionId);
-            if (section == null) {
-                continue;
-            }
-            ItemContainer container = section.getInventory();
-            if (!container.canAddItemStack(relicStack)) {
-                continue;
-            }
-            container.addItemStack(relicStack);
-            return true;
-        }
-        return false;
-    }
-
-    private static boolean removeStrandedRelics(@Nonnull Ref<EntityStore> playerRef,
-                                                @Nonnull Store<EntityStore> store) {
-        boolean removedAny = false;
-        for (int sectionId : RELIC_STRANDED_SECTION_IDS) {
-            InventoryComponent section = getInventorySection(playerRef, store, sectionId);
-            if (section == null) {
-                continue;
-            }
-            ItemContainer container = section.getInventory();
-            short capacity = container.getCapacity();
-            for (short slot = 0; slot < capacity; slot++) {
-                ItemStack stack = container.getItemStack(slot);
-                if (!isOwnedRelicStack(stack)) {
-                    continue;
-                }
-                container.removeItemStackFromSlot(slot, Math.max(1, stack.getQuantity()));
-                removedAny = true;
-            }
-        }
-        return removedAny;
-    }
-
-    private static InventoryComponent getInventorySection(@Nonnull Ref<EntityStore> playerRef,
-                                                           @Nonnull Store<EntityStore> store,
-                                                           int sectionId) {
-        return InventoryAdapter.getInventorySection(playerRef, store, sectionId);
+        return AUTO_GRANT_SUPPRESSION.isSuppressed(playerRef);
     }
 
     private static boolean isOwnedRelicStack(@Nullable ItemStack stack) {
@@ -219,6 +69,24 @@ public final class RelicInventoryService {
                 && !ItemStack.isEmpty(stack)
                 && RELIC_ITEM_ID.equals(stack.getItemId())
                 && !RelicPresetProjectionService.isPresetProxy(stack);
+    }
+
+    @Nonnull
+    private static SyncResult mapResult(@Nonnull OwnedItemInventoryService.SyncResult result) {
+        return new SyncResult(
+                result.hasRequiredItem(),
+                result.inventoryFull(),
+                result.addedItem(),
+                result.removedExtraItems(),
+                result.foundQuantity(),
+                mapLocation(result.firstLocation()),
+                result.strandedQuantity(),
+                mapLocation(result.firstStrandedLocation()));
+    }
+
+    @Nullable
+    private static RelicLocation mapLocation(@Nullable OwnedItemInventoryService.ItemLocation location) {
+        return location == null ? null : new RelicLocation(location.sectionId(), location.slot());
     }
 
     public record SyncResult(boolean hasRequiredRelic,

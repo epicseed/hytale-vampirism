@@ -1,4 +1,4 @@
-package com.epicseed.vampirism.hytale;
+package com.epicseed.epiccore.hytale;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -19,23 +19,30 @@ public final class InventoryAdapter {
     public static InventoryComponent getInventorySection(@Nonnull Ref<EntityStore> playerRef,
                                                          @Nonnull Store<EntityStore> store,
                                                          int sectionId) {
-        return com.epicseed.epiccore.hytale.InventoryAdapter.getInventorySection(playerRef, store, sectionId);
+        ComponentType<EntityStore, ? extends InventoryComponent> sectionType = getInventorySectionType(sectionId);
+        if (sectionType == null) {
+            return null;
+        }
+        return store.getComponent(playerRef, sectionType);
     }
 
     public static boolean isPlayerSectionContainer(@Nonnull Ref<EntityStore> playerRef,
                                                    @Nonnull Store<EntityStore> store,
                                                    @Nonnull ItemContainer container,
                                                    @Nonnull int[] playerSectionIds) {
-        return com.epicseed.epiccore.hytale.InventoryAdapter.isPlayerSectionContainer(
-                playerRef,
-                store,
-                container,
-                playerSectionIds);
+        for (int sectionId : playerSectionIds) {
+            InventoryComponent section = getInventorySection(playerRef, store, sectionId);
+            if (section != null && section.getInventory() == container) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Nullable
     @SuppressWarnings("unchecked")
     public static ComponentType<EntityStore, ? extends InventoryComponent> getInventorySectionType(int sectionId) {
-        return com.epicseed.epiccore.hytale.InventoryAdapter.getInventorySectionType(sectionId);
+        return (ComponentType<EntityStore, ? extends InventoryComponent>)
+                InventoryComponent.getComponentTypeById(sectionId);
     }
 }

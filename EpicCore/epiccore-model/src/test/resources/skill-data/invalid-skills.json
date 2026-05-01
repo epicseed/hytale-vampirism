@@ -1,0 +1,22 @@
+{
+  "tree": [
+    {
+      "id": "broken-skill",
+      "cost": 0,
+      "abilityId": "missing"
+    }
+  ],
+  "passives": [],
+  "abilities": [],
+  "modifiers": [],
+  "effects": [],
+  "states": [],
+  "stats": [],
+  "conditions": [],
+  "requirements": [],
+  "triggers": [],
+  "actions": [],
+  "targetings": [],
+  "stateRegistry": [],
+  "relicBindings": {}
+}
