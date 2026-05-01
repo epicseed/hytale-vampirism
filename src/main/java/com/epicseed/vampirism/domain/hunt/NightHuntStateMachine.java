@@ -8,7 +8,7 @@ import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.hytale.EntityIdentityAdapter;
 import com.epicseed.vampirism.config.VampirismConfig;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
+import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
@@ -50,7 +50,7 @@ public final class NightHuntStateMachine {
                 state,
                 context,
                 false,
-                PlayerSkillRegistry.get().getAcquiredSkillPoints(context.ownerUuid()))) {
+                PlayerRegistrySkillProgressionAccess.instance().getAcquiredSkillPoints(context.ownerUuid()))) {
             state.cooldownRemainingSeconds = VampirismConfig.get().getNightHuntFailedCooldownSeconds();
             state.idleDelayRemainingSeconds = randomIdleDelaySeconds();
         }

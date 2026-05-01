@@ -1,6 +1,5 @@
 package com.epicseed.vampirism.skill.runtime;
 
-import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.epiccore.skill.model.Ability;
@@ -195,7 +194,7 @@ public final class SkillConditionEvaluator {
             return -1;
         }
 
-        EffectDef def = Vampirism.getInstance().GetEffectDefRegistry().Get(effectId);
+        EffectDef def = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getEffect(effectId);
         String hytaleId = def != null ? def.effectId : effectId;
 
         int idx = EntityEffect.getAssetMap().getIndex(hytaleId);
@@ -316,7 +315,7 @@ public final class SkillConditionEvaluator {
             return false;
         }
         // Avoid noisy warnings when the ability is unknown — treat as ready.
-        Ability ability = Vampirism.getInstance().GetAbilityRegistry().Get(abilityId);
+        Ability ability = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getAbility(abilityId);
         if (ability == null) return true;
         return !AbilityCooldownTracker.isOnCooldown(uuid, abilityId);
     }

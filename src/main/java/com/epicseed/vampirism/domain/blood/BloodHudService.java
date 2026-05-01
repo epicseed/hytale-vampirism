@@ -5,6 +5,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -34,8 +35,13 @@ public final class BloodHudService {
     private static final ResourceGaugeHudManager<BloodGaugeHud> bloodGaugeHudManager =
             new ResourceGaugeHudManager<>(BLOOD_GAUGE_HUD_KEY, BloodGaugeHud::new);
     private static final Map<Ref<EntityStore>, RelicCooldownHud> relicCooldownHuds = new ConcurrentHashMap<>();
+    private static volatile Function<PlayerRef, RelicCooldownHud> relicCooldownHudFactory;
 
     private BloodHudService() {
+    }
+
+    public static void init(@Nonnull Function<PlayerRef, RelicCooldownHud> relicCooldownHudFactory) {
+        BloodHudService.relicCooldownHudFactory = relicCooldownHudFactory;
     }
 
     public static boolean isHudActiveByUuid(@Nonnull UUID uuid) {
@@ -151,7 +157,12 @@ public final class BloodHudService {
 
             boolean cooldownReady = relicCooldownHuds.containsKey(refForTask);
             if (!cooldownReady) {
-                RelicCooldownHud relicHud = new RelicCooldownHud(playerRefForTask);
+                Function<PlayerRef, RelicCooldownHud> factory = relicCooldownHudFactory;
+                if (factory == null) {
+                    LOGGER.atWarning().log("[Vitality] Relic cooldown HUD factory not initialized.");
+                    return;
+                }
+                RelicCooldownHud relicHud = factory.apply(playerRefForTask);
                 relicHud.primeState(refForTask, store);
                 cooldownReady = MultipleHudAdapter.setCustomHud(
                         playerForTask, playerRefForTask, RELIC_COOLDOWN_HUD_KEY, relicHud);

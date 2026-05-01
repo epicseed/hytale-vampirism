@@ -1,6 +1,5 @@
 package com.epicseed.vampirism.systems;
 
-import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
@@ -218,7 +217,7 @@ public class VampireInfectionSystem extends EntityTickingSystem<EntityStore> {
     }
 
     private static void grantAscensionSkill(@Nonnull UUID uuid, @Nonnull String skillId) {
-        Skill skill = Vampirism.getInstance().GetSkillRegistry().GetSkill(skillId);
+        Skill skill = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getSkill(skillId);
         if (skill == null) {
             LOGGER.atWarning().log("[VampireInfectionSystem] Failed to grant missing skill: " + skillId);
             return;

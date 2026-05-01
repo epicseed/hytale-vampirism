@@ -10,10 +10,7 @@ import com.epicseed.epiccore.modifier.ValueModifier;
 import com.epicseed.epiccore.skill.model.InlineModifier;
 import com.epicseed.epiccore.skill.model.Passive;
 import com.epicseed.epiccore.skill.model.Skill;
-import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
-import com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider;
 import com.epicseed.vampirism.skill.runtime.ModifierScopeMatcher;
-import com.epicseed.vampirism.skill.registry.SkillRegistry;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -26,12 +23,8 @@ public class SkillTreeManager {
     private final ProgressionDefinitionProvider definitionProvider;
     private final SkillProgressionAccess progressionAccess;
 
-    public SkillTreeManager(SkillRegistry registry) {
-        this(VampirismProgressionDefinitionProvider.instance(), PlayerRegistrySkillProgressionAccess.instance());
-    }
-
-    SkillTreeManager(ProgressionDefinitionProvider definitionProvider,
-                     SkillProgressionAccess progressionAccess) {
+    public SkillTreeManager(@Nonnull ProgressionDefinitionProvider definitionProvider,
+                            @Nonnull SkillProgressionAccess progressionAccess) {
         this.definitionProvider = definitionProvider;
         this.progressionAccess = progressionAccess;
         instance = this;

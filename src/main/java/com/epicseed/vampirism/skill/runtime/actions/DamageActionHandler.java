@@ -3,13 +3,13 @@ import com.epicseed.vampirism.modifier.ModifierContext;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 
 import com.epicseed.epiccore.hytale.DamageAdapter;
 import com.epicseed.epiccore.skill.runtime.TargetingResolver;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.skill.runtime.PassiveService;
 import com.epicseed.vampirism.skill.runtime.SkillRequirementEvaluator;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.hypixel.hytale.component.Ref;
@@ -21,8 +21,13 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class DamageActionHandler {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+    private static volatile Consumer<SkillRuntimeContext> onFeedHandler = ctx -> {};
 
     private DamageActionHandler() {
+    }
+
+    public static void init(@Nonnull Consumer<SkillRuntimeContext> onFeedHandler) {
+        DamageActionHandler.onFeedHandler = onFeedHandler != null ? onFeedHandler : ctx -> {};
     }
 
     public static boolean dealDamage(Map<String, Object> action, SkillRuntimeContext ctx) {
@@ -80,7 +85,7 @@ public final class DamageActionHandler {
 
         float executeDamage = Math.max(health.get(), health.getMax()) + 9999f;
         DamageAdapter.executePhysicalDamage(ctx.ref(), targetRef, ctx.store(), executeDamage);
-        PassiveService.get().onFeed(ctx);
+        onFeedHandler.accept(ctx);
         LOGGER.atInfo().log("[SkillActionExecutor] executeFinalBlow: target executed");
         return true;
     }

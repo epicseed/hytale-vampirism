@@ -21,9 +21,6 @@ import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
 import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindings;
 import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
-import com.epicseed.vampirism.skill.runtime.CooldownTrackerAbilityCooldownAccess;
-import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
-import com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider;
 import com.epicseed.vampirism.systems.VampireInfectionSystem;
 
 public final class RelicBindingService {
@@ -31,11 +28,73 @@ public final class RelicBindingService {
     public static final String[] SLOT_KEYS = { "primary", "secondary", "ability1", "ability2", "ability3" };
     public static final int DEFAULT_UTILITY_PRESET_COUNT = 4;
     public static final int DEFAULT_PRESET_COUNT = DEFAULT_UTILITY_PRESET_COUNT + 1;
+    private static final AbilityCooldownAccess UNINITIALIZED_COOLDOWNS = (uuid, abilityId) -> 0L;
+    private static final SkillProgressionAccess UNINITIALIZED_PROGRESSION = new SkillProgressionAccess() {
+        @Override
+        public int getSkillPoints(UUID uuid) {
+            return 0;
+        }
+
+        @Override
+        public boolean hasSkill(UUID uuid, String skillId) {
+            return false;
+        }
+
+        @Override
+        public boolean canUnlock(UUID uuid, String skillId, int cost, Iterable<String> requirementIds) {
+            return false;
+        }
+
+        @Override
+        public boolean tryUnlock(UUID uuid, String skillId, int cost, Iterable<String> requirementIds) {
+            return false;
+        }
+
+        @Override
+        public boolean grantSkill(UUID uuid, String skillId) {
+            return false;
+        }
+
+        @Override
+        public java.util.Set<String> getUnlockedSkillIds(UUID uuid) {
+            return java.util.Set.of();
+        }
+
+        @Override
+        public void resetSkills(UUID uuid) {
+        }
+    };
+    private static final ProgressionDefinitionProvider UNINITIALIZED_DEFINITIONS = new ProgressionDefinitionProvider() {
+        @Override
+        public java.util.Collection<Skill> getAllSkills() {
+            return List.of();
+        }
+
+        @Override
+        public com.epicseed.epiccore.skill.model.Passive getPassive(String id) {
+            return null;
+        }
+
+        @Override
+        public com.epicseed.epiccore.skill.model.Ability getAbility(String id) {
+            return null;
+        }
+
+        @Override
+        public Skill getSkill(String id) {
+            return null;
+        }
+
+        @Override
+        public com.epicseed.epiccore.skill.model.EffectDef getEffect(String id) {
+            return null;
+        }
+    };
     private static volatile Supplier<SkillRuntimeBindings> RUNTIME_BINDINGS = SkillRuntimeBindings::empty;
     private static final RelicBindingStore STORE = PlayerRelicBindingsStore.instance();
-    private static final AbilityCooldownAccess COOLDOWNS = CooldownTrackerAbilityCooldownAccess.instance();
-    private static final SkillProgressionAccess PROGRESSION = PlayerRegistrySkillProgressionAccess.instance();
-    private static final ProgressionDefinitionProvider DEFINITIONS = VampirismProgressionDefinitionProvider.instance();
+    private static volatile AbilityCooldownAccess cooldowns = UNINITIALIZED_COOLDOWNS;
+    private static volatile SkillProgressionAccess progressionAccess = UNINITIALIZED_PROGRESSION;
+    private static volatile ProgressionDefinitionProvider definitionProvider = UNINITIALIZED_DEFINITIONS;
     private static final RelicBindingDefaults DEFAULTS = new RelicBindingDefaults() {
         private final List<String> slotKeys = List.copyOf(Arrays.asList(SLOT_KEYS));
 
@@ -55,7 +114,17 @@ public final class RelicBindingService {
     }
 
     public static void init(@Nonnull Supplier<SkillRuntimeBindings> runtimeBindingsSupplier) {
+        init(runtimeBindingsSupplier, UNINITIALIZED_DEFINITIONS, UNINITIALIZED_PROGRESSION, UNINITIALIZED_COOLDOWNS);
+    }
+
+    public static void init(@Nonnull Supplier<SkillRuntimeBindings> runtimeBindingsSupplier,
+                            @Nonnull ProgressionDefinitionProvider definitionProvider,
+                            @Nonnull SkillProgressionAccess progressionAccess,
+                            @Nonnull AbilityCooldownAccess cooldowns) {
         RUNTIME_BINDINGS = runtimeBindingsSupplier != null ? runtimeBindingsSupplier : SkillRuntimeBindings::empty;
+        RelicBindingService.definitionProvider = definitionProvider != null ? definitionProvider : UNINITIALIZED_DEFINITIONS;
+        RelicBindingService.progressionAccess = progressionAccess != null ? progressionAccess : UNINITIALIZED_PROGRESSION;
+        RelicBindingService.cooldowns = cooldowns != null ? cooldowns : UNINITIALIZED_COOLDOWNS;
     }
 
     @Nullable
@@ -119,21 +188,24 @@ public final class RelicBindingService {
 
     @Nonnull
     public static List<Skill> listBindableAbilitySkills(@Nonnull UUID uuid) {
-        return new ArrayList<>(RelicBindingOperations.listBindableAbilitySkills(uuid, DEFINITIONS, PROGRESSION));
+        return new ArrayList<>(RelicBindingOperations.listBindableAbilitySkills(
+                uuid,
+                definitionProvider,
+                progressionAccess));
     }
 
     public static long remainingMs(@Nonnull UUID uuid, @Nonnull String abilityId) {
-        return COOLDOWNS.remainingMs(uuid, abilityId);
+        return cooldowns.remainingMs(uuid, abilityId);
     }
 
     public static long slotBindingRemainingMs(@Nonnull UUID uuid,
                                               @Nonnull Map<String, String> savedState,
                                               @Nonnull String slot) {
-        return RelicBindingOperations.slotBindingRemainingMs(uuid, savedState, slot, COOLDOWNS);
+        return RelicBindingOperations.slotBindingRemainingMs(uuid, savedState, slot, cooldowns);
     }
 
     public static boolean isAbilityOnCooldown(@Nonnull UUID uuid, @Nullable String abilityId) {
-        return RelicBindingOperations.isAbilityOnCooldown(uuid, abilityId, COOLDOWNS);
+        return RelicBindingOperations.isAbilityOnCooldown(uuid, abilityId, cooldowns);
     }
 
     @Nullable
@@ -145,7 +217,7 @@ public final class RelicBindingService {
                 savedState,
                 pending,
                 DEFAULTS,
-                COOLDOWNS,
+                cooldowns,
                 RelicBindingService::abilityLabel);
     }
 
@@ -153,22 +225,22 @@ public final class RelicBindingService {
     public static String slotCooldownMessage(@Nonnull UUID uuid,
                                              @Nonnull Map<String, String> savedState,
                                              @Nonnull String slot) {
-        return RelicBindingOperations.slotCooldownMessage(uuid, savedState, slot, COOLDOWNS, RelicBindingService::abilityLabel);
+        return RelicBindingOperations.slotCooldownMessage(uuid, savedState, slot, cooldowns, RelicBindingService::abilityLabel);
     }
 
     @Nonnull
     public static String abilityCooldownMessage(@Nonnull UUID uuid, @Nonnull String abilityId) {
-        return RelicBindingOperations.abilityCooldownMessage(uuid, abilityId, COOLDOWNS, RelicBindingService::abilityLabel);
+        return RelicBindingOperations.abilityCooldownMessage(uuid, abilityId, cooldowns, RelicBindingService::abilityLabel);
     }
 
     @Nonnull
     public static String abilityLabel(@Nonnull String abilityId) {
-        return RelicBindingOperations.abilityLabel(abilityId, DEFINITIONS);
+        return RelicBindingOperations.abilityLabel(abilityId, definitionProvider);
     }
 
     @Nonnull
     public static String abilityLabel(@Nonnull String abilityId, Skill owner) {
-        return RelicBindingOperations.abilityLabel(abilityId, owner, DEFINITIONS);
+        return RelicBindingOperations.abilityLabel(abilityId, owner, definitionProvider);
     }
 
     @Nonnull
@@ -222,6 +294,6 @@ public final class RelicBindingService {
     }
 
     private static Skill findSkillByAbilityId(@Nonnull String abilityId) {
-        return DEFINITIONS.findSkillByAbilityId(abilityId);
+        return definitionProvider.findSkillByAbilityId(abilityId);
     }
 }

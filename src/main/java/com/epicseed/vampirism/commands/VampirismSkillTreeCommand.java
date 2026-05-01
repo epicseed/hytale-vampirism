@@ -1,7 +1,6 @@
 package com.epicseed.vampirism.commands;
 
-import com.epicseed.vampirism.ui.SkillTreeUI;
-import com.epicseed.vampirism.ui.VampirismProgressionPageFactory;
+import com.epicseed.epiccore.skill.ui.ProgressionPageFactory;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
@@ -17,9 +16,11 @@ import javax.annotation.Nonnull;
 
 public class VampirismSkillTreeCommand extends AbstractPlayerCommand {
 
+    private final ProgressionPageFactory progressionPageFactory;
 
-    public VampirismSkillTreeCommand(){
+    public VampirismSkillTreeCommand(@Nonnull ProgressionPageFactory progressionPageFactory){
         super("skilltree", "Opens the SkillTree");
+        this.progressionPageFactory = progressionPageFactory;
         this.setPermissionGroups(GameMode.Adventure.toString(), GameMode.Creative.toString());
     }
 
@@ -37,6 +38,6 @@ public class VampirismSkillTreeCommand extends AbstractPlayerCommand {
         }
 
         player.getPageManager().openCustomPage(ref, store,
-                VampirismProgressionPageFactory.instance().createSkillTreePage(playerRef));
+                progressionPageFactory.createSkillTreePage(playerRef));
     }
 }

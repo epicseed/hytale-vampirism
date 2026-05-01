@@ -2,6 +2,7 @@ package com.epicseed.vampirism.registry;
 
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
@@ -22,11 +23,14 @@ public class PlayerRelicBindings {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     private static PlayerRelicBindings instance;
+    private final PlayerSkillRegistry playerSkillRegistry;
 
-    private PlayerRelicBindings() {}
+    private PlayerRelicBindings(@Nonnull PlayerSkillRegistry playerSkillRegistry) {
+        this.playerSkillRegistry = Objects.requireNonNull(playerSkillRegistry, "playerSkillRegistry");
+    }
 
-    public static void init(@Nonnull Path dataDirectory) {
-        instance = new PlayerRelicBindings();
+    public static void init(@Nonnull PlayerSkillRegistry playerSkillRegistry) {
+        instance = new PlayerRelicBindings(playerSkillRegistry);
         LOGGER.atInfo().log("[PlayerRelicBindings] Using PlayerSkills/{uuid}.json for per-player relic bindings.");
     }
 
@@ -44,21 +48,21 @@ public class PlayerRelicBindings {
 
     @Nonnull
     public Map<String, String> bindingsFor(@Nonnull UUID uuid, int presetIndex) {
-        return PlayerSkillRegistry.get().getRelicBindings(uuid, presetIndex);
+        return playerSkillRegistry.getRelicBindings(uuid, presetIndex);
     }
 
     public int activePresetIndex(@Nonnull UUID uuid) {
-        return PlayerSkillRegistry.get().getActiveRelicPresetIndex(uuid);
+        return playerSkillRegistry.getActiveRelicPresetIndex(uuid);
     }
 
     public void setActivePreset(@Nonnull UUID uuid, int presetIndex) {
-        PlayerSkillRegistry.get().setActiveRelicPresetIndex(uuid, presetIndex);
+        playerSkillRegistry.setActiveRelicPresetIndex(uuid, presetIndex);
     }
 
     public void setAll(@Nonnull UUID uuid,
                        @Nonnull Map<Integer, ? extends Map<String, String>> presetBindings,
                        int activePresetIndex) {
-        PlayerSkillRegistry.get().setRelicBindings(uuid, presetBindings, activePresetIndex);
+        playerSkillRegistry.setRelicBindings(uuid, presetBindings, activePresetIndex);
     }
 
     /**
@@ -75,7 +79,7 @@ public class PlayerRelicBindings {
 
     @Nullable
     public String abilityFor(@Nonnull UUID uuid, int presetIndex, @Nonnull String slot) {
-        String v = PlayerSkillRegistry.get().getRelicBinding(uuid, presetIndex, slot);
+        String v = playerSkillRegistry.getRelicBinding(uuid, presetIndex, slot);
         if (v != null) return v.isBlank() ? null : v;
         return RelicBindingService.defaultAbilityId(slot);
     }
@@ -85,7 +89,7 @@ public class PlayerRelicBindings {
     }
 
     public void set(@Nonnull UUID uuid, int presetIndex, @Nonnull String slot, @Nonnull String abilityId) {
-        PlayerSkillRegistry.get().setRelicBinding(uuid, presetIndex, slot, abilityId);
+        playerSkillRegistry.setRelicBinding(uuid, presetIndex, slot, abilityId);
     }
 
     public void setAll(@Nonnull UUID uuid, @Nonnull Map<String, String> bindings) {
@@ -93,7 +97,7 @@ public class PlayerRelicBindings {
     }
 
     public void setAll(@Nonnull UUID uuid, int presetIndex, @Nonnull Map<String, String> bindings) {
-        PlayerSkillRegistry.get().setRelicBindings(uuid, presetIndex, bindings);
+        playerSkillRegistry.setRelicBindings(uuid, presetIndex, bindings);
     }
 
     public void clear(@Nonnull UUID uuid, @Nonnull String slot) {
@@ -101,7 +105,7 @@ public class PlayerRelicBindings {
     }
 
     public void clear(@Nonnull UUID uuid, int presetIndex, @Nonnull String slot) {
-        PlayerSkillRegistry.get().clearRelicBinding(uuid, presetIndex, slot);
+        playerSkillRegistry.clearRelicBinding(uuid, presetIndex, slot);
     }
 
     public void resetAll(@Nonnull UUID uuid) {
@@ -109,7 +113,7 @@ public class PlayerRelicBindings {
     }
 
     public void resetAll(@Nonnull UUID uuid, int presetIndex) {
-        PlayerSkillRegistry.get().resetRelicBindings(uuid, presetIndex);
+        playerSkillRegistry.resetRelicBindings(uuid, presetIndex);
     }
 
     /** Persists the current in-memory state to disk. */

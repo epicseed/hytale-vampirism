@@ -10,7 +10,7 @@ import javax.annotation.Nonnull;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
+import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
@@ -64,7 +64,7 @@ public final class HuntAdminCommands extends AbstractCommand {
             if (targetPlayerRef == null) return;
 
             UUID uuid = target.getUuid();
-            int acquiredPoints = PlayerSkillRegistry.get().getAcquiredSkillPoints(uuid);
+            int acquiredPoints = PlayerRegistrySkillProgressionAccess.instance().getAcquiredSkillPoints(uuid);
             int completedNightHunts = VampirePlayerStateStore.get().getCompletedNightHunts(uuid);
             int baseVisualTier = NightHuntService.getBaseVisualTierForAcquiredPoints(acquiredPoints);
             var huntInfo = NightHuntService.getDebugInfo(uuid);

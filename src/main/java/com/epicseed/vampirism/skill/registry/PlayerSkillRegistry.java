@@ -38,10 +38,12 @@ public class PlayerSkillRegistry {
         this.progressStore = new PlayerProgressStore<>(repository);
     }
 
-    public static void init(@Nonnull Path dataDirectory) {
+    @Nonnull
+    public static PlayerSkillRegistry init(@Nonnull Path dataDirectory) {
         instance = new PlayerSkillRegistry(dataDirectory);
         VampirePlayerStateStore.init(instance.progressStore);
         LOGGER.atInfo().log("[PlayerSkillRegistry] Initialized. Per-player data directory: " + instance.repository.profilesDirectory());
+        return instance;
     }
 
     @Nonnull

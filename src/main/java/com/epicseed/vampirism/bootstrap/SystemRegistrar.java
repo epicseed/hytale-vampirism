@@ -32,7 +32,7 @@ public final class SystemRegistrar {
         plugin.getEntityStoreRegistry().registerSystem(new VampireVitalitySystem());
         plugin.getEntityStoreRegistry().registerSystem(new BloodFeedSystem());
         plugin.getEntityStoreRegistry().registerSystem(new BloodConversionSystem());
-        plugin.getEntityStoreRegistry().registerSystem(new VampireCombatSystem());
+        plugin.getEntityStoreRegistry().registerSystem(new VampireCombatSystem(plugin.getPassiveService()));
         plugin.getEntityStoreRegistry().registerSystem(new VampireMovementSystem());
         plugin.getEntityStoreRegistry().registerSystem(new EffectModifierSystem());
         plugin.getEntityStoreRegistry().registerSystem(new FormHealthSystem());
@@ -41,7 +41,10 @@ public final class SystemRegistrar {
         plugin.getEntityStoreRegistry().registerSystem(new MorphFlySystem());
         plugin.getEntityStoreRegistry().registerSystem(new CrimsonUmbrellaVisualSystem());
         plugin.getEntityStoreRegistry().registerSystem(new NightMarkedVictimSystem());
-        plugin.getEntityStoreRegistry().registerSystem(new PassiveEffectSystem());
+        plugin.getEntityStoreRegistry().registerSystem(new PassiveEffectSystem(
+                plugin.getPassiveService(),
+                plugin.getProgressionDefinitionProvider(),
+                plugin.getProgressionAccess()));
         plugin.getEntityStoreRegistry().registerSystem(new RelicDropPreventSystem());
         plugin.getEntityStoreRegistry().registerSystem(new RelicDeathDropPreventSystem());
         plugin.getEntityStoreRegistry().registerSystem(new RelicChestLockSystem());

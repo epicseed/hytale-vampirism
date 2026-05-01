@@ -1,5 +1,6 @@
 package com.epicseed.vampirism.commands;
 
+import com.epicseed.epiccore.skill.ui.ProgressionPageFactory;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
@@ -13,8 +14,11 @@ import javax.annotation.Nonnull;
 
 public class VampirismRelicBindingCommand extends AbstractPlayerCommand {
 
-    public VampirismRelicBindingCommand() {
+    private final ProgressionPageFactory progressionPageFactory;
+
+    public VampirismRelicBindingCommand(@Nonnull ProgressionPageFactory progressionPageFactory) {
         super("relicbinding", "Opens the relic bindings menu");
+        this.progressionPageFactory = progressionPageFactory;
         this.setPermissionGroups(GameMode.Adventure.toString(), GameMode.Creative.toString());
     }
 
@@ -24,6 +28,6 @@ public class VampirismRelicBindingCommand extends AbstractPlayerCommand {
                            @Nonnull Ref<EntityStore> ref,
                            @Nonnull PlayerRef playerRef,
                            @Nonnull World world) {
-        VampirismRelicBindingsCommand.openBindingsUi(commandContext, store, ref, playerRef);
+        VampirismRelicBindingsCommand.openBindingsUi(commandContext, store, ref, playerRef, progressionPageFactory);
     }
 }

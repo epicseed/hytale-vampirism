@@ -2,6 +2,7 @@ package com.epicseed.vampirism.systems;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -50,6 +51,11 @@ public class VampireCombatSystem extends DamageEventSystem {
             "Furniture_Temple_Dark_Coffin",
             "Furniture_Village_Coffin"
     };
+    private final PassiveService passiveService;
+
+    public VampireCombatSystem(@Nonnull PassiveService passiveService) {
+        this.passiveService = Objects.requireNonNull(passiveService, "passiveService");
+    }
 
     @Override
     public SystemGroup<EntityStore> getGroup() {
@@ -147,11 +153,11 @@ public class VampireCombatSystem extends DamageEventSystem {
                 if (effectiveDamageAmount > 0f) {
                     NightHuntService.recordMarkedPreyHit(attackerUuid, victimRef, store);
                 }
-                PassiveService.get().onDamageDealt(
+                passiveService.onDamageDealt(
                         new SkillRuntimeContext(attackerUuid, attackerRef, store),
                         effectiveDamageAmount);
                 if (firstAmbushHit) {
-                    PassiveService.get().onFirstHit(new SkillRuntimeContext(attackerUuid, attackerRef, victimRef, store));
+                    passiveService.onFirstHit(new SkillRuntimeContext(attackerUuid, attackerRef, victimRef, store));
                 }
             }
 
@@ -191,7 +197,7 @@ public class VampireCombatSystem extends DamageEventSystem {
                         VampireVitalitySystem.onPlayerKill(attackerRef, store, victimRef, victimUuid, victimName);
                     }
                     if (attackerUuid != null) {
-                        PassiveService.get().onKill(
+                        passiveService.onKill(
                                 new SkillRuntimeContext(attackerUuid, attackerRef, victimRef, store));
                         NightHuntService.onPlayerKilledMarkedPrey(attackerUuid, attackerRef, victimRef, store);
                     }
@@ -233,7 +239,7 @@ public class VampireCombatSystem extends DamageEventSystem {
         if (!vampireVictim) {
             return;
         }
-        PassiveService.get().onDamageTaken(
+        passiveService.onDamageTaken(
                 new SkillRuntimeContext(victimUuid, victimRef, store),
                 finalDamageAmount);
     }

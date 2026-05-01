@@ -9,7 +9,6 @@ import javax.annotation.Nonnull;
 import com.epicseed.epiccore.hytale.EffectAdapter;
 import com.epicseed.epiccore.skill.model.EffectDef;
 import com.epicseed.epiccore.skill.runtime.TargetingResolver;
-import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.skill.runtime.SkillConditionEvaluator;
 import com.epicseed.vampirism.skill.runtime.SkillRequirementEvaluator;
@@ -31,7 +30,7 @@ public final class EffectActionHandler {
             return false;
         }
 
-        EffectDef effectDef = Vampirism.getInstance().GetEffectDefRegistry().Get(effectId);
+        EffectDef effectDef = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getEffect(effectId);
         if (effectDef == null) {
             LOGGER.atWarning().log("[SkillActionExecutor] Unknown effect definition: " + effectId);
             return false;
@@ -81,7 +80,7 @@ public final class EffectActionHandler {
             LOGGER.atWarning().log("[SkillActionExecutor] removeEffect missing effectId: " + action);
             return false;
         }
-        EffectDef effectDef = Vampirism.getInstance().GetEffectDefRegistry().Get(effectId);
+        EffectDef effectDef = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getEffect(effectId);
         String hytaleEffectId = effectDef != null ? effectDef.effectId : effectId;
         int effectIndex = EffectAdapter.resolveEffectIndex(hytaleEffectId);
         if (effectIndex < 0) {
@@ -108,7 +107,7 @@ public final class EffectActionHandler {
             return false;
         }
 
-        EffectDef effectDef = Vampirism.getInstance().GetEffectDefRegistry().Get(effectId);
+        EffectDef effectDef = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getEffect(effectId);
         if (effectDef == null) {
             LOGGER.atWarning().log("[SkillActionExecutor] Unknown effect definition: " + effectId);
             return false;

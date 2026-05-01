@@ -1,7 +1,6 @@
 package com.epicseed.vampirism.systems;
 import com.epicseed.vampirism.modifier.ModifierContext;
 
-import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.domain.blood.BloodConversionPresentationService;
 import com.epicseed.vampirism.domain.blood.BloodConversionPulseService;
 import com.epicseed.vampirism.domain.blood.BloodConversionSession;
@@ -153,7 +152,7 @@ public class BloodConversionSystem extends EntityTickingSystem<EntityStore> {
         if (abilityId == null || abilityId.isBlank()) {
             return null;
         }
-        return Vampirism.getInstance().GetAbilityRegistry().Get(abilityId);
+        return com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getAbility(abilityId);
     }
 
     private static float resolveDurationSeconds(@Nonnull Map<String, Object> action, @Nullable Ability ability) {

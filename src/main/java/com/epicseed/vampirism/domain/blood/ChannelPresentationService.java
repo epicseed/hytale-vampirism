@@ -3,7 +3,6 @@ package com.epicseed.vampirism.domain.blood;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.epicseed.vampirism.Vampirism;
 import com.epicseed.epiccore.skill.model.EffectDef;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -45,7 +44,7 @@ public final class ChannelPresentationService {
                                         @Nonnull OverlapBehavior overlapBehavior,
                                         @Nonnull Store<EntityStore> store) {
         if (effectDefId == null || effectDefId.isBlank()) return;
-        EffectDef effectDef = Vampirism.getInstance().GetEffectDefRegistry().Get(effectDefId);
+        EffectDef effectDef = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getEffect(effectDefId);
         if (effectDef == null) return;
         int effectIndex = EntityEffect.getAssetMap().getIndex(effectDef.effectId);
         if (effectIndex < 0) return;
@@ -60,7 +59,7 @@ public final class ChannelPresentationService {
                                            @Nullable String effectDefId,
                                            @Nonnull Store<EntityStore> store) {
         if (effectDefId == null || effectDefId.isBlank()) return;
-        EffectDef effectDef = Vampirism.getInstance().GetEffectDefRegistry().Get(effectDefId);
+        EffectDef effectDef = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getEffect(effectDefId);
         if (effectDef == null) return;
         int effectIndex = EntityEffect.getAssetMap().getIndex(effectDef.effectId);
         if (effectIndex < 0) return;

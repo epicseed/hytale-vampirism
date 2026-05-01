@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 
@@ -16,15 +17,20 @@ public final class PassiveTriggerRuntimeService {
 
     private static final Map<UUID, Map<String, Long>> triggerLastFire = new ConcurrentHashMap<>();
     private static final Map<UUID, Boolean> connectInitialized = new ConcurrentHashMap<>();
+    private static volatile Consumer<TriggerEvent> triggerDispatcher = event -> {};
 
     private PassiveTriggerRuntimeService() {
+    }
+
+    public static void init(@Nonnull Consumer<TriggerEvent> triggerDispatcher) {
+        PassiveTriggerRuntimeService.triggerDispatcher = triggerDispatcher != null ? triggerDispatcher : event -> {};
     }
 
     public static void initializePlayerSession(@Nonnull SkillRuntimeContext ctx) {
         UUID uuid = ctx.uuid();
         if (uuid == null) return;
         if (connectInitialized.putIfAbsent(uuid, Boolean.TRUE) != null) return;
-        TriggerDispatcher.dispatch(TriggerEvent.onConnect(ctx));
+        triggerDispatcher.accept(TriggerEvent.onConnect(ctx));
     }
 
     public static void handleOwner(@Nonnull PersistentPassiveOwnerKey ownerKey,

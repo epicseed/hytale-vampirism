@@ -7,7 +7,7 @@ import javax.annotation.Nonnull;
 import com.epicseed.epiccore.hytale.WorldStoreAdapter;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
+import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
@@ -34,7 +34,7 @@ public final class NightHuntFailureService {
                                         @Nonnull Runnable clearApproachMarker) {
         NightHuntSpawnRegistry.FailStateOption failState = NightHuntSpawnRegistry.get().pickFailState(
                 new NightHuntSpawnRegistry.FailStateContext(
-                        PlayerSkillRegistry.get().getAcquiredSkillPoints(ownerUuid),
+                        PlayerRegistrySkillProgressionAccess.instance().getAcquiredSkillPoints(ownerUuid),
                         state.completedWaypoints,
                         state.forced,
                         currentHour,

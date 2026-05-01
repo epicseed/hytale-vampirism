@@ -1,11 +1,9 @@
 package com.epicseed.vampirism.skill.runtime;
 
-import com.epicseed.vampirism.Vampirism;
 import com.epicseed.epiccore.skill.model.Passive;
 import com.epicseed.epiccore.skill.model.Skill;
-import com.epicseed.vampirism.skill.registry.PassiveRegistry;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
-import com.epicseed.vampirism.skill.registry.SkillRegistry;
+import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
+import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
@@ -22,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 /**
  * Runtime service for vampire passives.
@@ -52,20 +51,32 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class PassiveService {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-
     private static PassiveService instance;
 
-    private PassiveService() {}
+    private final ProgressionDefinitionProvider definitionProvider;
+    private final SkillProgressionAccess progressionAccess;
+    private final Consumer<TriggerEvent> triggerDispatcher;
 
-    public static void init() {
-        instance = new PassiveService();
-        LOGGER.atInfo().log("[PassiveService] Initialized.");
+    public static PassiveService init(@Nonnull ProgressionDefinitionProvider definitionProvider,
+                                      @Nonnull SkillProgressionAccess progressionAccess,
+                                      @Nonnull Consumer<TriggerEvent> triggerDispatcher) {
+        instance = new PassiveService(definitionProvider, progressionAccess, triggerDispatcher);
+        return instance;
     }
 
     @Nonnull
     public static PassiveService get() {
         if (instance == null) throw new IllegalStateException("PassiveService not initialized!");
         return instance;
+    }
+
+    public PassiveService(@Nonnull ProgressionDefinitionProvider definitionProvider,
+                          @Nonnull SkillProgressionAccess progressionAccess,
+                          @Nonnull Consumer<TriggerEvent> triggerDispatcher) {
+        this.definitionProvider = definitionProvider;
+        this.progressionAccess = progressionAccess;
+        this.triggerDispatcher = triggerDispatcher;
+        LOGGER.atInfo().log("[PassiveService] Initialized.");
     }
 
     // -------------------------------------------------------------------------
@@ -78,16 +89,12 @@ public final class PassiveService {
      */
     @Nonnull
     public Collection<Passive> getUnlockedPassives(@Nonnull UUID uuid) {
-        Vampirism plugin = Vampirism.getInstance();
-        SkillRegistry skillRegistry = plugin.GetSkillRegistry();
-        PassiveRegistry passiveRegistry = plugin.GetPassiveRegistry();
-
-        Set<String> unlockedSkillIds = PlayerSkillRegistry.get().getUnlockedSkills(uuid);
+        Set<String> unlockedSkillIds = progressionAccess.getUnlockedSkillIds(uuid);
         List<Passive> result = new ArrayList<>();
         for (String skillId : unlockedSkillIds) {
-            Skill skill = skillRegistry.GetSkill(skillId);
+            Skill skill = definitionProvider.getSkill(skillId);
             if (skill == null || skill.passiveId == null || skill.passiveId.isBlank()) continue;
-            Passive passive = passiveRegistry.Get(skill.passiveId);
+            Passive passive = definitionProvider.getPassive(skill.passiveId);
             if (passive != null) result.add(passive);
         }
         return Collections.unmodifiableList(result);
@@ -98,16 +105,12 @@ public final class PassiveService {
      */
     @Nonnull
     public Set<String> getUnlockedPassiveIds(@Nonnull UUID uuid) {
-        Vampirism plugin = Vampirism.getInstance();
-        SkillRegistry skillRegistry = plugin.GetSkillRegistry();
-        PassiveRegistry passiveRegistry = plugin.GetPassiveRegistry();
-
-        Set<String> unlockedSkillIds = PlayerSkillRegistry.get().getUnlockedSkills(uuid);
+        Set<String> unlockedSkillIds = progressionAccess.getUnlockedSkillIds(uuid);
         Set<String> passiveIds = new HashSet<>();
         for (String skillId : unlockedSkillIds) {
-            Skill skill = skillRegistry.GetSkill(skillId);
+            Skill skill = definitionProvider.getSkill(skillId);
             if (skill == null || skill.passiveId == null || skill.passiveId.isBlank()) continue;
-            Passive passive = passiveRegistry.Get(skill.passiveId);
+            Passive passive = definitionProvider.getPassive(skill.passiveId);
             if (passive != null) passiveIds.add(passive.id);
         }
         return Collections.unmodifiableSet(passiveIds);
@@ -134,7 +137,7 @@ public final class PassiveService {
     public void onKill(@Nonnull SkillRuntimeContext ctx) {
         if (ctx.uuid() == null) return;
         LOGGER.atFine().log("[PassiveService] onKill for " + ctx.uuid());
-        TriggerDispatcher.dispatch(TriggerEvent.onKill(ctx));
+        triggerDispatcher.accept(TriggerEvent.onKill(ctx));
     }
 
     /**
@@ -145,7 +148,7 @@ public final class PassiveService {
      */
     public void onDamageDealt(@Nonnull SkillRuntimeContext ctx, float amount) {
         if (ctx.uuid() == null) return;
-        TriggerDispatcher.dispatch(TriggerEvent.onDamageDealt(ctx, amount));
+        triggerDispatcher.accept(TriggerEvent.onDamageDealt(ctx, amount));
     }
 
     /**
@@ -156,7 +159,7 @@ public final class PassiveService {
      */
     public void onDamageTaken(@Nonnull SkillRuntimeContext ctx, float amount) {
         if (ctx.uuid() == null) return;
-        TriggerDispatcher.dispatch(TriggerEvent.onDamageTaken(ctx, amount));
+        triggerDispatcher.accept(TriggerEvent.onDamageTaken(ctx, amount));
         checkLowHealth(ctx);
     }
 
@@ -182,7 +185,7 @@ public final class PassiveService {
         Float last = lastHpPercent.put(uuid, pct);
         float previous = last != null ? last : 1f;
         if (pct <= DEFAULT_LOW_HP_THRESHOLD && previous > DEFAULT_LOW_HP_THRESHOLD) {
-            TriggerDispatcher.dispatch(TriggerEvent.onLowHealth(ctx, pct));
+            triggerDispatcher.accept(TriggerEvent.onLowHealth(ctx, pct));
         }
     }
 
@@ -195,7 +198,7 @@ public final class PassiveService {
      */
     public void onBlockBreak(@Nonnull SkillRuntimeContext ctx, @Nullable String blockId) {
         if (ctx.uuid() == null) return;
-        TriggerDispatcher.dispatch(TriggerEvent.onBlockBreak(ctx, blockId));
+        triggerDispatcher.accept(TriggerEvent.onBlockBreak(ctx, blockId));
     }
 
     /**
@@ -209,13 +212,18 @@ public final class PassiveService {
     public void onFeed(@Nonnull SkillRuntimeContext ctx) {
         if (ctx.uuid() == null) return;
         LOGGER.atFine().log("[PassiveService] onFeed for " + ctx.uuid());
-        TriggerDispatcher.dispatch(TriggerEvent.onFeed(ctx));
+        triggerDispatcher.accept(TriggerEvent.onFeed(ctx));
     }
 
     public void onFirstHit(@Nonnull SkillRuntimeContext ctx) {
         if (ctx.uuid() == null) return;
         LOGGER.atFine().log("[PassiveService] onFirstHit for " + ctx.uuid());
-        TriggerDispatcher.dispatch(TriggerEvent.onFirstHit(ctx));
+        triggerDispatcher.accept(TriggerEvent.onFirstHit(ctx));
+    }
+
+    public void onActivate(@Nonnull SkillRuntimeContext ctx, @Nullable String abilityId) {
+        if (ctx.uuid() == null) return;
+        triggerDispatcher.accept(TriggerEvent.onActivate(ctx, abilityId));
     }
 
     /**
@@ -230,6 +238,6 @@ public final class PassiveService {
     public void onConnect(@Nonnull SkillRuntimeContext ctx) {
         if (ctx.uuid() == null) return;
         LOGGER.atFine().log("[PassiveService] onConnect for " + ctx.uuid());
-        TriggerDispatcher.dispatch(TriggerEvent.onConnect(ctx));
+        triggerDispatcher.accept(TriggerEvent.onConnect(ctx));
     }
 }

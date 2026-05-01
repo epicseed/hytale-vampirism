@@ -1,7 +1,6 @@
 package com.epicseed.vampirism.systems;
 import com.epicseed.vampirism.modifier.ModifierContext;
 
-import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.epiccore.modifier.ModifierTag;
 import com.epicseed.epiccore.modifier.ValueModifier;
@@ -96,7 +95,7 @@ public class EffectModifierSystem extends EntityTickingSystem<EntityStore> {
                     playerRef, EffectControllerComponent.getComponentType());
             if (ec == null) return;
 
-            Collection<EffectDef> allDefs = Vampirism.getInstance().GetEffectDefRegistry().GetAll();
+            Collection<EffectDef> allDefs = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getAllEffects();
             Set<String> currentlyTracked = activeEffectModifiers.computeIfAbsent(
                     uuid, k -> ConcurrentHashMap.newKeySet());
 

@@ -17,10 +17,10 @@ public final class CommandRegistrar {
 
     public static void register(@Nonnull Vampirism plugin) {
         plugin.getCommandRegistry().registerCommand(new VampirismCommand());
-        plugin.getCommandRegistry().registerCommand(new VampirismSkillTreeCommand());
+        plugin.getCommandRegistry().registerCommand(new VampirismSkillTreeCommand(plugin.getProgressionPageFactory()));
         plugin.getCommandRegistry().registerCommand(new VampirismPotionCommand());
         plugin.getCommandRegistry().registerCommand(new VampirismRelicCommand());
-        plugin.getCommandRegistry().registerCommand(new VampirismRelicBindingsCommand());
-        plugin.getCommandRegistry().registerCommand(new VampirismRelicBindingCommand());
+        plugin.getCommandRegistry().registerCommand(new VampirismRelicBindingsCommand(plugin.getProgressionPageFactory()));
+        plugin.getCommandRegistry().registerCommand(new VampirismRelicBindingCommand(plugin.getProgressionPageFactory()));
     }
 }

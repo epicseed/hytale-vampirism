@@ -2,12 +2,12 @@ package com.epicseed.vampirism.domain.blood;
 import com.epicseed.vampirism.modifier.ModifierContext;
 
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 
 import com.epicseed.epiccore.hytale.DamageAdapter;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
-import com.epicseed.vampirism.skill.runtime.PassiveService;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.epicseed.vampirism.systems.VampireInfectionSystem;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
@@ -18,7 +18,13 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class FeedCompletionService {
+    private static volatile Consumer<SkillRuntimeContext> onFeedHandler = ctx -> {};
+
     private FeedCompletionService() {
+    }
+
+    public static void init(@Nonnull Consumer<SkillRuntimeContext> onFeedHandler) {
+        FeedCompletionService.onFeedHandler = onFeedHandler != null ? onFeedHandler : ctx -> {};
     }
 
     public static void complete(@Nonnull UUID uuid,
@@ -59,7 +65,7 @@ public final class FeedCompletionService {
             VampireVitalitySystem.addBlood(ctx.ref(), bloodGain);
         }
         FeedChannelPresentationService.cleanup(session, store, playerRef);
-        PassiveService.get().onFeed(ctx);
+        onFeedHandler.accept(ctx);
         if (targetKilled) {
             NightHuntService.onPlayerKilledMarkedPrey(uuid, playerRef, session.targetRef, store);
             PlayerRef playerRefComponent = (PlayerRef) store.getComponent(playerRef, PlayerRef.getComponentType());

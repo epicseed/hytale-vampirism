@@ -2,7 +2,6 @@ package com.epicseed.vampirism.skill.runtime;
 
 import com.epicseed.epiccore.skill.model.EffectDef;
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindings;
-import com.epicseed.vampirism.Vampirism;
 import com.epicseed.epiccore.modifier.ContextKey;
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.vampirism.systems.MorphFlySystem;
@@ -146,7 +145,7 @@ public final class SkillRuntimeStateResolver {
         if (cached != null) return cached;
         // Accept either raw Hytale effect ids or EffectDef ids in the registry (resolve to the Hytale id).
         String resolvedId = hytaleEffectId;
-        EffectDef def = Vampirism.getInstance().GetEffectDefRegistry().Get(hytaleEffectId);
+        EffectDef def = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getEffect(hytaleEffectId);
         if (def != null && def.effectId != null && !def.effectId.isBlank()) {
             resolvedId = def.effectId;
         }

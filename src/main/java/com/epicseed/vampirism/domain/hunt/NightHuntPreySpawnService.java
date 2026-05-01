@@ -7,7 +7,7 @@ import javax.annotation.Nullable;
 
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
+import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.Store;
@@ -54,7 +54,7 @@ public final class NightHuntPreySpawnService {
 
         NightHuntSpawnRegistry.SpawnOption spawnOption = NightHuntSpawnRegistry.get().pickSpawn(
                 new NightHuntSpawnRegistry.SpawnContext(
-                        PlayerSkillRegistry.get().getAcquiredSkillPoints(ownerUuid),
+                        PlayerRegistrySkillProgressionAccess.instance().getAcquiredSkillPoints(ownerUuid),
                         state.completedWaypoints,
                         state.forced,
                         currentHour,

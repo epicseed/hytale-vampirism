@@ -4,6 +4,7 @@ import com.epicseed.vampirism.modifier.ModifierContext;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -69,6 +70,7 @@ public final class AbilityService {
     private static AbilityDefinitionProvider definitionProvider = UNINITIALIZED_DEFINITION_PROVIDER;
     private static AbilityAccessProvider accessProvider = UNINITIALIZED_ACCESS_PROVIDER;
     private static AbilityResourcePort resourcePort = UNINITIALIZED_RESOURCE_PORT;
+    private static BiConsumer<SkillRuntimeContext, String> activationTriggerDispatcher = (ctx, abilityId) -> {};
 
     private static final AbilityRuntimeKernel<SkillRuntimeContext, Ref<EntityStore>> KERNEL =
             new AbilityRuntimeKernel<>(
@@ -114,14 +116,15 @@ public final class AbilityService {
                         }
                     },
                     AbilityService::resolveCharge,
-                    (ctx, abilityId) -> TriggerDispatcher.dispatch(TriggerEvent.onActivate(ctx, abilityId)));
+                    (ctx, abilityId) -> activationTriggerDispatcher.accept(ctx, abilityId));
 
     private AbilityService() {
     }
 
     public static void init(AbilityDefinitionProvider definitionProvider,
                             AbilityAccessProvider accessProvider,
-                            AbilityResourcePort resourcePort) {
+                            AbilityResourcePort resourcePort,
+                            BiConsumer<SkillRuntimeContext, String> activationTriggerDispatcher) {
         AbilityService.definitionProvider = definitionProvider != null
                 ? definitionProvider
                 : UNINITIALIZED_DEFINITION_PROVIDER;
@@ -131,6 +134,9 @@ public final class AbilityService {
         AbilityService.resourcePort = resourcePort != null
                 ? resourcePort
                 : UNINITIALIZED_RESOURCE_PORT;
+        AbilityService.activationTriggerDispatcher = activationTriggerDispatcher != null
+                ? activationTriggerDispatcher
+                : (ctx, abilityId) -> {};
     }
 
     @Nonnull

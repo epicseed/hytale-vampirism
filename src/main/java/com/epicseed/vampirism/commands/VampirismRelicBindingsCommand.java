@@ -1,7 +1,6 @@
 package com.epicseed.vampirism.commands;
 
-import com.epicseed.vampirism.ui.RelicBindingsUI;
-import com.epicseed.vampirism.ui.VampirismProgressionPageFactory;
+import com.epicseed.epiccore.skill.ui.ProgressionPageFactory;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
@@ -17,8 +16,11 @@ import javax.annotation.Nonnull;
 
 public class VampirismRelicBindingsCommand extends AbstractPlayerCommand {
 
-    public VampirismRelicBindingsCommand() {
+    private final ProgressionPageFactory progressionPageFactory;
+
+    public VampirismRelicBindingsCommand(@Nonnull ProgressionPageFactory progressionPageFactory) {
         super("relicbindings", "Opens the relic bindings menu");
+        this.progressionPageFactory = progressionPageFactory;
         this.setPermissionGroups(GameMode.Adventure.toString(), GameMode.Creative.toString());
     }
 
@@ -28,13 +30,14 @@ public class VampirismRelicBindingsCommand extends AbstractPlayerCommand {
                            @Nonnull Ref<EntityStore> ref,
                            @Nonnull PlayerRef playerRef,
                            @Nonnull World world) {
-        openBindingsUi(commandContext, store, ref, playerRef);
+        openBindingsUi(commandContext, store, ref, playerRef, progressionPageFactory);
     }
 
     static void openBindingsUi(@Nonnull CommandContext commandContext,
                                @Nonnull Store<EntityStore> store,
                                @Nonnull Ref<EntityStore> ref,
-                               @Nonnull PlayerRef playerRef) {
+                               @Nonnull PlayerRef playerRef,
+                               @Nonnull ProgressionPageFactory progressionPageFactory) {
         Player player = store.getComponent(ref, Player.getComponentType());
         if (player == null) {
             commandContext.sendMessage(Message.raw("Error: Could not find Player"));
@@ -42,6 +45,6 @@ public class VampirismRelicBindingsCommand extends AbstractPlayerCommand {
         }
 
         player.getPageManager().openCustomPage(ref, store,
-                VampirismProgressionPageFactory.instance().createRelicBindingsPage(playerRef));
+                progressionPageFactory.createRelicBindingsPage(playerRef));
     }
 }

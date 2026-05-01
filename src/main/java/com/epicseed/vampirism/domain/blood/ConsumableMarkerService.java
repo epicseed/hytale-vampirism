@@ -8,11 +8,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.epiccore.skill.model.Ability;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
+import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
 import com.epicseed.vampirism.systems.VampireInfectionSystem;
 import com.hypixel.hytale.component.Ref;
@@ -46,7 +45,7 @@ public final class ConsumableMarkerService {
                             @Nonnull Ref<EntityStore> playerRef,
                             float dt,
                             @Nonnull Store<EntityStore> store) {
-        if (!PlayerSkillRegistry.get().hasSkill(uuid, BLOOD_SUCKER_ABILITY_ID)
+        if (!PlayerRegistrySkillProgressionAccess.instance().hasSkill(uuid, BLOOD_SUCKER_ABILITY_ID)
                 && !VampireInfectionSystem.allowsTemporaryAbility(uuid, BLOOD_SUCKER_ABILITY_ID)) {
             markerScanAccumulators.remove(uuid);
             return;
@@ -108,7 +107,7 @@ public final class ConsumableMarkerService {
     @Nullable
     private static Ability resolveAbility(@Nullable String abilityId) {
         if (abilityId == null || abilityId.isBlank()) return null;
-        return Vampirism.getInstance().GetAbilityRegistry().Get(abilityId);
+        return com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getAbility(abilityId);
     }
 
     @Nonnull

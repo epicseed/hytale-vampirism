@@ -5,7 +5,7 @@ import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nonnull;
 
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
+import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
@@ -62,8 +62,9 @@ public final class SkillAdminCommands {
         public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
             PlayerRef target = playerArg.get(ctx);
             int amount = amountArg.get(ctx);
-            PlayerSkillRegistry.get().addSkillPoints(target.getUuid(), amount);
-            int current = PlayerSkillRegistry.get().getSkillPoints(target.getUuid());
+            PlayerRegistrySkillProgressionAccess progression = PlayerRegistrySkillProgressionAccess.instance();
+            progression.addSkillPoints(target.getUuid(), amount);
+            int current = progression.getSkillPoints(target.getUuid());
             ctx.sendMessage(Message.raw("Added " + amount + " skill points to " + target.getUsername()
                     + ". Total: " + current).color("green"));
             return CompletableFuture.completedFuture(null);
@@ -86,7 +87,7 @@ public final class SkillAdminCommands {
         public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
             PlayerRef target = playerArg.get(ctx);
             int amount = amountArg.get(ctx);
-            PlayerSkillRegistry.get().setSkillPoints(target.getUuid(), amount);
+            PlayerRegistrySkillProgressionAccess.instance().setSkillPoints(target.getUuid(), amount);
             ctx.sendMessage(Message.raw(target.getUsername() + " now has " + amount + " skill points.").color("green"));
             return CompletableFuture.completedFuture(null);
         }
@@ -105,7 +106,7 @@ public final class SkillAdminCommands {
         @Override
         public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
             PlayerRef target = playerArg.get(ctx);
-            int points = PlayerSkillRegistry.get().getSkillPoints(target.getUuid());
+            int points = PlayerRegistrySkillProgressionAccess.instance().getSkillPoints(target.getUuid());
             ctx.sendMessage(Message.raw(target.getUsername() + " has " + points + " skill point(s).").color("aqua"));
             return CompletableFuture.completedFuture(null);
         }

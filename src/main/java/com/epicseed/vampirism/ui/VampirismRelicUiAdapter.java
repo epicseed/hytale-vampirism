@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.LongSupplier;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -11,11 +12,9 @@ import javax.annotation.Nullable;
 import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.ui.RelicAbilityView;
 import com.epicseed.epiccore.skill.ui.RelicUiAdapter;
-import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.relic.RelicBindingService;
 import com.epicseed.vampirism.relic.RelicPresetProjectionService;
 import com.epicseed.epiccore.skill.model.Skill;
-import com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
@@ -25,14 +24,13 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 public final class VampirismRelicUiAdapter implements RelicUiAdapter {
 
     private static final String RELIC_ITEM_ID = "VampirismRelic";
-    private static final VampirismRelicUiAdapter INSTANCE = new VampirismRelicUiAdapter();
-    private static final ProgressionDefinitionProvider DEFINITIONS = VampirismProgressionDefinitionProvider.instance();
+    private final ProgressionDefinitionProvider definitionProvider;
+    private final LongSupplier cooldownRefreshIntervalSupplier;
 
-    private VampirismRelicUiAdapter() {
-    }
-
-    public static VampirismRelicUiAdapter instance() {
-        return INSTANCE;
+    public VampirismRelicUiAdapter(@Nonnull ProgressionDefinitionProvider definitionProvider,
+                                   @Nonnull LongSupplier cooldownRefreshIntervalSupplier) {
+        this.definitionProvider = definitionProvider;
+        this.cooldownRefreshIntervalSupplier = cooldownRefreshIntervalSupplier;
     }
 
     @Override
@@ -42,7 +40,7 @@ public final class VampirismRelicUiAdapter implements RelicUiAdapter {
 
     @Override
     public long cooldownRefreshIntervalMs() {
-        return VampirismConfig.get().getCooldownHudUpdateIntervalMs();
+        return cooldownRefreshIntervalSupplier.getAsLong();
     }
 
     @Override
@@ -98,9 +96,9 @@ public final class VampirismRelicUiAdapter implements RelicUiAdapter {
         if (abilityId == null || abilityId.isBlank()) {
             return null;
         }
-        Skill skill = DEFINITIONS.findSkillByAbilityId(abilityId);
+        Skill skill = definitionProvider.findSkillByAbilityId(abilityId);
         if (skill == null) {
-            com.epicseed.epiccore.skill.model.Ability ability = DEFINITIONS.getAbility(abilityId);
+            com.epicseed.epiccore.skill.model.Ability ability = definitionProvider.getAbility(abilityId);
             if (ability == null) {
                 return null;
             }
@@ -199,7 +197,7 @@ public final class VampirismRelicUiAdapter implements RelicUiAdapter {
         if (skill == null || skill.abilityId == null || skill.abilityId.isBlank()) {
             return null;
         }
-        com.epicseed.epiccore.skill.model.Ability ability = DEFINITIONS.getAbility(skill.abilityId);
+        com.epicseed.epiccore.skill.model.Ability ability = definitionProvider.getAbility(skill.abilityId);
         String displayName = ability != null && ability.displayName != null && !ability.displayName.isBlank()
                 ? ability.displayName
                 : skill.displayName;

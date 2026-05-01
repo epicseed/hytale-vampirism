@@ -1,9 +1,7 @@
 package com.epicseed.vampirism.skill.runtime;
 
-import com.epicseed.vampirism.Vampirism;
 import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
 
 import java.util.List;
@@ -59,8 +57,8 @@ public final class SkillRequirementEvaluator {
 
     private static boolean hasUnlockedAbility(SkillRuntimeContext ctx, String abilityId) {
         if (ctx.uuid() == null || abilityId == null || abilityId.isBlank()) return false;
-        for (String unlockedSkillId : PlayerSkillRegistry.get().getUnlockedSkills(ctx.uuid())) {
-            Skill skill = Vampirism.getInstance().GetSkillRegistry().GetSkill(unlockedSkillId);
+        for (String unlockedSkillId : PlayerRegistrySkillProgressionAccess.instance().getUnlockedSkillIds(ctx.uuid())) {
+            Skill skill = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getSkill(unlockedSkillId);
             if (skill != null && abilityId.equals(skill.abilityId)) return true;
         }
         return false;
@@ -68,8 +66,8 @@ public final class SkillRequirementEvaluator {
 
     private static boolean hasUnlockedPassive(SkillRuntimeContext ctx, String passiveId) {
         if (ctx.uuid() == null || passiveId == null || passiveId.isBlank()) return false;
-        for (String unlockedSkillId : PlayerSkillRegistry.get().getUnlockedSkills(ctx.uuid())) {
-            Skill skill = Vampirism.getInstance().GetSkillRegistry().GetSkill(unlockedSkillId);
+        for (String unlockedSkillId : PlayerRegistrySkillProgressionAccess.instance().getUnlockedSkillIds(ctx.uuid())) {
+            Skill skill = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getSkill(unlockedSkillId);
             if (skill != null && passiveId.equals(skill.passiveId)) return true;
         }
         return false;

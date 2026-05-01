@@ -1,12 +1,13 @@
 package com.epicseed.vampirism.skill.runtime;
 
-import com.epicseed.vampirism.Vampirism;
 import com.epicseed.epiccore.skill.model.Passive;
 import com.epicseed.epiccore.skill.model.Skill;
+import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
+import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,22 +34,27 @@ public final class TriggerDispatcher {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
-    private TriggerDispatcher() {}
+    private final ProgressionDefinitionProvider definitionProvider;
+    private final SkillProgressionAccess progressionAccess;
+
+    public TriggerDispatcher(@Nonnull ProgressionDefinitionProvider definitionProvider,
+                             @Nonnull SkillProgressionAccess progressionAccess) {
+        this.definitionProvider = definitionProvider;
+        this.progressionAccess = progressionAccess;
+    }
 
     /**
      * Dispatches {@code event} to all matching trigger handlers for the player identified by
      * {@code event.context().uuid()}.  Does nothing when the UUID is {@code null}.
      */
-    public static void dispatch(TriggerEvent event) {
+    public void dispatch(@Nonnull TriggerEvent event) {
         if (event.context().uuid() == null) return;
 
-        Set<String> unlockedSkillIds = PlayerSkillRegistry.get().getUnlockedSkills(event.context().uuid());
+        Set<String> unlockedSkillIds = progressionAccess.getUnlockedSkillIds(event.context().uuid());
         if (unlockedSkillIds.isEmpty()) return;
 
-        Vampirism plugin = Vampirism.getInstance();
-
         for (String skillId : unlockedSkillIds) {
-            Skill skill = plugin.GetSkillRegistry().GetSkill(skillId);
+            Skill skill = definitionProvider.getSkill(skillId);
             if (skill == null) continue;
             SkillRuntimeContext skillCtx = event.context().withSkillScope(skill.id);
 
@@ -57,7 +63,7 @@ public final class TriggerDispatcher {
             }
 
             if (skill.passiveId != null && !skill.passiveId.isBlank()) {
-                Passive passive = plugin.GetPassiveRegistry().Get(skill.passiveId);
+                Passive passive = definitionProvider.getPassive(skill.passiveId);
                 if (passive != null && !passive.triggers.isEmpty()) {
                     runMatchingHandlers(passive.triggers, passive.actions, event, event.context().withPassiveScope(passive.id));
                 }
@@ -69,10 +75,10 @@ public final class TriggerDispatcher {
      * Evaluates {@code triggers} against {@code event} and fires {@code actions} for every
      * handler whose type matches and whose inline conditions all pass.
      */
-    private static void runMatchingHandlers(List<Map<String, Object>> triggers,
-                                            List<Map<String, Object>> actions,
-                                            TriggerEvent event,
-                                            SkillRuntimeContext ctx) {
+    private void runMatchingHandlers(List<Map<String, Object>> triggers,
+                                     List<Map<String, Object>> actions,
+                                     TriggerEvent event,
+                                     SkillRuntimeContext ctx) {
         for (Map<String, Object> triggerSpec : triggers) {
             Map<String, Object> resolved = SkillRuntimeDefinitions.resolveTrigger(triggerSpec);
 

@@ -6,11 +6,16 @@ import com.epicseed.vampirism.bootstrap.CommandRegistrar;
 import com.epicseed.vampirism.bootstrap.PlayerLifecycleCoordinator;
 import com.epicseed.vampirism.bootstrap.SystemRegistrar;
 import com.epicseed.vampirism.config.VampirismConfig;
+import com.epicseed.vampirism.domain.blood.BloodHudService;
+import com.epicseed.vampirism.domain.blood.FeedCompletionService;
 import com.epicseed.vampirism.domain.relic.RelicBindingService;
+import com.epicseed.vampirism.domain.skill.SkillTreePresenter;
+import com.epicseed.vampirism.hud.RelicCooldownHud;
 import com.epicseed.vampirism.hytale.RelicPresetSelectionAdapter;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
 import com.epicseed.vampirism.registry.PlayerRelicBindings;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
+import com.epicseed.vampirism.runtime.ProgressionLifecycleService;
 import com.epicseed.vampirism.skill.data.SkillLoader;
 import com.epicseed.vampirism.skill.data.SkillDataPaths;
 import com.epicseed.vampirism.skill.data.VampirismSkillDataLoadHooks;
@@ -18,12 +23,17 @@ import com.epicseed.vampirism.skill.manager.SkillTreeManager;
 import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindingsHolder;
 import com.epicseed.vampirism.skill.runtime.RegistryBackedReusableDefinitionProvider;
-import com.epicseed.vampirism.skill.runtime.RegistryBackedAbilityDefinitionProvider;
 import com.epicseed.vampirism.skill.runtime.AbilityService;
+import com.epicseed.vampirism.skill.runtime.CooldownTrackerAbilityCooldownAccess;
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeStateResolver;
+import com.epicseed.vampirism.skill.runtime.TriggerDispatcher;
 import com.epicseed.vampirism.skill.runtime.VampireVitalityAbilityResourcePort;
 import com.epicseed.vampirism.skill.runtime.VampirismAbilityAccessProvider;
+import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
+import com.epicseed.vampirism.skill.runtime.PassiveTriggerRuntimeService;
+import com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider;
+import com.epicseed.vampirism.skill.runtime.actions.DamageActionHandler;
 import com.epicseed.vampirism.skill.registry.EffectDefRegistry;
 import com.epicseed.vampirism.skill.registry.AbilityRegistry;
 import com.epicseed.vampirism.skill.registry.ModifierDefRegistry;
@@ -38,6 +48,10 @@ import com.epicseed.vampirism.systems.VampireMovementSystem;
 import com.epicseed.vampirism.systems.SunburnSystem;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.epicseed.vampirism.skill.runtime.PassiveService;
+import com.epicseed.vampirism.ui.VampirismProgressionPageFactory;
+import com.epicseed.vampirism.ui.VampirismRelicUiAdapter;
+import com.epicseed.vampirism.ui.VampirismSkillTreeUiAdapter;
+import com.epicseed.vampirism.ui.VampirismUiPaths;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector2d;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
@@ -67,6 +81,10 @@ public class Vampirism extends JavaPlugin {
     private ReusableDefRegistry actionRegistry;
     private ReusableDefRegistry targetingRegistry;
     private SkillTreeManager skillTreeManager;
+    private VampirismProgressionDefinitionProvider progressionDefinitionProvider;
+    private PlayerRegistrySkillProgressionAccess progressionAccess;
+    private VampirismProgressionPageFactory progressionPageFactory;
+    private PassiveService passiveService;
     private Vector2d highestPosition;
     private final SkillRuntimeBindingsHolder runtimeBindings = new SkillRuntimeBindingsHolder();
 
@@ -76,7 +94,6 @@ public class Vampirism extends JavaPlugin {
 
         Config<VampirismConfig> config = this.withConfig("Vampirism", VampirismConfig.CODEC);
         VampirismConfig.init(config);
-        RelicBindingService.init(runtimeBindings::snapshot);
         SkillRuntimeStateResolver.init(runtimeBindings::snapshot);
 
         RegisterSkills();
@@ -85,15 +102,44 @@ public class Vampirism extends JavaPlugin {
     @Override
     protected void setup() {
         VampireStatusRegistry.init(this.getDataDirectory());
-        PlayerRelicBindings.init(this.getDataDirectory());
-        PlayerSkillRegistry.init(this.getDataDirectory());
+        PlayerSkillRegistry playerSkillRegistry = PlayerSkillRegistry.init(this.getDataDirectory());
+        PlayerRegistrySkillProgressionAccess.init(playerSkillRegistry);
+        ProgressionLifecycleService.init(playerSkillRegistry);
+        PlayerRelicBindings.init(playerSkillRegistry);
+        this.progressionDefinitionProvider = VampirismProgressionDefinitionProvider.instance();
+        this.progressionAccess = PlayerRegistrySkillProgressionAccess.instance();
+        RelicBindingService.init(
+                runtimeBindings::snapshot,
+                progressionDefinitionProvider,
+                progressionAccess,
+                CooldownTrackerAbilityCooldownAccess.instance());
+        this.skillTreeManager = new SkillTreeManager(progressionDefinitionProvider, progressionAccess);
+        SkillTreePresenter skillTreePresenter = new SkillTreePresenter(progressionDefinitionProvider, progressionAccess);
+        VampirismSkillTreeUiAdapter skillTreeUiAdapter = new VampirismSkillTreeUiAdapter(
+                progressionDefinitionProvider,
+                progressionAccess,
+                this::GetHighestPosition,
+                skillTreePresenter,
+                skillTreeManager);
+        VampirismRelicUiAdapter relicUiAdapter = new VampirismRelicUiAdapter(
+                progressionDefinitionProvider,
+                () -> VampirismConfig.get().getCooldownHudUpdateIntervalMs());
+        this.progressionPageFactory = new VampirismProgressionPageFactory(
+                VampirismUiPaths.theme(),
+                skillTreeUiAdapter,
+                relicUiAdapter);
+        TriggerDispatcher triggerDispatcher = new TriggerDispatcher(progressionDefinitionProvider, progressionAccess);
+        this.passiveService = new PassiveService(progressionDefinitionProvider, progressionAccess, triggerDispatcher::dispatch);
+        PassiveTriggerRuntimeService.init(triggerDispatcher::dispatch);
+        DamageActionHandler.init(passiveService::onFeed);
+        FeedCompletionService.init(passiveService::onFeed);
+        BloodHudService.init(playerRef -> new RelicCooldownHud(playerRef, VampirismUiPaths.theme(), relicUiAdapter));
         AbilityService.init(
-                new RegistryBackedAbilityDefinitionProvider(abilityRegistry, skillRegistry, effectDefRegistry),
-                new VampirismAbilityAccessProvider(PlayerSkillRegistry.get()),
-                new VampireVitalityAbilityResourcePort());
+                progressionDefinitionProvider,
+                new VampirismAbilityAccessProvider(playerSkillRegistry),
+                new VampireVitalityAbilityResourcePort(),
+                (ctx, abilityId) -> triggerDispatcher.dispatch(com.epicseed.vampirism.skill.runtime.TriggerEvent.onActivate(ctx, abilityId)));
         NightHuntSpawnRegistry.init();
-        PassiveService.init();
-        this.skillTreeManager = new SkillTreeManager(skillRegistry);
         SunburnSystem.registerModifiers();
         VampireVitalitySystem.registerModifiers();
         VampireMovementSystem.registerModifiers();
@@ -126,6 +172,11 @@ public class Vampirism extends JavaPlugin {
         this.triggerRegistry     = new ReusableDefRegistry();
         this.actionRegistry      = new ReusableDefRegistry();
         this.targetingRegistry   = new ReusableDefRegistry();
+        VampirismProgressionDefinitionProvider.init(
+                skillRegistry,
+                passiveRegistry,
+                abilityRegistry,
+                effectDefRegistry);
         SkillRuntimeDefinitions.init(new RegistryBackedReusableDefinitionProvider(
                 conditionRegistry,
                 requirementRegistry,
@@ -179,6 +230,10 @@ public class Vampirism extends JavaPlugin {
     public static Vampirism getInstance() { return instance; }
 
     public Vector2d GetHighestPosition()            { return highestPosition; }
+    public VampirismProgressionDefinitionProvider getProgressionDefinitionProvider() { return progressionDefinitionProvider; }
+    public PlayerRegistrySkillProgressionAccess getProgressionAccess() { return progressionAccess; }
+    public VampirismProgressionPageFactory getProgressionPageFactory() { return progressionPageFactory; }
+    public PassiveService getPassiveService()       { return passiveService; }
     public SkillRegistry GetSkillRegistry()         { return skillRegistry; }
     public PassiveRegistry GetPassiveRegistry()     { return passiveRegistry; }
     public AbilityRegistry GetAbilityRegistry()    { return abilityRegistry; }

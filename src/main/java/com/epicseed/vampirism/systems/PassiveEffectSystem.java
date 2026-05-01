@@ -1,8 +1,9 @@
 package com.epicseed.vampirism.systems;
 
-import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
+import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
+import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
 import com.epicseed.epiccore.skill.model.Passive;
 import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.vampirism.skill.runtime.PassiveTriggerRuntimeService;
@@ -10,7 +11,6 @@ import com.epicseed.vampirism.skill.runtime.PassiveService;
 import com.epicseed.vampirism.skill.runtime.PersistentPassiveEffectService;
 import com.epicseed.vampirism.skill.runtime.PersistentPassiveOwnerKey;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Objects;
 
 /**
  * ECS system that drives passive behaviors that cannot be expressed as static modifiers:
@@ -65,6 +66,17 @@ public class PassiveEffectSystem extends EntityTickingSystem<EntityStore> {
 
     /** Per-player accumulator for the periodic passive check interval. */
     private static final Map<UUID, Float> checkAccumulators = new ConcurrentHashMap<>();
+    private final PassiveService passiveService;
+    private final ProgressionDefinitionProvider definitionProvider;
+    private final SkillProgressionAccess progressionAccess;
+
+    public PassiveEffectSystem(@Nonnull PassiveService passiveService,
+                               @Nonnull ProgressionDefinitionProvider definitionProvider,
+                               @Nonnull SkillProgressionAccess progressionAccess) {
+        this.passiveService = Objects.requireNonNull(passiveService, "passiveService");
+        this.definitionProvider = Objects.requireNonNull(definitionProvider, "definitionProvider");
+        this.progressionAccess = Objects.requireNonNull(progressionAccess, "progressionAccess");
+    }
 
     // -------------------------------------------------------------------------
     // ECS plumbing
@@ -107,12 +119,12 @@ public class PassiveEffectSystem extends EntityTickingSystem<EntityStore> {
             }
             checkAccumulators.put(uuid, 0f);
 
-            Collection<Passive> unlocked = PassiveService.get().getUnlockedPassives(uuid);
+            Collection<Passive> unlocked = passiveService.getUnlockedPassives(uuid);
             Set<String> activePersistentOwnerKeys = new HashSet<>();
             PassiveTriggerRuntimeService.initializePlayerSession(ctx);
 
-            for (String skillId : PlayerSkillRegistry.get().getUnlockedSkills(uuid)) {
-                Skill skill = Vampirism.getInstance().GetSkillRegistry().GetSkill(skillId);
+            for (String skillId : progressionAccess.getUnlockedSkillIds(uuid)) {
+                Skill skill = definitionProvider.getSkill(skillId);
                 if (skill != null) {
                     PersistentPassiveEffectService.registerPersistentOwner(
                             activePersistentOwnerKeys,

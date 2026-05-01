@@ -20,7 +20,7 @@ import com.epicseed.vampirism.domain.hunt.PendingRouteKind;
 import com.epicseed.epiccore.hytale.EntityIdentityAdapter;
 import com.epicseed.epiccore.hytale.WorldStoreAdapter;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
+import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -166,7 +166,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         }
 
         if (!startGuidingRoute(state, uuid, playerRef, playerTransform, store, world, true,
-                PlayerSkillRegistry.get().getAcquiredSkillPoints(uuid))) {
+                PlayerRegistrySkillProgressionAccess.instance().getAcquiredSkillPoints(uuid))) {
             return false;
         }
         state.cooldownRemainingSeconds = 0f;
