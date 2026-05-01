@@ -1,14 +1,14 @@
 package com.epicseed.vampirism.systems;
+import com.epicseed.vampirism.modifier.ModifierContext;
 
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.domain.blood.BloodConversionPresentationService;
 import com.epicseed.vampirism.domain.blood.BloodConversionPulseService;
 import com.epicseed.vampirism.domain.blood.BloodConversionSession;
 import com.epicseed.vampirism.domain.blood.FeedEligibility;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
-import com.epicseed.vampirism.skill.model.Ability;
+import com.epicseed.epiccore.skill.model.Ability;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -179,7 +179,7 @@ public class BloodConversionSystem extends EntityTickingSystem<EntityStore> {
         if (rawStat instanceof String statName && !statName.isBlank()) {
             try {
                 VampireStatType stat = VampireStatType.valueOf(statName);
-                return ModifierRegistry.get().compute(stat, fallback, ctx.modifierContext());
+                return ModifierContext.REGISTRY.compute(stat, fallback, ctx.modifierContext());
             } catch (IllegalArgumentException ignored) {
                 return resolveLiteral(action, literalKey, fallback);
             }

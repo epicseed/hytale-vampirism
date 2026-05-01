@@ -9,7 +9,6 @@ import javax.annotation.Nonnull;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.modifier.ModifierContext;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -152,7 +151,7 @@ public final class BloodService {
             return BASE_BLOOD_CAPACITY_UNITS;
         }
         ModifierContext ctx = new ModifierContext(playerRefComponent.getUuid(), playerRef, store);
-        float multiplier = ModifierRegistry.get().compute(VampireStatType.BLOOD_BAR_CAPACITY, 1f, ctx);
+        float multiplier = ModifierContext.REGISTRY.compute(VampireStatType.BLOOD_BAR_CAPACITY, 1f, ctx);
         if (!Float.isFinite(multiplier) || multiplier <= 0f) {
             multiplier = 1f;
         }

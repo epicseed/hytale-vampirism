@@ -1,13 +1,13 @@
 package com.epicseed.vampirism.skill.runtime.actions;
+import com.epicseed.vampirism.modifier.ModifierContext;
 
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.hytale.DamageAdapter;
 import com.epicseed.epiccore.skill.runtime.TargetingResolver;
-import com.epicseed.vampirism.hytale.DamageAdapter;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.skill.runtime.PassiveService;
 import com.epicseed.vampirism.skill.runtime.SkillRequirementEvaluator;
@@ -41,7 +41,7 @@ public final class DamageActionHandler {
         }
 
         if (selfDamage) {
-            float selfDamageMultiplier = Math.max(0f, ModifierRegistry.get().compute(
+            float selfDamageMultiplier = Math.max(0f, ModifierContext.REGISTRY.compute(
                     VampireStatType.SELF_DAMAGE_MULTIPLIER, 1f, ctx.modifierContext()));
             float selfDmg = baseDamage * 0.3f * selfDamageMultiplier;
             if (selfDmg > 0f) {
@@ -93,9 +93,9 @@ public final class DamageActionHandler {
         if (action.get("statId") instanceof String statId && !statId.isBlank()) {
             VampireStatType stat = resolveStatType(statId, "dealDamage");
             if (stat == null) return 0f;
-            return ModifierRegistry.get().compute(stat, 0f, ctx.modifierContext()) * multiplier;
+            return ModifierContext.REGISTRY.compute(stat, 0f, ctx.modifierContext()) * multiplier;
         }
-        return ModifierRegistry.get().compute(VampireStatType.PROJECTILE_DAMAGE, 10f, ctx.modifierContext()) * multiplier;
+        return ModifierContext.REGISTRY.compute(VampireStatType.PROJECTILE_DAMAGE, 10f, ctx.modifierContext()) * multiplier;
     }
 
     private static Float resolveExecuteThreshold(Map<String, Object> action, SkillRuntimeContext ctx) {
@@ -105,7 +105,7 @@ public final class DamageActionHandler {
         if (action.get("statId") instanceof String statId && !statId.isBlank()) {
             VampireStatType stat = resolveStatType(statId, "executeFinalBlow");
             if (stat == null) return null;
-            return ModifierRegistry.get().compute(stat, 0f, ctx.modifierContext());
+            return ModifierContext.REGISTRY.compute(stat, 0f, ctx.modifierContext());
         }
         return null;
     }

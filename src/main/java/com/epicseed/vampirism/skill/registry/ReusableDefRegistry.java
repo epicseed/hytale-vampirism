@@ -1,7 +1,7 @@
 package com.epicseed.vampirism.skill.registry;
 
 import com.epicseed.epiccore.registry.IdRegistry;
-import com.epicseed.vampirism.skill.model.ReusableDef;
+import com.epicseed.epiccore.skill.model.ReusableDef;
 
 public class ReusableDefRegistry extends IdRegistry<ReusableDef> {
 

@@ -1,4 +1,5 @@
 package com.epicseed.vampirism.systems;
+import com.epicseed.vampirism.modifier.ModifierContext;
 
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.domain.blood.ConsumableMarkerService;
@@ -6,12 +7,11 @@ import com.epicseed.vampirism.domain.blood.FeedChannelPresentationService;
 import com.epicseed.vampirism.domain.blood.FeedCompletionService;
 import com.epicseed.vampirism.domain.blood.FeedEligibility;
 import com.epicseed.vampirism.domain.blood.FeedSession;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
-import com.epicseed.vampirism.skill.model.Ability;
+import com.epicseed.epiccore.skill.model.Ability;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
-import com.epicseed.vampirism.skill.runtime.SkillRuntimeDefinitions;
+import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -80,7 +80,7 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
         SkillRuntimeContext thresholdCtx = ctx.currentAbilityId() != null && !ctx.currentAbilityId().isBlank()
                 ? ctx.withActivatedAbility(ctx.currentAbilityId())
                 : ctx;
-        float executeThreshold = ModifierRegistry.get().compute(
+        float executeThreshold = ModifierContext.REGISTRY.compute(
                 resolveStatName(action.get("executeThresholdStatId"), VampireStatType.ABILITY_EXECUTE_HEALTH_THRESHOLD),
                 resolveLiteral(action, "executeThreshold", DEFAULT_EXECUTE_THRESHOLD),
                 thresholdCtx.modifierContext());
@@ -247,7 +247,7 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
         if (rawStat instanceof String statName && !statName.isBlank()) {
             try {
                 VampireStatType stat = VampireStatType.valueOf(statName);
-                return ModifierRegistry.get().compute(stat, fallback, ctx.modifierContext());
+                return ModifierContext.REGISTRY.compute(stat, fallback, ctx.modifierContext());
             } catch (IllegalArgumentException ignored) {
                 return resolveLiteral(action, literalKey, fallback);
             }
@@ -260,7 +260,7 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
                                            float fallback,
                                            @Nonnull SkillRuntimeContext ctx) {
         VampireStatType stat = resolveStatName(rawStat, fallbackStat);
-        return ModifierRegistry.get().compute(stat, fallback, ctx.modifierContext());
+        return ModifierContext.REGISTRY.compute(stat, fallback, ctx.modifierContext());
     }
 
     @Nonnull

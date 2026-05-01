@@ -3,7 +3,7 @@ package com.epicseed.vampirism.skill.runtime;
 import com.epicseed.epiccore.skill.model.EffectDef;
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindings;
 import com.epicseed.vampirism.Vampirism;
-import com.epicseed.vampirism.modifier.ContextKey;
+import com.epicseed.epiccore.modifier.ContextKey;
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.vampirism.systems.MorphFlySystem;
 import com.epicseed.vampirism.systems.SneakSystem;

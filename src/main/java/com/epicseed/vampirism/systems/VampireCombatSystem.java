@@ -11,9 +11,8 @@ import javax.annotation.Nullable;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.modifier.ModifierContext;
-import com.epicseed.vampirism.modifier.ModifierTag;
+import com.epicseed.epiccore.modifier.ModifierTag;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.runtime.PassiveService;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeStateResolver;
@@ -92,7 +91,7 @@ public class VampireCombatSystem extends DamageEventSystem {
             boolean vampireVictim = victimUuid != null && VampireStatusRegistry.get().isVampire(victimUuid);
             if (vampireVictim) {
                 ModifierContext victimCtx = new ModifierContext(victimUuid, victimRef, store);
-                float reduction = ModifierRegistry.get().compute(VampireStatType.DAMAGE_IN_REDUCTION, 0f, victimCtx);
+                float reduction = ModifierContext.REGISTRY.compute(VampireStatType.DAMAGE_IN_REDUCTION, 0f, victimCtx);
                 if (reduction > 0f) {
                     damage.setAmount(Math.max(0f, damage.getAmount() * (1f - reduction)));
                 }
@@ -123,7 +122,7 @@ public class VampireCombatSystem extends DamageEventSystem {
             }
 
             ModifierContext ctx = new ModifierContext(attackerUuid, attackerRef, store);
-            ModifierRegistry reg = ModifierRegistry.get();
+            var reg = ModifierContext.REGISTRY;
 
             float damageMultiplier = reg.compute(VampireStatType.DAMAGE_OUT, 1.0f, ctx);
             float ambushBonus = reg.compute(VampireStatType.AMBUSH_DAMAGE_MULTIPLIER, 0.0f, ctx);
@@ -217,7 +216,7 @@ public class VampireCombatSystem extends DamageEventSystem {
             PlayerInput.InputUpdate entry = (PlayerInput.InputUpdate) queue.get(i);
             if (entry instanceof PlayerInput.SetMovementStates move && move.movementStates().rolling) {
                 ModifierContext ctx = new ModifierContext(victimUuid, victimRef, store);
-                float reduction = ModifierRegistry.get().compute(VampireStatType.FALL_DAMAGE_REDUCTION, 0f, ctx);
+                float reduction = ModifierContext.REGISTRY.compute(VampireStatType.FALL_DAMAGE_REDUCTION, 0f, ctx);
                 float reduced = damage.getAmount() * (1f - reduction);
                 LOGGER.atInfo().log("[Vampire] Roll fall damage: " + damage.getAmount() + " -> " + reduced);
                 damage.setAmount(reduced);
@@ -313,7 +312,7 @@ public class VampireCombatSystem extends DamageEventSystem {
 
     /** Registers global modifiers owned by this system. Call once at plugin startup. */
     public static void registerModifiers() {
-        ModifierRegistry.get().registerGlobal(VampireStatType.FALL_DAMAGE_REDUCTION, Tag.ROLLING_FALL_WARD, 10,
+        ModifierContext.REGISTRY.registerGlobal(VampireStatType.FALL_DAMAGE_REDUCTION, Tag.ROLLING_FALL_WARD, 10,
                 (current, ctx) -> current + VampirismConfig.get().getFallDamageReduction());
     }
 }

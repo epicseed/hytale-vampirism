@@ -3,11 +3,10 @@ package com.epicseed.vampirism.systems;
 import javax.annotation.Nonnull;
 
 import com.epicseed.vampirism.config.VampirismConfig;
-import com.epicseed.vampirism.modifier.ContextKey;
+import com.epicseed.epiccore.modifier.ContextKey;
 import com.epicseed.vampirism.modifier.ModifierContext;
-import com.epicseed.vampirism.modifier.ModifierTag;
+import com.epicseed.epiccore.modifier.ModifierTag;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.runtime.TemporaryModifierTracker;
 import com.hypixel.hytale.component.ArchetypeChunk;
@@ -76,9 +75,9 @@ public class VampireMovementSystem extends EntityTickingSystem<EntityStore> {
             }
 
             ModifierContext ctx = new ModifierContext(uuid, playerRef, store);
-            float targetSpeed = ModifierRegistry.get().compute(VampireStatType.SPEED, 0f, ctx)
-                    + ModifierRegistry.get().compute(VampireStatType.BAT_FORM_SPEED, 0f, ctx)
-                    + ModifierRegistry.get().compute(VampireStatType.ANCIENT_FORM_SPEED, 0f, ctx);
+            float targetSpeed = ModifierContext.REGISTRY.compute(VampireStatType.SPEED, 0f, ctx)
+                    + ModifierContext.REGISTRY.compute(VampireStatType.BAT_FORM_SPEED, 0f, ctx)
+                    + ModifierContext.REGISTRY.compute(VampireStatType.ANCIENT_FORM_SPEED, 0f, ctx);
 
             applySpeed(movementManager, playerRefComponent, targetSpeed);
 
@@ -113,7 +112,7 @@ public class VampireMovementSystem extends EntityTickingSystem<EntityStore> {
 
     /** Registers global modifiers owned by this system. Call once at plugin startup. */
     public static void registerModifiers() {
-        ModifierRegistry reg = ModifierRegistry.get();
+        var reg = ModifierContext.REGISTRY;
         reg.registerGlobal(VampireStatType.SPEED, Tag.WORLD_STATE_SPEED, 10, (current, ctx) -> {
             boolean inSunlight = ctx.resolve(SunburnSystem.IN_SUNLIGHT, () -> SunburnSystem.isInSunlight(ctx.uuid()));
             return inSunlight ? VampirismConfig.get().getSpeedDay() : VampirismConfig.get().getSpeedNight();

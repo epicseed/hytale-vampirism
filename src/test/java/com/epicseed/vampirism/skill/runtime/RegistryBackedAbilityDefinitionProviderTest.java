@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.epicseed.epiccore.skill.model.EffectDef;
 import com.epicseed.epiccore.skill.model.Skill;
-import com.epicseed.vampirism.skill.model.Ability;
+import com.epicseed.epiccore.skill.model.Ability;
 import com.epicseed.vampirism.skill.registry.AbilityRegistry;
 import com.epicseed.vampirism.skill.registry.EffectDefRegistry;
 import com.epicseed.vampirism.skill.registry.SkillRegistry;

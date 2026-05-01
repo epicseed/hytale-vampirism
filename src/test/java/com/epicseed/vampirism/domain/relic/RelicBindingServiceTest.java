@@ -2,6 +2,7 @@ package com.epicseed.vampirism.domain.relic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Map;
 
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindings;
+import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindingsHolder;
 
 class RelicBindingServiceTest {
 
@@ -51,6 +53,20 @@ class RelicBindingServiceTest {
         RelicBindingService.init(() -> SkillRuntimeBindings.of(Map.of(), Map.of("primary", "BloodSucker")));
 
         assertEquals("BloodSucker", RelicBindingService.defaultAbilityId("primary"));
+    }
+
+    @Test
+    void defaultAbilityIdReadsLatestSnapshotFromBindingsHolder() {
+        SkillRuntimeBindingsHolder holder = new SkillRuntimeBindingsHolder();
+        RelicBindingService.init(holder::snapshot);
+
+        assertNull(RelicBindingService.defaultAbilityId("primary"));
+
+        holder.replace(SkillRuntimeBindings.of(Map.of(), Map.of("primary", "BloodSucker")));
+        assertEquals("BloodSucker", RelicBindingService.defaultAbilityId("primary"));
+
+        holder.replace(SkillRuntimeBindings.of(Map.of(), Map.of("primary", "Hemorrhage")));
+        assertEquals("Hemorrhage", RelicBindingService.defaultAbilityId("primary"));
     }
 
     @Test

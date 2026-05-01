@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.epicseed.vampirism.skill.runtime.actions.AbilityActionHandler;
-import com.epicseed.vampirism.skill.runtime.actions.ActionHandlerRegistry;
+import com.epicseed.epiccore.skill.runtime.actions.ActionHandlerRegistry;
 import com.epicseed.vampirism.skill.runtime.actions.BloodActionHandler;
 import com.epicseed.vampirism.skill.runtime.actions.ChannelActionHandlers;
 import com.epicseed.vampirism.skill.runtime.actions.DamageActionHandler;
@@ -40,8 +40,8 @@ public final class SkillActionExecutor {
         return EXECUTOR;
     }
 
-    private static ActionHandlerRegistry createActionHandlers() {
-        return new ActionHandlerRegistry()
+    private static ActionHandlerRegistry<SkillRuntimeContext> createActionHandlers() {
+        return new ActionHandlerRegistry<SkillRuntimeContext>()
                 .register("applyEffect", EffectActionHandler::applyEffect)
                 .register("removeEffect", EffectActionHandler::removeEffect)
                 .register("toggleEffect", EffectActionHandler::toggleEffect)

@@ -16,11 +16,12 @@ import org.junit.jupiter.api.Test;
 
 class VampirePlayerStateStoreTest {
 
+    private InMemoryRepository repo;
     private PlayerProgressStore<PlayerVampireProfile> progressStore;
 
     @BeforeEach
     void setUp() {
-        InMemoryRepository repo = new InMemoryRepository();
+        repo = new InMemoryRepository();
         progressStore = new PlayerProgressStore<>(repo);
         VampirePlayerStateStore.init(progressStore);
     }
@@ -155,10 +156,55 @@ class VampirePlayerStateStoreTest {
         assertEquals(42, blood);
     }
 
+    @Test
+    void updateProfileMutatesVampireFieldsWithoutTouchingGenericProgression() {
+        UUID uuid = UUID.randomUUID();
+        progressStore.mutateProfile(uuid, profile -> {
+            profile.skillPoints = 7;
+            profile.totalSpent = 3;
+            profile.unlockedSkills.add("mist-step");
+            profile.activeRelicPreset = 2;
+            profile.relicBindingsFor(2).put("primary", "BloodSucker");
+        });
+
+        long infectionExpiry = System.currentTimeMillis() + 60_000L;
+        VampirePlayerStateStore.get().updateProfile(uuid, profile -> {
+            profile.blood = 65;
+            profile.completedNightHunts = 4;
+            profile.infectionExpiresAtMs = infectionExpiry;
+        });
+
+        assertEquals(65, VampirePlayerStateStore.get().getPersistedBlood(uuid));
+        assertEquals(4, VampirePlayerStateStore.get().getCompletedNightHunts(uuid));
+        assertEquals(infectionExpiry, VampirePlayerStateStore.get().getInfectionExpiresAtMs(uuid));
+        boolean hasUnlockedMistStep = progressStore.readProfile(
+                uuid,
+                profile -> profile.unlockedSkills.contains("mist-step"));
+        assertTrue(hasUnlockedMistStep);
+        assertEquals(7, progressStore.getSkillPoints(uuid));
+        assertEquals(10, progressStore.getAcquiredSkillPoints(uuid));
+        assertEquals("BloodSucker", progressStore.getRelicBinding(uuid, 2, "primary"));
+    }
+
+    @Test
+    void updateProfilePersistsImmediatelyForOfflinePlayers() {
+        UUID uuid = UUID.randomUUID();
+
+        VampirePlayerStateStore.get().updateProfile(uuid, profile -> {
+            profile.blood = 80;
+            profile.completedNightHunts = 2;
+        });
+
+        assertEquals(1, repo.saveCount);
+        assertEquals(80, repo.storage.get(uuid).blood);
+        assertEquals(2, repo.storage.get(uuid).completedNightHunts);
+    }
+
     // ── In-memory repository for tests ────────────────────────────────────────
 
     private static final class InMemoryRepository implements PlayerProfileRepository<PlayerVampireProfile> {
         final Map<UUID, PlayerVampireProfile> storage = new HashMap<>();
+        int saveCount = 0;
 
         @Override
         public PlayerVampireProfile load(UUID uuid) {
@@ -167,6 +213,7 @@ class VampirePlayerStateStoreTest {
 
         @Override
         public void save(UUID uuid, PlayerVampireProfile profile) {
+            saveCount++;
             storage.put(uuid, profile);
         }
     }

@@ -1,16 +1,16 @@
 package com.epicseed.vampirism.skill.runtime.actions;
+import com.epicseed.vampirism.modifier.ModifierContext;
 
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nonnull;
 
-import com.epicseed.vampirism.Vampirism;
-import com.epicseed.vampirism.hytale.EffectAdapter;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
-import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.epiccore.skill.runtime.TargetingResolver;
+import com.epicseed.epiccore.hytale.EffectAdapter;
 import com.epicseed.epiccore.skill.model.EffectDef;
+import com.epicseed.epiccore.skill.runtime.TargetingResolver;
+import com.epicseed.vampirism.Vampirism;
+import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.skill.runtime.SkillConditionEvaluator;
 import com.epicseed.vampirism.skill.runtime.SkillRequirementEvaluator;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
@@ -150,7 +150,7 @@ public final class EffectActionHandler {
         if (effectDef.duration <= 0f) {
             return effectDef.duration;
         }
-        float multiplier = Math.max(0f, ModifierRegistry.get().compute(
+        float multiplier = Math.max(0f, ModifierContext.REGISTRY.compute(
                 VampireStatType.ABILITY_DURATION_MULTIPLIER, 1f, ctx.modifierContext()));
         return effectDef.duration * multiplier;
     }

@@ -3,6 +3,7 @@ package com.epicseed.vampirism.skill.runtime;
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.epiccore.skill.model.Passive;
 import com.epicseed.epiccore.skill.model.Skill;
+import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
 

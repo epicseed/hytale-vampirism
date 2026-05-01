@@ -1,4 +1,5 @@
 package com.epicseed.vampirism.domain.blood;
+import com.epicseed.vampirism.modifier.ModifierContext;
 
 import java.util.Map;
 import java.util.UUID;
@@ -8,12 +9,11 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.epicseed.vampirism.Vampirism;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.skill.model.Ability;
+import com.epicseed.epiccore.skill.model.Ability;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
-import com.epicseed.vampirism.skill.runtime.SkillRuntimeDefinitions;
+import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
 import com.epicseed.vampirism.systems.VampireInfectionSystem;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -85,7 +85,7 @@ public final class ConsumableMarkerService {
     private static float resolveThreshold(@Nonnull SkillRuntimeContext ctx) {
         Ability ability = resolveAbility(BLOOD_SUCKER_ABILITY_ID);
         Map<String, Object> action = resolveFeedAction(ability);
-        return ModifierRegistry.get().compute(
+        return ModifierContext.REGISTRY.compute(
                 resolveStatName(action.get("executeThresholdStatId"), VampireStatType.ABILITY_EXECUTE_HEALTH_THRESHOLD),
                 action.get("executeThreshold") instanceof Number n ? n.floatValue() : DEFAULT_EXECUTE_THRESHOLD,
                 ctx.modifierContext());

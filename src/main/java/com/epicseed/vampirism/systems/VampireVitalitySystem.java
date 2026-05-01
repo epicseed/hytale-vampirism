@@ -1,4 +1,5 @@
 package com.epicseed.vampirism.systems;
+import com.epicseed.vampirism.modifier.ModifierContext;
 
 import java.util.UUID;
 
@@ -14,9 +15,8 @@ import com.epicseed.vampirism.domain.blood.VampireThroneRecoveryService;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.ui.RelicBindingsUI;
 import com.epicseed.vampirism.ui.SkillTreeUI;
-import com.epicseed.vampirism.modifier.ContextKey;
-import com.epicseed.vampirism.modifier.ModifierTag;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
+import com.epicseed.epiccore.modifier.ContextKey;
+import com.epicseed.epiccore.modifier.ModifierTag;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.relic.RelicInventoryService;
@@ -279,7 +279,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
 
     /** Registers global modifiers owned by this system. Call once at plugin startup. */
     public static void registerModifiers() {
-        ModifierRegistry reg = ModifierRegistry.get();
+        var reg = ModifierContext.REGISTRY;
 
         reg.registerGlobal(VampireStatType.DAMAGE_OUT, Tag.BLOODLUST_DAMAGE, 20, (current, ctx) -> {
             boolean inSunlight = ctx.resolve(SunburnSystem.IN_SUNLIGHT, () -> SunburnSystem.isInSunlight(ctx.uuid()));

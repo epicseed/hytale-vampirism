@@ -5,7 +5,7 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
-import com.epicseed.vampirism.skill.runtime.AbilityCooldownTracker;
+import com.epicseed.epiccore.skill.runtime.AbilityCooldownTracker;
 
 public final class ProgressionLifecycleService {
 

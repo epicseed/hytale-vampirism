@@ -1,8 +1,10 @@
 package com.epicseed.vampirism.modifier;
 
+import com.epicseed.epiccore.modifier.StatType;
+
 /**
  * Built-in vampire stat types. Systems call
- * {@link ModifierRegistry#compute} with one of these values.
+ * {@link ModifierContext#REGISTRY} with one of these values.
  *
  * <p>Priority convention for global modifiers:
  * <ul>

@@ -3,7 +3,7 @@ package com.epicseed.vampirism.domain.hunt;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.epicseed.vampirism.hytale.WorldStoreAdapter;
+import com.epicseed.epiccore.hytale.WorldStoreAdapter;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;

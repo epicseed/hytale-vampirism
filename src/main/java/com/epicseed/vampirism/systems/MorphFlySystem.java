@@ -328,6 +328,6 @@ public class MorphFlySystem extends EntityTickingSystem<EntityStore> {
     }
 
     /** Context key for "is the player in bat form" — cached per compute() call. */
-    public static final com.epicseed.vampirism.modifier.ContextKey<Boolean> IS_IN_BAT_FORM =
-            new com.epicseed.vampirism.modifier.ContextKey<>() {};
+    public static final com.epicseed.epiccore.modifier.ContextKey<Boolean> IS_IN_BAT_FORM =
+            new com.epicseed.epiccore.modifier.ContextKey<>() {};
 }

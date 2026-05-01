@@ -1,12 +1,12 @@
 package com.epicseed.vampirism.domain.blood;
+import com.epicseed.vampirism.modifier.ModifierContext;
 
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.hytale.DamageAdapter;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
-import com.epicseed.vampirism.hytale.DamageAdapter;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.skill.runtime.PassiveService;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.epicseed.vampirism.systems.VampireInfectionSystem;
@@ -36,7 +36,7 @@ public final class FeedCompletionService {
             return;
         }
 
-        float executeThreshold = ModifierRegistry.get().compute(
+        float executeThreshold = ModifierContext.REGISTRY.compute(
                 session.executeThresholdStat,
                 session.executeThreshold,
                 ctx.modifierContext());
@@ -50,7 +50,7 @@ public final class FeedCompletionService {
         }
         boolean targetKilled = !FeedEligibility.isAlive(session.targetRef, store);
 
-        float bloodGainMultiplier = ModifierRegistry.get().compute(
+        float bloodGainMultiplier = ModifierContext.REGISTRY.compute(
                 session.bloodGainStat,
                 1f,
                 ctx.modifierContext());

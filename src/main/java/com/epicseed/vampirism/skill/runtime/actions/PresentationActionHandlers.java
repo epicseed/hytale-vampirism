@@ -6,7 +6,7 @@ import javax.annotation.Nonnull;
 
 import com.epicseed.epiccore.skill.runtime.TargetingResolver;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
-import com.epicseed.vampirism.skill.runtime.SkillRuntimeDefinitions;
+import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Transform;

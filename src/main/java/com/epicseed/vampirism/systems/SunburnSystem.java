@@ -9,11 +9,10 @@ import javax.annotation.Nonnull;
 
 import com.epicseed.vampirism.config.ShelterDetectionMode;
 import com.epicseed.vampirism.config.VampirismConfig;
-import com.epicseed.vampirism.modifier.ContextKey;
+import com.epicseed.epiccore.modifier.ContextKey;
 import com.epicseed.vampirism.modifier.ModifierContext;
-import com.epicseed.vampirism.modifier.ModifierTag;
+import com.epicseed.epiccore.modifier.ModifierTag;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -286,7 +285,7 @@ public class SunburnSystem extends EntityTickingSystem<EntityStore> {
         float resistance = 0f;
         try {
             ModifierContext modCtx = new ModifierContext(uuid, playerRef, store);
-            resistance = ModifierRegistry.get().compute(VampireStatType.SUNBURN_RESISTANCE, 0f, modCtx);
+            resistance = ModifierContext.REGISTRY.compute(VampireStatType.SUNBURN_RESISTANCE, 0f, modCtx);
             resistance = Math.min(1f, Math.max(0f, resistance));
         } catch (Exception ignored) {}
 
@@ -441,7 +440,7 @@ public class SunburnSystem extends EntityTickingSystem<EntityStore> {
 
     /** Registers global modifiers owned by this system. Call once at plugin startup. */
     public static void registerModifiers() {
-        ModifierRegistry reg = ModifierRegistry.get();
+        var reg = ModifierContext.REGISTRY;
         reg.registerGlobal(VampireStatType.DAMAGE_OUT, Tag.SUNLIGHT_DAMAGE, 10, (current, ctx) -> {
             boolean inSunlight = ctx.resolve(IN_SUNLIGHT, () -> isInSunlight(ctx.uuid()));
             return inSunlight ? VampirismConfig.get().getSunlightDamageMultiplier() : current;

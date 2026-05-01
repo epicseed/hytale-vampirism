@@ -1,9 +1,9 @@
 package com.epicseed.vampirism.skill.runtime.actions;
+import com.epicseed.vampirism.modifier.ModifierContext;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.epicseed.vampirism.skill.runtime.TemporaryModifierTracker;
@@ -83,7 +83,7 @@ public final class ModifierActionHandler {
         if (statIdObj instanceof String statId && !statId.isBlank()) {
             try {
                 VampireStatType stat = VampireStatType.valueOf(statId);
-                return ModifierRegistry.get().compute(stat, fallback, ctx.modifierContext());
+                return ModifierContext.REGISTRY.compute(stat, fallback, ctx.modifierContext());
             } catch (IllegalArgumentException e) {
                 LOGGER.atWarning().log("[SkillActionExecutor] Unknown stat for key '" + statIdKey + "': " + statId);
             }

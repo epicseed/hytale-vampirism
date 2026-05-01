@@ -1,12 +1,12 @@
 package com.epicseed.vampirism.skill.manager;
+import com.epicseed.vampirism.modifier.ModifierContext;
 
 import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
 import com.epicseed.epiccore.skill.progression.SkillTreeOperations;
 import com.epicseed.epiccore.skill.progression.SkillUnlockResult;
-import com.epicseed.vampirism.modifier.ModifierTag;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
-import com.epicseed.vampirism.modifier.StatModifier;
+import com.epicseed.epiccore.modifier.ModifierTag;
+import com.epicseed.epiccore.modifier.ValueModifier;
 import com.epicseed.epiccore.skill.model.InlineModifier;
 import com.epicseed.epiccore.skill.model.Passive;
 import com.epicseed.epiccore.skill.model.Skill;
@@ -83,12 +83,12 @@ public class SkillTreeManager {
     /** Refunds all spent points, clears all unlocked skills, and removes their modifiers. */
     public void resetPlayer(@Nonnull UUID uuid) {
         progressionAccess.resetSkills(uuid);
-        ModifierRegistry.get().unregisterByTagPrefix(uuid, "skill:");
+        ModifierContext.REGISTRY.unregisterByTagPrefix(uuid, "skill:");
     }
 
     /** Remove all modifier registrations for a player (e.g. on disconnect). */
     public void evictPlayer(@Nonnull UUID uuid) {
-        ModifierRegistry.get().unregisterByTagPrefix(uuid, "skill:");
+        ModifierContext.REGISTRY.unregisterByTagPrefix(uuid, "skill:");
     }
 
     /**
@@ -96,7 +96,7 @@ public class SkillTreeManager {
      * Call this on join once the player's skill data has been loaded.
      */
     public void reloadModifiers(@Nonnull UUID uuid) {
-        ModifierRegistry.get().unregisterByTagPrefix(uuid, "skill:");
+        ModifierContext.REGISTRY.unregisterByTagPrefix(uuid, "skill:");
         for (String skillId : progressionAccess.getUnlockedSkillIds(uuid)) {
             Skill skill = definitionProvider.getSkill(skillId);
             if (skill != null) registerSkillModifiers(uuid, skill);
@@ -117,17 +117,17 @@ public class SkillTreeManager {
 
     private void registerInlineModifiers(@Nonnull UUID uuid, @Nonnull String sourceId,
                                          @Nonnull List<InlineModifier> modifiers) {
-        ModifierRegistry reg = ModifierRegistry.get();
+        var reg = ModifierContext.REGISTRY;
         for (InlineModifier mod : modifiers) {
             if (mod.stat == null) continue;
             String modifierKey = mod.modifierId != null && !mod.modifierId.isBlank() ? mod.modifierId : mod.statId;
             String tagKey = "skill:" + sourceId + ":" + modifierKey;
-            StatModifier modifier = buildModifier(mod);
+            ValueModifier<ModifierContext> modifier = buildModifier(mod);
             reg.register(uuid, mod.stat, ModifierTag.of(tagKey), mod.priority, modifier);
         }
     }
 
-    private StatModifier buildModifier(@Nonnull InlineModifier mod) {
+    private ValueModifier<ModifierContext> buildModifier(@Nonnull InlineModifier mod) {
         float value = mod.value;
         return switch (mod.operation) {
             case ADD      -> (current, ctx) -> ModifierScopeMatcher.applies(mod, ctx) ? current + value : current;

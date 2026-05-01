@@ -1,10 +1,10 @@
 package com.epicseed.vampirism.systems;
+import com.epicseed.vampirism.modifier.ModifierContext;
 
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.config.VampirismConfig;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
-import com.epicseed.vampirism.modifier.ModifierTag;
-import com.epicseed.vampirism.modifier.StatModifier;
+import com.epicseed.epiccore.modifier.ModifierTag;
+import com.epicseed.epiccore.modifier.ValueModifier;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.epiccore.skill.model.EffectDef;
 import com.epicseed.epiccore.skill.model.InlineModifier;
@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Polls each vampire player's active Hytale effects and registers/unregisters
- * {@link com.epicseed.vampirism.modifier.StatModifier}s from matching {@link EffectDef}s.
+ * {@link ValueModifier}s from matching {@link EffectDef}s.
  *
  * <p>Runs every {@link VampirismConfig#getEffectTicksBetweenUpdates()} ticks. On each cycle,
  * it compares the set of currently active effects against the last known state, registering
@@ -128,7 +128,7 @@ public class EffectModifierSystem extends EntityTickingSystem<EntityStore> {
      * registry has already been evicted so no stale "active" entries remain.
      */
     public static void clearPlayer(@Nonnull UUID uuid) {
-        ModifierRegistry.get().unregisterByTagPrefix(uuid, "effect:");
+        ModifierContext.REGISTRY.unregisterByTagPrefix(uuid, "effect:");
         ticksSinceLastUpdate.remove(uuid);
         activeEffectModifiers.remove(uuid);
     }
@@ -146,13 +146,13 @@ public class EffectModifierSystem extends EntityTickingSystem<EntityStore> {
     }
 
     private void registerEffectModifiers(@Nonnull UUID uuid, @Nonnull EffectDef effectDef) {
-        ModifierRegistry reg = ModifierRegistry.get();
+        var reg = ModifierContext.REGISTRY;
         for (InlineModifier mod : effectDef.modifiers) {
             if (mod.stat == null) continue;
             String modKey = mod.modifierId != null && !mod.modifierId.isBlank() ? mod.modifierId : mod.statId;
             String tagKey = "effect:" + effectDef.id + ":" + modKey;
             float value = mod.value;
-            StatModifier modifier = switch (mod.operation) {
+            ValueModifier<ModifierContext> modifier = switch (mod.operation) {
                 case ADD      -> (current, ctx) -> ModifierScopeMatcher.applies(mod, ctx) ? current + value : current;
                 case MULTIPLY -> (current, ctx) -> ModifierScopeMatcher.applies(mod, ctx) ? current * value : current;
                 case OVERRIDE -> (current, ctx) -> ModifierScopeMatcher.applies(mod, ctx) ? value : current;
@@ -162,6 +162,6 @@ public class EffectModifierSystem extends EntityTickingSystem<EntityStore> {
     }
 
     private void unregisterEffectModifiers(@Nonnull UUID uuid, @Nonnull EffectDef effectDef) {
-        ModifierRegistry.get().unregisterByTagPrefix(uuid, "effect:" + effectDef.id + ":");
+        ModifierContext.REGISTRY.unregisterByTagPrefix(uuid, "effect:" + effectDef.id + ":");
     }
 }

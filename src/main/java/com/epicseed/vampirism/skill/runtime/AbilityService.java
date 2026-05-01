@@ -1,4 +1,5 @@
 package com.epicseed.vampirism.skill.runtime;
+import com.epicseed.vampirism.modifier.ModifierContext;
 
 import java.util.Map;
 import java.util.Set;
@@ -13,11 +14,11 @@ import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.epiccore.skill.runtime.AbilityAccessProvider;
 import com.epicseed.epiccore.skill.runtime.AbilityActivationCharge;
 import com.epicseed.epiccore.skill.runtime.AbilityDefinitionProvider;
+import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
 import com.epicseed.epiccore.skill.runtime.AbilityRuntimeKernel;
 import com.epicseed.epiccore.skill.runtime.ResolvedTargets;
 import com.epicseed.epiccore.skill.runtime.SkillActivationResult;
 import com.epicseed.epiccore.skill.runtime.TargetingResolver;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -163,7 +164,7 @@ public final class AbilityService {
 
     private static long computeCooldownMs(@Nonnull Ability ability,
                                           @Nonnull SkillRuntimeContext ctx) {
-        float overrideSeconds = ModifierRegistry.get().compute(
+        float overrideSeconds = ModifierContext.REGISTRY.compute(
                 VampireStatType.ABILITY_COOLDOWN_OVERRIDE_SECONDS, 0f, ctx.modifierContext());
         if (overrideSeconds > 0f) {
             return Math.max(0L, (long) (overrideSeconds * 1000L));
@@ -171,7 +172,7 @@ public final class AbilityService {
         if (ability.cooldown <= 0f) {
             return 0L;
         }
-        float reduction = ModifierRegistry.get().compute(
+        float reduction = ModifierContext.REGISTRY.compute(
                 VampireStatType.ABILITY_COOLDOWN_REDUCTION, 0f, ctx.modifierContext());
         float effectiveCooldown = ability.cooldown * Math.max(0.1f, 1f - reduction);
         return Math.max(0L, (long) (effectiveCooldown * 1000L));
@@ -182,7 +183,7 @@ public final class AbilityService {
         if (ability.resourceCost <= 0) {
             return 0;
         }
-        float multiplier = ModifierRegistry.get().compute(
+        float multiplier = ModifierContext.REGISTRY.compute(
                 VampireStatType.ABILITY_BLOOD_COST_MULTIPLIER, 1f, ctx.modifierContext());
         return Math.max(0, Math.round(ability.resourceCost * Math.max(0f, multiplier)));
     }

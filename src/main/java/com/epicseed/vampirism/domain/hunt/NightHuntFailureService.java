@@ -4,8 +4,8 @@ import java.util.UUID;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.hytale.WorldStoreAdapter;
 import com.epicseed.vampirism.config.VampirismConfig;
-import com.epicseed.vampirism.hytale.WorldStoreAdapter;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.hypixel.hytale.component.CommandBuffer;

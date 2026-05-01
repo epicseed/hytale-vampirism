@@ -20,7 +20,7 @@ import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindingsHolder;
 import com.epicseed.vampirism.skill.runtime.RegistryBackedReusableDefinitionProvider;
 import com.epicseed.vampirism.skill.runtime.RegistryBackedAbilityDefinitionProvider;
 import com.epicseed.vampirism.skill.runtime.AbilityService;
-import com.epicseed.vampirism.skill.runtime.SkillRuntimeDefinitions;
+import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeStateResolver;
 import com.epicseed.vampirism.skill.runtime.VampireVitalityAbilityResourcePort;
 import com.epicseed.vampirism.skill.runtime.VampirismAbilityAccessProvider;

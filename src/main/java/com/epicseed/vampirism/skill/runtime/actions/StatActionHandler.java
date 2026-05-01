@@ -1,8 +1,8 @@
 package com.epicseed.vampirism.skill.runtime.actions;
+import com.epicseed.vampirism.modifier.ModifierContext;
 
 import java.util.Map;
 
-import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -31,8 +31,8 @@ public final class StatActionHandler {
             return false;
         }
 
-        float healAmount = ModifierRegistry.get().compute(statType, 0f, ctx.modifierContext());
-        float healingReceived = Math.max(0f, ModifierRegistry.get().compute(
+        float healAmount = ModifierContext.REGISTRY.compute(statType, 0f, ctx.modifierContext());
+        float healingReceived = Math.max(0f, ModifierContext.REGISTRY.compute(
                 VampireStatType.HEALING_RECEIVED, 1f, ctx.modifierContext()));
         healAmount *= healingReceived;
         if (healAmount <= 0f) return false;

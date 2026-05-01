@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.skill.runtime.AbilityCooldownTracker;
 import com.epicseed.epiccore.skill.progression.AbilityCooldownAccess;
 
 public final class CooldownTrackerAbilityCooldownAccess implements AbilityCooldownAccess {

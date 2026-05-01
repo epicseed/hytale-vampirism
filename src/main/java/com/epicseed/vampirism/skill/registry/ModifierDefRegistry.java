@@ -1,7 +1,7 @@
 package com.epicseed.vampirism.skill.registry;
 
 import com.epicseed.epiccore.registry.IdRegistry;
-import com.epicseed.vampirism.skill.model.ModifierDef;
+import com.epicseed.epiccore.skill.model.ModifierDef;
 
 public class ModifierDefRegistry extends IdRegistry<ModifierDef> {
 

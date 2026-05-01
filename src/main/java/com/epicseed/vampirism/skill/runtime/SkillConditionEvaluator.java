@@ -2,9 +2,10 @@ package com.epicseed.vampirism.skill.runtime;
 
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.modifier.ModifierContext;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.skill.model.Ability;
+import com.epicseed.epiccore.skill.model.Ability;
+import com.epicseed.epiccore.skill.runtime.AbilityCooldownTracker;
+import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
 import com.epicseed.epiccore.skill.model.EffectDef;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.hypixel.hytale.component.Store;
@@ -224,7 +225,7 @@ public final class SkillConditionEvaluator {
         double current = health.get() / health.getMax();
         String operator = condition.get("operator") instanceof String op ? op : "<=";
         double target = threshold.doubleValue();
-        float thresholdOverride = ModifierRegistry.get().compute(
+        float thresholdOverride = ModifierContext.REGISTRY.compute(
                 VampireStatType.ABILITY_EXECUTE_HEALTH_THRESHOLD, -1f, ctx.modifierContext());
         if ("target".equals(subject) && thresholdOverride >= 0f) {
             target = thresholdOverride;
@@ -295,7 +296,7 @@ public final class SkillConditionEvaluator {
             return false;
         }
         String op = condition.get("op") instanceof String s ? s : "gte";
-        float current = ModifierRegistry.get().compute(stat, 0f, ctx);
+        float current = ModifierContext.REGISTRY.compute(stat, 0f, ctx);
         return compareOp(op, current, n.floatValue());
     }
 

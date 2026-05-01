@@ -1,14 +1,16 @@
 package com.epicseed.vampirism.skill.data;
 
-import com.epicseed.vampirism.modifier.StatType;
+import com.epicseed.epiccore.modifier.StatType;
+import com.epicseed.epiccore.skill.data.SkillLoaderModelAdapter;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.skill.model.Ability;
-import com.epicseed.vampirism.skill.model.ModifierDef;
-import com.epicseed.vampirism.skill.model.ReusableDef;
-import com.epicseed.vampirism.skill.model.StatDef;
-import com.epicseed.vampirism.skill.model.VampireState;
+import com.epicseed.epiccore.skill.model.Ability;
+import com.epicseed.epiccore.skill.model.ModifierDef;
+import com.epicseed.epiccore.skill.model.ReusableDef;
+import com.epicseed.epiccore.skill.model.StatDef;
+import com.epicseed.epiccore.skill.model.StateDef;
 
-public final class VampirismSkillLoaderModelAdapter implements SkillLoaderModelAdapter {
+public final class VampirismSkillLoaderModelAdapter
+        implements SkillLoaderModelAdapter<Ability, ModifierDef, ReusableDef, StateDef, StatDef> {
 
     @Override
     public Ability newAbility() {
@@ -26,8 +28,8 @@ public final class VampirismSkillLoaderModelAdapter implements SkillLoaderModelA
     }
 
     @Override
-    public VampireState newState() {
-        return new VampireState();
+    public StateDef newState() {
+        return new StateDef();
     }
 
     @Override

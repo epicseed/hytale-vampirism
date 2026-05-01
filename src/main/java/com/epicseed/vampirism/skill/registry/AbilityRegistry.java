@@ -1,7 +1,7 @@
 package com.epicseed.vampirism.skill.registry;
 
 import com.epicseed.epiccore.registry.IdRegistry;
-import com.epicseed.vampirism.skill.model.Ability;
+import com.epicseed.epiccore.skill.model.Ability;
 
 public class AbilityRegistry extends IdRegistry<Ability> {
 

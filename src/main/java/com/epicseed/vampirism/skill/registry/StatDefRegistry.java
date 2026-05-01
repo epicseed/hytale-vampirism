@@ -1,7 +1,7 @@
 package com.epicseed.vampirism.skill.registry;
 
 import com.epicseed.epiccore.registry.IdRegistry;
-import com.epicseed.vampirism.skill.model.StatDef;
+import com.epicseed.epiccore.skill.model.StatDef;
 
 public class StatDefRegistry extends IdRegistry<StatDef> {
 

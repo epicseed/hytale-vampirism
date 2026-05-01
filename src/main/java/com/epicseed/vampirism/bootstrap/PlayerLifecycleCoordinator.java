@@ -4,9 +4,9 @@ import java.util.UUID;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.hytale.WorldMapTrackerAdapter;
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
-import com.epicseed.vampirism.hytale.WorldMapTrackerAdapter;
 import com.epicseed.vampirism.runtime.PlayerRuntimeCleanupService;
 import com.epicseed.vampirism.runtime.ProgressionLifecycleService;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;

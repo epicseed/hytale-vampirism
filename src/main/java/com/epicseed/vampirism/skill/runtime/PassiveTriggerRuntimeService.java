@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
 import com.hypixel.hytale.logger.HytaleLogger;
 
 public final class PassiveTriggerRuntimeService {

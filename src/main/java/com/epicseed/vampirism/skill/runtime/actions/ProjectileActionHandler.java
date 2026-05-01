@@ -1,12 +1,12 @@
 package com.epicseed.vampirism.skill.runtime.actions;
+import com.epicseed.vampirism.modifier.ModifierContext;
 
 import java.util.Map;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
 
-import com.epicseed.vampirism.hytale.ProjectileAdapter;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
+import com.epicseed.epiccore.hytale.ProjectileAdapter;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -56,11 +56,11 @@ public final class ProjectileActionHandler {
 
         float baseDamage = ProjectileAdapter.baseDamage(spawned.projectile());
         if (baseDamage > 0f) {
-            float tunedDamage = ModifierRegistry.get().compute(damageStat, baseDamage, ctx.modifierContext());
+            float tunedDamage = ModifierContext.REGISTRY.compute(damageStat, baseDamage, ctx.modifierContext());
             ProjectileAdapter.setDamageMultiplier(spawned.projectile(), tunedDamage / baseDamage);
         }
 
-        float speedMultiplier = Math.max(0f, ModifierRegistry.get().compute(
+        float speedMultiplier = Math.max(0f, ModifierContext.REGISTRY.compute(
                 speedStat, 1f, ctx.modifierContext()));
         ProjectileAdapter.scaleVelocity(spawned, speedMultiplier);
     }

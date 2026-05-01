@@ -1,7 +1,6 @@
 package com.epicseed.vampirism.systems;
 
 import com.epicseed.vampirism.modifier.ModifierContext;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.hypixel.hytale.component.ArchetypeChunk;
@@ -28,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Applies runtime max-health bonuses from form-related vampirism stats.
  *
- * <p>We intentionally keep this logic outside {@link ModifierRegistry} because Hytale health max
+ * <p>We intentionally keep this logic outside {@link ModifierContext#REGISTRY} because Hytale health max
  * lives on the native {@link EntityStatMap}. The system bridges the computed vampire stats into
  * a native {@link StaticModifier} on the Health stat and mirrors the delta into current HP so the
  * bonus behaves like temporary extra health rather than only changing the cap.
@@ -71,8 +70,8 @@ public class FormHealthSystem extends EntityTickingSystem<EntityStore> {
         }
 
         ModifierContext ctx = new ModifierContext(uuid, playerRef, store);
-        float desiredBonus = ModifierRegistry.get().compute(VampireStatType.BAT_FORM_MAX_HEALTH, 0f, ctx)
-                + ModifierRegistry.get().compute(VampireStatType.ANCIENT_FORM_HEALTH_BONUS, 0f, ctx);
+        float desiredBonus = ModifierContext.REGISTRY.compute(VampireStatType.BAT_FORM_MAX_HEALTH, 0f, ctx)
+                + ModifierContext.REGISTRY.compute(VampireStatType.ANCIENT_FORM_HEALTH_BONUS, 0f, ctx);
         applyHealthBonus(stats, uuid, desiredBonus);
     }
 

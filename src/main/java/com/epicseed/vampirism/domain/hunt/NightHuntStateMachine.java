@@ -6,8 +6,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.epiccore.hytale.EntityIdentityAdapter;
 import com.epicseed.vampirism.config.VampirismConfig;
-import com.epicseed.vampirism.hytale.EntityIdentityAdapter;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;

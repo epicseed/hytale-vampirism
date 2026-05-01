@@ -2,7 +2,7 @@ package com.epicseed.vampirism.systems;
 
 import javax.annotation.Nonnull;
 
-import com.epicseed.vampirism.hytale.InventoryAdapter;
+import com.epicseed.epiccore.hytale.InventoryAdapter;
 import com.epicseed.vampirism.relic.RelicInventoryService;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;

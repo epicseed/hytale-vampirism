@@ -1,16 +1,16 @@
 package com.epicseed.vampirism.runtime;
+import com.epicseed.vampirism.modifier.ModifierContext;
 
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.epiccore.hytale.WorldStoreAdapter;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
-import com.epicseed.vampirism.hytale.WorldStoreAdapter;
-import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.relic.RelicPresetProjectionService;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
-import com.epicseed.vampirism.skill.runtime.AbilityCooldownTracker;
+import com.epicseed.epiccore.skill.runtime.AbilityCooldownTracker;
 import com.epicseed.vampirism.skill.runtime.TemporaryModifierTracker;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -42,7 +42,7 @@ public final class PlayerRuntimeCleanupService {
         VampireVitalitySystem.clearPlayer(uuid);
         NightHuntService.captureDisconnectState(uuid);
         SkillTreeManager.get().evictPlayer(uuid);
-        ModifierRegistry.get().evict(uuid);
+        ModifierContext.REGISTRY.evict(uuid);
         EffectModifierSystem.clearPlayer(uuid);
         ProgressionLifecycleService.captureDisconnectProgress(uuid);
         MorphFlySystem.clearTransientState(uuid);

@@ -5,12 +5,15 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import com.epicseed.epiccore.modifier.ContextKey;
+import com.epicseed.epiccore.modifier.ModifierRegistry;
+import com.epicseed.epiccore.modifier.ValueModifier;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 /**
- * Generic player state carrier passed to every {@link StatModifier} during evaluation.
+ * Generic player state carrier passed to every {@link ValueModifier} during evaluation.
  *
  * <p>Contains only identity fields ({@code uuid}, {@code ref}) and a type-safe lazy cache.
  * Game-specific state (inSunlight, isFrenzy, etc.) is resolved on demand by each modifier
@@ -20,6 +23,8 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
  * reference equality (no {@code hashCode}/{@code equals} contract needed on the key).
  */
 public final class ModifierContext implements com.epicseed.epiccore.modifier.ModifierSubject {
+
+    public static final ModifierRegistry<ModifierContext> REGISTRY = new ModifierRegistry<>();
 
     private final UUID uuid;
     private final Ref<EntityStore> ref;
