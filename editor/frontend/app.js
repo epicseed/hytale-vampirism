@@ -85,7 +85,7 @@ const App = (() => {
       tags: cloneStringList(ability.tags),
       cooldown: Number(ability.cooldown || 0),
       duration: Number(ability.duration || 0),
-      bloodCost: Number(ability.bloodCost || 0),
+      resourceCost: Number(ability.resourceCost ?? ability.bloodCost ?? 0),
       castTime: Number(ability.castTime || 0),
       charges: Number(ability.charges || 0),
       channelDuration: Number(ability.channelDuration || 0),

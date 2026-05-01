@@ -5,13 +5,13 @@ import java.util.Map;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.skill.runtime.TargetingResolver;
 import com.epicseed.vampirism.hytale.DamageAdapter;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.skill.runtime.PassiveService;
 import com.epicseed.vampirism.skill.runtime.SkillRequirementEvaluator;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
-import com.epicseed.vampirism.skill.runtime.TargetingResolver;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
@@ -136,9 +136,13 @@ public final class DamageActionHandler {
         Object targetingValue = action.get("targetingId");
         if (targetingValue instanceof String targetingId && !targetingId.isBlank()) {
             var result = TargetingResolver.resolve(Map.of("targetingId", targetingId), ctx);
-            if (result.hasTargets()) return result.targets();
+            if (result.hasTargets()) {
+                return result.targets();
+            }
         }
-        if (ctx.targetRef() != null && !ctx.targetRef().equals(ctx.ref())) return List.of(ctx.targetRef());
+        if (ctx.targetRef() != null && !ctx.targetRef().equals(ctx.ref())) {
+            return List.of(ctx.targetRef());
+        }
         return List.of();
     }
 }

@@ -16,6 +16,7 @@ import com.epicseed.epiccore.skill.runtime.AbilityDefinitionProvider;
 import com.epicseed.epiccore.skill.runtime.AbilityRuntimeKernel;
 import com.epicseed.epiccore.skill.runtime.ResolvedTargets;
 import com.epicseed.epiccore.skill.runtime.SkillActivationResult;
+import com.epicseed.epiccore.skill.runtime.TargetingResolver;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.hypixel.hytale.component.Ref;
@@ -157,7 +158,7 @@ public final class AbilityService {
         if (isToggleOffActivation(ability, ctx)) {
             return new AbilityActivationCharge(0L, 0);
         }
-        return new AbilityActivationCharge(computeCooldownMs(ability, ctx), computeBloodCost(ability, ctx));
+        return new AbilityActivationCharge(computeCooldownMs(ability, ctx), computeResourceCost(ability, ctx));
     }
 
     private static long computeCooldownMs(@Nonnull Ability ability,
@@ -176,23 +177,20 @@ public final class AbilityService {
         return Math.max(0L, (long) (effectiveCooldown * 1000L));
     }
 
-    private static int computeBloodCost(@Nonnull Ability ability,
+    private static int computeResourceCost(@Nonnull Ability ability,
                                         @Nonnull SkillRuntimeContext ctx) {
-        if (ability.bloodCost <= 0) {
+        if (ability.resourceCost <= 0) {
             return 0;
         }
         float multiplier = ModifierRegistry.get().compute(
                 VampireStatType.ABILITY_BLOOD_COST_MULTIPLIER, 1f, ctx.modifierContext());
-        return Math.max(0, Math.round(ability.bloodCost * Math.max(0f, multiplier)));
+        return Math.max(0, Math.round(ability.resourceCost * Math.max(0f, multiplier)));
     }
 
     @Nonnull
     private static ResolvedTargets<Ref<EntityStore>> resolveTargets(@Nullable Map<String, Object> targeting,
                                                                     @Nonnull SkillRuntimeContext ctx) {
-        TargetingResult result = TargetingResolver.resolve(targeting, ctx);
-        return result.hasTargets()
-                ? ResolvedTargets.of(result.targets())
-                : ResolvedTargets.empty();
+        return TargetingResolver.resolve(targeting, ctx);
     }
 
     private static boolean isToggleOffActivation(@Nonnull Ability ability, @Nonnull SkillRuntimeContext ctx) {

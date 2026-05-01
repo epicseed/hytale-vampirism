@@ -9,12 +9,11 @@ import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.hytale.EffectAdapter;
 import com.epicseed.vampirism.modifier.ModifierRegistry;
 import com.epicseed.vampirism.modifier.VampireStatType;
+import com.epicseed.epiccore.skill.runtime.TargetingResolver;
 import com.epicseed.epiccore.skill.model.EffectDef;
 import com.epicseed.vampirism.skill.runtime.SkillConditionEvaluator;
 import com.epicseed.vampirism.skill.runtime.SkillRequirementEvaluator;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
-import com.epicseed.vampirism.skill.runtime.TargetingResolver;
-import com.epicseed.vampirism.skill.runtime.TargetingResult;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -141,8 +140,7 @@ public final class EffectActionHandler {
     private static List<Ref<EntityStore>> resolveTargets(Map<String, Object> action, SkillRuntimeContext ctx) {
         Object targetingIdValue = action.get("targetingId");
         if (targetingIdValue instanceof String targetingId && !targetingId.isBlank()) {
-            TargetingResult result = TargetingResolver.resolve(Map.of("targetingId", targetingId), ctx);
-            return result.targets();
+            return TargetingResolver.resolve(Map.of("targetingId", targetingId), ctx).targets();
         }
         Ref<EntityStore> targetRef = ctx.targetRef() != null ? ctx.targetRef() : ctx.ref();
         return List.of(targetRef);

@@ -4,10 +4,9 @@ import java.util.Map;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.skill.runtime.TargetingResolver;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeDefinitions;
-import com.epicseed.vampirism.skill.runtime.TargetingResolver;
-import com.epicseed.vampirism.skill.runtime.TargetingResult;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Transform;
@@ -152,8 +151,7 @@ public final class PresentationActionHandlers {
             case "self", "area" -> resolveEntityPosition(ctx.ref(), ctx);
             case "target" -> resolveEntityPosition(ctx.targetRef(), ctx);
             case "lookRaycast" -> {
-                TargetingResult result = TargetingResolver.resolve(targetingSpec, ctx);
-                yield resolveEntityPosition(result.first(), ctx);
+                yield resolveEntityPosition(TargetingResolver.resolve(targetingSpec, ctx).first(), ctx);
             }
             case "areaAtLook" -> resolveLookPosition(ctx, targetingSpec, 24.0);
             case "lookPosition" -> resolveLookPosition(ctx, targetingSpec, DEFAULT_LOOK_RANGE);

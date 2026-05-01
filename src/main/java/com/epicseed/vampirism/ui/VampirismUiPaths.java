@@ -9,8 +9,8 @@ public final class VampirismUiPaths {
     private static final ProgressionUiPaths VAMPIRISM_PATHS = ProgressionUiPaths.namespaced("Vampirism");
     private static final ProgressionUiPaths THEME = new ProgressionUiPaths() {
         @Override
-        public String bloodBarLayout() {
-            return CORE_PATHS.bloodBarLayout();
+        public String resourceGaugeLayout() {
+            return CORE_PATHS.resourceGaugeLayout();
         }
 
         @Override
@@ -76,7 +76,7 @@ public final class VampirismUiPaths {
         }
     };
 
-    public static final String BLOOD_BAR_LAYOUT = THEME.bloodBarLayout();
+    public static final String BLOOD_BAR_LAYOUT = THEME.resourceGaugeLayout();
     public static final String RELIC_COOLDOWN_HUD_LAYOUT = THEME.relicCooldownHudLayout();
     public static final String RELIC_BINDINGS_LAYOUT = THEME.relicBindingsLayout();
     public static final String SKILL_TREE_LAYOUT = THEME.skillTreeLayout();

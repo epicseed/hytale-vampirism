@@ -103,13 +103,13 @@ class SkillDataValidatorTest {
         SkillTreeDataTransfer data = minimalData();
         AbilityDTO ability = ability("bad_ability");
         ability.cooldown = -1f;
-        ability.bloodCost = -5;
+        ability.resourceCost = -5;
         data.abilities.add(ability);
 
         SkillDataValidationResult result = validator.validate(data);
 
         assertIssue(result, "abilities", "bad_ability", "cooldown", "must be non-negative");
-        assertIssue(result, "abilities", "bad_ability", "bloodCost", "must be non-negative");
+        assertIssue(result, "abilities", "bad_ability", "resourceCost", "must be non-negative");
     }
 
     @Test

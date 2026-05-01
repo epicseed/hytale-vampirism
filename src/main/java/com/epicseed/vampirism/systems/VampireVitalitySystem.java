@@ -4,6 +4,8 @@ import java.util.UUID;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import com.epicseed.epiccore.hytale.runtime.PlayerRuntimeIndex;
 import com.epicseed.vampirism.domain.blood.BloodHudService;
 import com.epicseed.vampirism.domain.blood.BloodService;
 import com.epicseed.vampirism.domain.blood.BloodState;
@@ -19,7 +21,6 @@ import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.relic.RelicInventoryService;
 import com.epicseed.vampirism.relic.RelicPresetProjectionService;
-import com.epicseed.vampirism.skill.runtime.EntityRefTracker;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -191,7 +192,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
             }
 
             BloodService.registerRef(playerRefComponent.getUuid(), playerRef);
-            EntityRefTracker.register(playerRefComponent.getUuid(), playerRef);
+            PlayerRuntimeIndex.register(playerRefComponent.getUuid(), playerRef);
 
             BloodState state = BloodService.getOrCreateLoaded(playerRef, playerRefComponent.getUuid(), store);
 
@@ -236,7 +237,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
                                @Nonnull Player player,
                                PlayerRef playerRefComponent) {
         if (playerRefComponent != null) {
-            EntityRefTracker.unregister(playerRefComponent.getUuid());
+            PlayerRuntimeIndex.unregister(playerRefComponent.getUuid());
         }
         BloodHudService.cleanup(playerRef, player, playerRefComponent, stateInputBindingsHidden(playerRef));
         BloodService.removeState(playerRef);

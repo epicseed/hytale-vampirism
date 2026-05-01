@@ -1,6 +1,6 @@
 package com.epicseed.vampirism.skill.runtime;
 
-import com.epicseed.epiccore.skill.runtime.AbilityRuntimeContext;
+import com.epicseed.epiccore.skill.runtime.HytaleAbilityRuntimeContext;
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public final class SkillRuntimeContext implements AbilityRuntimeContext<Ref<EntityStore>, SkillRuntimeContext> {
+public final class SkillRuntimeContext implements HytaleAbilityRuntimeContext<SkillRuntimeContext> {
 
     private final UUID uuid;
     private final Ref<EntityStore> ref;

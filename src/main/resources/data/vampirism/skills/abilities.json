@@ -5,7 +5,7 @@
         "actionId": "apply_bat_morph"
       }
     ],
-    "bloodCost": 25,
+    "resourceCost": 25,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -30,7 +30,7 @@
         "actionId": "apply_ancient_morph"
       }
     ],
-    "bloodCost": 60,
+    "resourceCost": 60,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -58,7 +58,7 @@
         "actionId": "spawn_blood_projectile"
       }
     ],
-    "bloodCost": 20,
+    "resourceCost": 20,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -84,7 +84,7 @@
         "actionId": "apply_blood_thirst_speed"
       }
     ],
-    "bloodCost": 20,
+    "resourceCost": 20,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -109,7 +109,7 @@
         "actionId": "fear_nearby_enemies"
       }
     ],
-    "bloodCost": 40,
+    "resourceCost": 40,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -132,7 +132,7 @@
         "actionId": "start_blood_feed_channel"
       }
     ],
-    "bloodCost": 0,
+    "resourceCost": 0,
     "castTime": 0,
     "channelDuration": 1.5,
     "charges": 0,
@@ -156,7 +156,7 @@
         "actionId": "start_health_to_blood_channel"
       }
     ],
-    "bloodCost": 0,
+    "resourceCost": 0,
     "castTime": 0,
     "channelDuration": 10,
     "charges": 0,
@@ -181,7 +181,7 @@
         "actionId": "apply_crimson_umbrella"
       }
     ],
-    "bloodCost": 40,
+    "resourceCost": 40,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -206,7 +206,7 @@
         "actionId": "execute_low_health_target"
       }
     ],
-    "bloodCost": 20,
+    "resourceCost": 20,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -233,7 +233,7 @@
         "actionId": "apply_invisibility_effect"
       }
     ],
-    "bloodCost": 100,
+    "resourceCost": 100,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -258,7 +258,7 @@
         "actionId": "deal_hemorrhage_aoe"
       }
     ],
-    "bloodCost": 0,
+    "resourceCost": 0,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -281,7 +281,7 @@
         "actionId": "teleport_to_look_target"
       }
     ],
-    "bloodCost": 50,
+    "resourceCost": 50,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -316,7 +316,7 @@
         "actionId": "blood_mist_flavor_message"
       }
     ],
-    "bloodCost": 15,
+    "resourceCost": 15,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,

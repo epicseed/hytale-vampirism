@@ -126,7 +126,7 @@
         <td><code>${ability.id}</code></td>
         <td>${ability.displayName || ''}</td>
         <td>${ability.cooldown ?? 0}s</td>
-        <td>${ability.bloodCost ?? 0}</td>
+        <td>${ability.resourceCost ?? 0}</td>
         <td>${effectTags}</td>
         <td>${countSummary(ability.actions)}</td>
         <td>${countSummary(ability.requirements)}</td>
@@ -184,7 +184,7 @@
     document.getElementById('ab-tags').value = SideEditors.tagsToText(ability.tags);
     document.getElementById('ab-cooldown').value = ability.cooldown ?? 0;
     document.getElementById('ab-duration').value = ability.duration ?? 0;
-    document.getElementById('ab-blood').value = ability.bloodCost ?? 0;
+    document.getElementById('ab-blood').value = ability.resourceCost ?? 0;
     document.getElementById('ab-cast-time').value = ability.castTime ?? 0;
     document.getElementById('ab-charges').value = ability.charges ?? 0;
     document.getElementById('ab-channel-duration').value = ability.channelDuration ?? 0;
@@ -390,7 +390,7 @@
       tags: SideEditors.textToTags(document.getElementById('ab-tags').value),
       cooldown: parseFloat(document.getElementById('ab-cooldown').value) || 0,
       duration: parseFloat(document.getElementById('ab-duration').value) || 0,
-      bloodCost: parseInt(document.getElementById('ab-blood').value, 10) || 0,
+      resourceCost: parseInt(document.getElementById('ab-blood').value, 10) || 0,
       castTime: parseFloat(document.getElementById('ab-cast-time').value) || 0,
       charges: parseInt(document.getElementById('ab-charges').value, 10) || 0,
       channelDuration: parseFloat(document.getElementById('ab-channel-duration').value) || 0,
