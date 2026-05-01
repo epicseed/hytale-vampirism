@@ -4,7 +4,7 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
@@ -44,7 +44,7 @@ public final class BloodAdminCommands extends AbstractCommand {
         @Override
         public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
             PlayerRef target = playerArg.get(ctx);
-            if (!VampireStatusRegistry.get().isVampire(target.getUuid())) {
+            if (!VampirismClassifications.isVampiric(target.getUuid())) {
                 ctx.sendMessage(Message.raw(target.getUsername() + " is not a vampire.").color("red"));
                 return CompletableFuture.completedFuture(null);
             }

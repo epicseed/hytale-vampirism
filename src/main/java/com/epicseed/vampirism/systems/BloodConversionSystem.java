@@ -6,7 +6,7 @@ import com.epicseed.vampirism.domain.blood.BloodConversionPulseService;
 import com.epicseed.vampirism.domain.blood.BloodConversionSession;
 import com.epicseed.vampirism.domain.blood.FeedEligibility;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.epiccore.skill.model.Ability;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.hypixel.hytale.component.ArchetypeChunk;
@@ -114,7 +114,7 @@ public class BloodConversionSystem extends EntityTickingSystem<EntityStore> {
         BloodConversionSession session = activeChannels.get(uuid);
         if (session == null) return;
 
-        if (!VampireStatusRegistry.get().isVampire(uuid) || !isSessionStillValid(playerRef, session, store)) {
+        if (!VampirismClassifications.isVampiric(uuid) || !isSessionStillValid(playerRef, session, store)) {
             activeChannels.remove(uuid);
             BloodConversionPresentationService.cleanup(session, store, playerRef);
             return;

@@ -13,12 +13,12 @@ import com.epicseed.vampirism.domain.blood.BloodState;
 import com.epicseed.vampirism.domain.blood.RelicOwnershipSyncService;
 import com.epicseed.vampirism.domain.blood.VampireThroneRecoveryService;
 import com.epicseed.vampirism.config.VampirismConfig;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.ui.RelicBindingsUI;
 import com.epicseed.vampirism.ui.SkillTreeUI;
 import com.epicseed.epiccore.modifier.ContextKey;
 import com.epicseed.epiccore.modifier.ModifierTag;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.relic.RelicInventoryService;
 import com.epicseed.vampirism.relic.RelicPresetProjectionService;
 import com.hypixel.hytale.component.ArchetypeChunk;
@@ -181,7 +181,7 @@ public class VampireVitalitySystem extends EntityTickingSystem<EntityStore> {
                 return;
             }
             boolean creativeMode = player.getGameMode() == GameMode.Creative;
-            boolean isVampire = VampireStatusRegistry.get().isVampire(playerRefComponent.getUuid());
+            boolean isVampire = VampirismClassifications.isVampiric(playerRefComponent.getUuid());
             boolean relicInHand = isRelicInHand(playerRef, store);
 
             if (!isVampire) {

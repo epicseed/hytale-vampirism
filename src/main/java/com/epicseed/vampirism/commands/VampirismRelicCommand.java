@@ -7,7 +7,7 @@ import javax.annotation.Nonnull;
 
 import com.epicseed.epiccore.skill.runtime.SkillActivationResult;
 import com.epicseed.vampirism.domain.relic.RelicBindingService;
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.relic.RelicInventoryService;
 import com.epicseed.vampirism.skill.runtime.AbilityService;
 import com.hypixel.hytale.component.Ref;
@@ -135,7 +135,7 @@ public class VampirismRelicCommand extends AbstractCommand {
     // ─── Shared helpers ───────────────────────────────────────────────────────
 
     private static boolean isVampire(CommandContext ctx, UUID uuid) {
-        if (!VampireStatusRegistry.get().isVampire(uuid)) {
+        if (!VampirismClassifications.isVampiric(uuid)) {
             ctx.sendMessage(Message.raw("Only vampires can use the staff.").color("red"));
             return false;
         }

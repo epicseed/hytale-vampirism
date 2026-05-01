@@ -1,12 +1,12 @@
 package com.epicseed.vampirism.systems;
 import com.epicseed.vampirism.modifier.ModifierContext;
 
-import com.epicseed.vampirism.config.VampirismConfig;
-import com.epicseed.epiccore.modifier.ModifierTag;
-import com.epicseed.epiccore.modifier.ValueModifier;
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.epiccore.skill.model.EffectDef;
 import com.epicseed.epiccore.skill.model.InlineModifier;
+import com.epicseed.epiccore.modifier.ModifierTag;
+import com.epicseed.epiccore.modifier.ValueModifier;
+import com.epicseed.vampirism.config.VampirismConfig;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.skill.runtime.ModifierScopeMatcher;
 import com.epicseed.vampirism.skill.runtime.SkillConditionEvaluator;
 import com.hypixel.hytale.component.ArchetypeChunk;
@@ -79,7 +79,7 @@ public class EffectModifierSystem extends EntityTickingSystem<EntityStore> {
             if (playerRefComponent == null) return;
 
             UUID uuid = playerRefComponent.getUuid();
-            if (!VampireStatusRegistry.get().isVampire(uuid)) {
+            if (!VampirismClassifications.isVampiric(uuid)) {
                 clearPlayer(uuid);
                 return;
             }

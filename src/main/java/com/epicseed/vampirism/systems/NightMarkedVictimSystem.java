@@ -19,7 +19,7 @@ import com.epicseed.vampirism.domain.hunt.NightHuntVisualService;
 import com.epicseed.vampirism.domain.hunt.PendingRouteKind;
 import com.epicseed.epiccore.hytale.EntityIdentityAdapter;
 import com.epicseed.epiccore.hytale.WorldStoreAdapter;
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.ArchetypeChunk;
@@ -126,7 +126,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
     }
 
     public static void onPlayerConnect(@Nullable UUID uuid) {
-        if (uuid == null || !VampireStatusRegistry.get().isVampire(uuid)) {
+        if (uuid == null || !VampirismClassifications.isVampiric(uuid)) {
             return;
         }
         NightHuntStateStore.getOrCreate(uuid, NightHuntStateMachine::randomIdleDelaySeconds);
@@ -150,7 +150,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         if (uuid == null || playerRef == null || store == null || !playerRef.isValid()) {
             return false;
         }
-        if (!VampireStatusRegistry.get().isVampire(uuid)) {
+        if (!VampirismClassifications.isVampiric(uuid)) {
             return false;
         }
 
@@ -245,7 +245,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         }
 
         UUID uuid = playerRefComponent.getUuid();
-        if (!VampireStatusRegistry.get().isVampire(uuid)) {
+        if (!VampirismClassifications.isVampiric(uuid)) {
             HuntState existing = NightHuntStateStore.remove(uuid);
             if (existing != null) {
                 NightHuntStateMachine.clearTransientHunt(existing, commandBuffer);

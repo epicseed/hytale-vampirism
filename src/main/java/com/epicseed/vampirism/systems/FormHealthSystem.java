@@ -2,7 +2,7 @@ package com.epicseed.vampirism.systems;
 
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -64,7 +64,7 @@ public class FormHealthSystem extends EntityTickingSystem<EntityStore> {
         if (stats == null) return;
 
         UUID uuid = playerRefComponent.getUuid();
-        if (!VampireStatusRegistry.get().isVampire(uuid)) {
+        if (!VampirismClassifications.isVampiric(uuid)) {
             applyHealthBonus(stats, uuid, 0f);
             return;
         }

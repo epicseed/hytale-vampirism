@@ -4,7 +4,7 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.systems.VampireInfectionSystem;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.hypixel.hytale.component.Ref;
@@ -44,7 +44,7 @@ public class VampirismPotionCommand extends AbstractCommand {
                 @Nonnull Ref<EntityStore> ref,
                 @Nonnull PlayerRef playerRef,
                 @Nonnull World world) {
-            if (VampireStatusRegistry.get().isPermanentVampire(playerRef.getUuid())) {
+            if (VampirismClassifications.isPermanentVampire(playerRef.getUuid())) {
                 int maxBlood = VampireVitalitySystem.getMaxBlood(ref);
                 int recovery = Math.max(1, Math.round(maxBlood * 0.3f));
                 VampireVitalitySystem.addBlood(ref, recovery);

@@ -14,6 +14,7 @@ import com.epicseed.vampirism.commands.admin.SkillAdminCommands;
 import com.epicseed.vampirism.commands.admin.VampireAdminCommands;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
@@ -147,8 +148,8 @@ public class VampirismCommand extends AbstractCommand {
             PlayerRef target = playerArg.get(ctx);
             UUID uuid = target.getUuid();
 
-            boolean isVampire = VampireStatusRegistry.get().isVampire(uuid);
-            boolean permanentVampire = VampireStatusRegistry.get().isPermanentVampire(uuid);
+            boolean isVampire = VampirismClassifications.isVampiric(uuid);
+            boolean permanentVampire = VampirismClassifications.isPermanentVampire(uuid);
             long infectionRemainingMs = VampirePlayerStateStore.get().getInfectionRemainingMs(uuid);
             ctx.sendMessage(Message.raw("=== Status: " + target.getUsername() + " ===").color("dark_red"));
             ctx.sendMessage(Message.raw("Vampire: " + isVampire).color(isVampire ? "red" : "green"));
@@ -187,8 +188,8 @@ public class VampirismCommand extends AbstractCommand {
             PlayerRef target = playerArg.get(ctx);
             UUID uuid = target.getUuid();
 
-            boolean isVampire = VampireStatusRegistry.get().isVampire(uuid);
-            boolean permanentVampire = VampireStatusRegistry.get().isPermanentVampire(uuid);
+            boolean isVampire = VampirismClassifications.isVampiric(uuid);
+            boolean permanentVampire = VampirismClassifications.isPermanentVampire(uuid);
             long infectionRemainingMs = VampirePlayerStateStore.get().getInfectionRemainingMs(uuid);
             int blood = VampireVitalitySystem.getBloodByUuid(uuid);
             int maxBlood = VampireVitalitySystem.getMaxBloodByUuid(uuid);

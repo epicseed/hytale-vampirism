@@ -1,7 +1,7 @@
 package com.epicseed.vampirism.systems;
 
 import com.epicseed.vampirism.config.VampirismConfig;
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.hypixel.hytale.builtin.beds.sleep.components.PlayerSomnolence;
 import com.hypixel.hytale.builtin.beds.sleep.resources.WorldSomnolence;
 import com.hypixel.hytale.builtin.beds.sleep.resources.WorldSlumber;
@@ -113,7 +113,7 @@ public class VampireSleepSystem extends EntityTickingSystem<EntityStore> {
             return;
         }
 
-        boolean vampire = VampireStatusRegistry.get().isVampire(playerRef.getUuid());
+        boolean vampire = VampirismClassifications.isVampiric(playerRef.getUuid());
         boolean coffin = COFFIN_BLOCK_IDS.contains(blockId);
         boolean day = isDayPeriod(store);
 
@@ -170,7 +170,7 @@ public class VampireSleepSystem extends EntityTickingSystem<EntityStore> {
         }
 
         String blockId = blockMount.getExpectedBlockType().getId();
-        if (!COFFIN_BLOCK_IDS.contains(blockId) || !VampireStatusRegistry.get().isVampire(playerRef.getUuid())) {
+        if (!COFFIN_BLOCK_IDS.contains(blockId) || !VampirismClassifications.isVampiric(playerRef.getUuid())) {
             return;
         }
         if (!StartSlumberSystem.isReadyToSleep(store, ref)) {
@@ -206,7 +206,7 @@ public class VampireSleepSystem extends EntityTickingSystem<EntityStore> {
     private boolean isReadyForCoffinSleep(@Nonnull PlayerRef playerRef,
                                           @Nonnull World world,
                                           @Nonnull Store<EntityStore> store) {
-        if (!VampireStatusRegistry.get().isVampire(playerRef.getUuid())) {
+        if (!VampirismClassifications.isVampiric(playerRef.getUuid())) {
             return false;
         }
 

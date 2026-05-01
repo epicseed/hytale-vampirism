@@ -7,8 +7,8 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.epiccore.skill.model.Skill;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.epiccore.skill.runtime.SkillActivationResult;
 import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
@@ -24,7 +24,7 @@ final class AdminCommandSupport {
 
     @Nullable
     static Ref<EntityStore> requireTrackedVampire(@Nonnull CommandContext ctx, @Nonnull PlayerRef target) {
-        if (!VampireStatusRegistry.get().isVampire(target.getUuid())) {
+        if (!VampirismClassifications.isVampiric(target.getUuid())) {
             ctx.sendMessage(Message.raw(target.getUsername() + " is not a vampire.").color("red"));
             return null;
         }

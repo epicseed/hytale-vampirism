@@ -7,7 +7,7 @@ import com.epicseed.vampirism.domain.blood.FeedCompletionService;
 import com.epicseed.vampirism.domain.blood.FeedEligibility;
 import com.epicseed.vampirism.domain.blood.FeedSession;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.epiccore.skill.model.Ability;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
@@ -138,7 +138,7 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
         UUID uuid = playerRefComponent.getUuid();
         FeedSession session = activeFeeds.get(uuid);
 
-        if (!VampireStatusRegistry.get().isVampire(uuid)) {
+        if (!VampirismClassifications.isVampiric(uuid)) {
             ConsumableMarkerService.clearPlayer(uuid);
             if (session == null) return;
             activeFeeds.remove(uuid);

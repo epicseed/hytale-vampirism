@@ -12,6 +12,7 @@ import com.epicseed.vampirism.domain.relic.RelicBindingService;
 import com.epicseed.vampirism.domain.skill.SkillTreePresenter;
 import com.epicseed.vampirism.hud.RelicCooldownHud;
 import com.epicseed.vampirism.hytale.RelicPresetSelectionAdapter;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
 import com.epicseed.vampirism.registry.PlayerRelicBindings;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
@@ -103,6 +104,7 @@ public class Vampirism extends JavaPlugin {
     protected void setup() {
         VampireStatusRegistry.init(this.getDataDirectory());
         PlayerSkillRegistry playerSkillRegistry = PlayerSkillRegistry.init(this.getDataDirectory());
+        VampirismClassifications.registerProvider();
         PlayerRegistrySkillProgressionAccess.init(playerSkillRegistry);
         ProgressionLifecycleService.init(playerSkillRegistry);
         PlayerRelicBindings.init(playerSkillRegistry);
@@ -223,6 +225,7 @@ public class Vampirism extends JavaPlugin {
 
     @Override
     protected void shutdown() {
+        VampirismClassifications.unregisterProvider();
         RelicPresetSelectionAdapter.shutdown();
         LOGGER.atInfo().log("[Vampirism] Plugin disabled.");
     }

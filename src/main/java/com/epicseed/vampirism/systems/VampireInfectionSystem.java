@@ -2,6 +2,7 @@ package com.epicseed.vampirism.systems;
 
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
 import com.epicseed.epiccore.skill.model.Skill;
@@ -64,7 +65,7 @@ public class VampireInfectionSystem extends EntityTickingSystem<EntityStore> {
 
         UUID uuid = playerRefComponent.getUuid();
         long expiresAtMs = VampirePlayerStateStore.get().getInfectionExpiresAtMs(uuid);
-        if (expiresAtMs <= 0L || VampireStatusRegistry.get().isPermanentVampire(uuid)) {
+        if (expiresAtMs <= 0L || VampirismClassifications.isPermanentVampire(uuid)) {
             removeInfectionEffect(playerRef, store);
             clearPlayer(uuid);
             return;
@@ -98,7 +99,7 @@ public class VampireInfectionSystem extends EntityTickingSystem<EntityStore> {
                                          @Nullable Ref<EntityStore> playerRef,
                                          @Nullable Store<EntityStore> store,
                                          @Nonnull String openingMessage) {
-        if (VampireStatusRegistry.get().isPermanentVampire(uuid)) {
+        if (VampirismClassifications.isPermanentVampire(uuid)) {
             return false;
         }
 

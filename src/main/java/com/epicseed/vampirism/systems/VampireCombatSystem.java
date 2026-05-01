@@ -9,12 +9,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.epiccore.hytale.interop.combat.CombatInteractionContext;
+import com.epicseed.epiccore.hytale.interop.combat.CombatInteractionResolution;
+import com.epicseed.epiccore.hytale.interop.combat.CombatInteractionService;
+import com.epicseed.epiccore.interop.classification.EntityClassificationRegistry;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.epiccore.modifier.ModifierTag;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.runtime.PassiveService;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeStateResolver;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
@@ -94,8 +98,8 @@ public class VampireCombatSystem extends DamageEventSystem {
             }
 
             // DAMAGE_IN_REDUCTION for vampire victims (any attacker type)
-            boolean vampireVictim = victimUuid != null && VampireStatusRegistry.get().isVampire(victimUuid);
-            if (vampireVictim) {
+            boolean vampiricVictim = VampirismClassifications.isVampiric(victimUuid);
+            if (vampiricVictim) {
                 ModifierContext victimCtx = new ModifierContext(victimUuid, victimRef, store);
                 float reduction = ModifierContext.REGISTRY.compute(VampireStatType.DAMAGE_IN_REDUCTION, 0f, victimCtx);
                 if (reduction > 0f) {
@@ -105,7 +109,7 @@ public class VampireCombatSystem extends DamageEventSystem {
 
             Damage.Source source = damage.getSource();
             if (!(source instanceof Damage.EntitySource)) {
-                dispatchDamageTaken(vampireVictim, victimUuid, victimRef, store, damage.getAmount());
+                dispatchDamageTaken(vampiricVictim, victimUuid, victimRef, store, damage.getAmount());
                 return;
             }
 
@@ -114,16 +118,31 @@ public class VampireCombatSystem extends DamageEventSystem {
 
             Player attackerPlayer = (Player) store.getComponent(attackerRef, Player.getComponentType());
             if (attackerPlayer == null) {
-                dispatchDamageTaken(vampireVictim, victimUuid, victimRef, store, damage.getAmount());
+                dispatchDamageTaken(vampiricVictim, victimUuid, victimRef, store, damage.getAmount());
                 return;
             }
 
             PlayerRef attackerPlayerRef = (PlayerRef) store.getComponent(attackerRef, PlayerRef.getComponentType());
             UUID attackerUuid = attackerPlayerRef != null ? attackerPlayerRef.getUuid() : null;
 
-            if (attackerUuid != null && !VampireStatusRegistry.get().isVampire(attackerUuid)) {
+            CombatInteractionResolution interopResolution = CombatInteractionService.global().resolve(
+                    new CombatInteractionContext(
+                            attackerUuid,
+                            victimUuid,
+                            attackerRef,
+                            victimRef,
+                            store,
+                            damage,
+                            EntityClassificationRegistry.global()));
+            if (interopResolution.isCancelled()) {
+                damage.setAmount(0f);
+                return;
+            }
+            damage.setAmount(Math.max(0f, damage.getAmount() * interopResolution.damageMultiplier()));
+
+            if (!VampirismClassifications.isVampiric(attackerUuid)) {
                 ambushConsumed.remove(attackerUuid);
-                dispatchDamageTaken(vampireVictim, victimUuid, victimRef, store, damage.getAmount());
+                dispatchDamageTaken(vampiricVictim, victimUuid, victimRef, store, damage.getAmount());
                 return;
             }
 
@@ -146,7 +165,7 @@ public class VampireCombatSystem extends DamageEventSystem {
                     ? Math.min(resolvedDamageAmount, victimHealthBeforeHit)
                     : resolvedDamageAmount;
 
-            dispatchDamageTaken(vampireVictim, victimUuid, victimRef, store, effectiveDamageAmount);
+            dispatchDamageTaken(vampiricVictim, victimUuid, victimRef, store, effectiveDamageAmount);
 
             // Dispatch onDamageDealt for vampire attackers so reactive passives can fire
             if (attackerUuid != null) {

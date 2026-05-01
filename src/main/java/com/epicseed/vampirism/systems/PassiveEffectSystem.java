@@ -1,7 +1,7 @@
 package com.epicseed.vampirism.systems;
 
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
 import com.epicseed.epiccore.skill.model.Passive;
@@ -106,7 +106,7 @@ public class PassiveEffectSystem extends EntityTickingSystem<EntityStore> {
 
             UUID uuid = playerRefComp.getUuid();
             SkillRuntimeContext ctx = new SkillRuntimeContext(uuid, playerRef, store);
-            if (!VampireStatusRegistry.get().isVampire(uuid)) {
+            if (!VampirismClassifications.isVampiric(uuid)) {
                 PersistentPassiveEffectService.cleanupInactiveOwners(uuid, ctx, Collections.emptySet());
                 onPlayerDisconnect(uuid);
                 return;

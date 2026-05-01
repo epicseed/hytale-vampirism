@@ -12,8 +12,8 @@ import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.epiccore.modifier.ContextKey;
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.epiccore.modifier.ModifierTag;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -150,7 +150,7 @@ public class SunburnSystem extends EntityTickingSystem<EntityStore> {
 
             UUID uuid = playerRefComp.getUuid();
 
-            if (!VampireStatusRegistry.get().isVampire(uuid)) {
+            if (!VampirismClassifications.isVampiric(uuid)) {
                 if (activeContexts.remove(uuid) != null) clearPlayerState(uuid);
                 return;
             }

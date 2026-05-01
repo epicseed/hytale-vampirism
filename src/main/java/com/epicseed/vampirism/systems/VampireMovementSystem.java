@@ -4,10 +4,10 @@ import javax.annotation.Nonnull;
 
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.epiccore.modifier.ContextKey;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.epiccore.modifier.ModifierTag;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.runtime.TemporaryModifierTracker;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -68,7 +68,7 @@ public class VampireMovementSystem extends EntityTickingSystem<EntityStore> {
             }
 
             // Restore normal speed for non-vampires
-            if (playerRefComponent != null && !VampireStatusRegistry.get().isVampire(playerRefComponent.getUuid())) {
+            if (playerRefComponent != null && !VampirismClassifications.isVampiric(playerRefComponent.getUuid())) {
                 clearPlayer(playerRefComponent.getUuid());
                 applySpeed(movementManager, playerRefComponent, com.epicseed.vampirism.config.VampirismConfig.get().getSpeedNormal());
                 return;
