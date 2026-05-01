@@ -1,251 +1,59 @@
 package com.epicseed.vampirism.skill.runtime;
 
-import com.epicseed.vampirism.modifier.ModifierContext;
-import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.epiccore.skill.model.Ability;
-import com.epicseed.epiccore.skill.runtime.AbilityCooldownTracker;
-import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
-import com.epicseed.epiccore.skill.model.EffectDef;
-import com.epicseed.vampirism.systems.VampireVitalitySystem;
-import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
-import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
-import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+
+import com.epicseed.epiccore.skill.model.Ability;
+import com.epicseed.epiccore.skill.model.EffectDef;
+import com.epicseed.epiccore.skill.runtime.AbilityCooldownTracker;
+import com.epicseed.epiccore.skill.runtime.conditions.ConditionHandlerRegistry;
+import com.epicseed.epiccore.skill.runtime.conditions.RegistryBackedConditionEvaluator;
+import com.epicseed.epiccore.skill.runtime.conditions.StandardConditionPacks;
+import com.epicseed.vampirism.modifier.ModifierContext;
+import com.epicseed.vampirism.modifier.VampireStatType;
+import com.epicseed.vampirism.systems.VampireVitalitySystem;
+import com.hypixel.hytale.logger.HytaleLogger;
 
 public final class SkillConditionEvaluator {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+    private static final RegistryBackedConditionEvaluator<ModifierContext> MODIFIER_EVALUATOR =
+            new RegistryBackedConditionEvaluator<>(createModifierHandlers());
+    private static final RegistryBackedConditionEvaluator<SkillRuntimeContext> RUNTIME_EVALUATOR =
+            new RegistryBackedConditionEvaluator<>(createRuntimeHandlers());
 
     private SkillConditionEvaluator() {}
 
     public static boolean evaluateAll(List<Map<String, Object>> conditions, ModifierContext ctx) {
-        if (conditions == null || conditions.isEmpty()) return true;
-        for (Map<String, Object> condition : conditions) {
-            if (!evaluate(condition, ctx)) return false;
-        }
-        return true;
+        return MODIFIER_EVALUATOR.evaluateAll(conditions, ctx);
     }
 
     public static boolean evaluate(Map<String, Object> condition, ModifierContext ctx) {
-        Map<String, Object> resolved = SkillRuntimeDefinitions.resolveCondition(condition);
-        Object type = resolved.get("type");
-        if (!(type instanceof String typeId) || typeId.isBlank()) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] Condition without type: " + resolved);
-            return false;
-        }
-
-        return switch (typeId) {
-            case "state" -> evaluateState(resolved, ctx);
-            case "effectActive" -> evaluateEffectActive(resolved, ctx);
-            case "equipmentSet" -> evaluateEquipmentSet(resolved, ctx);
-            case "equippedItem" -> evaluateEquippedItem(resolved, ctx);
-            case "companionPresent" -> evaluateCompanionPresent(resolved, ctx);
-            case "bloodCompare" -> evaluateBloodCompare(resolved, ctx);
-            case "statCompare" -> evaluateStatCompare(resolved, ctx);
-            case "cooldownReady" -> evaluateCooldownReady(resolved, ctx);
-            default -> {
-                LOGGER.atWarning().log("[SkillConditionEvaluator] Unsupported condition type: " + typeId);
-                yield false;
-            }
-        };
+        return MODIFIER_EVALUATOR.evaluate(condition, ctx);
     }
 
     public static boolean evaluateAll(List<Map<String, Object>> conditions, SkillRuntimeContext ctx) {
-        if (conditions == null || conditions.isEmpty()) return true;
-        for (Map<String, Object> condition : conditions) {
-            if (!evaluate(condition, ctx)) return false;
-        }
-        return true;
+        return RUNTIME_EVALUATOR.evaluateAll(conditions, ctx);
     }
 
     public static boolean evaluate(Map<String, Object> condition, SkillRuntimeContext ctx) {
-        Map<String, Object> resolved = SkillRuntimeDefinitions.resolveCondition(condition);
-        Object type = resolved.get("type");
-        if (!(type instanceof String typeId) || typeId.isBlank()) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] Condition without type: " + resolved);
-            return false;
-        }
-
-        return switch (typeId) {
-            case "state" -> evaluateState(resolved, ctx);
-            case "healthPercent" -> evaluateHealthPercent(resolved, ctx);
-            case "effectActive" -> evaluateEffectActive(resolved, ctx);
-            case "equipmentSet" -> evaluateEquipmentSet(resolved, ctx);
-            case "equippedItem" -> evaluateEquippedItem(resolved, ctx);
-            case "companionPresent" -> evaluateCompanionPresent(resolved, ctx);
-            case "bloodCompare" -> evaluateBloodCompare(resolved, ctx);
-            case "statCompare" -> evaluateStatCompare(resolved, ctx);
-            case "cooldownReady" -> evaluateCooldownReady(resolved, ctx);
-            default -> {
-                LOGGER.atWarning().log("[SkillConditionEvaluator] Unsupported runtime condition type: " + typeId);
-                yield false;
-            }
-        };
+        return RUNTIME_EVALUATOR.evaluate(condition, ctx);
     }
 
-    private static boolean evaluateState(Map<String, Object> condition, SkillRuntimeContext ctx) {
-        String state = stateId(condition);
-        if (state == null) {
-            return false;
-        }
-        boolean active = SkillRuntimeStateResolver.isStateActive(state, ctx);
-        return evaluateStateOperator(stateOperator(condition), active);
+    private static ConditionHandlerRegistry<ModifierContext> createModifierHandlers() {
+        return new ConditionHandlerRegistry<ModifierContext>()
+                .install(StandardConditionPacks.generic(modifierSupport()))
+                .register("bloodCompare", SkillConditionEvaluator::evaluateBloodCompare)
+                .register("statCompare", SkillConditionEvaluator::evaluateStatCompare);
     }
 
-    private static boolean evaluateState(Map<String, Object> condition, ModifierContext ctx) {
-        String state = stateId(condition);
-        if (state == null) {
-            return false;
-        }
-        boolean active = SkillRuntimeStateResolver.isStateActive(state, ctx);
-        return evaluateStateOperator(stateOperator(condition), active);
+    private static ConditionHandlerRegistry<SkillRuntimeContext> createRuntimeHandlers() {
+        return new ConditionHandlerRegistry<SkillRuntimeContext>()
+                .install(StandardConditionPacks.generic(runtimeSupport()))
+                .register("bloodCompare", SkillConditionEvaluator::evaluateBloodCompare)
+                .register("statCompare", SkillConditionEvaluator::evaluateStatCompare);
     }
-
-    private static boolean evaluateEffectActive(Map<String, Object> condition, SkillRuntimeContext ctx) {
-        int effectIndex = resolveEffectIndex(condition);
-        if (effectIndex < 0) return false;
-
-        EffectControllerComponent ec = (EffectControllerComponent) ctx.store().getComponent(
-                ctx.ref(), EffectControllerComponent.getComponentType());
-        return ec != null && ec.hasEffect(effectIndex);
-    }
-
-    private static boolean evaluateEffectActive(Map<String, Object> condition, ModifierContext ctx) {
-        int effectIndex = resolveEffectIndex(condition);
-        if (effectIndex < 0) return false;
-
-        Store<EntityStore> store = ctx.store();
-        if (store == null) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] effectActive requires store-backed ModifierContext: " + condition);
-            return false;
-        }
-
-        EffectControllerComponent ec = (EffectControllerComponent) store.getComponent(
-                ctx.ref(), EffectControllerComponent.getComponentType());
-        return ec != null && ec.hasEffect(effectIndex);
-    }
-
-    private static boolean evaluateEquipmentSet(Map<String, Object> condition, SkillRuntimeContext ctx) {
-        String setId = condition.get("setId") instanceof String value ? value : null;
-        String operator = condition.get("operator") instanceof String value ? value : "equipped";
-        if (!"equipped".equals(operator)) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] Unsupported equipmentSet operator: " + operator);
-            return false;
-        }
-        return SkillRuntimeQueries.isEquipmentSetEquipped(ctx.ref(), ctx.store(), setId);
-    }
-
-    private static boolean evaluateEquipmentSet(Map<String, Object> condition, ModifierContext ctx) {
-        Store<EntityStore> store = ctx.store();
-        if (store == null) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] equipmentSet requires store-backed ModifierContext: " + condition);
-            return false;
-        }
-        String setId = condition.get("setId") instanceof String value ? value : null;
-        String operator = condition.get("operator") instanceof String value ? value : "equipped";
-        if (!"equipped".equals(operator)) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] Unsupported equipmentSet operator: " + operator);
-            return false;
-        }
-        return SkillRuntimeQueries.isEquipmentSetEquipped(ctx.ref(), store, setId);
-    }
-
-    private static boolean evaluateEquippedItem(Map<String, Object> condition, SkillRuntimeContext ctx) {
-        String itemId = condition.get("itemId") instanceof String value ? value : null;
-        return SkillRuntimeQueries.isHeldItemEquipped(ctx.ref(), ctx.store(), itemId);
-    }
-
-    private static boolean evaluateEquippedItem(Map<String, Object> condition, ModifierContext ctx) {
-        Store<EntityStore> store = ctx.store();
-        if (store == null) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] equippedItem requires store-backed ModifierContext: " + condition);
-            return false;
-        }
-        String itemId = condition.get("itemId") instanceof String value ? value : null;
-        return SkillRuntimeQueries.isHeldItemEquipped(ctx.ref(), store, itemId);
-    }
-
-    private static boolean evaluateCompanionPresent(Map<String, Object> condition, SkillRuntimeContext ctx) {
-        Number radius = condition.get("radius") instanceof Number value ? value : null;
-        return SkillRuntimeQueries.hasNearbyOwnedDeployable(ctx.ref(), ctx.store(), radius);
-    }
-
-    private static boolean evaluateCompanionPresent(Map<String, Object> condition, ModifierContext ctx) {
-        Store<EntityStore> store = ctx.store();
-        if (store == null) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] companionPresent requires store-backed ModifierContext: " + condition);
-            return false;
-        }
-        Number radius = condition.get("radius") instanceof Number value ? value : null;
-        return SkillRuntimeQueries.hasNearbyOwnedDeployable(ctx.ref(), store, radius);
-    }
-
-    private static int resolveEffectIndex(Map<String, Object> condition) {
-        Object effectIdValue = condition.get("effectId");
-        if (!(effectIdValue instanceof String effectId) || effectId.isBlank()) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] effectActive missing effectId: " + condition);
-            return -1;
-        }
-
-        EffectDef def = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getEffect(effectId);
-        String hytaleId = def != null ? def.effectId : effectId;
-
-        int idx = EntityEffect.getAssetMap().getIndex(hytaleId);
-        if (idx < 0) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] effectActive: Hytale effect not found: " + hytaleId);
-        }
-        return idx;
-    }
-
-    private static boolean evaluateHealthPercent(Map<String, Object> condition, SkillRuntimeContext ctx) {
-        String subject = condition.get("subject") instanceof String value ? value : "self";
-        Object value = condition.get("value");
-        if (!(value instanceof Number threshold)) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] healthPercent missing numeric value: " + condition);
-            return false;
-        }
-
-        var targetRef = "target".equals(subject) ? ctx.targetRef() : ctx.ref();
-        if (targetRef == null) return false;
-
-        EntityStatMap stats = (EntityStatMap) ctx.store().getComponent(targetRef, EntityStatMap.getComponentType());
-        if (stats == null) return false;
-
-        EntityStatValue health = stats.get(DefaultEntityStatTypes.getHealth());
-        if (health == null || health.getMax() <= 0f) return false;
-
-        double current = health.get() / health.getMax();
-        String operator = condition.get("operator") instanceof String op ? op : "<=";
-        double target = threshold.doubleValue();
-        float thresholdOverride = ModifierContext.REGISTRY.compute(
-                VampireStatType.ABILITY_EXECUTE_HEALTH_THRESHOLD, -1f, ctx.modifierContext());
-        if ("target".equals(subject) && thresholdOverride >= 0f) {
-            target = thresholdOverride;
-        }
-
-        return switch (operator) {
-            case "<" -> current < target;
-            case "<=" -> current <= target;
-            case ">" -> current > target;
-            case ">=" -> current >= target;
-            case "==", "=" -> Math.abs(current - target) < 0.0001d;
-            default -> {
-                LOGGER.atWarning().log("[SkillConditionEvaluator] Unsupported healthPercent operator: " + operator);
-                yield false;
-            }
-        };
-    }
-
-    // -------------------------------------------------------------------------
-    // New conditions: bloodCompare / statCompare / cooldownReady
-    // -------------------------------------------------------------------------
 
     private static boolean evaluateBloodCompare(Map<String, Object> condition, SkillRuntimeContext ctx) {
         if (!(condition.get("value") instanceof Number n)) {
@@ -299,27 +107,6 @@ public final class SkillConditionEvaluator {
         return compareOp(op, current, n.floatValue());
     }
 
-    private static boolean evaluateCooldownReady(Map<String, Object> condition, SkillRuntimeContext ctx) {
-        return evaluateCooldownReadyImpl(condition, ctx.uuid());
-    }
-
-    private static boolean evaluateCooldownReady(Map<String, Object> condition, ModifierContext ctx) {
-        return evaluateCooldownReadyImpl(condition, ctx.uuid());
-    }
-
-    private static boolean evaluateCooldownReadyImpl(Map<String, Object> condition, java.util.UUID uuid) {
-        if (uuid == null) return false;
-        String abilityId = condition.get("abilityId") instanceof String s ? s : null;
-        if (abilityId == null || abilityId.isBlank()) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] cooldownReady missing abilityId: " + condition);
-            return false;
-        }
-        // Avoid noisy warnings when the ability is unknown — treat as ready.
-        Ability ability = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getAbility(abilityId);
-        if (ability == null) return true;
-        return !AbilityCooldownTracker.isOnCooldown(uuid, abilityId);
-    }
-
     private static boolean compareOp(String op, float current, float value) {
         if (!ConditionEvaluationOperations.isCompareOperatorSupported(op)) {
             LOGGER.atWarning().log("[SkillConditionEvaluator] Unsupported compare op: " + op);
@@ -328,24 +115,98 @@ public final class SkillConditionEvaluator {
         return ConditionEvaluationOperations.compare(op, current, value);
     }
 
-    private static boolean evaluateStateOperator(String operator, boolean active) {
-        if (!ConditionEvaluationOperations.isStateOperatorSupported(operator)) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] Unsupported state operator: " + operator);
-            return false;
-        }
-        return ConditionEvaluationOperations.evaluateStateOperator(operator, active);
+    private static boolean isCooldownReady(UUID uuid, String abilityId) {
+        if (uuid == null) return false;
+        Ability ability = VampirismProgressionDefinitionProvider.instance().getAbility(abilityId);
+        if (ability == null) return true;
+        return !AbilityCooldownTracker.isOnCooldown(uuid, abilityId);
     }
 
-    private static String stateId(Map<String, Object> condition) {
-        Object stateId = condition.get("stateId");
-        if (stateId instanceof String state) {
-            return state;
-        }
-        LOGGER.atWarning().log("[SkillConditionEvaluator] state condition missing stateId: " + condition);
-        return null;
+    private static String resolveEffectAssetId(String effectId) {
+        EffectDef def = VampirismProgressionDefinitionProvider.instance().getEffect(effectId);
+        return def != null && def.effectId != null && !def.effectId.isBlank()
+                ? def.effectId
+                : effectId;
     }
 
-    private static String stateOperator(Map<String, Object> condition) {
-        return condition.get("operator") instanceof String value ? value : "isTrue";
+    private static StandardConditionPacks.StandardConditionSupport<ModifierContext> modifierSupport() {
+        return new StandardConditionPacks.StandardConditionSupport<ModifierContext>() {
+            @Override
+            public com.hypixel.hytale.component.Ref<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> selfRef(ModifierContext context) {
+                return context.ref();
+            }
+
+            @Override
+            public com.hypixel.hytale.component.Ref<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> targetRef(ModifierContext context) {
+                return null;
+            }
+
+            @Override
+            public com.hypixel.hytale.component.Store<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> store(ModifierContext context) {
+                return context.store();
+            }
+
+            @Override
+            public boolean isStateActive(String stateId, ModifierContext context) {
+                return SkillRuntimeStateResolver.isStateActive(stateId, context);
+            }
+
+            @Override
+            public boolean isCooldownReady(String abilityId, ModifierContext context) {
+                return SkillConditionEvaluator.isCooldownReady(context.uuid(), abilityId);
+            }
+
+            @Override
+            public String resolveHytaleEffectId(String effectId, ModifierContext context) {
+                return resolveEffectAssetId(effectId);
+            }
+        };
+    }
+
+    private static StandardConditionPacks.StandardConditionSupport<SkillRuntimeContext> runtimeSupport() {
+        return new StandardConditionPacks.StandardConditionSupport<SkillRuntimeContext>() {
+            @Override
+            public com.hypixel.hytale.component.Ref<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> selfRef(SkillRuntimeContext context) {
+                return context.ref();
+            }
+
+            @Override
+            public com.hypixel.hytale.component.Ref<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> targetRef(SkillRuntimeContext context) {
+                return context.targetRef();
+            }
+
+            @Override
+            public com.hypixel.hytale.component.Store<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> store(SkillRuntimeContext context) {
+                return context.store();
+            }
+
+            @Override
+            public boolean isStateActive(String stateId, SkillRuntimeContext context) {
+                return SkillRuntimeStateResolver.isStateActive(stateId, context);
+            }
+
+            @Override
+            public boolean isCooldownReady(String abilityId, SkillRuntimeContext context) {
+                return SkillConditionEvaluator.isCooldownReady(context.uuid(), abilityId);
+            }
+
+            @Override
+            public String resolveHytaleEffectId(String effectId, SkillRuntimeContext context) {
+                return resolveEffectAssetId(effectId);
+            }
+
+            @Override
+            public double resolveHealthPercentThreshold(Map<String, Object> condition,
+                                                        SkillRuntimeContext context,
+                                                        double declaredThreshold) {
+                float thresholdOverride = ModifierContext.REGISTRY.compute(
+                        VampireStatType.ABILITY_EXECUTE_HEALTH_THRESHOLD, -1f, context.modifierContext());
+                String subject = condition.get("subject") instanceof String value ? value : "self";
+                if ("target".equals(subject) && thresholdOverride >= 0f) {
+                    return thresholdOverride;
+                }
+                return declaredThreshold;
+            }
+        };
     }
 }

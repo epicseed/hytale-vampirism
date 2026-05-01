@@ -33,8 +33,9 @@ import com.epicseed.vampirism.skill.runtime.VampireVitalityAbilityResourcePort;
 import com.epicseed.vampirism.skill.runtime.VampirismAbilityAccessProvider;
 import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
 import com.epicseed.vampirism.skill.runtime.PassiveTriggerRuntimeService;
+import com.epicseed.vampirism.skill.runtime.SkillRequirementEvaluator;
+import com.epicseed.vampirism.skill.runtime.SkillActionExecutor;
 import com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider;
-import com.epicseed.vampirism.skill.runtime.actions.DamageActionHandler;
 import com.epicseed.vampirism.skill.registry.EffectDefRegistry;
 import com.epicseed.vampirism.skill.registry.AbilityRegistry;
 import com.epicseed.vampirism.skill.registry.ModifierDefRegistry;
@@ -110,6 +111,7 @@ public class Vampirism extends JavaPlugin {
         PlayerRelicBindings.init(playerSkillRegistry);
         this.progressionDefinitionProvider = VampirismProgressionDefinitionProvider.instance();
         this.progressionAccess = PlayerRegistrySkillProgressionAccess.instance();
+        SkillRequirementEvaluator.init(progressionAccess);
         RelicBindingService.init(
                 runtimeBindings::snapshot,
                 progressionDefinitionProvider,
@@ -133,7 +135,7 @@ public class Vampirism extends JavaPlugin {
         TriggerDispatcher triggerDispatcher = new TriggerDispatcher(progressionDefinitionProvider, progressionAccess);
         this.passiveService = new PassiveService(progressionDefinitionProvider, progressionAccess, triggerDispatcher::dispatch);
         PassiveTriggerRuntimeService.init(triggerDispatcher::dispatch);
-        DamageActionHandler.init(passiveService::onFeed);
+        SkillActionExecutor.init(passiveService::onFeed);
         FeedCompletionService.init(passiveService::onFeed);
         BloodHudService.init(playerRef -> new RelicCooldownHud(playerRef, VampirismUiPaths.theme(), relicUiAdapter));
         AbilityService.init(

@@ -1,64 +1,98 @@
 package com.epicseed.vampirism.skill.runtime;
 
-import com.epicseed.epiccore.skill.model.Skill;
-import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
-import com.hypixel.hytale.logger.HytaleLogger;
-
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import javax.annotation.Nonnull;
+
+import com.epicseed.epiccore.skill.model.Skill;
+import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
+import com.epicseed.epiccore.skill.runtime.requirements.RegistryBackedRequirementEvaluator;
+import com.epicseed.epiccore.skill.runtime.requirements.RequirementHandlerRegistry;
+import com.epicseed.epiccore.skill.runtime.requirements.StandardRequirementPacks;
 
 public final class SkillRequirementEvaluator {
 
-    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+    private static final SkillProgressionAccess UNINITIALIZED_ACCESS_PROVIDER =
+            new SkillProgressionAccess() {
+                @Override
+                public int getSkillPoints(@Nonnull UUID uuid) {
+                    return 0;
+                }
+
+                @Override
+                public boolean hasSkill(@Nonnull UUID uuid, @Nonnull String skillId) {
+                    return false;
+                }
+
+                @Override
+                public boolean canUnlock(@Nonnull UUID uuid,
+                                         @Nonnull String skillId,
+                                         int cost,
+                                         @Nonnull Iterable<String> requirementIds) {
+                    return false;
+                }
+
+                @Override
+                public boolean tryUnlock(@Nonnull UUID uuid,
+                                         @Nonnull String skillId,
+                                         int cost,
+                                         @Nonnull Iterable<String> requirementIds) {
+                    return false;
+                }
+
+                @Override
+                public boolean grantSkill(@Nonnull UUID uuid, @Nonnull String skillId) {
+                    return false;
+                }
+
+                @Override
+                public @Nonnull Set<String> getUnlockedSkillIds(@Nonnull UUID uuid) {
+                    return Set.of();
+                }
+
+                @Override
+                public void resetSkills(@Nonnull UUID uuid) {
+                }
+            };
+    private static final RegistryBackedRequirementEvaluator<SkillRuntimeContext> EVALUATOR =
+            new RegistryBackedRequirementEvaluator<>(createHandlers());
+    private static volatile SkillProgressionAccess accessProvider =
+            UNINITIALIZED_ACCESS_PROVIDER;
 
     private SkillRequirementEvaluator() {}
 
+    public static void init(SkillProgressionAccess accessProvider) {
+        SkillRequirementEvaluator.accessProvider = accessProvider != null
+                ? accessProvider
+                : UNINITIALIZED_ACCESS_PROVIDER;
+    }
+
+    static void resetForTests() {
+        accessProvider = UNINITIALIZED_ACCESS_PROVIDER;
+    }
+
     public static boolean evaluateAll(List<Map<String, Object>> requirements, SkillRuntimeContext ctx) {
-        if (requirements == null || requirements.isEmpty()) return true;
-        for (Map<String, Object> requirement : requirements) {
-            if (!evaluate(requirement, ctx)) return false;
-        }
-        return true;
+        return EVALUATOR.evaluateAll(requirements, ctx);
     }
 
     public static boolean evaluate(Map<String, Object> requirement, SkillRuntimeContext ctx) {
-        Map<String, Object> resolved = SkillRuntimeDefinitions.resolveRequirement(requirement);
-        Object type = resolved.get("type");
-        if (!(type instanceof String typeId) || typeId.isBlank()) {
-            LOGGER.atWarning().log("[SkillRequirementEvaluator] Requirement without type: " + resolved);
-            return false;
-        }
-
-        return switch (typeId) {
-            case "condition" -> evaluateConditionRequirement(resolved, ctx);
-            case "abilityUnlocked" -> hasUnlockedAbility(ctx, stringValue(resolved, "abilityId"));
-            case "passiveUnlocked" -> hasUnlockedPassive(ctx, stringValue(resolved, "passiveId"));
-            default -> {
-                LOGGER.atWarning().log("[SkillRequirementEvaluator] Unsupported requirement type: " + typeId);
-                yield false;
-            }
-        };
+        return EVALUATOR.evaluate(requirement, ctx);
     }
 
-    private static boolean evaluateConditionRequirement(Map<String, Object> requirement, SkillRuntimeContext ctx) {
-        if (requirement.get("condition") instanceof Map<?, ?> inlineCondition) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> condition = (Map<String, Object>) inlineCondition;
-            return SkillConditionEvaluator.evaluate(condition, ctx);
-        }
-
-        String conditionId = stringValue(requirement, "conditionId");
-        if (conditionId == null) {
-            LOGGER.atWarning().log("[SkillRequirementEvaluator] condition requirement missing conditionId: " + requirement);
-            return false;
-        }
-        return SkillConditionEvaluator.evaluate(Map.of("conditionId", conditionId), ctx);
+    private static RequirementHandlerRegistry<SkillRuntimeContext> createHandlers() {
+        return new RequirementHandlerRegistry<SkillRuntimeContext>()
+                .install(StandardRequirementPacks.generic((conditions, ctx) -> SkillConditionEvaluator.evaluateAll(conditions, ctx)))
+                .register("abilityUnlocked", (requirement, ctx) -> hasUnlockedAbility(ctx, stringValue(requirement, "abilityId")))
+                .register("passiveUnlocked", (requirement, ctx) -> hasUnlockedPassive(ctx, stringValue(requirement, "passiveId")));
     }
 
     private static boolean hasUnlockedAbility(SkillRuntimeContext ctx, String abilityId) {
         if (ctx.uuid() == null || abilityId == null || abilityId.isBlank()) return false;
-        for (String unlockedSkillId : PlayerRegistrySkillProgressionAccess.instance().getUnlockedSkillIds(ctx.uuid())) {
-            Skill skill = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getSkill(unlockedSkillId);
+        for (String unlockedSkillId : accessProvider.getUnlockedSkillIds(ctx.uuid())) {
+            Skill skill = VampirismProgressionDefinitionProvider.instance().getSkill(unlockedSkillId);
             if (skill != null && abilityId.equals(skill.abilityId)) return true;
         }
         return false;
@@ -66,8 +100,8 @@ public final class SkillRequirementEvaluator {
 
     private static boolean hasUnlockedPassive(SkillRuntimeContext ctx, String passiveId) {
         if (ctx.uuid() == null || passiveId == null || passiveId.isBlank()) return false;
-        for (String unlockedSkillId : PlayerRegistrySkillProgressionAccess.instance().getUnlockedSkillIds(ctx.uuid())) {
-            Skill skill = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getSkill(unlockedSkillId);
+        for (String unlockedSkillId : accessProvider.getUnlockedSkillIds(ctx.uuid())) {
+            Skill skill = VampirismProgressionDefinitionProvider.instance().getSkill(unlockedSkillId);
             if (skill != null && passiveId.equals(skill.passiveId)) return true;
         }
         return false;
