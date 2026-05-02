@@ -7,7 +7,6 @@ import java.util.UUID;
 
 import javax.annotation.Nonnull;
 
-import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
 import com.epicseed.epiccore.skill.runtime.requirements.RegistryBackedRequirementEvaluator;
 import com.epicseed.epiccore.skill.runtime.requirements.RequirementHandlerRegistry;
@@ -57,10 +56,53 @@ public final class SkillRequirementEvaluator {
                 public void resetSkills(@Nonnull UUID uuid) {
                 }
             };
-    private static final RegistryBackedRequirementEvaluator<SkillRuntimeContext> EVALUATOR =
-            new RegistryBackedRequirementEvaluator<>(createHandlers());
     private static volatile SkillProgressionAccess accessProvider =
             UNINITIALIZED_ACCESS_PROVIDER;
+    private static final SkillProgressionAccess LIVE_ACCESS_PROVIDER =
+            new SkillProgressionAccess() {
+                @Override
+                public int getSkillPoints(@Nonnull UUID uuid) {
+                    return currentAccessProvider().getSkillPoints(uuid);
+                }
+
+                @Override
+                public boolean hasSkill(@Nonnull UUID uuid, @Nonnull String skillId) {
+                    return currentAccessProvider().hasSkill(uuid, skillId);
+                }
+
+                @Override
+                public boolean canUnlock(@Nonnull UUID uuid,
+                                         @Nonnull String skillId,
+                                         int cost,
+                                         @Nonnull Iterable<String> requirementIds) {
+                    return currentAccessProvider().canUnlock(uuid, skillId, cost, requirementIds);
+                }
+
+                @Override
+                public boolean tryUnlock(@Nonnull UUID uuid,
+                                         @Nonnull String skillId,
+                                         int cost,
+                                         @Nonnull Iterable<String> requirementIds) {
+                    return currentAccessProvider().tryUnlock(uuid, skillId, cost, requirementIds);
+                }
+
+                @Override
+                public boolean grantSkill(@Nonnull UUID uuid, @Nonnull String skillId) {
+                    return currentAccessProvider().grantSkill(uuid, skillId);
+                }
+
+                @Override
+                public @Nonnull Set<String> getUnlockedSkillIds(@Nonnull UUID uuid) {
+                    return currentAccessProvider().getUnlockedSkillIds(uuid);
+                }
+
+                @Override
+                public void resetSkills(@Nonnull UUID uuid) {
+                    currentAccessProvider().resetSkills(uuid);
+                }
+            };
+    private static final RegistryBackedRequirementEvaluator<SkillRuntimeContext> EVALUATOR =
+            new RegistryBackedRequirementEvaluator<>(createHandlers());
 
     private SkillRequirementEvaluator() {}
 
@@ -85,30 +127,13 @@ public final class SkillRequirementEvaluator {
     private static RequirementHandlerRegistry<SkillRuntimeContext> createHandlers() {
         return new RequirementHandlerRegistry<SkillRuntimeContext>()
                 .install(StandardRequirementPacks.generic((conditions, ctx) -> SkillConditionEvaluator.evaluateAll(conditions, ctx)))
-                .register("abilityUnlocked", (requirement, ctx) -> hasUnlockedAbility(ctx, stringValue(requirement, "abilityId")))
-                .register("passiveUnlocked", (requirement, ctx) -> hasUnlockedPassive(ctx, stringValue(requirement, "passiveId")));
+                .install(StandardRequirementPacks.progression(
+                        LIVE_ACCESS_PROVIDER,
+                        VampirismProgressionDefinitionProvider.instance(),
+                        SkillRuntimeContext::uuid));
     }
 
-    private static boolean hasUnlockedAbility(SkillRuntimeContext ctx, String abilityId) {
-        if (ctx.uuid() == null || abilityId == null || abilityId.isBlank()) return false;
-        for (String unlockedSkillId : accessProvider.getUnlockedSkillIds(ctx.uuid())) {
-            Skill skill = VampirismProgressionDefinitionProvider.instance().getSkill(unlockedSkillId);
-            if (skill != null && abilityId.equals(skill.abilityId)) return true;
-        }
-        return false;
-    }
-
-    private static boolean hasUnlockedPassive(SkillRuntimeContext ctx, String passiveId) {
-        if (ctx.uuid() == null || passiveId == null || passiveId.isBlank()) return false;
-        for (String unlockedSkillId : accessProvider.getUnlockedSkillIds(ctx.uuid())) {
-            Skill skill = VampirismProgressionDefinitionProvider.instance().getSkill(unlockedSkillId);
-            if (skill != null && passiveId.equals(skill.passiveId)) return true;
-        }
-        return false;
-    }
-
-    private static String stringValue(Map<String, Object> value, String key) {
-        Object raw = value.get(key);
-        return raw instanceof String string ? string : null;
+    private static SkillProgressionAccess currentAccessProvider() {
+        return accessProvider != null ? accessProvider : UNINITIALIZED_ACCESS_PROVIDER;
     }
 }

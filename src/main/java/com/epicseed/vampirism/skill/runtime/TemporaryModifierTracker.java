@@ -1,34 +1,19 @@
 package com.epicseed.vampirism.skill.runtime;
 
-import com.epicseed.vampirism.modifier.VampireStatType;
+import java.util.UUID;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+
+import com.epicseed.epiccore.modifier.StatType;
+import com.epicseed.vampirism.modifier.VampireStatType;
 
 /**
- * Generic per-player temporary stat modifier tracker.
+ * Compatibility facade over EpicCore's generic temporary modifier tracker.
  *
- * <p>Backs the JSON-driven {@code grantTemporaryModifier} action primitive in
- * {@link SkillActionExecutor}.  Each entry is a (stat, amount/multiplier, expiry) tuple stored
- * per UUID.  Consumers (e.g. {@code VampireMovementSystem}) read the current aggregate via
- * {@link #sumAdditive(UUID, VampireStatType)} or {@link #productMultiplicative(UUID, VampireStatType)}
- * once per tick.
- *
- * <p>Stacking policies:
- * <ul>
- *   <li>{@code REPLACE} – drop any existing entry for the same stat before adding.</li>
- *   <li>{@code REFRESH} – replace if the new expiry is later than the current max.</li>
- *   <li>{@code STACK}   – append, every entry counts until its own expiry.</li>
- * </ul>
- *
- * <p>Thread-safe; may be written from trigger-dispatch threads and read from the WorldThread.
+ * <p>Vampirism keeps the static helper surface for legacy callers, while the
+ * underlying tracker now lives in EpicCore and is keyed by the neutral
+ * {@link StatType} contract.
  */
 public final class TemporaryModifierTracker {
 
@@ -36,95 +21,35 @@ public final class TemporaryModifierTracker {
 
     public enum Op { ADDITIVE, MULTIPLICATIVE }
 
-    private static final class Entry {
-        final Op op;
-        final float amount;
-        long expiryMs;
+    private static final com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker<StatType> TRACKER =
+            new com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker<>();
 
-        Entry(Op op, float amount, long expiryMs) {
-            this.op = op;
-            this.amount = amount;
-            this.expiryMs = expiryMs;
-        }
+    private TemporaryModifierTracker() {
     }
-
-    private static final Map<UUID, Map<VampireStatType, List<Entry>>> STATE = new ConcurrentHashMap<>();
-
-    private TemporaryModifierTracker() {}
-
-    // -------------------------------------------------------------------------
-    // Mutation
-    // -------------------------------------------------------------------------
 
     public static void addBoost(@Nonnull UUID uuid, @Nonnull VampireStatType stat,
                                 float amount, float durationSeconds,
                                 @Nonnull Stacking stacking, @Nonnull Op op) {
-        long expiry = System.currentTimeMillis() + (long)(durationSeconds * 1000L);
-        Map<VampireStatType, List<Entry>> perStat = STATE.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>());
-        synchronized (perStat) {
-            List<Entry> list = perStat.computeIfAbsent(stat, k -> new ArrayList<>());
-            switch (stacking) {
-                case REPLACE -> {
-                    list.clear();
-                    list.add(new Entry(op, amount, expiry));
-                }
-                case REFRESH -> {
-                    if (list.isEmpty()) {
-                        list.add(new Entry(op, amount, expiry));
-                    } else {
-                        Entry existing = list.get(0);
-                        if (existing.op == op && Math.abs(existing.amount - amount) < 1e-4f) {
-                            existing.expiryMs = Math.max(existing.expiryMs, expiry);
-                        } else {
-                            list.clear();
-                            list.add(new Entry(op, amount, expiry));
-                        }
-                    }
-                }
-                case STACK -> list.add(new Entry(op, amount, expiry));
-            }
-        }
+        TRACKER.addModifier(uuid, stat, amount, durationSeconds, mapStacking(stacking), mapOp(op));
     }
 
-    /** Backwards-compatible shortcut: additive boost with REPLACE semantics (legacy speed boost). */
     public static void addBoost(@Nonnull UUID uuid, @Nonnull VampireStatType stat,
                                 float amount, float durationSeconds) {
         addBoost(uuid, stat, amount, durationSeconds, Stacking.REPLACE, Op.ADDITIVE);
     }
 
     public static void clearPlayer(@Nonnull UUID uuid) {
-        STATE.remove(uuid);
+        TRACKER.clearPlayer(uuid);
     }
 
-    // -------------------------------------------------------------------------
-    // Queries
-    // -------------------------------------------------------------------------
-
-    /** Returns the sum of all active additive entries for (uuid, stat); 0f when none. */
     public static float sumAdditive(@Nullable UUID uuid, @Nonnull VampireStatType stat) {
-        if (uuid == null) return 0f;
-        List<Entry> entries = snapshot(uuid, stat);
-        if (entries.isEmpty()) return 0f;
-        float total = 0f;
-        for (Entry e : entries) {
-            if (e.op == Op.ADDITIVE) total += e.amount;
-        }
-        return total;
+        return TRACKER.sumAdditive(uuid, stat);
     }
 
-    /** Returns the product of all active multiplicative entries for (uuid, stat); 1f when none. */
     public static float productMultiplicative(@Nullable UUID uuid, @Nonnull VampireStatType stat) {
-        if (uuid == null) return 1f;
-        List<Entry> entries = snapshot(uuid, stat);
-        if (entries.isEmpty()) return 1f;
-        float total = 1f;
-        for (Entry e : entries) {
-            if (e.op == Op.MULTIPLICATIVE) total *= e.amount;
-        }
-        return total;
+        return TRACKER.productMultiplicative(uuid, stat);
     }
 
-    /** Legacy: active additive speed boost; kept for backward compatibility with old callers. */
     public static float getBoost(@Nullable UUID uuid) {
         return sumAdditive(uuid, VampireStatType.SPEED);
     }
@@ -133,26 +58,22 @@ public final class TemporaryModifierTracker {
         return uuid != null && sumAdditive(uuid, VampireStatType.SPEED) > 0f;
     }
 
-    // -------------------------------------------------------------------------
-    // Internals
-    // -------------------------------------------------------------------------
+    public static com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker<StatType> sharedTracker() {
+        return TRACKER;
+    }
 
-    private static List<Entry> snapshot(@Nonnull UUID uuid, @Nonnull VampireStatType stat) {
-        Map<VampireStatType, List<Entry>> perStat = STATE.get(uuid);
-        if (perStat == null) return List.of();
-        List<Entry> list = perStat.get(stat);
-        if (list == null) return List.of();
-        long now = System.currentTimeMillis();
-        synchronized (perStat) {
-            Iterator<Entry> it = list.iterator();
-            while (it.hasNext()) {
-                if (it.next().expiryMs <= now) it.remove();
-            }
-            if (list.isEmpty()) {
-                perStat.remove(stat);
-                return List.of();
-            }
-            return new ArrayList<>(list);
-        }
+    private static com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker.Stacking mapStacking(Stacking stacking) {
+        return switch (stacking) {
+            case REPLACE -> com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker.Stacking.REPLACE;
+            case REFRESH -> com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker.Stacking.REFRESH;
+            case STACK -> com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker.Stacking.STACK;
+        };
+    }
+
+    private static com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker.Op mapOp(Op op) {
+        return switch (op) {
+            case ADDITIVE -> com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker.Op.ADDITIVE;
+            case MULTIPLICATIVE -> com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker.Op.MULTIPLICATIVE;
+        };
     }
 }

@@ -44,15 +44,13 @@ public final class SkillConditionEvaluator {
     private static ConditionHandlerRegistry<ModifierContext> createModifierHandlers() {
         return new ConditionHandlerRegistry<ModifierContext>()
                 .install(StandardConditionPacks.generic(modifierSupport()))
-                .register("bloodCompare", SkillConditionEvaluator::evaluateBloodCompare)
-                .register("statCompare", SkillConditionEvaluator::evaluateStatCompare);
+                .register("bloodCompare", SkillConditionEvaluator::evaluateBloodCompare);
     }
 
     private static ConditionHandlerRegistry<SkillRuntimeContext> createRuntimeHandlers() {
         return new ConditionHandlerRegistry<SkillRuntimeContext>()
                 .install(StandardConditionPacks.generic(runtimeSupport()))
-                .register("bloodCompare", SkillConditionEvaluator::evaluateBloodCompare)
-                .register("statCompare", SkillConditionEvaluator::evaluateStatCompare);
+                .register("bloodCompare", SkillConditionEvaluator::evaluateBloodCompare);
     }
 
     private static boolean evaluateBloodCompare(Map<String, Object> condition, SkillRuntimeContext ctx) {
@@ -75,36 +73,6 @@ public final class SkillConditionEvaluator {
         int current = VampireVitalitySystem.getBlood(ctx.ref());
         return compareOp(op, current, ConditionEvaluationOperations.normalizeBloodValue(
                 n, VampireVitalitySystem.BASE_BLOOD_CAPACITY_UNITS));
-    }
-
-    private static boolean evaluateStatCompare(Map<String, Object> condition, SkillRuntimeContext ctx) {
-        return evaluateStatCompareImpl(condition, ctx.modifierContext());
-    }
-
-    private static boolean evaluateStatCompare(Map<String, Object> condition, ModifierContext ctx) {
-        return evaluateStatCompareImpl(condition, ctx);
-    }
-
-    private static boolean evaluateStatCompareImpl(Map<String, Object> condition, ModifierContext ctx) {
-        String statId = condition.get("statId") instanceof String s ? s : null;
-        if (statId == null || statId.isBlank()) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] statCompare missing statId: " + condition);
-            return false;
-        }
-        VampireStatType stat;
-        try {
-            stat = VampireStatType.valueOf(statId);
-        } catch (IllegalArgumentException e) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] statCompare unknown statId: " + statId);
-            return false;
-        }
-        if (!(condition.get("value") instanceof Number n)) {
-            LOGGER.atWarning().log("[SkillConditionEvaluator] statCompare missing numeric value: " + condition);
-            return false;
-        }
-        String op = condition.get("op") instanceof String s ? s : "gte";
-        float current = ModifierContext.REGISTRY.compute(stat, 0f, ctx);
-        return compareOp(op, current, n.floatValue());
     }
 
     private static boolean compareOp(String op, float current, float value) {
@@ -160,6 +128,11 @@ public final class SkillConditionEvaluator {
             public String resolveHytaleEffectId(String effectId, ModifierContext context) {
                 return resolveEffectAssetId(effectId);
             }
+
+            @Override
+            public Float resolveStatValue(String statId, ModifierContext context) {
+                return VampirismRuntimeStatSupport.MODIFIER.resolveStatValue(statId, context);
+            }
         };
     }
 
@@ -196,11 +169,16 @@ public final class SkillConditionEvaluator {
             }
 
             @Override
+            public Float resolveStatValue(String statId, SkillRuntimeContext context) {
+                return VampirismRuntimeStatSupport.RUNTIME.resolveStatValue(statId, context);
+            }
+
+            @Override
             public double resolveHealthPercentThreshold(Map<String, Object> condition,
                                                         SkillRuntimeContext context,
                                                         double declaredThreshold) {
-                float thresholdOverride = ModifierContext.REGISTRY.compute(
-                        VampireStatType.ABILITY_EXECUTE_HEALTH_THRESHOLD, -1f, context.modifierContext());
+                float thresholdOverride = VampirismRuntimeStatSupport.RUNTIME.resolveStatValue(
+                        VampireStatType.ABILITY_EXECUTE_HEALTH_THRESHOLD.name(), -1f, context);
                 String subject = condition.get("subject") instanceof String value ? value : "self";
                 if ("target".equals(subject) && thresholdOverride >= 0f) {
                     return thresholdOverride;

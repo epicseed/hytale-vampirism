@@ -4,13 +4,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import com.epicseed.epiccore.modifier.StatType;
 import com.epicseed.epiccore.skill.model.EffectDef;
 import com.epicseed.epiccore.skill.runtime.actions.ActionHandlerRegistry;
 import com.epicseed.epiccore.skill.runtime.actions.StandardActionPacks;
+import com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker;
 import com.epicseed.vampirism.skill.runtime.actions.BloodActionHandler;
 import com.epicseed.vampirism.skill.runtime.actions.ChannelActionHandlers;
 import com.epicseed.vampirism.skill.runtime.actions.ModifierActionHandler;
-import com.epicseed.vampirism.skill.runtime.actions.StatActionHandler;
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.util.WorldPositionHelper;
@@ -27,6 +28,8 @@ public final class SkillActionExecutor {
                     VampireStatType.SELF_DAMAGE_MULTIPLIER.name(),
                     VampireStatType.PROJECTILE_DAMAGE.name(),
                     VampireStatType.PROJECTILE_SPEED.name());
+    private static final TemporaryModifierTracker<StatType> TEMPORARY_MODIFIERS =
+            com.epicseed.vampirism.skill.runtime.TemporaryModifierTracker.sharedTracker();
     private static volatile Consumer<SkillRuntimeContext> onFinalBlow = ctx -> {};
 
     private static final com.epicseed.epiccore.skill.runtime.actions.SkillActionExecutor<SkillRuntimeContext> EXECUTOR =
@@ -81,8 +84,8 @@ public final class SkillActionExecutor {
                         if (effectDef.duration <= 0f) {
                             return effectDef.duration;
                         }
-                        float multiplier = Math.max(0f, ModifierContext.REGISTRY.compute(
-                                VampireStatType.ABILITY_DURATION_MULTIPLIER, 1f, context.modifierContext()));
+                        float multiplier = Math.max(0f, VampirismRuntimeStatSupport.RUNTIME.resolveStatValue(
+                                VampireStatType.ABILITY_DURATION_MULTIPLIER.name(), 1f, context));
                         return effectDef.duration * multiplier;
                     }
 
@@ -92,7 +95,17 @@ public final class SkillActionExecutor {
                         return safeTarget != null ? safeTarget : target;
                     }
                 }))
-                .register("healSelf", StatActionHandler::healSelf)
+                .install(StandardActionPacks.health(new StandardActionPacks.HealthActionSupport<SkillRuntimeContext>() {
+                    @Override
+                    public com.epicseed.epiccore.skill.runtime.stats.RuntimeStatSupport<SkillRuntimeContext> statSupport() {
+                        return VampirismRuntimeStatSupport.RUNTIME;
+                    }
+
+                    @Override
+                    public String defaultHealingMultiplierStatId() {
+                        return VampireStatType.HEALING_RECEIVED.name();
+                    }
+                }))
                 .install(StandardActionPacks.combat(new StandardActionPacks.CombatActionSupport<SkillRuntimeContext>() {
                     @Override
                     public com.epicseed.epiccore.skill.runtime.AbilityRequirementEvaluator<SkillRuntimeContext> requirementEvaluator() {
@@ -101,16 +114,7 @@ public final class SkillActionExecutor {
 
                     @Override
                     public Float resolveStat(String statId, SkillRuntimeContext context) {
-                        if (statId == null || statId.isBlank()) {
-                            return null;
-                        }
-                        try {
-                            VampireStatType stat = VampireStatType.valueOf(statId);
-                            return ModifierContext.REGISTRY.compute(stat, 0f, context.modifierContext());
-                        } catch (IllegalArgumentException e) {
-                            LOGGER.atWarning().log("[SkillActionExecutor] Unknown stat id '" + statId + "'");
-                            return null;
-                        }
+                        return VampirismRuntimeStatSupport.RUNTIME.resolveStatValue(statId, context);
                     }
 
                     @Override
@@ -118,10 +122,19 @@ public final class SkillActionExecutor {
                         onFinalBlow.accept(context);
                     }
                 }, STANDARD_COMBAT_OPTIONS))
+                .install(StandardActionPacks.temporaryModifiers(new StandardActionPacks.TemporaryModifierActionSupport<SkillRuntimeContext>() {
+                    @Override
+                    public com.epicseed.epiccore.skill.runtime.stats.RuntimeStatSupport<SkillRuntimeContext> statSupport() {
+                        return VampirismRuntimeStatSupport.RUNTIME;
+                    }
+
+                    @Override
+                    public TemporaryModifierTracker<StatType> tracker() {
+                        return TEMPORARY_MODIFIERS;
+                    }
+                }))
                 .register("startFeedChannel", ChannelActionHandlers::startFeedChannel)
                 .register("startHealthToBloodChannel", ChannelActionHandlers::startHealthToBloodChannel)
-                .register("grantTemporaryModifier", ModifierActionHandler::grantTemporaryModifier)
-                .register("modifyStat", StatActionHandler::modifyStat)
                 .register("modifyBlood", BloodActionHandler::modifyBlood)
                 .register("applyTimedSpeedBoost", ModifierActionHandler::grantTemporaryModifierLegacySpeed)
                 .register("applyControlEffect", SkillActionExecutor::deprecatedApplyControlEffect)
