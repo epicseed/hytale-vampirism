@@ -3,6 +3,9 @@ package com.epicseed.vampirism.bootstrap;
 import javax.annotation.Nonnull;
 
 import com.epicseed.vampirism.Vampirism;
+import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
+import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
+import com.epicseed.vampirism.skill.runtime.PassiveService;
 import com.epicseed.vampirism.systems.BloodConversionSystem;
 import com.epicseed.vampirism.systems.BloodFeedSystem;
 import com.epicseed.vampirism.systems.CrimsonUmbrellaVisualSystem;
@@ -27,12 +30,17 @@ public final class SystemRegistrar {
     private SystemRegistrar() {
     }
 
-    public static void register(@Nonnull Vampirism plugin) {
+    public static void register(@Nonnull Vampirism plugin, @Nonnull VampirismRuntime runtime) {
+        PassiveService passiveService = runtime.passiveService();
+        ProgressionDefinitionProvider progressionDefinitionProvider =
+                runtime.progressionDefinitionProvider();
+        SkillProgressionAccess progressionAccess = runtime.progressionAccess();
+
         plugin.getEntityStoreRegistry().registerSystem(new VampireInfectionSystem());
         plugin.getEntityStoreRegistry().registerSystem(new VampireVitalitySystem());
         plugin.getEntityStoreRegistry().registerSystem(new BloodFeedSystem());
         plugin.getEntityStoreRegistry().registerSystem(new BloodConversionSystem());
-        plugin.getEntityStoreRegistry().registerSystem(new VampireCombatSystem(plugin.getPassiveService()));
+        plugin.getEntityStoreRegistry().registerSystem(new VampireCombatSystem(passiveService));
         plugin.getEntityStoreRegistry().registerSystem(new VampireMovementSystem());
         plugin.getEntityStoreRegistry().registerSystem(new EffectModifierSystem());
         plugin.getEntityStoreRegistry().registerSystem(new FormHealthSystem());
@@ -42,9 +50,9 @@ public final class SystemRegistrar {
         plugin.getEntityStoreRegistry().registerSystem(new CrimsonUmbrellaVisualSystem());
         plugin.getEntityStoreRegistry().registerSystem(new NightMarkedVictimSystem());
         plugin.getEntityStoreRegistry().registerSystem(new PassiveEffectSystem(
-                plugin.getPassiveService(),
-                plugin.getProgressionDefinitionProvider(),
-                plugin.getProgressionAccess()));
+                passiveService,
+                progressionDefinitionProvider,
+                progressionAccess));
         plugin.getEntityStoreRegistry().registerSystem(new RelicDropPreventSystem());
         plugin.getEntityStoreRegistry().registerSystem(new RelicDeathDropPreventSystem());
         plugin.getEntityStoreRegistry().registerSystem(new RelicChestLockSystem());

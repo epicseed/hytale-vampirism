@@ -12,6 +12,7 @@ import com.epicseed.vampirism.relic.RelicPresetProjectionService;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
 import com.epicseed.epiccore.skill.runtime.AbilityCooldownTracker;
 import com.epicseed.vampirism.skill.runtime.TemporaryModifierTracker;
+import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.epicseed.vampirism.systems.BloodConversionSystem;
@@ -35,7 +36,9 @@ public final class PlayerRuntimeCleanupService {
     private PlayerRuntimeCleanupService() {
     }
 
-    public static void cleanupDisconnectedPlayer(UUID uuid, @Nullable Ref<EntityStore> playerRef) {
+    public static void cleanupDisconnectedPlayer(UUID uuid,
+                                                 @Nullable Ref<EntityStore> playerRef,
+                                                 @Nonnull PlayerSkillRegistry playerSkillRegistry) {
         cleanupProjectedRelicInventory(uuid, playerRef);
         MorphFlySystem.captureDisconnectState(uuid);
         VampireVitalitySystem.captureDisconnectState(uuid);
@@ -44,7 +47,7 @@ public final class PlayerRuntimeCleanupService {
         SkillTreeManager.get().evictPlayer(uuid);
         ModifierContext.REGISTRY.evict(uuid);
         EffectModifierSystem.clearPlayer(uuid);
-        ProgressionLifecycleService.captureDisconnectProgress(uuid);
+        playerSkillRegistry.captureDisconnectState(uuid);
         MorphFlySystem.clearTransientState(uuid);
         FormHealthSystem.clearPlayer(uuid);
         BloodFeedSystem.clearPlayer(uuid);

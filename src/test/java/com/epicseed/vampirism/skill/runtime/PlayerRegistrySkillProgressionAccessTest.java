@@ -8,9 +8,15 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class PlayerRegistrySkillProgressionAccessTest {
+
+    @AfterEach
+    void tearDown() {
+        PlayerRegistrySkillProgressionAccess.resetForTests();
+    }
 
     @Test
     void delegatesProgressionOperationsToConfiguredBackend() {

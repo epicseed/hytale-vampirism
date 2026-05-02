@@ -40,7 +40,7 @@ final class AdminCommandSupport {
     static Set<String> collectUnlockedAbilityIds(@Nonnull UUID uuid) {
         TreeSet<String> abilityIds = new TreeSet<>();
         for (String skillId : PlayerRegistrySkillProgressionAccess.instance().getUnlockedSkillIds(uuid)) {
-            Skill skill = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getSkill(skillId);
+            Skill skill = com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider.instance().getSkill(skillId);
             if (skill == null || skill.abilityId == null || skill.abilityId.isBlank()) continue;
             abilityIds.add(skill.abilityId);
         }

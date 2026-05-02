@@ -7,8 +7,6 @@ import javax.annotation.Nonnull;
 import com.epicseed.epiccore.hytale.WorldMapTrackerAdapter;
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
-import com.epicseed.vampirism.runtime.PlayerRuntimeCleanupService;
-import com.epicseed.vampirism.runtime.ProgressionLifecycleService;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
 import com.epicseed.vampirism.systems.EffectModifierSystem;
 import com.epicseed.vampirism.systems.MorphFlySystem;
@@ -23,10 +21,10 @@ public final class PlayerLifecycleCoordinator {
     private PlayerLifecycleCoordinator() {
     }
 
-    public static void register(@Nonnull Vampirism plugin) {
+    public static void register(@Nonnull Vampirism plugin, @Nonnull VampirismRuntime runtime) {
         plugin.getEventRegistry().register(PlayerConnectEvent.class, e -> {
             UUID uuid = e.getPlayerRef().getUuid();
-            ProgressionLifecycleService.onPlayerConnect(uuid);
+            runtime.restorePlayerProgression(uuid);
             NightHuntService.onPlayerConnect(uuid);
             EffectModifierSystem.clearPlayer(uuid);
             SkillTreeManager.get().reloadModifiers(uuid);
@@ -44,7 +42,7 @@ public final class PlayerLifecycleCoordinator {
         });
         plugin.getEventRegistry().register(PlayerDisconnectEvent.class, e -> {
             UUID uuid = e.getPlayerRef().getUuid();
-            PlayerRuntimeCleanupService.cleanupDisconnectedPlayer(uuid, e.getPlayerRef().getReference());
+            runtime.cleanupDisconnectedPlayer(uuid, e.getPlayerRef().getReference());
         });
     }
 }

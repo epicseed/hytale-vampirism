@@ -6,9 +6,11 @@ import java.util.UUID;
 
 import com.epicseed.epiccore.skill.model.Ability;
 import com.epicseed.epiccore.skill.model.EffectDef;
+import com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.runtime.AbilityCooldownTracker;
-import com.epicseed.epiccore.skill.runtime.conditions.ConditionHandlerRegistry;
+import com.epicseed.epiccore.skill.runtime.conditions.ConditionHandlerPack;
 import com.epicseed.epiccore.skill.runtime.conditions.RegistryBackedConditionEvaluator;
+import com.epicseed.epiccore.skill.runtime.conditions.RuntimeConditionEvaluators;
 import com.epicseed.epiccore.skill.runtime.conditions.StandardConditionPacks;
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.vampirism.modifier.VampireStatType;
@@ -19,9 +21,9 @@ public final class SkillConditionEvaluator {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private static final RegistryBackedConditionEvaluator<ModifierContext> MODIFIER_EVALUATOR =
-            new RegistryBackedConditionEvaluator<>(createModifierHandlers());
+            RuntimeConditionEvaluators.create(modifierSupport(), modifierExtensions());
     private static final RegistryBackedConditionEvaluator<SkillRuntimeContext> RUNTIME_EVALUATOR =
-            new RegistryBackedConditionEvaluator<>(createRuntimeHandlers());
+            RuntimeConditionEvaluators.create(runtimeSupport(), runtimeExtensions());
 
     private SkillConditionEvaluator() {}
 
@@ -41,16 +43,12 @@ public final class SkillConditionEvaluator {
         return RUNTIME_EVALUATOR.evaluate(condition, ctx);
     }
 
-    private static ConditionHandlerRegistry<ModifierContext> createModifierHandlers() {
-        return new ConditionHandlerRegistry<ModifierContext>()
-                .install(StandardConditionPacks.generic(modifierSupport()))
-                .register("bloodCompare", SkillConditionEvaluator::evaluateBloodCompare);
+    private static ConditionHandlerPack<ModifierContext> modifierExtensions() {
+        return registry -> registry.register("bloodCompare", SkillConditionEvaluator::evaluateBloodCompare);
     }
 
-    private static ConditionHandlerRegistry<SkillRuntimeContext> createRuntimeHandlers() {
-        return new ConditionHandlerRegistry<SkillRuntimeContext>()
-                .install(StandardConditionPacks.generic(runtimeSupport()))
-                .register("bloodCompare", SkillConditionEvaluator::evaluateBloodCompare);
+    private static ConditionHandlerPack<SkillRuntimeContext> runtimeExtensions() {
+        return registry -> registry.register("bloodCompare", SkillConditionEvaluator::evaluateBloodCompare);
     }
 
     private static boolean evaluateBloodCompare(Map<String, Object> condition, SkillRuntimeContext ctx) {
@@ -85,13 +83,13 @@ public final class SkillConditionEvaluator {
 
     private static boolean isCooldownReady(UUID uuid, String abilityId) {
         if (uuid == null) return false;
-        Ability ability = VampirismProgressionDefinitionProvider.instance().getAbility(abilityId);
+        Ability ability = CatalogBackedProgressionDefinitionProvider.instance().getAbility(abilityId);
         if (ability == null) return true;
         return !AbilityCooldownTracker.isOnCooldown(uuid, abilityId);
     }
 
     private static String resolveEffectAssetId(String effectId) {
-        EffectDef def = VampirismProgressionDefinitionProvider.instance().getEffect(effectId);
+        EffectDef def = CatalogBackedProgressionDefinitionProvider.instance().getEffect(effectId);
         return def != null && def.effectId != null && !def.effectId.isBlank()
                 ? def.effectId
                 : effectId;

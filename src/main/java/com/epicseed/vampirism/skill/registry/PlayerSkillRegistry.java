@@ -1,9 +1,11 @@
 package com.epicseed.vampirism.skill.registry;
 
 import com.epicseed.epiccore.player.PlayerProgressStore;
+import com.epicseed.epiccore.skill.runtime.AbilityCooldownTracker;
 import com.epicseed.vampirism.domain.player.PlayerVampireProfile;
 import com.epicseed.vampirism.domain.player.PlayerVampireProfileRepository;
 import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
+import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
 import com.hypixel.hytale.logger.HytaleLogger;
 
 import javax.annotation.Nonnull;
@@ -41,6 +43,7 @@ public class PlayerSkillRegistry {
     @Nonnull
     public static PlayerSkillRegistry init(@Nonnull Path dataDirectory) {
         instance = new PlayerSkillRegistry(dataDirectory);
+        PlayerRegistrySkillProgressionAccess.init(instance);
         VampirePlayerStateStore.init(instance.progressStore);
         LOGGER.atInfo().log("[PlayerSkillRegistry] Initialized. Per-player data directory: " + instance.repository.profilesDirectory());
         return instance;
@@ -61,6 +64,21 @@ public class PlayerSkillRegistry {
     /** Call when a player disconnects — persists their data and removes from cache. */
     public void onPlayerDisconnect(@Nonnull UUID uuid) {
         progressStore.onPlayerDisconnect(uuid);
+    }
+
+    public void restoreRuntimeState(@Nonnull UUID uuid) {
+        onPlayerConnect(uuid);
+        AbilityCooldownTracker.restorePlayer(uuid, getPersistedAbilityCooldowns(uuid));
+    }
+
+    public void captureDisconnectState(@Nonnull UUID uuid) {
+        setPersistedAbilityCooldowns(uuid, AbilityCooldownTracker.snapshotRemaining(uuid));
+        onPlayerDisconnect(uuid);
+    }
+
+    @Nonnull
+    public PlayerRegistrySkillProgressionAccess progressionAccess() {
+        return PlayerRegistrySkillProgressionAccess.instance();
     }
 
     public int getSkillPoints(@Nonnull UUID uuid) {

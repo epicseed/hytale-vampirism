@@ -44,7 +44,7 @@ public final class ChannelPresentationService {
                                         @Nonnull OverlapBehavior overlapBehavior,
                                         @Nonnull Store<EntityStore> store) {
         if (effectDefId == null || effectDefId.isBlank()) return;
-        EffectDef effectDef = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getEffect(effectDefId);
+        EffectDef effectDef = com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider.instance().getEffect(effectDefId);
         if (effectDef == null) return;
         int effectIndex = EntityEffect.getAssetMap().getIndex(effectDef.effectId);
         if (effectIndex < 0) return;
@@ -59,7 +59,7 @@ public final class ChannelPresentationService {
                                            @Nullable String effectDefId,
                                            @Nonnull Store<EntityStore> store) {
         if (effectDefId == null || effectDefId.isBlank()) return;
-        EffectDef effectDef = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getEffect(effectDefId);
+        EffectDef effectDef = com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider.instance().getEffect(effectDefId);
         if (effectDef == null) return;
         int effectIndex = EntityEffect.getAssetMap().getIndex(effectDef.effectId);
         if (effectIndex < 0) return;

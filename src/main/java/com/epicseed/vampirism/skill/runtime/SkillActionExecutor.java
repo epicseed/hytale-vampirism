@@ -6,7 +6,9 @@ import java.util.function.Consumer;
 
 import com.epicseed.epiccore.modifier.StatType;
 import com.epicseed.epiccore.skill.model.EffectDef;
+import com.epicseed.epiccore.skill.runtime.actions.ActionHandlerPack;
 import com.epicseed.epiccore.skill.runtime.actions.ActionHandlerRegistry;
+import com.epicseed.epiccore.skill.runtime.actions.RuntimeActionExecutors;
 import com.epicseed.epiccore.skill.runtime.actions.StandardActionPacks;
 import com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker;
 import com.epicseed.vampirism.skill.runtime.actions.BloodActionHandler;
@@ -33,9 +35,14 @@ public final class SkillActionExecutor {
     private static volatile Consumer<SkillRuntimeContext> onFinalBlow = ctx -> {};
 
     private static final com.epicseed.epiccore.skill.runtime.actions.SkillActionExecutor<SkillRuntimeContext> EXECUTOR =
-            new com.epicseed.epiccore.skill.runtime.actions.SkillActionExecutor<>(
-                    createActionHandlers(),
-                    SkillConditionEvaluator::evaluateAll);
+            RuntimeActionExecutors.create(
+                    standardActionSupport(),
+                    SkillConditionEvaluator::evaluateAll,
+                    healthActionSupport(),
+                    combatActionSupport(),
+                    STANDARD_COMBAT_OPTIONS,
+                    temporaryModifierActionSupport(),
+                    vampirismActionExtensions());
 
     private SkillActionExecutor() {
     }
@@ -56,83 +63,105 @@ public final class SkillActionExecutor {
         return EXECUTOR;
     }
 
-    private static ActionHandlerRegistry<SkillRuntimeContext> createActionHandlers() {
-        return new ActionHandlerRegistry<SkillRuntimeContext>()
-                .install(StandardActionPacks.safeGeneric(new StandardActionPacks.StandardActionSupport<SkillRuntimeContext>() {
-                    @Override
-                    public VampirismProgressionDefinitionProvider definitionProvider() {
-                        return VampirismProgressionDefinitionProvider.instance();
-                    }
+    static ActionHandlerRegistry<SkillRuntimeContext> createActionHandlers() {
+        return RuntimeActionExecutors.createRegistry(
+                standardActionSupport(),
+                healthActionSupport(),
+                combatActionSupport(),
+                STANDARD_COMBAT_OPTIONS,
+                temporaryModifierActionSupport(),
+                vampirismActionExtensions());
+    }
 
-                    @Override
-                    public com.epicseed.epiccore.skill.runtime.AbilityRequirementEvaluator<SkillRuntimeContext> requirementEvaluator() {
-                        return SkillRequirementEvaluator::evaluateAll;
-                    }
+    private static StandardActionPacks.StandardActionSupport<SkillRuntimeContext> standardActionSupport() {
+        return new StandardActionPacks.StandardActionSupport<SkillRuntimeContext>() {
+            @Override
+            public com.epicseed.epiccore.skill.runtime.AbilityDefinitionProvider definitionProvider() {
+                return com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider.instance();
+            }
 
-                    @Override
-                    public com.epicseed.epiccore.skill.runtime.actions.ActionConditionEvaluator<SkillRuntimeContext> conditionEvaluator() {
-                        return SkillConditionEvaluator::evaluateAll;
-                    }
+            @Override
+            public com.epicseed.epiccore.skill.runtime.AbilityRequirementEvaluator<SkillRuntimeContext> requirementEvaluator() {
+                return SkillRequirementEvaluator::evaluateAll;
+            }
 
-                    @Override
-                    public com.epicseed.epiccore.skill.runtime.SkillActivationResult activateAbility(String abilityId, SkillRuntimeContext context) {
-                        return AbilityService.activateFromAction(abilityId, context);
-                    }
+            @Override
+            public com.epicseed.epiccore.skill.runtime.actions.ActionConditionEvaluator<SkillRuntimeContext> conditionEvaluator() {
+                return SkillConditionEvaluator::evaluateAll;
+            }
 
-                    @Override
-                    public float resolveEffectDuration(EffectDef effectDef, SkillRuntimeContext context) {
-                        if (effectDef.duration <= 0f) {
-                            return effectDef.duration;
-                        }
-                        float multiplier = Math.max(0f, VampirismRuntimeStatSupport.RUNTIME.resolveStatValue(
-                                VampireStatType.ABILITY_DURATION_MULTIPLIER.name(), 1f, context));
-                        return effectDef.duration * multiplier;
-                    }
+            @Override
+            public com.epicseed.epiccore.skill.runtime.SkillActivationResult activateAbility(String abilityId, SkillRuntimeContext context) {
+                return AbilityService.activateFromAction(abilityId, context);
+            }
 
-                    @Override
-                    public Vector3d sanitizeTeleportTarget(World world, Vector3d target, SkillRuntimeContext context) {
-                        Vector3d safeTarget = WorldPositionHelper.findSafeGroundPosition(world, target);
-                        return safeTarget != null ? safeTarget : target;
-                    }
-                }))
-                .install(StandardActionPacks.health(new StandardActionPacks.HealthActionSupport<SkillRuntimeContext>() {
-                    @Override
-                    public com.epicseed.epiccore.skill.runtime.stats.RuntimeStatSupport<SkillRuntimeContext> statSupport() {
-                        return VampirismRuntimeStatSupport.RUNTIME;
-                    }
+            @Override
+            public float resolveEffectDuration(EffectDef effectDef, SkillRuntimeContext context) {
+                if (effectDef.duration <= 0f) {
+                    return effectDef.duration;
+                }
+                float multiplier = Math.max(0f, VampirismRuntimeStatSupport.RUNTIME.resolveStatValue(
+                        VampireStatType.ABILITY_DURATION_MULTIPLIER.name(), 1f, context));
+                return effectDef.duration * multiplier;
+            }
 
-                    @Override
-                    public String defaultHealingMultiplierStatId() {
-                        return VampireStatType.HEALING_RECEIVED.name();
-                    }
-                }))
-                .install(StandardActionPacks.combat(new StandardActionPacks.CombatActionSupport<SkillRuntimeContext>() {
-                    @Override
-                    public com.epicseed.epiccore.skill.runtime.AbilityRequirementEvaluator<SkillRuntimeContext> requirementEvaluator() {
-                        return SkillRequirementEvaluator::evaluateAll;
-                    }
+            @Override
+            public Vector3d sanitizeTeleportTarget(World world, Vector3d target, SkillRuntimeContext context) {
+                Vector3d safeTarget = WorldPositionHelper.findSafeGroundPosition(world, target);
+                return safeTarget != null ? safeTarget : target;
+            }
+        };
+    }
 
-                    @Override
-                    public Float resolveStat(String statId, SkillRuntimeContext context) {
-                        return VampirismRuntimeStatSupport.RUNTIME.resolveStatValue(statId, context);
-                    }
+    private static StandardActionPacks.HealthActionSupport<SkillRuntimeContext> healthActionSupport() {
+        return new StandardActionPacks.HealthActionSupport<SkillRuntimeContext>() {
+            @Override
+            public com.epicseed.epiccore.skill.runtime.stats.RuntimeStatSupport<SkillRuntimeContext> statSupport() {
+                return VampirismRuntimeStatSupport.RUNTIME;
+            }
 
-                    @Override
-                    public void onFinalBlow(SkillRuntimeContext context) {
-                        onFinalBlow.accept(context);
-                    }
-                }, STANDARD_COMBAT_OPTIONS))
-                .install(StandardActionPacks.temporaryModifiers(new StandardActionPacks.TemporaryModifierActionSupport<SkillRuntimeContext>() {
-                    @Override
-                    public com.epicseed.epiccore.skill.runtime.stats.RuntimeStatSupport<SkillRuntimeContext> statSupport() {
-                        return VampirismRuntimeStatSupport.RUNTIME;
-                    }
+            @Override
+            public String defaultHealingMultiplierStatId() {
+                return VampireStatType.HEALING_RECEIVED.name();
+            }
+        };
+    }
 
-                    @Override
-                    public TemporaryModifierTracker<StatType> tracker() {
-                        return TEMPORARY_MODIFIERS;
-                    }
-                }))
+    private static StandardActionPacks.CombatActionSupport<SkillRuntimeContext> combatActionSupport() {
+        return new StandardActionPacks.CombatActionSupport<SkillRuntimeContext>() {
+            @Override
+            public com.epicseed.epiccore.skill.runtime.AbilityRequirementEvaluator<SkillRuntimeContext> requirementEvaluator() {
+                return SkillRequirementEvaluator::evaluateAll;
+            }
+
+            @Override
+            public Float resolveStat(String statId, SkillRuntimeContext context) {
+                return VampirismRuntimeStatSupport.RUNTIME.resolveStatValue(statId, context);
+            }
+
+            @Override
+            public void onFinalBlow(SkillRuntimeContext context) {
+                onFinalBlow.accept(context);
+            }
+        };
+    }
+
+    private static StandardActionPacks.TemporaryModifierActionSupport<SkillRuntimeContext> temporaryModifierActionSupport() {
+        return new StandardActionPacks.TemporaryModifierActionSupport<SkillRuntimeContext>() {
+            @Override
+            public com.epicseed.epiccore.skill.runtime.stats.RuntimeStatSupport<SkillRuntimeContext> statSupport() {
+                return VampirismRuntimeStatSupport.RUNTIME;
+            }
+
+            @Override
+            public TemporaryModifierTracker<StatType> tracker() {
+                return TEMPORARY_MODIFIERS;
+            }
+        };
+    }
+
+    private static ActionHandlerPack<SkillRuntimeContext> vampirismActionExtensions() {
+        return registry -> registry
                 .register("startFeedChannel", ChannelActionHandlers::startFeedChannel)
                 .register("startHealthToBloodChannel", ChannelActionHandlers::startHealthToBloodChannel)
                 .register("modifyBlood", BloodActionHandler::modifyBlood)

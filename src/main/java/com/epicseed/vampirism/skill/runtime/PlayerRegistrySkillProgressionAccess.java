@@ -31,8 +31,9 @@ public final class PlayerRegistrySkillProgressionAccess implements SkillProgress
         this.backend = backend;
     }
 
-    public static void init(@Nonnull PlayerSkillRegistry playerSkillRegistry) {
-        init(new Backend() {
+    @Nonnull
+    public static PlayerRegistrySkillProgressionAccess init(@Nonnull PlayerSkillRegistry playerSkillRegistry) {
+        return init(new Backend() {
             @Override
             public int getSkillPoints(@Nonnull UUID uuid) {
                 return playerSkillRegistry.getSkillPoints(uuid);
@@ -86,14 +87,25 @@ public final class PlayerRegistrySkillProgressionAccess implements SkillProgress
         });
     }
 
-    static void init(@Nonnull Backend backend) {
+    @Nonnull
+    static PlayerRegistrySkillProgressionAccess init(@Nonnull Backend backend) {
         instance = new PlayerRegistrySkillProgressionAccess(backend);
+        return instance;
     }
 
     @Nonnull
     public static PlayerRegistrySkillProgressionAccess instance() {
         if (instance == null) throw new IllegalStateException("PlayerRegistrySkillProgressionAccess not initialized!");
         return instance;
+    }
+
+    @Nonnull
+    static SkillProgressionAccess instanceOr(@Nonnull SkillProgressionAccess fallback) {
+        return instance != null ? instance : fallback;
+    }
+
+    static void resetForTests() {
+        instance = null;
     }
 
     public int getAcquiredSkillPoints(@Nonnull UUID uuid) {

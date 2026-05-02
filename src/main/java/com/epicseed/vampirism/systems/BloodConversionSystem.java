@@ -152,7 +152,7 @@ public class BloodConversionSystem extends EntityTickingSystem<EntityStore> {
         if (abilityId == null || abilityId.isBlank()) {
             return null;
         }
-        return com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getAbility(abilityId);
+        return com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider.instance().getAbility(abilityId);
     }
 
     private static float resolveDurationSeconds(@Nonnull Map<String, Object> action, @Nullable Ability ability) {

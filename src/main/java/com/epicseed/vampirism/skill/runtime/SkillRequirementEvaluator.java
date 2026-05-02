@@ -8,9 +8,9 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 
 import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
+import com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.runtime.requirements.RegistryBackedRequirementEvaluator;
-import com.epicseed.epiccore.skill.runtime.requirements.RequirementHandlerRegistry;
-import com.epicseed.epiccore.skill.runtime.requirements.StandardRequirementPacks;
+import com.epicseed.epiccore.skill.runtime.requirements.RuntimeRequirementEvaluators;
 
 public final class SkillRequirementEvaluator {
 
@@ -56,8 +56,7 @@ public final class SkillRequirementEvaluator {
                 public void resetSkills(@Nonnull UUID uuid) {
                 }
             };
-    private static volatile SkillProgressionAccess accessProvider =
-            UNINITIALIZED_ACCESS_PROVIDER;
+    private static volatile SkillProgressionAccess accessProvider;
     private static final SkillProgressionAccess LIVE_ACCESS_PROVIDER =
             new SkillProgressionAccess() {
                 @Override
@@ -102,18 +101,20 @@ public final class SkillRequirementEvaluator {
                 }
             };
     private static final RegistryBackedRequirementEvaluator<SkillRuntimeContext> EVALUATOR =
-            new RegistryBackedRequirementEvaluator<>(createHandlers());
+            RuntimeRequirementEvaluators.create(
+                    (condition, ctx) -> SkillConditionEvaluator.evaluateAll(condition, ctx),
+                    LIVE_ACCESS_PROVIDER,
+                    CatalogBackedProgressionDefinitionProvider.instance(),
+                    SkillRuntimeContext::uuid);
 
     private SkillRequirementEvaluator() {}
 
     public static void init(SkillProgressionAccess accessProvider) {
-        SkillRequirementEvaluator.accessProvider = accessProvider != null
-                ? accessProvider
-                : UNINITIALIZED_ACCESS_PROVIDER;
+        SkillRequirementEvaluator.accessProvider = accessProvider;
     }
 
     static void resetForTests() {
-        accessProvider = UNINITIALIZED_ACCESS_PROVIDER;
+        accessProvider = null;
     }
 
     public static boolean evaluateAll(List<Map<String, Object>> requirements, SkillRuntimeContext ctx) {
@@ -123,17 +124,9 @@ public final class SkillRequirementEvaluator {
     public static boolean evaluate(Map<String, Object> requirement, SkillRuntimeContext ctx) {
         return EVALUATOR.evaluate(requirement, ctx);
     }
-
-    private static RequirementHandlerRegistry<SkillRuntimeContext> createHandlers() {
-        return new RequirementHandlerRegistry<SkillRuntimeContext>()
-                .install(StandardRequirementPacks.generic((conditions, ctx) -> SkillConditionEvaluator.evaluateAll(conditions, ctx)))
-                .install(StandardRequirementPacks.progression(
-                        LIVE_ACCESS_PROVIDER,
-                        VampirismProgressionDefinitionProvider.instance(),
-                        SkillRuntimeContext::uuid));
-    }
-
     private static SkillProgressionAccess currentAccessProvider() {
-        return accessProvider != null ? accessProvider : UNINITIALIZED_ACCESS_PROVIDER;
+        return accessProvider != null
+                ? accessProvider
+                : PlayerRegistrySkillProgressionAccess.instanceOr(UNINITIALIZED_ACCESS_PROVIDER);
     }
 }

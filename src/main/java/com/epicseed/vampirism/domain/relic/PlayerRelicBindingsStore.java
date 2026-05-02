@@ -6,7 +6,7 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 
 import com.epicseed.epiccore.skill.progression.RelicBindingStore;
-import com.epicseed.vampirism.registry.PlayerRelicBindings;
+import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 
 public final class PlayerRelicBindingsStore implements RelicBindingStore {
 
@@ -22,28 +22,33 @@ public final class PlayerRelicBindingsStore implements RelicBindingStore {
     @Override
     @Nonnull
     public Map<String, String> bindingsFor(@Nonnull UUID uuid, int presetIndex) {
-        return PlayerRelicBindings.get().bindingsFor(uuid, presetIndex);
+        return registry().getRelicBindings(uuid, presetIndex);
     }
 
     @Override
     public int activePresetIndex(@Nonnull UUID uuid) {
-        return PlayerRelicBindings.get().activePresetIndex(uuid);
+        return registry().getActiveRelicPresetIndex(uuid);
     }
 
     @Override
     public void setActivePreset(@Nonnull UUID uuid, int presetIndex) {
-        PlayerRelicBindings.get().setActivePreset(uuid, presetIndex);
+        registry().setActiveRelicPresetIndex(uuid, presetIndex);
     }
 
     @Override
     public void setAll(@Nonnull UUID uuid, int presetIndex, @Nonnull Map<String, String> bindings) {
-        PlayerRelicBindings.get().setAll(uuid, presetIndex, bindings);
+        registry().setRelicBindings(uuid, presetIndex, bindings);
     }
 
     @Override
     public void setAll(@Nonnull UUID uuid,
                        @Nonnull Map<Integer, ? extends Map<String, String>> presetBindings,
                        int activePresetIndex) {
-        PlayerRelicBindings.get().setAll(uuid, presetBindings, activePresetIndex);
+        registry().setRelicBindings(uuid, presetBindings, activePresetIndex);
+    }
+
+    @Nonnull
+    private static PlayerSkillRegistry registry() {
+        return PlayerSkillRegistry.get();
     }
 }

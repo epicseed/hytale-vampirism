@@ -218,7 +218,7 @@ public class VampireInfectionSystem extends EntityTickingSystem<EntityStore> {
     }
 
     private static void grantAscensionSkill(@Nonnull UUID uuid, @Nonnull String skillId) {
-        Skill skill = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getSkill(skillId);
+        Skill skill = com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider.instance().getSkill(skillId);
         if (skill == null) {
             LOGGER.atWarning().log("[VampireInfectionSystem] Failed to grant missing skill: " + skillId);
             return;

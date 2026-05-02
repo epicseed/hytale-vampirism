@@ -12,7 +12,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.epicseed.epiccore.skill.model.Skill;
-import com.epicseed.vampirism.skill.registry.SkillRegistry;
+import com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider;
+import com.epicseed.epiccore.skill.runtime.SkillDefinitionCatalog;
 
 class SkillRequirementEvaluatorTest {
 
@@ -28,16 +29,18 @@ class SkillRequirementEvaluatorTest {
         skill.abilityId = ABILITY_ID;
         skill.passiveId = PASSIVE_ID;
 
-        SkillRegistry skillRegistry = new SkillRegistry();
-        skillRegistry.Register(skill);
-        VampirismProgressionDefinitionProvider.init(skillRegistry, null, null, null);
+        SkillDefinitionCatalog catalog = new SkillDefinitionCatalog();
+        catalog.skills().register(skill);
+        CatalogBackedProgressionDefinitionProvider.init(catalog);
+        PlayerRegistrySkillProgressionAccess.resetForTests();
         SkillRequirementEvaluator.resetForTests();
     }
 
     @AfterEach
     void tearDown() {
+        PlayerRegistrySkillProgressionAccess.resetForTests();
         SkillRequirementEvaluator.resetForTests();
-        VampirismProgressionDefinitionProvider.resetForTests();
+        CatalogBackedProgressionDefinitionProvider.init(null);
     }
 
     @Test
@@ -53,17 +56,15 @@ class SkillRequirementEvaluatorTest {
     }
 
     @Test
-    void initRefreshesUnlockedSkillAccessForRuntimeChecks() {
+    void progressionAccessInitRefreshesUnlockedSkillAccessForRuntimeChecks() {
         SkillRuntimeContext ctx = new SkillRuntimeContext(PLAYER_ID, null, null);
 
         PlayerRegistrySkillProgressionAccess.init(backendWithUnlockedSkills(Set.of()));
-        SkillRequirementEvaluator.init(PlayerRegistrySkillProgressionAccess.instance());
         assertFalse(SkillRequirementEvaluator.evaluate(Map.of(
                 "type", "abilityUnlocked",
                 "abilityId", ABILITY_ID), ctx));
 
         PlayerRegistrySkillProgressionAccess.init(backendWithUnlockedSkills(Set.of(SKILL_ID)));
-        SkillRequirementEvaluator.init(PlayerRegistrySkillProgressionAccess.instance());
         assertTrue(SkillRequirementEvaluator.evaluate(Map.of(
                 "type", "abilityUnlocked",
                 "abilityId", ABILITY_ID), ctx));

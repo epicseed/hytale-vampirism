@@ -107,7 +107,7 @@ public final class ConsumableMarkerService {
     @Nullable
     private static Ability resolveAbility(@Nullable String abilityId) {
         if (abilityId == null || abilityId.isBlank()) return null;
-        return com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getAbility(abilityId);
+        return com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider.instance().getAbility(abilityId);
     }
 
     @Nonnull

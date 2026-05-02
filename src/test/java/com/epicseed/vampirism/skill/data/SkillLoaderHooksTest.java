@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.epicseed.epiccore.skill.data.SkillRuntimeBindingsLoadHooks;
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindings;
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindingsHolder;
 import com.epicseed.vampirism.skill.registry.AbilityRegistry;
@@ -21,7 +22,7 @@ class SkillLoaderHooksTest {
     @Test
     void applyRuntimeBindingsReplacesAndClearsScopedSnapshot() {
         SkillRuntimeBindingsHolder runtimeBindings = new SkillRuntimeBindingsHolder();
-        VampirismSkillDataLoadHooks hooks = new VampirismSkillDataLoadHooks(runtimeBindings);
+        SkillRuntimeBindingsLoadHooks hooks = new SkillRuntimeBindingsLoadHooks(runtimeBindings);
         SkillRuntimeBindings bindings = SkillRuntimeBindings.of(
                 java.util.Map.of("IS_IN_BAT_FORM", "Potion_Morph_Bat"),
                 java.util.Map.of("primary", "BloodSucker"));
@@ -36,7 +37,7 @@ class SkillLoaderHooksTest {
     @Test
     void loadDefinitionsAppliesBindingsThroughHooks() {
         SkillRuntimeBindingsHolder runtimeBindings = new SkillRuntimeBindingsHolder();
-        VampirismSkillDataLoadHooks hooks = new VampirismSkillDataLoadHooks(runtimeBindings);
+        SkillRuntimeBindingsLoadHooks hooks = new SkillRuntimeBindingsLoadHooks(runtimeBindings);
         SkillLoader loader = new SkillLoader(SkillDataPaths.vampirismDefaults(), hooks);
 
         loader.LoadDefinitions(

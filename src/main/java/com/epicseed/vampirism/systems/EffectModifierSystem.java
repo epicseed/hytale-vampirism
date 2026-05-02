@@ -95,7 +95,7 @@ public class EffectModifierSystem extends EntityTickingSystem<EntityStore> {
                     playerRef, EffectControllerComponent.getComponentType());
             if (ec == null) return;
 
-            Collection<EffectDef> allDefs = com.epicseed.vampirism.skill.runtime.VampirismProgressionDefinitionProvider.instance().getAllEffects();
+            Collection<EffectDef> allDefs = com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider.instance().getAllEffects();
             Set<String> currentlyTracked = activeEffectModifiers.computeIfAbsent(
                     uuid, k -> ConcurrentHashMap.newKeySet());
 
