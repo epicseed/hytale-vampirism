@@ -37,7 +37,7 @@ def assetsZipFile = hytalePackageDir != null ? file("${hytalePackageDir}/Assets.
 def serverJarFile = hytalePackageDir != null ? file("${hytalePackageDir}/Server/HytaleServer.jar") : null
 def hasHytaleAssets = assetsZipFile != null && assetsZipFile.exists()
 def hasHytaleServerJar = serverJarFile != null && serverJarFile.exists()
-def epiccoreBuildRepoDir = layout.buildDirectory.dir('repos/epiccore').get().asFile
+def epiccoreBuildRepoDir = file(findProperty('epiccore_build_repo') ?: "${rootDir}/.gradle/repos/epiccore")
 def epiccoreExternalRepoDir = file('../hytale-epiccore')
 
 if (!hasHytaleAssets) {
@@ -60,6 +60,8 @@ javadoc {
 // present, we still use its jar for launching the server in IDE run configs.
 dependencies {
     implementation("${epiccore_maven_group}:epiccore-vampirism:${epiccore_version}")
+    compileOnly("javax.annotation:javax.annotation-api:1.3.2")
+    testCompileOnly("javax.annotation:javax.annotation-api:1.3.2")
     compileOnly("com.hypixel.hytale:Server:$hytale_build")
     if (hasHytaleServerJar) {
         runtimeOnly(files(serverJarFile))
@@ -91,7 +93,7 @@ repositories {
 
 tasks.register('publishEpicCoreToBuildRepo', Exec) {
     group = 'publishing'
-    description = 'Publishes epiccore-model, epiccore-hytale, epiccore-relic, and epiccore-vampirism from ../hytale-epiccore to build/repos/epiccore.'
+    description = 'Publishes epiccore-model, epiccore-hytale, epiccore-relic, and epiccore-vampirism from ../hytale-epiccore to the configured local EpicCore build repository.'
     doFirst {
         if (!epiccoreExternalRepoDir.exists()) {
             throw new GradleException("Could not find external EpicCore repository at ${epiccoreExternalRepoDir}.")
@@ -550,23 +552,39 @@ tasks.named('shadowJar') {
 
 def devModsDir = layout.buildDirectory.dir('dev-mods')
 def devServerRunDir = layout.buildDirectory.dir('dev-run')
+def devServerModsDir = devServerRunDir.map { it.dir('mods') }
+def legacyRootServerArtifacts = [
+        file("$projectDir/.cache"),
+        file("$projectDir/auth.enc"),
+        file("$projectDir/bans.json"),
+        file("$projectDir/config.json"),
+        file("$projectDir/config.json.bak"),
+        file("$projectDir/logs"),
+        file("$projectDir/mods"),
+        file("$projectDir/permissions.json"),
+        file("$projectDir/universe"),
+        file("$projectDir/whitelist.json")
+]
 
 tasks.register('prepareDevMods', Sync) {
+    dependsOn 'jar'
     dependsOn 'shadowJar'
-    from(tasks.named('shadowJar'))
+    from(tasks.named('shadowJar').flatMap { it.archiveFile })
     into(devModsDir)
 }
 
-tasks.register('prepareHytaleServerDebug') {
-    dependsOn 'prepareDevMods'
+tasks.register('cleanLegacyRootServerArtifacts') {
     doLast {
-        def runDir = devServerRunDir.get().asFile
-        def modsDir = new File(runDir, 'mods')
-        if (modsDir.exists()) {
-            delete modsDir
-        }
-        runDir.mkdirs()
+        delete legacyRootServerArtifacts
     }
+}
+
+tasks.register('prepareHytaleServerDebug', Sync) {
+    dependsOn 'jar'
+    dependsOn 'shadowJar'
+    dependsOn 'cleanLegacyRootServerArtifacts'
+    into(devServerModsDir)
+    from(tasks.named('shadowJar').flatMap { it.archiveFile })
 }
 
 // Ensure the shaded jar is produced during a normal build.
@@ -580,10 +598,6 @@ if (hasHytaleAssets && hasHytaleServerJar) {
     def serverRunDir = devServerRunDir.get().asFile
     if (!serverRunDir.exists()) {
         serverRunDir.mkdirs()
-    }
-
-    def createDevModsPath = { String basePath ->
-        return basePath + "/build/dev-mods"
     }
 
     def createServerJarPath = { String basePath ->
@@ -600,12 +614,9 @@ if (hasHytaleAssets && hasHytaleServerJar) {
         return classPaths
     }
 
-    def createServerRunArguments = { String modPath ->
+    def createServerRunArguments = {
         def programParameters = '--allow-op --disable-sentry --assets="' + assetsZipFile.absolutePath + '"'
         def modPaths = []
-        if (modPath != null && !modPath.isBlank()) {
-            modPaths << modPath
-        }
         if (load_user_mods.toBoolean() && installedHytalePackageDir.exists()) {
             modPaths << "${hytaleHome}/UserData/Mods"
         }
@@ -621,7 +632,7 @@ if (hasHytaleAssets && hasHytaleServerJar) {
         'HytaleServer'(org.jetbrains.gradle.ext.Application) {
             mainClass = 'com.hypixel.hytale.Main'
             moduleName = project.idea.module.name + '.main'
-            programParameters = createServerRunArguments(createDevModsPath(projectDir.absolutePath))
+            programParameters = createServerRunArguments()
             workingDirectory = serverRunDir.absolutePath
         }
     }
@@ -636,7 +647,7 @@ if (hasHytaleAssets && hasHytaleServerJar) {
             if (!vscodeDir.exists()) {
                 vscodeDir.mkdirs()
             }
-            def programParams = createServerRunArguments(createDevModsPath("\${workspaceFolder}"))
+            def programParams = createServerRunArguments()
             def launchConfig = [
                     version: "0.2.0",
                     configurations: [

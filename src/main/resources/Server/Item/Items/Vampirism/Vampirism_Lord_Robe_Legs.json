@@ -1,0 +1,9 @@
+{
+  "Parent": "Armor_Cloth_Silk_Legs",
+  "TranslationProperties": {
+    "Name": "Lord Robe Leggings",
+    "Description": "Elegant silk leggings tailored for silent movement."
+  },
+  "Quality": "Epic",
+  "ItemLevel": 40
+}

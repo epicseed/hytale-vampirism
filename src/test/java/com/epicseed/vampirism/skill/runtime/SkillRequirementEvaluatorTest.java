@@ -3,6 +3,7 @@ package com.epicseed.vampirism.skill.runtime;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -11,9 +12,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.epicseed.epiccore.player.PlayerProfileRepository;
+import com.epicseed.epiccore.player.PlayerProgressStore;
 import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.runtime.SkillDefinitionCatalog;
+import com.epicseed.epiccore.vampirism.domain.player.PlayerVampireProfile;
+import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.epiccore.vampirism.skill.runtime.VampirismSkillProgressionAccess;
 
 class SkillRequirementEvaluatorTest {
@@ -35,6 +40,7 @@ class SkillRequirementEvaluatorTest {
         SkillDefinitionCatalog catalog = new SkillDefinitionCatalog();
         catalog.skills().register(skill);
         CatalogBackedProgressionDefinitionProvider.init(catalog);
+        VampirePlayerStateStore.init(new PlayerProgressStore<>(new InMemoryRepository()));
 
         evaluator = new SkillRequirementEvaluator(
                 CatalogBackedProgressionDefinitionProvider.instance(),
@@ -76,6 +82,29 @@ class SkillRequirementEvaluatorTest {
         assertTrue(evaluator.evaluate(Map.of(
                 "type", "passiveUnlocked",
                 "passiveId", PASSIVE_ID), ctx));
+    }
+
+    @Test
+    void masqueradeRequirementsUseSharedPersistedState() {
+        SkillRuntimeContext ctx = new SkillRuntimeContext(PLAYER_ID, null, null);
+        long now = System.currentTimeMillis();
+        VampirePlayerStateStore.get().setMasqueradeHeat(PLAYER_ID, 82.0d);
+        VampirePlayerStateStore.get().setMasqueradeLastUpdatedAtMs(PLAYER_ID, now);
+        VampirePlayerStateStore.get().setMasqueradeStrikeCount(PLAYER_ID, 2);
+
+        assertTrue(evaluator.evaluate(Map.of(
+                "type", "masqueradeHeatCompare",
+                "value", 80,
+                "op", "gte"), ctx));
+        assertTrue(evaluator.evaluate(Map.of(
+                "type", "hunterPressureCompare",
+                "value", 100,
+                "op", "gte"), ctx));
+        assertTrue(evaluator.evaluate(Map.of(
+                "type", "masqueradeExposureLevel",
+                "level", "breached"), ctx));
+        assertFalse(evaluator.evaluate(Map.of(
+                "type", "masqueradeProgressionAllowed"), ctx));
     }
 
     private static VampirismSkillProgressionAccess accessWithUnlockedSkills(Set<String> unlockedSkillIds) {
@@ -127,5 +156,19 @@ class SkillRequirementEvaluatorTest {
             public void resetSkills(UUID uuid) {
             }
         };
+    }
+
+    private static final class InMemoryRepository implements PlayerProfileRepository<PlayerVampireProfile> {
+        final Map<UUID, PlayerVampireProfile> storage = new HashMap<>();
+
+        @Override
+        public PlayerVampireProfile load(UUID uuid) {
+            return storage.getOrDefault(uuid, new PlayerVampireProfile());
+        }
+
+        @Override
+        public void save(UUID uuid, PlayerVampireProfile profile) {
+            storage.put(uuid, profile);
+        }
     }
 }

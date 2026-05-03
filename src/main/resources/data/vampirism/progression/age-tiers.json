@@ -1,0 +1,25 @@
+{
+  "tiers": [
+    {
+      "id": "fledgling",
+      "displayName": "Fledgling",
+      "description": "A newly awakened vampire with only the first rites of the night behind them.",
+      "progressRequiredToAdvance": 250,
+      "accentColor": "#c084fc"
+    },
+    {
+      "id": "elder",
+      "displayName": "Elder",
+      "description": "A seasoned predator whose control of blood and shadow is fully established.",
+      "progressRequiredToAdvance": 750,
+      "accentColor": "#ef4444"
+    },
+    {
+      "id": "ancient",
+      "displayName": "Ancient",
+      "description": "An apex vampire who has exhausted the tracked age milestones.",
+      "progressRequiredToAdvance": 0,
+      "accentColor": "#f59e0b"
+    }
+  ]
+}

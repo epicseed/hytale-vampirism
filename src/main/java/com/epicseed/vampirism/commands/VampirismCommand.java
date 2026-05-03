@@ -6,16 +6,25 @@ import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nonnull;
 
 import com.epicseed.vampirism.commands.admin.AbilityAdminCommands;
+import com.epicseed.vampirism.commands.admin.AgeAdminCommands;
 import com.epicseed.vampirism.commands.admin.AnimationAdminCommand;
 import com.epicseed.vampirism.commands.admin.BloodAdminCommands;
+import com.epicseed.vampirism.commands.admin.DebugShapeAdminCommands;
 import com.epicseed.vampirism.commands.admin.HuntAdminCommands;
+import com.epicseed.vampirism.commands.admin.LineageAdminCommands;
+import com.epicseed.vampirism.commands.admin.MasqueradeAdminCommands;
 import com.epicseed.vampirism.commands.admin.MorphAdminCommands;
+import com.epicseed.vampirism.commands.admin.RitualAdminCommands;
 import com.epicseed.vampirism.commands.admin.SkillAdminCommands;
 import com.epicseed.vampirism.commands.admin.VampireAdminCommands;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
+import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
+import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
 import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.epiccore.vampirism.interop.VampirismClassifications;
+import com.epicseed.vampirism.domain.age.VampiricAgeTierService;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
 import com.epicseed.epiccore.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.runtime.AbilityService;
@@ -32,21 +41,29 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 public class VampirismCommand extends AbstractCommand {
     public VampirismCommand(@Nonnull VampirismSkillProgressionAccess progressionAccess,
                             @Nonnull NightHuntService nightHuntService,
-                            @Nonnull AbilityService abilityService) {
+                            @Nonnull AbilityService abilityService,
+                            @Nonnull VampiricLineageService lineageService,
+                            @Nonnull MasqueradeHeatService masqueradeHeatService,
+                            @Nonnull VampiricRitualService ritualService) {
         super("vampirism", "Vampirism plugin management");
         this.setPermissionGroups(new String[]{"admin"});
-        this.addSubCommand(new ReloadCommand());
+        this.addSubCommand(new ReloadCommand(lineageService));
         this.addSubCommand(new ConfigInfoCommand());
         this.addSubCommand(new StatusCommand());
         this.addSubCommand(new SatietyInfoCommand());
+        this.addSubCommand(new AgeAdminCommands());
         this.addSubCommand(new BloodAdminCommands());
         this.addSubCommand(new HuntAdminCommands(progressionAccess, nightHuntService));
+        this.addSubCommand(new LineageAdminCommands(lineageService));
+        this.addSubCommand(new RitualAdminCommands(ritualService, progressionAccess));
+        this.addSubCommand(new MasqueradeAdminCommands(masqueradeHeatService));
         this.addSubCommand(new AbilityAdminCommands(progressionAccess, abilityService));
         this.addSubCommand(new VampireAdminCommands());
         this.addSubCommand(SkillAdminCommands.skillPoints(progressionAccess));
         this.addSubCommand(SkillAdminCommands.skillReset());
         this.addSubCommand(new MorphAdminCommands());
         this.addSubCommand(new AnimationAdminCommand());
+        this.addSubCommand(new DebugShapeAdminCommands());
     }
 
     @Nonnull
@@ -57,8 +74,12 @@ public class VampirismCommand extends AbstractCommand {
         ctx.sendMessage(Message.raw("/vampirism config - show active config values").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism status <player> - full debug overview").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism satiety <player> - satiety details").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirism age info|set-tier|set-progress|add-progress <player> [...] - inspect age tiers").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism blood add <player> <percent> - add blood to a player").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism hunt info|force|reset-cooldown <player> - control marked prey hunts").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirism lineage info|list|choose|clear <player> [lineageId] - inspect or change lineages").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirism ritual list|info|sync|begin|progress|complete <player> ... - inspect ritual progress").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirism masquerade info|set|add|strike|clear <player> [heat] - inspect masquerade heat").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ability trigger <player> <abilityId> - trigger one ability").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ability trigger-all <player> - trigger all unlocked abilities").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ability reset-cooldowns <player> - clear tracked cooldowns").color("yellow"));
@@ -67,12 +88,16 @@ public class VampirismCommand extends AbstractCommand {
         ctx.sendMessage(Message.raw("/vampirism skillreset <player> - reset skill tree and refund points").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism morph bat|off <player> - apply/remove bat morph").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism animation <emoteId> - play an emote on yourself").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirism debug locate|locate-entity|locate-nearby|selection-*|selection-track-*|clear - debug probes and selection tests").color("yellow"));
         return CompletableFuture.completedFuture(null);
     }
 
     private static class ReloadCommand extends AbstractCommand {
-        ReloadCommand() {
+        private final VampiricLineageService lineageService;
+
+        ReloadCommand(@Nonnull VampiricLineageService lineageService) {
             super("reload", "Reload config and registry from disk");
+            this.lineageService = lineageService;
             this.setPermissionGroups(new String[]{"admin"});
         }
 
@@ -82,6 +107,8 @@ public class VampirismCommand extends AbstractCommand {
             VampirismConfig.reload();
             VampireStatusRegistry.get().reload();
             NightHuntSpawnRegistry.get().reload();
+            VampiricAgeTierService.reload();
+            lineageService.registry().reload();
             ctx.sendMessage(Message.raw("Vampirism config and registries reloaded.").color("green"));
             return CompletableFuture.completedFuture(null);
         }
@@ -156,12 +183,14 @@ public class VampirismCommand extends AbstractCommand {
             boolean isVampire = VampirismClassifications.isVampiric(uuid);
             boolean permanentVampire = VampirismClassifications.isPermanentVampire(uuid);
             long infectionRemainingMs = VampirePlayerStateStore.get().getInfectionRemainingMs(uuid);
+            String lineageId = VampirePlayerStateStore.get().getLineageId(uuid);
             ctx.sendMessage(Message.raw("=== Status: " + target.getUsername() + " ===").color("dark_red"));
             ctx.sendMessage(Message.raw("Vampire: " + isVampire).color(isVampire ? "red" : "green"));
             ctx.sendMessage(Message.raw("Permanent: " + permanentVampire).color(permanentVampire ? "red" : "gray"));
             ctx.sendMessage(Message.raw("Infected: " + (infectionRemainingMs > 0L)
                     + (infectionRemainingMs > 0L ? " (" + Math.max(1L, (infectionRemainingMs + 999L) / 1000L) + "s remaining)" : ""))
                     .color(infectionRemainingMs > 0L ? "yellow" : "gray"));
+            ctx.sendMessage(Message.raw("Lineage: " + (lineageId == null || lineageId.isBlank() ? "unbound" : lineageId)).color("aqua"));
 
             if (!isVampire) return CompletableFuture.completedFuture(null);
 

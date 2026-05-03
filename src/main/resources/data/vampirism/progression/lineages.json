@@ -1,0 +1,134 @@
+{
+  "clans": [
+    {
+      "id": "wildblood",
+      "displayName": "Wildblood Court",
+      "description": "Nomadic hunters who favor stealth, stalking, and blood-rich ambushes.",
+      "accentColor": "#22c55e"
+    },
+    {
+      "id": "voidcourt",
+      "displayName": "Void Court",
+      "description": "Ancient bloodlines that bend shadow and void into martial power.",
+      "accentColor": "#8b5cf6"
+    }
+  ],
+  "lineages": [
+    {
+      "id": "outlander",
+      "clanId": "wildblood",
+      "displayName": "Outlander",
+      "description": "A feral lineage that learns from the hunt first and the court second.",
+      "iconPath": "Outlander.png",
+      "requirements": {
+        "requiredAgeTierId": "fledgling",
+        "minCompletedNightHunts": 1,
+        "requiredSkills": [
+          "BloodThirst"
+        ],
+        "requiredCompletedRitualIds": [
+          "awakening"
+        ]
+      },
+      "perks": [
+        {
+          "id": "silent-step",
+          "displayName": "Silent Step",
+          "description": "Sharper stalking lowers detection and speeds up feeding.",
+          "modifiers": [
+            {
+              "statId": "STEALTH_DETECTION_RADIUS",
+              "operation": "ADD",
+              "value": -0.2,
+              "priority": 160
+            },
+            {
+              "statId": "FEEDING_SPEED",
+              "operation": "ADD",
+              "value": 0.15,
+              "priority": 160
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "voidspawn",
+      "clanId": "voidcourt",
+      "displayName": "Voidspawn",
+      "description": "A disciplined court lineage that channels cold blood into precise abilities.",
+      "iconPath": "Voidspawn.png",
+      "requirements": {
+        "requiredAgeTierId": "fledgling",
+        "minCompletedNightHunts": 2,
+        "requiredSkills": [
+          "BloodThrow"
+        ],
+        "requiredCompletedRitualIds": [
+          "awakening"
+        ],
+        "maxMasqueradeHeat": 25.0
+      },
+      "perks": [
+        {
+          "id": "voidcraft",
+          "displayName": "Voidcraft",
+          "description": "Empowers blood projectiles and shortens ability recovery.",
+          "modifiers": [
+            {
+              "statId": "PROJECTILE_DAMAGE",
+              "operation": "ADD",
+              "value": 2.0,
+              "priority": 160
+            },
+            {
+              "statId": "ABILITY_COOLDOWN_REDUCTION",
+              "operation": "ADD",
+              "value": 0.1,
+              "priority": 160
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "voidtaken",
+      "clanId": "voidcourt",
+      "displayName": "Voidtaken",
+      "description": "An ascendant lineage for elders who survive the void without losing control.",
+      "iconPath": "Voidtaken.png",
+      "requirements": {
+        "requiredAgeTierId": "elder",
+        "minCompletedNightHunts": 3,
+        "requiredSkills": [
+          "AncientForm"
+        ],
+        "requiredCompletedRitualIds": [
+          "awakening"
+        ],
+        "maxMasqueradeHeat": 15.0
+      },
+      "perks": [
+        {
+          "id": "cold-immortality",
+          "displayName": "Cold Immortality",
+          "description": "The body hardens under pressure and feeds on contact.",
+          "modifiers": [
+            {
+              "statId": "DAMAGE_IN_REDUCTION",
+              "operation": "ADD",
+              "value": 0.06,
+              "priority": 160
+            },
+            {
+              "statId": "ON_HIT_HEAL",
+              "operation": "ADD",
+              "value": 1.0,
+              "priority": 160
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

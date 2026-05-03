@@ -19,6 +19,7 @@ import com.epicseed.epiccore.skill.runtime.actions.RuntimeActionExecutors;
 import com.epicseed.epiccore.skill.runtime.actions.StandardActionPacks;
 import com.epicseed.epiccore.skill.runtime.actions.StandardActionSupports;
 import com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker;
+import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
 import com.epicseed.vampirism.skill.runtime.actions.BloodActionHandler;
 import com.epicseed.vampirism.skill.runtime.actions.ChannelActionHandlers;
 import com.epicseed.vampirism.modifier.ModifierContext;
@@ -41,6 +42,7 @@ public final class SkillActionExecutor {
     private final SkillConditionEvaluator conditionEvaluator;
     private final SkillRequirementEvaluator requirementEvaluator;
     private final TemporaryModifierTracker<StatType> temporaryModifiers;
+    private final MasqueradeHeatService masqueradeHeatService;
     private volatile Consumer<SkillRuntimeContext> onFinalBlow = ctx -> {};
     private volatile BiFunction<String, SkillRuntimeContext, SkillActivationResult> abilityActivator =
             (abilityId, ctx) -> SkillActivationResult.failed(
@@ -51,11 +53,13 @@ public final class SkillActionExecutor {
     public SkillActionExecutor(@Nonnull ProgressionDefinitionProvider definitionProvider,
                                @Nonnull SkillConditionEvaluator conditionEvaluator,
                                @Nonnull SkillRequirementEvaluator requirementEvaluator,
-                               @Nonnull TemporaryModifierTracker<StatType> temporaryModifiers) {
+                               @Nonnull TemporaryModifierTracker<StatType> temporaryModifiers,
+                               @Nonnull MasqueradeHeatService masqueradeHeatService) {
         this.definitionProvider = Objects.requireNonNull(definitionProvider, "definitionProvider");
         this.conditionEvaluator = Objects.requireNonNull(conditionEvaluator, "conditionEvaluator");
         this.requirementEvaluator = Objects.requireNonNull(requirementEvaluator, "requirementEvaluator");
         this.temporaryModifiers = Objects.requireNonNull(temporaryModifiers, "temporaryModifiers");
+        this.masqueradeHeatService = Objects.requireNonNull(masqueradeHeatService, "masqueradeHeatService");
         this.executor = RuntimeActionExecutors.create(
                 standardActionSupport(),
                 conditionEvaluator::evaluateAll,
@@ -145,6 +149,10 @@ public final class SkillActionExecutor {
 
     private ActionHandlerPack<SkillRuntimeContext> vampirismActionExtensions() {
         return registry -> registry
+                .install(MasqueradeHeatActionPacks.masquerade(
+                        masqueradeHeatService,
+                        SkillRuntimeContext::uuid,
+                        System::currentTimeMillis))
                 .register("startFeedChannel", ChannelActionHandlers::startFeedChannel)
                 .register("startHealthToBloodChannel", ChannelActionHandlers::startHealthToBloodChannel)
                 .register("modifyBlood", BloodActionHandler::modifyBlood)

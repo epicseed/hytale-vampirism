@@ -12,6 +12,9 @@ import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
 import com.epicseed.epiccore.skill.runtime.actions.ActionConditionEvaluator;
 import com.epicseed.epiccore.skill.runtime.requirements.ConfigurableRequirementEvaluator;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
+import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatPolicy;
+import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
 
 public final class SkillRequirementEvaluator {
 
@@ -57,6 +60,8 @@ public final class SkillRequirementEvaluator {
                 public void resetSkills(@Nonnull UUID uuid) {
                 }
             };
+    private static final MasqueradeHeatService DEFAULT_MASQUERADE_HEAT_SERVICE =
+            new MasqueradeHeatService(MasqueradeHeatPolicy.defaults());
     private final ConfigurableRequirementEvaluator<SkillRuntimeContext> evaluator;
 
     public SkillRequirementEvaluator(@Nonnull ProgressionDefinitionProvider definitions,
@@ -67,7 +72,23 @@ public final class SkillRequirementEvaluator {
     public SkillRequirementEvaluator(@Nonnull ProgressionDefinitionProvider definitions,
                                      @Nonnull SkillConditionEvaluator conditionEvaluator,
                                      @Nonnull Supplier<? extends SkillProgressionAccess> fallbackAccessSupplier) {
-        this(definitions, conditionEvaluator::evaluateAll, fallbackAccessSupplier);
+        this(definitions,
+                conditionEvaluator::evaluateAll,
+                fallbackAccessSupplier,
+                DEFAULT_MASQUERADE_HEAT_SERVICE,
+                null);
+    }
+
+    public SkillRequirementEvaluator(@Nonnull ProgressionDefinitionProvider definitions,
+                                     @Nonnull SkillConditionEvaluator conditionEvaluator,
+                                     @Nonnull Supplier<? extends SkillProgressionAccess> fallbackAccessSupplier,
+                                     @Nonnull MasqueradeHeatService masqueradeHeatService,
+                                     VampiricRitualService ritualService) {
+        this(definitions,
+                conditionEvaluator::evaluateAll,
+                fallbackAccessSupplier,
+                masqueradeHeatService,
+                ritualService);
     }
 
     public SkillRequirementEvaluator(@Nonnull ProgressionDefinitionProvider definitions,
@@ -78,11 +99,29 @@ public final class SkillRequirementEvaluator {
     public SkillRequirementEvaluator(@Nonnull ProgressionDefinitionProvider definitions,
                                      @Nonnull ActionConditionEvaluator<SkillRuntimeContext> conditionEvaluator,
                                      @Nonnull Supplier<? extends SkillProgressionAccess> fallbackAccessSupplier) {
+        this(definitions,
+                conditionEvaluator,
+                fallbackAccessSupplier,
+                DEFAULT_MASQUERADE_HEAT_SERVICE,
+                null);
+    }
+
+    public SkillRequirementEvaluator(@Nonnull ProgressionDefinitionProvider definitions,
+                                     @Nonnull ActionConditionEvaluator<SkillRuntimeContext> conditionEvaluator,
+                                     @Nonnull Supplier<? extends SkillProgressionAccess> fallbackAccessSupplier,
+                                     @Nonnull MasqueradeHeatService masqueradeHeatService,
+                                     VampiricRitualService ritualService) {
         this.evaluator = new ConfigurableRequirementEvaluator<>(
                 conditionEvaluator,
                 fallbackAccessSupplier,
                 definitions,
-                SkillRuntimeContext::uuid);
+                SkillRuntimeContext::uuid,
+                VampiricAgeTierRequirementPacks.ageTiers(SkillRuntimeContext::uuid),
+                MasqueradeHeatRequirementPacks.masquerade(
+                        masqueradeHeatService,
+                        SkillRuntimeContext::uuid,
+                        System::currentTimeMillis),
+                VampiricRitualRequirementPacks.rituals(SkillRuntimeContext::uuid));
     }
 
     public void init(@Nonnull SkillProgressionAccess accessProvider) {

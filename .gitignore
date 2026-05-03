@@ -65,3 +65,15 @@ buildSrc/
 
 .hytale-downloader-credentials.json
 doc/
+
+.cache/
+/auth.enc
+/bans.json
+/config.json
+/config.json.bak
+/logs/
+/mods/
+/permissions.json
+/universe/
+/whitelist.json
+/test-output.log

@@ -1,0 +1,9 @@
+{
+  "Parent": "Armor_Cloth_Silk_Chest",
+  "TranslationProperties": {
+    "Name": "Lord Robe Mantle",
+    "Description": "A flowing chest piece worn by ancient vampire nobility."
+  },
+  "Quality": "Epic",
+  "ItemLevel": 40
+}

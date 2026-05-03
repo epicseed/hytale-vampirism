@@ -72,16 +72,26 @@ public final class HuntAdminCommands extends AbstractCommand {
             UUID uuid = target.getUuid();
             int acquiredPoints = progressionAccess.getAcquiredSkillPoints(uuid);
             int completedNightHunts = VampirePlayerStateStore.get().getCompletedNightHunts(uuid);
+            var namedProgress = nightHuntService.getProgress(uuid);
             int baseVisualTier = nightHuntService.getBaseVisualTierForAcquiredPoints(acquiredPoints);
             var huntInfo = nightHuntService.getDebugInfo(uuid);
 
             ctx.sendMessage(Message.raw("=== Hunt Info: " + target.getUsername() + " ===").color("dark_red"));
-            ctx.sendMessage(Message.raw("Completed hunts: " + completedNightHunts).color("white"));
+            ctx.sendMessage(Message.raw("Named hunt completions: " + namedProgress.completionCount
+                    + " | legacy completed hunts: " + completedNightHunts).color("white"));
             ctx.sendMessage(Message.raw("Acquired skill points: " + acquiredPoints).color("white"));
             ctx.sendMessage(Message.raw("Base hunt tier: " + baseVisualTier + nextTierSuffix(acquiredPoints)).color("white"));
             ctx.sendMessage(Message.raw("State: " + huntInfo.phase()
                     + " | cooldown=" + formatSeconds(huntInfo.cooldownRemainingSeconds())
                     + " | next roll in=" + formatSeconds(huntInfo.idleDelayRemainingSeconds())).color("white"));
+            if (namedProgress.activeContractId != null) {
+                ctx.sendMessage(Message.raw("Active contract: " + namedProgress.activeContractId
+                        + " | step=" + namedProgress.activeStep
+                        + " | contract completions="
+                        + nightHuntService.getContractCompletionCount(uuid, namedProgress.activeContractId)).color("white"));
+            } else if (namedProgress.lastCompletedAtMs > 0L) {
+                ctx.sendMessage(Message.raw("Last named contract completed at: " + namedProgress.lastCompletedAtMs + "ms").color("white"));
+            }
 
             if (!huntInfo.active()) return;
 

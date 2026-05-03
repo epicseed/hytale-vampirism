@@ -1,0 +1,9 @@
+{
+  "Parent": "Armor_Cloth_Silk_Hands",
+  "TranslationProperties": {
+    "Name": "Lord Robe Gloves",
+    "Description": "Fine gloves that complete the nocturnal regalia."
+  },
+  "Quality": "Epic",
+  "ItemLevel": 40
+}

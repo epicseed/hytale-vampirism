@@ -39,8 +39,16 @@ import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.blood.BloodHudService;
 import com.epicseed.vampirism.domain.blood.FeedCompletionService;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
+import com.epicseed.vampirism.domain.lineage.VampiricLineageRegistry;
+import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
+import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatPolicy;
+import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
 import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.domain.relic.PlayerRelicBindingsStore;
+import com.epicseed.vampirism.domain.relic.VampiricRelicSetService;
+import com.epicseed.vampirism.domain.ritual.RuntimeVampiricRitualRewardPort;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualRegistry;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
 import com.epicseed.vampirism.hud.BloodGaugeHud;
 import com.epicseed.vampirism.domain.skill.SkillTreePresenter;
 import com.epicseed.epiccore.vampirism.interop.VampirismClassifications;
@@ -100,15 +108,18 @@ public final class VampirismRuntime {
     private final PlayerRuntimeCleanupCoordinator playerRuntimeCleanupCoordinator;
     private final NightHuntService nightHuntService;
     private final RelicPresetSelectionAdapter relicPresetSelectionAdapter;
+    private final VampiricLineageService lineageService;
 
     private VampirismRuntime(@Nonnull PlayerSkillRegistry playerSkillRegistry,
                              @Nonnull PlayerRuntimeCleanupCoordinator playerRuntimeCleanupCoordinator,
                              @Nonnull NightHuntService nightHuntService,
-                             @Nonnull RelicPresetSelectionAdapter relicPresetSelectionAdapter) {
+                             @Nonnull RelicPresetSelectionAdapter relicPresetSelectionAdapter,
+                             @Nonnull VampiricLineageService lineageService) {
         this.playerSkillRegistry = playerSkillRegistry;
         this.playerRuntimeCleanupCoordinator = playerRuntimeCleanupCoordinator;
         this.nightHuntService = nightHuntService;
         this.relicPresetSelectionAdapter = relicPresetSelectionAdapter;
+        this.lineageService = lineageService;
     }
 
     @Nonnull
@@ -184,17 +195,27 @@ public final class VampirismRuntime {
                         });
         SkillConditionEvaluator skillConditionEvaluator =
                 new SkillConditionEvaluator(progressionDefinitionProvider, skillRuntimeStateResolver);
+        ModifierScopeMatcher modifierScopeMatcher = new ModifierScopeMatcher(skillConditionEvaluator);
+        TemporaryModifierTracker<StatType> temporaryModifiers = new TemporaryModifierTracker<>();
+        MasqueradeHeatService masqueradeHeatService = new MasqueradeHeatService(MasqueradeHeatPolicy.defaults());
+        VampiricLineageService lineageService = new VampiricLineageService(
+                new VampiricLineageRegistry(),
+                progressionAccess);
+        VampiricRitualService ritualService = new VampiricRitualService(
+                VampiricRitualRegistry.defaultAscensionRegistry(),
+                new RuntimeVampiricRitualRewardPort(progressionAccess, lineageService));
         SkillRequirementEvaluator skillRequirementEvaluator = new SkillRequirementEvaluator(
                 progressionDefinitionProvider,
                 skillConditionEvaluator,
-                () -> progressionAccess);
-        ModifierScopeMatcher modifierScopeMatcher = new ModifierScopeMatcher(skillConditionEvaluator);
-        TemporaryModifierTracker<StatType> temporaryModifiers = new TemporaryModifierTracker<>();
+                () -> progressionAccess,
+                masqueradeHeatService,
+                ritualService);
         SkillActionExecutor skillActionExecutor = new SkillActionExecutor(
                 progressionDefinitionProvider,
                 skillConditionEvaluator,
                 skillRequirementEvaluator,
-                temporaryModifiers);
+                temporaryModifiers,
+                masqueradeHeatService);
 
         RelicInventoryService.init(RelicInventoryConfig.defaultSections("VampirismRelic"));
         RelicPresetProjectionService.init(RelicPresetProjectionConfig.defaultSections(
@@ -210,6 +231,7 @@ public final class VampirismRuntime {
                 (uuid, slot) -> VampirePlayerStateStore.get().isInfected(uuid)
                         ? java.util.Optional.of(VampireInfectionSystem.BLOOD_SUCKER_ABILITY_ID)
                         : java.util.Optional.empty());
+        VampiricRelicSetService.init(progressionAccess);
 
         SkillTreeManager skillTreeManager = new SkillTreeManager(
                 progressionDefinitionProvider,
@@ -223,7 +245,10 @@ public final class VampirismRuntime {
                 progressionAccess,
                 () -> highestPosition,
                 skillTreePresenter,
-                skillTreeManager);
+                skillTreeManager,
+                lineageService,
+                ritualService,
+                masqueradeHeatService);
         StandardRelicUiAdapter relicUiAdapter = new StandardRelicUiAdapter(
                 progressionDefinitionProvider,
                 () -> VampirismConfig.get().getCooldownHudUpdateIntervalMs(),
@@ -281,7 +306,11 @@ public final class VampirismRuntime {
                         VampirismRuntime::cleanupProjectedRelicInventory,
                         (uuid, playerRef) -> MorphFlySystem.captureDisconnectState(uuid),
                         (uuid, playerRef) -> VampireVitalitySystem.captureDisconnectState(uuid),
-                        (uuid, playerRef) -> VampireVitalitySystem.clearPlayer(uuid),
+                        (uuid, playerRef) -> {
+                            VampireVitalitySystem.clearPlayer(uuid);
+                            VampiricRelicSetService.clearPlayer(uuid);
+                            lineageService.clearPlayer(uuid);
+                        },
                         (uuid, playerRef) -> nightHuntService.captureDisconnectState(uuid),
                         (uuid, playerRef) -> SkillTreeManager.get().evictPlayer(uuid),
                         (uuid, playerRef) -> ModifierContext.REGISTRY.evict(uuid),
@@ -304,7 +333,8 @@ public final class VampirismRuntime {
                                 passiveTriggerRuntimeService,
                                 persistentPassiveEffectService))),
                 nightHuntService,
-                relicPresetSelectionAdapter);
+                relicPresetSelectionAdapter,
+                lineageService);
         runtime.registerPlayerLifecycle(plugin);
         registerSystems(
                 plugin,
@@ -316,7 +346,15 @@ public final class VampirismRuntime {
                 modifierScopeMatcher,
                 nightHuntService,
                 skillRuntimeStateResolver);
-        registerCommands(plugin, progressionAccess, nightHuntService, abilityService, progressionPageFactory);
+        registerCommands(
+                plugin,
+                progressionAccess,
+                nightHuntService,
+                abilityService,
+                progressionPageFactory,
+                lineageService,
+                masqueradeHeatService,
+                ritualService);
         return runtime;
     }
 
@@ -341,6 +379,7 @@ public final class VampirismRuntime {
         nightHuntService.onPlayerConnect(uuid);
         EffectModifierSystem.clearPlayer(uuid);
         SkillTreeManager.get().reloadModifiers(uuid);
+        lineageService.syncModifiers(uuid);
         // Passive connect-time effects are applied lazily by PassiveEffectSystem once the
         // player's entity context is fully available (typically within the first tick).
     }
@@ -353,9 +392,18 @@ public final class VampirismRuntime {
                                          @Nonnull VampirismSkillProgressionAccess progressionAccess,
                                          @Nonnull NightHuntService nightHuntService,
                                          @Nonnull AbilityService abilityService,
-                                         @Nonnull ProgressionPageFactory progressionPageFactory) {
+                                         @Nonnull ProgressionPageFactory progressionPageFactory,
+                                         @Nonnull VampiricLineageService lineageService,
+                                         @Nonnull MasqueradeHeatService masqueradeHeatService,
+                                         @Nonnull VampiricRitualService ritualService) {
         plugin.getCommandRegistry().registerCommand(
-                new VampirismCommand(progressionAccess, nightHuntService, abilityService));
+                new VampirismCommand(
+                        progressionAccess,
+                        nightHuntService,
+                        abilityService,
+                        lineageService,
+                        masqueradeHeatService,
+                        ritualService));
         plugin.getCommandRegistry().registerCommand(new VampirismSkillTreeCommand(progressionPageFactory));
         plugin.getCommandRegistry().registerCommand(new VampirismPotionCommand());
         plugin.getCommandRegistry().registerCommand(new VampirismRelicCommand(abilityService));

@@ -1,0 +1,9 @@
+{
+  "Parent": "Armor_Cloth_Silk_Head",
+  "TranslationProperties": {
+    "Name": "Lord Robe Hood",
+    "Description": "A silk hood refitted for the lords of the night."
+  },
+  "Quality": "Epic",
+  "ItemLevel": 40
+}

@@ -32,5 +32,9 @@ class VampirismUiPathsTest {
                 VampirismUiPaths.theme().rarityGridCell("legendary"));
         assertEquals("EpicCore/Components/SkillTree/Trails/TrailCornerNEGlow.ui",
                 VampirismUiPaths.theme().skillTreeTrail("TrailCornerNEGlow"));
+        assertEquals("EpicCore/Components/Progression/ProgressionTab.ui",
+                VampirismUiPaths.theme().progressionTabLayout());
+        assertEquals("EpicCore/Components/Progression/ProgressionSummaryCard.ui",
+                VampirismUiPaths.theme().progressionSummaryCardLayout());
     }
 }
