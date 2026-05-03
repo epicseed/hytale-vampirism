@@ -56,9 +56,15 @@ public class VampireCombatSystem extends DamageEventSystem {
             "Furniture_Village_Coffin"
     };
     private final PassiveService passiveService;
+    private final NightHuntService nightHuntService;
+    private final SkillRuntimeStateResolver skillRuntimeStateResolver;
 
-    public VampireCombatSystem(@Nonnull PassiveService passiveService) {
+    public VampireCombatSystem(@Nonnull PassiveService passiveService,
+                               @Nonnull NightHuntService nightHuntService,
+                               @Nonnull SkillRuntimeStateResolver skillRuntimeStateResolver) {
         this.passiveService = Objects.requireNonNull(passiveService, "passiveService");
+        this.nightHuntService = Objects.requireNonNull(nightHuntService, "nightHuntService");
+        this.skillRuntimeStateResolver = Objects.requireNonNull(skillRuntimeStateResolver, "skillRuntimeStateResolver");
     }
 
     @Override
@@ -170,7 +176,7 @@ public class VampireCombatSystem extends DamageEventSystem {
             // Dispatch onDamageDealt for vampire attackers so reactive passives can fire
             if (attackerUuid != null) {
                 if (effectiveDamageAmount > 0f) {
-                    NightHuntService.recordMarkedPreyHit(attackerUuid, victimRef, store);
+                    nightHuntService.recordMarkedPreyHit(attackerUuid, victimRef, store);
                 }
                 passiveService.onDamageDealt(
                         new SkillRuntimeContext(attackerUuid, attackerRef, store),
@@ -218,7 +224,7 @@ public class VampireCombatSystem extends DamageEventSystem {
                     if (attackerUuid != null) {
                         passiveService.onKill(
                                 new SkillRuntimeContext(attackerUuid, attackerRef, victimRef, store));
-                        NightHuntService.onPlayerKilledMarkedPrey(attackerUuid, attackerRef, victimRef, store);
+                        nightHuntService.onPlayerKilledMarkedPrey(attackerUuid, attackerRef, victimRef, store);
                     }
                 }
             }
@@ -264,8 +270,8 @@ public class VampireCombatSystem extends DamageEventSystem {
     }
 
     private boolean isAmbushEligible(@Nonnull ModifierContext ctx) {
-        return SkillRuntimeStateResolver.isStateActive("IS_INVISIBLE", ctx)
-                || SkillRuntimeStateResolver.isStateActive("IS_SNEAKING", ctx);
+        return skillRuntimeStateResolver.isStateActive("IS_INVISIBLE", ctx)
+                || skillRuntimeStateResolver.isStateActive("IS_SNEAKING", ctx);
     }
 
     private boolean consumeAmbush(@Nullable UUID uuid) {

@@ -5,7 +5,7 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
-import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
+import com.epicseed.vampirism.skill.runtime.VampirismSkillProgressionAccess;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -22,10 +22,11 @@ public final class NightHuntEventService {
                                        @Nonnull HuntState state,
                                        @Nonnull Store<EntityStore> store,
                                        @Nonnull CommandBuffer<EntityStore> commandBuffer,
-                                       int currentHour) {
+                                       int currentHour,
+                                       @Nonnull VampirismSkillProgressionAccess progressionAccess) {
         NightHuntSpawnRegistry.RouteEventOption routeEvent = NightHuntSpawnRegistry.get().pickRouteEvent(
                 new NightHuntSpawnRegistry.RouteEventContext(
-                        PlayerRegistrySkillProgressionAccess.instance().getAcquiredSkillPoints(ownerUuid),
+                        progressionAccess.getAcquiredSkillPoints(ownerUuid),
                         state.completedWaypoints,
                         state.forced,
                         currentHour,

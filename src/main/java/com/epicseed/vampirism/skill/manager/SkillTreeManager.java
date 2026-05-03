@@ -1,15 +1,16 @@
 package com.epicseed.vampirism.skill.manager;
+
 import com.epicseed.vampirism.modifier.ModifierContext;
 
-import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
-import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
-import com.epicseed.epiccore.skill.progression.SkillTreeOperations;
-import com.epicseed.epiccore.skill.progression.SkillUnlockResult;
 import com.epicseed.epiccore.modifier.ModifierTag;
 import com.epicseed.epiccore.modifier.ValueModifier;
 import com.epicseed.epiccore.skill.model.InlineModifier;
 import com.epicseed.epiccore.skill.model.Passive;
 import com.epicseed.epiccore.skill.model.Skill;
+import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
+import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
+import com.epicseed.epiccore.skill.progression.SkillTreeOperations;
+import com.epicseed.epiccore.skill.progression.SkillUnlockResult;
 import com.epicseed.vampirism.skill.runtime.ModifierScopeMatcher;
 
 import javax.annotation.Nonnull;
@@ -22,11 +23,14 @@ public class SkillTreeManager {
 
     private final ProgressionDefinitionProvider definitionProvider;
     private final SkillProgressionAccess progressionAccess;
+    private final ModifierScopeMatcher modifierScopeMatcher;
 
     public SkillTreeManager(@Nonnull ProgressionDefinitionProvider definitionProvider,
-                            @Nonnull SkillProgressionAccess progressionAccess) {
+                            @Nonnull SkillProgressionAccess progressionAccess,
+                            @Nonnull ModifierScopeMatcher modifierScopeMatcher) {
         this.definitionProvider = definitionProvider;
         this.progressionAccess = progressionAccess;
+        this.modifierScopeMatcher = modifierScopeMatcher;
         instance = this;
     }
 
@@ -39,13 +43,6 @@ public class SkillTreeManager {
         return SkillTreeOperations.evaluateUnlock(uuid, skill, progressionAccess).canUnlock();
     }
 
-    /**
-     * Atomically checks requirements, deducts the cost, and unlocks the skill.
-     * On success, registers per-player modifiers for each of the skill's effects
-     * and for any corresponding passive definition.
-     *
-     * @return true if the skill was unlocked, false if preconditions were not met.
-     */
     public boolean unlock(@Nonnull UUID uuid, Skill skill) {
         return unlockDetailed(uuid, skill).unlocked();
     }
@@ -73,21 +70,15 @@ public class SkillTreeManager {
         return success;
     }
 
-    /** Refunds all spent points, clears all unlocked skills, and removes their modifiers. */
     public void resetPlayer(@Nonnull UUID uuid) {
         progressionAccess.resetSkills(uuid);
         ModifierContext.REGISTRY.unregisterByTagPrefix(uuid, "skill:");
     }
 
-    /** Remove all modifier registrations for a player (e.g. on disconnect). */
     public void evictPlayer(@Nonnull UUID uuid) {
         ModifierContext.REGISTRY.unregisterByTagPrefix(uuid, "skill:");
     }
 
-    /**
-     * Re-registers all skill modifiers for a player who reconnects.
-     * Call this on join once the player's skill data has been loaded.
-     */
     public void reloadModifiers(@Nonnull UUID uuid) {
         ModifierContext.REGISTRY.unregisterByTagPrefix(uuid, "skill:");
         for (String skillId : progressionAccess.getUnlockedSkillIds(uuid)) {
@@ -95,8 +86,6 @@ public class SkillTreeManager {
             if (skill != null) registerSkillModifiers(uuid, skill);
         }
     }
-
-    // -------------------------------------------------------------------------
 
     private void registerSkillModifiers(@Nonnull UUID uuid, @Nonnull Skill skill) {
         registerInlineModifiers(uuid, skill.id, skill.modifiers);
@@ -123,10 +112,9 @@ public class SkillTreeManager {
     private ValueModifier<ModifierContext> buildModifier(@Nonnull InlineModifier mod) {
         float value = mod.value;
         return switch (mod.operation) {
-            case ADD      -> (current, ctx) -> ModifierScopeMatcher.applies(mod, ctx) ? current + value : current;
-            case MULTIPLY -> (current, ctx) -> ModifierScopeMatcher.applies(mod, ctx) ? current * value : current;
-            case OVERRIDE -> (current, ctx) -> ModifierScopeMatcher.applies(mod, ctx) ? value : current;
+            case ADD -> (current, ctx) -> modifierScopeMatcher.applies(mod, ctx) ? current + value : current;
+            case MULTIPLY -> (current, ctx) -> modifierScopeMatcher.applies(mod, ctx) ? current * value : current;
+            case OVERRIDE -> (current, ctx) -> modifierScopeMatcher.applies(mod, ctx) ? value : current;
         };
     }
-
 }

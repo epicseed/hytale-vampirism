@@ -1,14 +1,14 @@
 package com.epicseed.vampirism.systems;
+
 import com.epicseed.vampirism.modifier.ModifierContext;
 
-import com.epicseed.epiccore.skill.model.EffectDef;
-import com.epicseed.epiccore.skill.model.InlineModifier;
 import com.epicseed.epiccore.modifier.ModifierTag;
 import com.epicseed.epiccore.modifier.ValueModifier;
+import com.epicseed.epiccore.skill.model.EffectDef;
+import com.epicseed.epiccore.skill.model.InlineModifier;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.skill.runtime.ModifierScopeMatcher;
-import com.epicseed.vampirism.skill.runtime.SkillConditionEvaluator;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -33,27 +33,18 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Polls each vampire player's active Hytale effects and registers/unregisters
  * {@link ValueModifier}s from matching {@link EffectDef}s.
- *
- * <p>Runs every {@link VampirismConfig#getEffectTicksBetweenUpdates()} ticks. On each cycle,
- * it compares the set of currently active effects against the last known state, registering
- * modifiers when an effect becomes active and unregistering them when it expires or is removed.
- *
- * <p>Tag format: {@code "effect:<effectDefId>:<modifierKey>"}.
  */
 public class EffectModifierSystem extends EntityTickingSystem<EntityStore> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-
-    /** effectId → cached Hytale effect index (set to -1 if the asset is not found). */
+    private final ModifierScopeMatcher modifierScopeMatcher;
     private final Map<String, Integer> effectIndexCache = new ConcurrentHashMap<>();
-
-    /**
-     * Per-player set of effectDef IDs whose modifiers are currently registered.
-     * Values use {@link ConcurrentHashMap#newKeySet()} for safe cross-thread eviction.
-     */
     private static final Map<UUID, Set<String>> activeEffectModifiers = new ConcurrentHashMap<>();
-    /** Per-player tick counters used to throttle effect polling cadence. */
     private static final Map<UUID, Integer> ticksSinceLastUpdate = new ConcurrentHashMap<>();
+
+    public EffectModifierSystem(@Nonnull ModifierScopeMatcher modifierScopeMatcher) {
+        this.modifierScopeMatcher = modifierScopeMatcher;
+    }
 
     @Override
     public SystemGroup<EntityStore> getGroup() {
@@ -122,17 +113,11 @@ public class EffectModifierSystem extends EntityTickingSystem<EntityStore> {
         }
     }
 
-    /**
-     * Clears the per-player tracking state. Call on disconnect or when the modifier
-     * registry has already been evicted so no stale "active" entries remain.
-     */
     public static void clearPlayer(@Nonnull UUID uuid) {
         ModifierContext.REGISTRY.unregisterByTagPrefix(uuid, "effect:");
         ticksSinceLastUpdate.remove(uuid);
         activeEffectModifiers.remove(uuid);
     }
-
-    // -------------------------------------------------------------------------
 
     private int resolveEffectIndex(String effectId) {
         return effectIndexCache.computeIfAbsent(effectId, id -> {
@@ -152,9 +137,9 @@ public class EffectModifierSystem extends EntityTickingSystem<EntityStore> {
             String tagKey = "effect:" + effectDef.id + ":" + modKey;
             float value = mod.value;
             ValueModifier<ModifierContext> modifier = switch (mod.operation) {
-                case ADD      -> (current, ctx) -> ModifierScopeMatcher.applies(mod, ctx) ? current + value : current;
-                case MULTIPLY -> (current, ctx) -> ModifierScopeMatcher.applies(mod, ctx) ? current * value : current;
-                case OVERRIDE -> (current, ctx) -> ModifierScopeMatcher.applies(mod, ctx) ? value : current;
+                case ADD -> (current, ctx) -> modifierScopeMatcher.applies(mod, ctx) ? current + value : current;
+                case MULTIPLY -> (current, ctx) -> modifierScopeMatcher.applies(mod, ctx) ? current * value : current;
+                case OVERRIDE -> (current, ctx) -> modifierScopeMatcher.applies(mod, ctx) ? value : current;
             };
             reg.register(uuid, mod.stat, ModifierTag.of(tagKey), mod.priority, modifier);
         }

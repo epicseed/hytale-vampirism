@@ -13,10 +13,13 @@ import com.epicseed.vampirism.commands.admin.MorphAdminCommands;
 import com.epicseed.vampirism.commands.admin.SkillAdminCommands;
 import com.epicseed.vampirism.commands.admin.VampireAdminCommands;
 import com.epicseed.vampirism.config.VampirismConfig;
+import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
 import com.epicseed.vampirism.registry.VampireStatusRegistry;
+import com.epicseed.vampirism.skill.runtime.AbilityService;
+import com.epicseed.vampirism.skill.runtime.VampirismSkillProgressionAccess;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
@@ -27,7 +30,9 @@ import com.hypixel.hytale.server.core.command.system.arguments.types.ArgumentTyp
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 
 public class VampirismCommand extends AbstractCommand {
-    public VampirismCommand() {
+    public VampirismCommand(@Nonnull VampirismSkillProgressionAccess progressionAccess,
+                            @Nonnull NightHuntService nightHuntService,
+                            @Nonnull AbilityService abilityService) {
         super("vampirism", "Vampirism plugin management");
         this.setPermissionGroups(new String[]{"admin"});
         this.addSubCommand(new ReloadCommand());
@@ -35,10 +40,10 @@ public class VampirismCommand extends AbstractCommand {
         this.addSubCommand(new StatusCommand());
         this.addSubCommand(new SatietyInfoCommand());
         this.addSubCommand(new BloodAdminCommands());
-        this.addSubCommand(new HuntAdminCommands());
-        this.addSubCommand(new AbilityAdminCommands());
+        this.addSubCommand(new HuntAdminCommands(progressionAccess, nightHuntService));
+        this.addSubCommand(new AbilityAdminCommands(progressionAccess, abilityService));
         this.addSubCommand(new VampireAdminCommands());
-        this.addSubCommand(SkillAdminCommands.skillPoints());
+        this.addSubCommand(SkillAdminCommands.skillPoints(progressionAccess));
         this.addSubCommand(SkillAdminCommands.skillReset());
         this.addSubCommand(new MorphAdminCommands());
         this.addSubCommand(new AnimationAdminCommand());

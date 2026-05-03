@@ -7,7 +7,6 @@ import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
 import com.epicseed.epiccore.hytale.DamageAdapter;
-import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.epicseed.vampirism.systems.VampireInfectionSystem;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
@@ -19,12 +18,17 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class FeedCompletionService {
     private static volatile Consumer<SkillRuntimeContext> onFeedHandler = ctx -> {};
+    private static volatile MarkedPreyKillHandler markedPreyKillHandler = (uuid, playerRef, preyRef, store) -> {};
 
     private FeedCompletionService() {
     }
 
-    public static void init(@Nonnull Consumer<SkillRuntimeContext> onFeedHandler) {
+    public static void init(@Nonnull Consumer<SkillRuntimeContext> onFeedHandler,
+                            @Nonnull MarkedPreyKillHandler markedPreyKillHandler) {
         FeedCompletionService.onFeedHandler = onFeedHandler != null ? onFeedHandler : ctx -> {};
+        FeedCompletionService.markedPreyKillHandler = markedPreyKillHandler != null
+                ? markedPreyKillHandler
+                : (uuid, playerRef, preyRef, store) -> {};
     }
 
     public static void complete(@Nonnull UUID uuid,
@@ -67,10 +71,18 @@ public final class FeedCompletionService {
         FeedChannelPresentationService.cleanup(session, store, playerRef);
         onFeedHandler.accept(ctx);
         if (targetKilled) {
-            NightHuntService.onPlayerKilledMarkedPrey(uuid, playerRef, session.targetRef, store);
+            markedPreyKillHandler.handle(uuid, playerRef, session.targetRef, store);
             PlayerRef playerRefComponent = (PlayerRef) store.getComponent(playerRef, PlayerRef.getComponentType());
             String playerName = playerRefComponent != null ? playerRefComponent.getUsername() : uuid.toString();
             VampireInfectionSystem.completeAscension(uuid, playerName, playerRef, store);
         }
+    }
+
+    @FunctionalInterface
+    public interface MarkedPreyKillHandler {
+        void handle(@Nonnull UUID uuid,
+                    @Nonnull Ref<EntityStore> playerRef,
+                    @Nonnull Ref<EntityStore> preyRef,
+                    @Nonnull Store<EntityStore> store);
     }
 }

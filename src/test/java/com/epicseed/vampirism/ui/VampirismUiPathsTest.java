@@ -8,29 +8,29 @@ class VampirismUiPathsTest {
 
     @Test
     void resolvesBloodBarLayoutFromEpicCore() {
-        assertEquals("EpicCore/Huds/ResourceGaugeHud.ui", VampirismUiPaths.BLOOD_BAR_LAYOUT);
+        assertEquals("EpicCore/Huds/ResourceGaugeHud.ui", VampirismUiPaths.theme().resourceGaugeLayout());
     }
 
     @Test
     void resolvesSkillIconsFromSharedSkillBucket() {
         assertEquals("Vampirism/Assets/Shared/Skills/Icons/Icon_BloodThrow.png",
-                VampirismUiPaths.skillIcon("Icon_BloodThrow.png"));
-        assertEquals(VampirismUiPaths.WIP_ICON, VampirismUiPaths.skillIcon(null));
+                VampirismUiPaths.theme().skillIcon("Icon_BloodThrow.png"));
+        assertEquals(VampirismUiPaths.theme().wipIcon(), VampirismUiPaths.theme().skillIcon(null));
     }
 
     @Test
     void resolvesRaritySlotsFromSharedItemQualities() {
         assertEquals("EpicCore/Assets/Shared/ItemQualities/Slots/SlotCommon.png",
-                VampirismUiPaths.raritySlot(null));
+                VampirismUiPaths.theme().raritySlot(null));
         assertEquals("EpicCore/Assets/Shared/ItemQualities/Slots/SlotEpic_Overlay.png",
-                VampirismUiPaths.raritySlotOverlay("epic"));
+                VampirismUiPaths.theme().raritySlotOverlay("epic"));
     }
 
     @Test
     void resolvesGridCellsAndTrailLayouts() {
         assertEquals("EpicCore/Components/SkillGrid/GridCellLegendary.ui",
-                VampirismUiPaths.rarityGridCell("legendary"));
+                VampirismUiPaths.theme().rarityGridCell("legendary"));
         assertEquals("EpicCore/Components/SkillTree/Trails/TrailCornerNEGlow.ui",
-                VampirismUiPaths.skillTreeTrail("TrailCornerNEGlow"));
+                VampirismUiPaths.theme().skillTreeTrail("TrailCornerNEGlow"));
     }
 }

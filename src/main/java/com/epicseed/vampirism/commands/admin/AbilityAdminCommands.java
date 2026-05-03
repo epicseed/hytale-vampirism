@@ -7,8 +7,9 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 
-import com.epicseed.epiccore.skill.runtime.SkillActivationResult;
+import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
 import com.epicseed.epiccore.skill.runtime.AbilityCooldownTracker;
+import com.epicseed.epiccore.skill.runtime.SkillActivationResult;
 import com.epicseed.vampirism.skill.runtime.AbilityService;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -24,8 +25,14 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class AbilityAdminCommands extends AbstractCommand {
-    public AbilityAdminCommands() {
+    private final SkillProgressionAccess progressionAccess;
+    private final AbilityService abilityService;
+
+    public AbilityAdminCommands(@Nonnull SkillProgressionAccess progressionAccess,
+                                @Nonnull AbilityService abilityService) {
         super("ability", "Trigger vampire abilities for debug");
+        this.progressionAccess = progressionAccess;
+        this.abilityService = abilityService;
         this.setPermissionGroups(new String[]{"admin"});
         this.addSubCommand(new TriggerCommand());
         this.addSubCommand(new TriggerAllCommand());
@@ -42,7 +49,7 @@ public final class AbilityAdminCommands extends AbstractCommand {
         return CompletableFuture.completedFuture(null);
     }
 
-    private static final class TriggerCommand extends AbstractPlayerCommand {
+    private final class TriggerCommand extends AbstractPlayerCommand {
         private final RequiredArg<PlayerRef> playerArg;
         private final RequiredArg<String> abilityArg;
 
@@ -65,12 +72,12 @@ public final class AbilityAdminCommands extends AbstractCommand {
 
             String abilityId = abilityArg.get(ctx);
             Ref<EntityStore> targetRef = com.hypixel.hytale.server.core.util.TargetUtil.getTargetEntity(targetPlayerRef, store);
-            SkillActivationResult result = AbilityService.activate(abilityId, target.getUuid(), targetPlayerRef, targetRef, store);
+            SkillActivationResult result = abilityService.activate(abilityId, target.getUuid(), targetPlayerRef, targetRef, store);
             AdminCommandSupport.sendAbilityResult(ctx, target.getUsername(), abilityId, result);
         }
     }
 
-    private static final class TriggerAllCommand extends AbstractPlayerCommand {
+    private final class TriggerAllCommand extends AbstractPlayerCommand {
         private final RequiredArg<PlayerRef> playerArg;
 
         private TriggerAllCommand() {
@@ -89,7 +96,9 @@ public final class AbilityAdminCommands extends AbstractCommand {
             Ref<EntityStore> targetPlayerRef = AdminCommandSupport.requireTrackedVampire(ctx, target);
             if (targetPlayerRef == null) return;
 
-            Set<String> abilityIds = AdminCommandSupport.collectUnlockedAbilityIds(target.getUuid());
+            Set<String> abilityIds = AdminCommandSupport.collectUnlockedAbilityIds(
+                    target.getUuid(),
+                    progressionAccess);
             if (abilityIds.isEmpty()) {
                 ctx.sendMessage(Message.raw(target.getUsername() + " has no unlocked abilities.").color("yellow"));
                 return;
@@ -100,7 +109,7 @@ public final class AbilityAdminCommands extends AbstractCommand {
             ArrayList<String> failures = new ArrayList<>();
             for (String abilityId : abilityIds) {
                 Ref<EntityStore> targetRef = com.hypixel.hytale.server.core.util.TargetUtil.getTargetEntity(targetPlayerRef, store);
-                SkillActivationResult result = AbilityService.activate(abilityId, target.getUuid(), targetPlayerRef, targetRef, store);
+                SkillActivationResult result = abilityService.activate(abilityId, target.getUuid(), targetPlayerRef, targetRef, store);
                 if (result.isSuccess()) {
                     success++;
                 } else {

@@ -7,7 +7,7 @@ import javax.annotation.Nonnull;
 import com.epicseed.epiccore.hytale.WorldStoreAdapter;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
-import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
+import com.epicseed.vampirism.skill.runtime.VampirismSkillProgressionAccess;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
@@ -31,10 +31,11 @@ public final class NightHuntFailureService {
                                         @Nonnull CommandBuffer<EntityStore> commandBuffer,
                                         int currentHour,
                                         float idleDelaySeconds,
-                                        @Nonnull Runnable clearApproachMarker) {
+                                        @Nonnull Runnable clearApproachMarker,
+                                        @Nonnull VampirismSkillProgressionAccess progressionAccess) {
         NightHuntSpawnRegistry.FailStateOption failState = NightHuntSpawnRegistry.get().pickFailState(
                 new NightHuntSpawnRegistry.FailStateContext(
-                        PlayerRegistrySkillProgressionAccess.instance().getAcquiredSkillPoints(ownerUuid),
+                        progressionAccess.getAcquiredSkillPoints(ownerUuid),
                         state.completedWaypoints,
                         state.forced,
                         currentHour,
@@ -79,7 +80,8 @@ public final class NightHuntFailureService {
                         state,
                         failState,
                         bufferStore,
-                        resolveWorld(bufferStore))) {
+                        resolveWorld(bufferStore),
+                        progressionAccess)) {
                     resetToIdle(state, failState.cooldownSeconds() > 0f
                             ? failState.cooldownSeconds()
                             : VampirismConfig.get().getNightHuntFailedCooldownSeconds(), idleDelaySeconds, clearApproachMarker);

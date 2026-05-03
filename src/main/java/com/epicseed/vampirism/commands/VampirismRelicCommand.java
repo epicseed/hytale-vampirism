@@ -21,27 +21,19 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
-/**
- * Internal command triggered by VampirismRelic item interactions.
- *
- * <p>Each of the five slot subcommands ({@code primary}, {@code secondary}, {@code ability1},
- * {@code ability2}, {@code ability3}) resolves its ability id from the data-driven
- * runtime slot bindings loaded from {@code relicBindings.json}.
- *
- * <p>Adding a new relic ability therefore requires only a JSON edit — no Java changes.
- * The five subcommand classes are retained so Hytale's static subcommand registration keeps
- * working, but each is a thin wrapper over {@link #activateBinding(CommandContext, UUID, Ref, Ref, Store, String)}.
- */
 public class VampirismRelicCommand extends AbstractCommand {
 
-    public VampirismRelicCommand() {
+    private final AbilityService abilityService;
+
+    public VampirismRelicCommand(@Nonnull AbilityService abilityService) {
         super("vampirismrelic", "Vampirism relic skill activation");
+        this.abilityService = abilityService;
         this.setPermissionGroups(GameMode.Adventure.toString(), GameMode.Creative.toString());
-        this.addSubCommand(new SlotSubCommand("primary",   "Primary relic binding"));
+        this.addSubCommand(new SlotSubCommand("primary", "Primary relic binding"));
         this.addSubCommand(new SlotSubCommand("secondary", "Secondary relic binding"));
-        this.addSubCommand(new SlotSubCommand("ability1",  "Ability1 relic binding"));
-        this.addSubCommand(new SlotSubCommand("ability2",  "Ability2 relic binding"));
-        this.addSubCommand(new SlotSubCommand("ability3",  "Ability3 relic binding"));
+        this.addSubCommand(new SlotSubCommand("ability1", "Ability1 relic binding"));
+        this.addSubCommand(new SlotSubCommand("ability2", "Ability2 relic binding"));
+        this.addSubCommand(new SlotSubCommand("ability3", "Ability3 relic binding"));
         this.addSubCommand(new GetRelicSubCommand());
     }
 
@@ -51,18 +43,12 @@ public class VampirismRelicCommand extends AbstractCommand {
         return CompletableFuture.completedFuture(null);
     }
 
-    /**
-     * Single generic binding handler. The subcommand name is the binding key looked up in the
-     * runtime binding map. Every slot resolves the caster's current aim-target so targeted
-     * abilities such as BloodSucker can be bound anywhere, while self/area abilities still ignore
-     * the optional target ref.
-     */
-    private static void activateBinding(@Nonnull CommandContext ctx,
-                                        @Nonnull UUID uuid,
-                                        @Nonnull Ref<EntityStore> ref,
-                                        Ref<EntityStore> targetRef,
-                                        @Nonnull Store<EntityStore> store,
-                                        @Nonnull String slotKey) {
+    private void activateBinding(@Nonnull CommandContext ctx,
+                                 @Nonnull UUID uuid,
+                                 @Nonnull Ref<EntityStore> ref,
+                                 Ref<EntityStore> targetRef,
+                                 @Nonnull Store<EntityStore> store,
+                                 @Nonnull String slotKey) {
         if (!isVampire(ctx, uuid)) return;
 
         String abilityId = RelicBindingService.resolveActivationAbility(uuid, slotKey).orElse(null);
@@ -71,11 +57,11 @@ public class VampirismRelicCommand extends AbstractCommand {
             return;
         }
 
-        SkillActivationResult result = AbilityService.activate(abilityId, uuid, ref, targetRef, store);
+        SkillActivationResult result = abilityService.activate(abilityId, uuid, ref, targetRef, store);
         handleResult(ctx, result, abilityId);
     }
 
-    private static class SlotSubCommand extends AbstractPlayerCommand {
+    private final class SlotSubCommand extends AbstractPlayerCommand {
         private final String slotKey;
 
         SlotSubCommand(String slotKey, String description) {
@@ -95,7 +81,7 @@ public class VampirismRelicCommand extends AbstractCommand {
         }
     }
 
-    private static class GetRelicSubCommand extends AbstractPlayerCommand {
+    private static final class GetRelicSubCommand extends AbstractPlayerCommand {
 
         GetRelicSubCommand() {
             super("get", "Restore the Vampirism Relic if it is missing");
@@ -132,8 +118,6 @@ public class VampirismRelicCommand extends AbstractCommand {
         }
     }
 
-    // ─── Shared helpers ───────────────────────────────────────────────────────
-
     private static boolean isVampire(CommandContext ctx, UUID uuid) {
         if (!VampirismClassifications.isVampiric(uuid)) {
             ctx.sendMessage(Message.raw("Only vampires can use the staff.").color("red"));
@@ -142,22 +126,17 @@ public class VampirismRelicCommand extends AbstractCommand {
         return true;
     }
 
-    /**
-     * Translates a {@link SkillActivationResult} into a player-facing message.
-     * Success is silent; failures send a short English-language explanation.
-     */
     private static void handleResult(CommandContext ctx, SkillActivationResult result, String abilityName) {
         if (result.isSuccess()) return;
         String msg = switch (result.status()) {
-            case ON_COOLDOWN         -> result.reason() != null ? result.reason() : abilityName + " is on cooldown.";
+            case ON_COOLDOWN -> result.reason() != null ? result.reason() : abilityName + " is on cooldown.";
             case REQUIREMENT_NOT_MET -> result.reason() != null
                     ? result.reason()
                     : "Requirement not met for: " + abilityName;
             case NO_TARGET, NO_TARGETS -> "No valid target found.";
-            case UNKNOWN_ABILITY       -> "Ability not found: " + abilityName;
-            default                    -> result.reason() != null ? result.reason() : "Activation denied.";
+            case UNKNOWN_ABILITY -> "Ability not found: " + abilityName;
+            default -> result.reason() != null ? result.reason() : "Activation denied.";
         };
         ctx.sendMessage(Message.raw(msg).color("yellow"));
     }
-
 }

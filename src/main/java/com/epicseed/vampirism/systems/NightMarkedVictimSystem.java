@@ -20,7 +20,7 @@ import com.epicseed.vampirism.domain.hunt.PendingRouteKind;
 import com.epicseed.epiccore.hytale.EntityIdentityAdapter;
 import com.epicseed.epiccore.hytale.WorldStoreAdapter;
 import com.epicseed.vampirism.interop.VampirismClassifications;
-import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
+import com.epicseed.vampirism.skill.runtime.VampirismSkillProgressionAccess;
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -94,6 +94,11 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
                     world);
         }
     };
+    private final VampirismSkillProgressionAccess progressionAccess;
+
+    public NightMarkedVictimSystem(@Nonnull VampirismSkillProgressionAccess progressionAccess) {
+        this.progressionAccess = progressionAccess;
+    }
 
     @Override
     public SystemGroup<EntityStore> getGroup() {
@@ -146,7 +151,8 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
 
     public static boolean forceStart(@Nullable UUID uuid,
                                      @Nullable Ref<EntityStore> playerRef,
-                                     @Nullable Store<EntityStore> store) {
+                                     @Nullable Store<EntityStore> store,
+                                     @Nonnull VampirismSkillProgressionAccess progressionAccess) {
         if (uuid == null || playerRef == null || store == null || !playerRef.isValid()) {
             return false;
         }
@@ -166,7 +172,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         }
 
         if (!startGuidingRoute(state, uuid, playerRef, playerTransform, store, world, true,
-                PlayerRegistrySkillProgressionAccess.instance().getAcquiredSkillPoints(uuid))) {
+                progressionAccess.getAcquiredSkillPoints(uuid))) {
             return false;
         }
         state.cooldownRemainingSeconds = 0f;
@@ -203,7 +209,8 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
     public static void onPlayerKilledMarkedPrey(@Nullable UUID attackerUuid,
                                                 @Nonnull Ref<EntityStore> attackerRef,
                                                 @Nonnull Ref<EntityStore> victimRef,
-                                                @Nonnull Store<EntityStore> store) {
+                                                @Nonnull Store<EntityStore> store,
+                                                @Nonnull VampirismSkillProgressionAccess progressionAccess) {
         UUID victimUuid = extractEntityUuid(victimRef, store);
         if (victimUuid == null) {
             return;
@@ -215,7 +222,7 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
 
         HuntState state = NightHuntStateStore.getOrCreate(ownerUuid, NightHuntStateMachine::randomIdleDelaySeconds);
         if (attackerUuid != null && attackerUuid.equals(ownerUuid)) {
-            NightHuntStateMachine.completeMarkedPreyKill(ownerUuid, attackerRef, state, store);
+            NightHuntStateMachine.completeMarkedPreyKill(ownerUuid, attackerRef, state, store, progressionAccess);
         }
     }
 
@@ -270,13 +277,13 @@ public class NightMarkedVictimSystem extends EntityTickingSystem<EntityStore> {
         }
 
         switch (state.phase) {
-            case IDLE -> NightHuntStateMachine.tickIdle(dt, state, context, ROUTE_SCHEDULER);
+            case IDLE -> NightHuntStateMachine.tickIdle(dt, state, context, ROUTE_SCHEDULER, progressionAccess);
             case ROUTE_PENDING -> {
             }
             case APPROACHING -> NightHuntStateMachine.tickApproaching(dt, state, context, ROUTE_SCHEDULER);
-            case GUIDING -> NightHuntStateMachine.tickGuiding(dt, state, context, ROUTE_SCHEDULER);
-            case SUMMONING -> NightHuntStateMachine.tickSummoning(dt, state, context);
-            case PREY_ACTIVE -> NightHuntStateMachine.tickPreyActive(dt, state, store, commandBuffer);
+            case GUIDING -> NightHuntStateMachine.tickGuiding(dt, state, context, ROUTE_SCHEDULER, progressionAccess);
+            case SUMMONING -> NightHuntStateMachine.tickSummoning(dt, state, context, progressionAccess);
+            case PREY_ACTIVE -> NightHuntStateMachine.tickPreyActive(dt, state, store, commandBuffer, progressionAccess);
         }
     }
 

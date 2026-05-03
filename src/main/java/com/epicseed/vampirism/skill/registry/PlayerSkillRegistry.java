@@ -1,19 +1,19 @@
 package com.epicseed.vampirism.skill.registry;
 
-import com.epicseed.epiccore.player.PlayerProgressStore;
-import com.epicseed.epiccore.skill.runtime.AbilityCooldownTracker;
-import com.epicseed.vampirism.domain.player.PlayerVampireProfile;
-import com.epicseed.vampirism.domain.player.PlayerVampireProfileRepository;
-import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
-import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
-import com.hypixel.hytale.logger.HytaleLogger;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import com.epicseed.epiccore.player.PlayerProgressStore;
+import com.epicseed.epiccore.skill.runtime.AbilityCooldownTracker;
+import com.epicseed.vampirism.domain.player.PlayerVampireProfile;
+import com.epicseed.vampirism.domain.player.PlayerVampireProfileRepository;
+import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
+import com.epicseed.vampirism.skill.runtime.VampirismSkillProgressionAccess;
+import com.hypixel.hytale.logger.HytaleLogger;
 
 /**
  * Progression and relic-binding facade for vampirism player data.
@@ -26,7 +26,7 @@ import java.util.UUID;
  *
  * <p>Each player's data is stored in its own PlayerSkills/{uuid}.json file.</p>
  */
-public class PlayerSkillRegistry {
+public class PlayerSkillRegistry implements VampirismSkillProgressionAccess {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
@@ -43,7 +43,6 @@ public class PlayerSkillRegistry {
     @Nonnull
     public static PlayerSkillRegistry init(@Nonnull Path dataDirectory) {
         instance = new PlayerSkillRegistry(dataDirectory);
-        PlayerRegistrySkillProgressionAccess.init(instance);
         VampirePlayerStateStore.init(instance.progressStore);
         LOGGER.atInfo().log("[PlayerSkillRegistry] Initialized. Per-player data directory: " + instance.repository.profilesDirectory());
         return instance;
@@ -77,22 +76,26 @@ public class PlayerSkillRegistry {
     }
 
     @Nonnull
-    public PlayerRegistrySkillProgressionAccess progressionAccess() {
-        return PlayerRegistrySkillProgressionAccess.instance();
+    public VampirismSkillProgressionAccess progressionAccess() {
+        return this;
     }
 
+    @Override
     public int getSkillPoints(@Nonnull UUID uuid) {
         return progressStore.getSkillPoints(uuid);
     }
 
+    @Override
     public int getAcquiredSkillPoints(@Nonnull UUID uuid) {
         return progressStore.getAcquiredSkillPoints(uuid);
     }
 
+    @Override
     public void addSkillPoints(@Nonnull UUID uuid, int amount) {
         progressStore.addSkillPoints(uuid, amount);
     }
 
+    @Override
     public void setSkillPoints(@Nonnull UUID uuid, int amount) {
         progressStore.setSkillPoints(uuid, amount);
     }
@@ -101,10 +104,12 @@ public class PlayerSkillRegistry {
      * Refunds all skill points spent at purchase time and clears all unlocked skills.
      * Uses the cost stored when each skill was purchased, so tree edits don't affect refunds.
      */
+    @Override
     public void resetSkills(@Nonnull UUID uuid) {
         progressStore.resetSkills(uuid);
     }
 
+    @Override
     public boolean hasSkill(@Nonnull UUID uuid, @Nonnull String skillId) {
         return progressStore.hasSkill(uuid, skillId);
     }
@@ -189,23 +194,26 @@ public class PlayerSkillRegistry {
      * Returns true if successfully unlocked; false if already unlocked, insufficient points,
      * or a required skill is missing.
      */
+    @Override
     public boolean tryUnlock(@Nonnull UUID uuid, @Nonnull String skillId, int cost,
                              @Nonnull Iterable<String> requirementIds) {
         return progressStore.tryUnlock(uuid, skillId, cost, requirementIds);
     }
 
+    @Override
     public boolean grantSkill(@Nonnull UUID uuid, @Nonnull String skillId) {
         return progressStore.grantSkill(uuid, skillId);
     }
 
     /** Non-mutating check — safe to call for UI display. */
+    @Override
     public boolean canUnlock(@Nonnull UUID uuid, @Nonnull String skillId, int cost,
                              @Nonnull Iterable<String> requirementIds) {
         return progressStore.canUnlock(uuid, skillId, cost, requirementIds);
     }
 
     @Nonnull
-    public Set<String> getUnlockedSkills(@Nonnull UUID uuid) {
+    public Set<String> getUnlockedSkillIds(@Nonnull UUID uuid) {
         return progressStore.getUnlockedSkills(uuid);
     }
 }

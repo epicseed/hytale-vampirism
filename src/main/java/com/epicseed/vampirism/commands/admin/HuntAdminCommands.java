@@ -10,7 +10,7 @@ import javax.annotation.Nonnull;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
-import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
+import com.epicseed.vampirism.skill.runtime.VampirismSkillProgressionAccess;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
@@ -26,8 +26,14 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class HuntAdminCommands extends AbstractCommand {
-    public HuntAdminCommands() {
+    private final VampirismSkillProgressionAccess progressionAccess;
+    private final NightHuntService nightHuntService;
+
+    public HuntAdminCommands(@Nonnull VampirismSkillProgressionAccess progressionAccess,
+                             @Nonnull NightHuntService nightHuntService) {
         super("hunt", "Control the marked prey hunt event");
+        this.progressionAccess = progressionAccess;
+        this.nightHuntService = nightHuntService;
         this.setPermissionGroups(new String[]{"admin"});
         this.addSubCommand(new InfoCommand());
         this.addSubCommand(new ForceCommand());
@@ -44,7 +50,7 @@ public final class HuntAdminCommands extends AbstractCommand {
         return CompletableFuture.completedFuture(null);
     }
 
-    private static final class InfoCommand extends AbstractPlayerCommand {
+    private final class InfoCommand extends AbstractPlayerCommand {
         private final RequiredArg<PlayerRef> playerArg;
 
         private InfoCommand() {
@@ -64,10 +70,10 @@ public final class HuntAdminCommands extends AbstractCommand {
             if (targetPlayerRef == null) return;
 
             UUID uuid = target.getUuid();
-            int acquiredPoints = PlayerRegistrySkillProgressionAccess.instance().getAcquiredSkillPoints(uuid);
+            int acquiredPoints = progressionAccess.getAcquiredSkillPoints(uuid);
             int completedNightHunts = VampirePlayerStateStore.get().getCompletedNightHunts(uuid);
-            int baseVisualTier = NightHuntService.getBaseVisualTierForAcquiredPoints(acquiredPoints);
-            var huntInfo = NightHuntService.getDebugInfo(uuid);
+            int baseVisualTier = nightHuntService.getBaseVisualTierForAcquiredPoints(acquiredPoints);
+            var huntInfo = nightHuntService.getDebugInfo(uuid);
 
             ctx.sendMessage(Message.raw("=== Hunt Info: " + target.getUsername() + " ===").color("dark_red"));
             ctx.sendMessage(Message.raw("Completed hunts: " + completedNightHunts).color("white"));
@@ -105,7 +111,7 @@ public final class HuntAdminCommands extends AbstractCommand {
         }
     }
 
-    private static final class ForceCommand extends AbstractPlayerCommand {
+    private final class ForceCommand extends AbstractPlayerCommand {
         private final RequiredArg<PlayerRef> playerArg;
 
         private ForceCommand() {
@@ -124,7 +130,7 @@ public final class HuntAdminCommands extends AbstractCommand {
             Ref<EntityStore> targetPlayerRef = AdminCommandSupport.requireTrackedVampire(ctx, target);
             if (targetPlayerRef == null) return;
 
-            boolean started = NightHuntService.forceStart(target.getUuid(), targetPlayerRef, store);
+            boolean started = nightHuntService.forceStart(target.getUuid(), targetPlayerRef, store);
             if (!started) {
                 ctx.sendMessage(Message.raw("Could not force the hunt for " + target.getUsername()
                         + ". The event may already be active or no valid hunt destination was found.").color("yellow"));
@@ -134,7 +140,7 @@ public final class HuntAdminCommands extends AbstractCommand {
         }
     }
 
-    private static final class ResetCooldownCommand extends AbstractCommand {
+    private final class ResetCooldownCommand extends AbstractCommand {
         private final RequiredArg<PlayerRef> playerArg;
 
         private ResetCooldownCommand() {
@@ -150,7 +156,7 @@ public final class HuntAdminCommands extends AbstractCommand {
             Ref<EntityStore> targetPlayerRef = AdminCommandSupport.requireTrackedVampire(ctx, target);
             if (targetPlayerRef == null) return CompletableFuture.completedFuture(null);
 
-            NightHuntService.resetCooldown(target.getUuid());
+            nightHuntService.resetCooldown(target.getUuid());
             ctx.sendMessage(Message.raw("Reset the marked prey hunt cooldown for " + target.getUsername() + ".").color("green"));
             return CompletableFuture.completedFuture(null);
         }

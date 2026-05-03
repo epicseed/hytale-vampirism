@@ -7,6 +7,7 @@ import com.epicseed.vampirism.domain.blood.FeedCompletionService;
 import com.epicseed.vampirism.domain.blood.FeedEligibility;
 import com.epicseed.vampirism.domain.blood.FeedSession;
 import com.epicseed.vampirism.modifier.VampireStatType;
+import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
 import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.epiccore.skill.model.Ability;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
@@ -47,6 +48,11 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
     private static final double CAST_CANCEL_MOVE_DISTANCE = 0.2d;
 
     private static final Map<UUID, FeedSession> activeFeeds = new ConcurrentHashMap<>();
+    private final SkillProgressionAccess progressionAccess;
+
+    public BloodFeedSystem(@Nonnull SkillProgressionAccess progressionAccess) {
+        this.progressionAccess = progressionAccess;
+    }
 
     @Override
     public SystemGroup<EntityStore> getGroup() {
@@ -146,7 +152,7 @@ public class BloodFeedSystem extends EntityTickingSystem<EntityStore> {
             return;
         }
 
-        ConsumableMarkerService.tick(uuid, playerRef, dt, store);
+        ConsumableMarkerService.tick(uuid, playerRef, dt, progressionAccess, store);
 
         if (session == null) return;
 

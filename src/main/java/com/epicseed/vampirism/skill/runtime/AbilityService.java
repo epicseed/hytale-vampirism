@@ -1,19 +1,24 @@
 package com.epicseed.vampirism.skill.runtime;
+
 import com.epicseed.vampirism.modifier.ModifierContext;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiPredicate;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
 import com.epicseed.epiccore.skill.model.Ability;
 import com.epicseed.epiccore.skill.model.EffectDef;
+import com.epicseed.epiccore.skill.runtime.AbilityAccessProvider;
 import com.epicseed.epiccore.skill.runtime.AbilityActivationCharge;
 import com.epicseed.epiccore.skill.runtime.ConfigurableAbilityRuntimeService;
-import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
 import com.epicseed.epiccore.skill.runtime.ResolvedTargets;
 import com.epicseed.epiccore.skill.runtime.SkillActivationResult;
+import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
 import com.epicseed.epiccore.skill.runtime.TargetingResolver;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.hypixel.hytale.component.Ref;
@@ -24,46 +29,68 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class AbilityService {
 
-    private static final ConfigurableAbilityRuntimeService<SkillRuntimeContext, Ref<EntityStore>> SERVICE =
-            new ConfigurableAbilityRuntimeService<>(
-                    SkillRequirementEvaluator::evaluateAll,
-                    AbilityService::resolveTargets,
-                    SkillActionExecutor.sharedExecutor(),
-                    AbilityService::resolveCharge);
+    private final ConfigurableAbilityRuntimeService<SkillRuntimeContext, Ref<EntityStore>> service;
 
-    private AbilityService() {
+    public AbilityService(@Nonnull SkillRequirementEvaluator requirementEvaluator,
+                          @Nonnull SkillActionExecutor actionExecutor) {
+        this.service = new ConfigurableAbilityRuntimeService<>(
+                requirementEvaluator::evaluateAll,
+                AbilityService::resolveTargets,
+                actionExecutor.executor(),
+                this::resolveCharge);
     }
 
-    public static void init(com.epicseed.epiccore.skill.runtime.AbilityDefinitionProvider definitionProvider,
-                            com.epicseed.epiccore.skill.runtime.AbilityAccessProvider accessProvider,
-                            AbilityResourcePort resourcePort,
-                            com.epicseed.epiccore.skill.runtime.AbilityActivationNotifier<SkillRuntimeContext> activationTriggerDispatcher) {
-        SERVICE.init(definitionProvider, accessProvider, resourcePort, activationTriggerDispatcher);
-    }
-
-    @Nonnull
-    public static SkillActivationResult activate(@Nonnull String abilityId,
-                                                 @Nonnull UUID uuid,
-                                                 @Nonnull Ref<EntityStore> casterRef,
-                                                 @Nullable Ref<EntityStore> targetRef,
-                                                 @Nonnull Store<EntityStore> store) {
-        return SERVICE.activate(abilityId, new SkillRuntimeContext(uuid, casterRef, targetRef, store));
+    public void init(com.epicseed.epiccore.skill.runtime.AbilityDefinitionProvider definitionProvider,
+                     SkillProgressionAccess progressionAccess,
+                     BiPredicate<UUID, String> temporaryAbilityAccess,
+                     AbilityResourcePort resourcePort,
+                     com.epicseed.epiccore.skill.runtime.AbilityActivationNotifier<SkillRuntimeContext> activationTriggerDispatcher) {
+        service.init(
+                definitionProvider,
+                createAccessProvider(progressionAccess, temporaryAbilityAccess),
+                resourcePort,
+                activationTriggerDispatcher);
     }
 
     @Nonnull
-    public static SkillActivationResult activateFromAction(@Nonnull String abilityId,
-                                                           @Nonnull SkillRuntimeContext ctx) {
-        return SERVICE.activateFromAction(abilityId, ctx);
+    public SkillActivationResult activate(@Nonnull String abilityId,
+                                          @Nonnull UUID uuid,
+                                          @Nonnull Ref<EntityStore> casterRef,
+                                          @Nullable Ref<EntityStore> targetRef,
+                                          @Nonnull Store<EntityStore> store) {
+        return service.activate(abilityId, new SkillRuntimeContext(uuid, casterRef, targetRef, store));
     }
 
     @Nonnull
-    static SkillActivationResult activate(@Nonnull String abilityId, @Nonnull SkillRuntimeContext ctx) {
-        return SERVICE.activate(abilityId, ctx);
+    public SkillActivationResult activateFromAction(@Nonnull String abilityId,
+                                                    @Nonnull SkillRuntimeContext ctx) {
+        return service.activateFromAction(abilityId, ctx);
     }
 
     @Nonnull
-    private static AbilityActivationCharge resolveCharge(@Nonnull Ability ability,
-                                                         @Nonnull SkillRuntimeContext ctx) {
+    SkillActivationResult activate(@Nonnull String abilityId, @Nonnull SkillRuntimeContext ctx) {
+        return service.activate(abilityId, ctx);
+    }
+
+    @Nonnull
+    private static AbilityAccessProvider createAccessProvider(@Nullable SkillProgressionAccess progressionAccess,
+                                                              @Nullable BiPredicate<UUID, String> temporaryAbilityAccess) {
+        return new AbilityAccessProvider() {
+            @Override
+            public boolean allowsTemporaryAbility(UUID uuid, String abilityId) {
+                return temporaryAbilityAccess != null && temporaryAbilityAccess.test(uuid, abilityId);
+            }
+
+            @Override
+            public Set<String> getUnlockedSkillIds(UUID uuid) {
+                return progressionAccess != null ? progressionAccess.getUnlockedSkillIds(uuid) : Set.of();
+            }
+        };
+    }
+
+    @Nonnull
+    private AbilityActivationCharge resolveCharge(@Nonnull Ability ability,
+                                                  @Nonnull SkillRuntimeContext ctx) {
         if (isToggleOffActivation(ability, ctx)) {
             return new AbilityActivationCharge(0L, 0);
         }
@@ -87,7 +114,7 @@ public final class AbilityService {
     }
 
     private static int computeResourceCost(@Nonnull Ability ability,
-                                        @Nonnull SkillRuntimeContext ctx) {
+                                           @Nonnull SkillRuntimeContext ctx) {
         if (ability.resourceCost <= 0) {
             return 0;
         }
@@ -102,7 +129,7 @@ public final class AbilityService {
         return TargetingResolver.resolve(targeting, ctx);
     }
 
-    private static boolean isToggleOffActivation(@Nonnull Ability ability, @Nonnull SkillRuntimeContext ctx) {
+    private boolean isToggleOffActivation(@Nonnull Ability ability, @Nonnull SkillRuntimeContext ctx) {
         if (ability.actions == null || ability.actions.isEmpty()) {
             return false;
         }
@@ -125,14 +152,14 @@ public final class AbilityService {
         return foundToggle;
     }
 
-    private static boolean isEffectCurrentlyActive(@Nonnull Map<String, Object> action,
-                                                   @Nonnull SkillRuntimeContext ctx,
-                                                   @Nonnull Ref<EntityStore> targetRef) {
+    private boolean isEffectCurrentlyActive(@Nonnull Map<String, Object> action,
+                                            @Nonnull SkillRuntimeContext ctx,
+                                            @Nonnull Ref<EntityStore> targetRef) {
         if (!(action.get("effectId") instanceof String effectId) || effectId.isBlank()) {
             return false;
         }
 
-        EffectDef effectDef = SERVICE.definitionProvider().getEffect(effectId);
+        EffectDef effectDef = service.definitionProvider().getEffect(effectId);
         if (effectDef == null) {
             return false;
         }

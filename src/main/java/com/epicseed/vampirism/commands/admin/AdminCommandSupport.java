@@ -8,9 +8,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.skill.model.Skill;
-import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.epiccore.skill.runtime.SkillActivationResult;
-import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
+import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
+import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.Message;
@@ -37,9 +37,10 @@ final class AdminCommandSupport {
     }
 
     @Nonnull
-    static Set<String> collectUnlockedAbilityIds(@Nonnull UUID uuid) {
+    static Set<String> collectUnlockedAbilityIds(@Nonnull UUID uuid,
+                                                 @Nonnull SkillProgressionAccess progressionAccess) {
         TreeSet<String> abilityIds = new TreeSet<>();
-        for (String skillId : PlayerRegistrySkillProgressionAccess.instance().getUnlockedSkillIds(uuid)) {
+        for (String skillId : progressionAccess.getUnlockedSkillIds(uuid)) {
             Skill skill = com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider.instance().getSkill(skillId);
             if (skill == null || skill.abilityId == null || skill.abilityId.isBlank()) continue;
             abilityIds.add(skill.abilityId);

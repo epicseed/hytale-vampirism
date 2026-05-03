@@ -4,11 +4,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
-import com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider;
+import com.epicseed.epiccore.skill.runtime.actions.ActionConditionEvaluator;
 import com.epicseed.epiccore.skill.runtime.requirements.ConfigurableRequirementEvaluator;
 
 public final class SkillRequirementEvaluator {
@@ -55,28 +57,47 @@ public final class SkillRequirementEvaluator {
                 public void resetSkills(@Nonnull UUID uuid) {
                 }
             };
-    private static final ConfigurableRequirementEvaluator<SkillRuntimeContext> EVALUATOR =
-            new ConfigurableRequirementEvaluator<>(
-                    (condition, ctx) -> SkillConditionEvaluator.evaluateAll(condition, ctx),
-                    () -> PlayerRegistrySkillProgressionAccess.instanceOr(UNINITIALIZED_ACCESS_PROVIDER),
-                    CatalogBackedProgressionDefinitionProvider.instance(),
-                    SkillRuntimeContext::uuid);
+    private final ConfigurableRequirementEvaluator<SkillRuntimeContext> evaluator;
 
-    private SkillRequirementEvaluator() {}
-
-    public static void init(SkillProgressionAccess accessProvider) {
-        EVALUATOR.init(accessProvider);
+    public SkillRequirementEvaluator(@Nonnull ProgressionDefinitionProvider definitions,
+                                     @Nonnull SkillConditionEvaluator conditionEvaluator) {
+        this(definitions, conditionEvaluator::evaluateAll, () -> UNINITIALIZED_ACCESS_PROVIDER);
     }
 
-    static void resetForTests() {
-        EVALUATOR.reset();
+    public SkillRequirementEvaluator(@Nonnull ProgressionDefinitionProvider definitions,
+                                     @Nonnull SkillConditionEvaluator conditionEvaluator,
+                                     @Nonnull Supplier<? extends SkillProgressionAccess> fallbackAccessSupplier) {
+        this(definitions, conditionEvaluator::evaluateAll, fallbackAccessSupplier);
     }
 
-    public static boolean evaluateAll(List<Map<String, Object>> requirements, SkillRuntimeContext ctx) {
-        return EVALUATOR.evaluateAll(requirements, ctx);
+    public SkillRequirementEvaluator(@Nonnull ProgressionDefinitionProvider definitions,
+                                     @Nonnull ActionConditionEvaluator<SkillRuntimeContext> conditionEvaluator) {
+        this(definitions, conditionEvaluator, () -> UNINITIALIZED_ACCESS_PROVIDER);
     }
 
-    public static boolean evaluate(Map<String, Object> requirement, SkillRuntimeContext ctx) {
-        return EVALUATOR.evaluate(requirement, ctx);
+    public SkillRequirementEvaluator(@Nonnull ProgressionDefinitionProvider definitions,
+                                     @Nonnull ActionConditionEvaluator<SkillRuntimeContext> conditionEvaluator,
+                                     @Nonnull Supplier<? extends SkillProgressionAccess> fallbackAccessSupplier) {
+        this.evaluator = new ConfigurableRequirementEvaluator<>(
+                conditionEvaluator,
+                fallbackAccessSupplier,
+                definitions,
+                SkillRuntimeContext::uuid);
+    }
+
+    public void init(@Nonnull SkillProgressionAccess accessProvider) {
+        evaluator.init(accessProvider);
+    }
+
+    void resetForTests() {
+        evaluator.reset();
+    }
+
+    public boolean evaluateAll(List<Map<String, Object>> requirements, SkillRuntimeContext ctx) {
+        return evaluator.evaluateAll(requirements, ctx);
+    }
+
+    public boolean evaluate(Map<String, Object> requirement, SkillRuntimeContext ctx) {
+        return evaluator.evaluate(requirement, ctx);
     }
 }

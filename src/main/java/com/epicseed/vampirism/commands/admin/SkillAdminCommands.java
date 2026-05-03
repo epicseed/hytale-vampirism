@@ -5,7 +5,7 @@ import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nonnull;
 
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
-import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
+import com.epicseed.vampirism.skill.runtime.VampirismSkillProgressionAccess;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
@@ -18,8 +18,8 @@ public final class SkillAdminCommands {
     private SkillAdminCommands() {
     }
 
-    public static AbstractCommand skillPoints() {
-        return new SkillPointsCommand();
+    public static AbstractCommand skillPoints(@Nonnull VampirismSkillProgressionAccess progressionAccess) {
+        return new SkillPointsCommand(progressionAccess);
     }
 
     public static AbstractCommand skillReset() {
@@ -27,12 +27,12 @@ public final class SkillAdminCommands {
     }
 
     private static final class SkillPointsCommand extends AbstractCommand {
-        private SkillPointsCommand() {
+        private SkillPointsCommand(@Nonnull VampirismSkillProgressionAccess progressionAccess) {
             super("skillpoints", "Manage player skill points");
             this.setPermissionGroups(new String[]{"admin"});
-            this.addSubCommand(new AddCommand());
-            this.addSubCommand(new SetCommand());
-            this.addSubCommand(new GetCommand());
+            this.addSubCommand(new AddCommand(progressionAccess));
+            this.addSubCommand(new SetCommand(progressionAccess));
+            this.addSubCommand(new GetCommand(progressionAccess));
         }
 
         @Nonnull
@@ -49,9 +49,11 @@ public final class SkillAdminCommands {
     private static final class AddCommand extends AbstractCommand {
         private final RequiredArg<PlayerRef> playerArg;
         private final RequiredArg<Integer> amountArg;
+        private final VampirismSkillProgressionAccess progressionAccess;
 
-        private AddCommand() {
+        private AddCommand(@Nonnull VampirismSkillProgressionAccess progressionAccess) {
             super("add", "Give skill points to a player");
+            this.progressionAccess = progressionAccess;
             this.setPermissionGroups(new String[]{"admin"});
             this.playerArg = this.withRequiredArg("player", "Target player", (ArgumentType<PlayerRef>) ArgTypes.PLAYER_REF);
             this.amountArg = this.withRequiredArg("amount", "Number of points to add", (ArgumentType<Integer>) ArgTypes.INTEGER);
@@ -62,9 +64,8 @@ public final class SkillAdminCommands {
         public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
             PlayerRef target = playerArg.get(ctx);
             int amount = amountArg.get(ctx);
-            PlayerRegistrySkillProgressionAccess progression = PlayerRegistrySkillProgressionAccess.instance();
-            progression.addSkillPoints(target.getUuid(), amount);
-            int current = progression.getSkillPoints(target.getUuid());
+            progressionAccess.addSkillPoints(target.getUuid(), amount);
+            int current = progressionAccess.getSkillPoints(target.getUuid());
             ctx.sendMessage(Message.raw("Added " + amount + " skill points to " + target.getUsername()
                     + ". Total: " + current).color("green"));
             return CompletableFuture.completedFuture(null);
@@ -74,9 +75,11 @@ public final class SkillAdminCommands {
     private static final class SetCommand extends AbstractCommand {
         private final RequiredArg<PlayerRef> playerArg;
         private final RequiredArg<Integer> amountArg;
+        private final VampirismSkillProgressionAccess progressionAccess;
 
-        private SetCommand() {
+        private SetCommand(@Nonnull VampirismSkillProgressionAccess progressionAccess) {
             super("set", "Set a player's skill points to a specific value");
+            this.progressionAccess = progressionAccess;
             this.setPermissionGroups(new String[]{"admin"});
             this.playerArg = this.withRequiredArg("player", "Target player", (ArgumentType<PlayerRef>) ArgTypes.PLAYER_REF);
             this.amountArg = this.withRequiredArg("amount", "New point total", (ArgumentType<Integer>) ArgTypes.INTEGER);
@@ -87,7 +90,7 @@ public final class SkillAdminCommands {
         public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
             PlayerRef target = playerArg.get(ctx);
             int amount = amountArg.get(ctx);
-            PlayerRegistrySkillProgressionAccess.instance().setSkillPoints(target.getUuid(), amount);
+            progressionAccess.setSkillPoints(target.getUuid(), amount);
             ctx.sendMessage(Message.raw(target.getUsername() + " now has " + amount + " skill points.").color("green"));
             return CompletableFuture.completedFuture(null);
         }
@@ -95,9 +98,11 @@ public final class SkillAdminCommands {
 
     private static final class GetCommand extends AbstractCommand {
         private final RequiredArg<PlayerRef> playerArg;
+        private final VampirismSkillProgressionAccess progressionAccess;
 
-        private GetCommand() {
+        private GetCommand(@Nonnull VampirismSkillProgressionAccess progressionAccess) {
             super("get", "Show a player's current skill points");
+            this.progressionAccess = progressionAccess;
             this.setPermissionGroups(new String[]{"admin"});
             this.playerArg = this.withRequiredArg("player", "Target player", (ArgumentType<PlayerRef>) ArgTypes.PLAYER_REF);
         }
@@ -106,7 +111,7 @@ public final class SkillAdminCommands {
         @Override
         public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
             PlayerRef target = playerArg.get(ctx);
-            int points = PlayerRegistrySkillProgressionAccess.instance().getSkillPoints(target.getUuid());
+            int points = progressionAccess.getSkillPoints(target.getUuid());
             ctx.sendMessage(Message.raw(target.getUsername() + " has " + points + " skill point(s).").color("aqua"));
             return CompletableFuture.completedFuture(null);
         }

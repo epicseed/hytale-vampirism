@@ -6,16 +6,17 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.hytale.WorldStoreAdapter;
+import com.epicseed.epiccore.modifier.StatType;
 import com.epicseed.epiccore.hytale.runtime.PlayerRuntimeCleanupCoordinator;
 import com.epicseed.epiccore.skill.runtime.passive.PassiveTriggerRuntimeService;
 import com.epicseed.epiccore.skill.runtime.passive.PersistentPassiveEffectService;
+import com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker;
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.relic.RelicPresetProjectionService;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
 import com.epicseed.epiccore.skill.runtime.AbilityCooldownTracker;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
-import com.epicseed.vampirism.skill.runtime.TemporaryModifierTracker;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -43,6 +44,8 @@ public final class PlayerRuntimeCleanupService {
     @Nonnull
     public static PlayerRuntimeCleanupCoordinator create(
             @Nonnull PlayerSkillRegistry playerSkillRegistry,
+            @Nonnull NightHuntService nightHuntService,
+            @Nonnull TemporaryModifierTracker<StatType> temporaryModifiers,
             @Nonnull PassiveTriggerRuntimeService<SkillRuntimeContext> passiveTriggerRuntimeService,
             @Nonnull PersistentPassiveEffectService<SkillRuntimeContext> persistentPassiveEffectService) {
         return PlayerRuntimeCleanupCoordinator.of(
@@ -50,7 +53,7 @@ public final class PlayerRuntimeCleanupService {
                 (uuid, playerRef) -> MorphFlySystem.captureDisconnectState(uuid),
                 (uuid, playerRef) -> VampireVitalitySystem.captureDisconnectState(uuid),
                 (uuid, playerRef) -> VampireVitalitySystem.clearPlayer(uuid),
-                (uuid, playerRef) -> NightHuntService.captureDisconnectState(uuid),
+                (uuid, playerRef) -> nightHuntService.captureDisconnectState(uuid),
                 (uuid, playerRef) -> SkillTreeManager.get().evictPlayer(uuid),
                 (uuid, playerRef) -> ModifierContext.REGISTRY.evict(uuid),
                 (uuid, playerRef) -> EffectModifierSystem.clearPlayer(uuid),
@@ -59,7 +62,7 @@ public final class PlayerRuntimeCleanupService {
                 (uuid, playerRef) -> FormHealthSystem.clearPlayer(uuid),
                 (uuid, playerRef) -> BloodFeedSystem.clearPlayer(uuid),
                 (uuid, playerRef) -> BloodConversionSystem.clearPlayer(uuid),
-                (uuid, playerRef) -> NightHuntService.clearPlayer(uuid),
+                (uuid, playerRef) -> nightHuntService.clearPlayer(uuid),
                 (uuid, playerRef) -> SunburnSystem.onPlayerLeave(uuid),
                 (uuid, playerRef) -> SneakSystem.clearPlayer(uuid),
                 (uuid, playerRef) -> VampireMovementSystem.clearPlayer(uuid),
@@ -67,7 +70,7 @@ public final class PlayerRuntimeCleanupService {
                 (uuid, playerRef) -> CrimsonUmbrellaVisualSystem.clearPlayer(uuid),
                 (uuid, playerRef) -> VampireInfectionSystem.clearPlayer(uuid),
                 (uuid, playerRef) -> AbilityCooldownTracker.clearPlayer(uuid),
-                (uuid, playerRef) -> TemporaryModifierTracker.clearPlayer(uuid),
+                (uuid, playerRef) -> temporaryModifiers.clearPlayer(uuid),
                 (uuid, playerRef) -> PassiveEffectSystem.onPlayerDisconnect(
                         uuid,
                         passiveTriggerRuntimeService,

@@ -7,7 +7,7 @@ import javax.annotation.Nullable;
 
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
-import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
+import com.epicseed.vampirism.skill.runtime.VampirismSkillProgressionAccess;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.Store;
@@ -42,7 +42,8 @@ public final class NightHuntPreySpawnService {
                                           @Nonnull Ref<EntityStore> playerRef,
                                           @Nonnull HuntState state,
                                           @Nonnull Store<EntityStore> store,
-                                          int currentHour) {
+                                          int currentHour,
+                                          @Nonnull VampirismSkillProgressionAccess progressionAccess) {
         if (state.destination == null) {
             return false;
         }
@@ -54,7 +55,7 @@ public final class NightHuntPreySpawnService {
 
         NightHuntSpawnRegistry.SpawnOption spawnOption = NightHuntSpawnRegistry.get().pickSpawn(
                 new NightHuntSpawnRegistry.SpawnContext(
-                        PlayerRegistrySkillProgressionAccess.instance().getAcquiredSkillPoints(ownerUuid),
+                        progressionAccess.getAcquiredSkillPoints(ownerUuid),
                         state.completedWaypoints,
                         state.forced,
                         currentHour,
@@ -73,7 +74,8 @@ public final class NightHuntPreySpawnService {
                                           @Nonnull HuntState state,
                                           @Nonnull NightHuntSpawnRegistry.FailStateOption failState,
                                           @Nonnull Store<EntityStore> store,
-                                          @Nullable World world) {
+                                          @Nullable World world,
+                                          @Nonnull VampirismSkillProgressionAccess progressionAccess) {
         Vector3d spawnPosition = playerTransform.getPosition();
         if (world != null) {
             Vector3d candidate = NightHuntRouteService.findHuntDestination(

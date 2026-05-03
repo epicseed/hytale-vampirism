@@ -5,16 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.epicseed.epiccore.skill.data.SkillRuntimeBindingsLoadHooks;
+import com.epicseed.epiccore.skill.runtime.SkillDefinitionCatalog;
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindings;
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindingsHolder;
-import com.epicseed.vampirism.skill.registry.AbilityRegistry;
-import com.epicseed.vampirism.skill.registry.EffectDefRegistry;
-import com.epicseed.vampirism.skill.registry.ModifierDefRegistry;
-import com.epicseed.vampirism.skill.registry.PassiveRegistry;
-import com.epicseed.vampirism.skill.registry.ReusableDefRegistry;
-import com.epicseed.vampirism.skill.registry.SkillRegistry;
-import com.epicseed.vampirism.skill.registry.StateRegistry;
-import com.epicseed.vampirism.skill.registry.StatDefRegistry;
 import org.junit.jupiter.api.Test;
 
 class SkillLoaderHooksTest {
@@ -39,19 +32,9 @@ class SkillLoaderHooksTest {
         SkillRuntimeBindingsHolder runtimeBindings = new SkillRuntimeBindingsHolder();
         SkillRuntimeBindingsLoadHooks hooks = new SkillRuntimeBindingsLoadHooks(runtimeBindings);
         SkillLoader loader = new SkillLoader(SkillDataPaths.vampirismDefaults(), hooks);
+        SkillDefinitionCatalog catalog = new SkillDefinitionCatalog();
 
-        loader.LoadDefinitions(
-                new PassiveRegistry(),
-                new AbilityRegistry(),
-                new ModifierDefRegistry(),
-                new EffectDefRegistry(),
-                new StateRegistry(),
-                new StatDefRegistry(),
-                new ReusableDefRegistry(),
-                new ReusableDefRegistry(),
-                new ReusableDefRegistry(),
-                new ReusableDefRegistry(),
-                new ReusableDefRegistry());
+        loader.loadDefinitions(catalog.registries());
 
         SkillRuntimeBindings bindings = runtimeBindings.snapshot();
         assertNotNull(bindings);

@@ -22,6 +22,8 @@ class SkillRequirementEvaluatorTest {
     private static final String ABILITY_ID = "night-strike";
     private static final String PASSIVE_ID = "blood-sense";
 
+    private SkillRequirementEvaluator evaluator;
+
     @BeforeEach
     void setUp() {
         Skill skill = new Skill();
@@ -32,14 +34,16 @@ class SkillRequirementEvaluatorTest {
         SkillDefinitionCatalog catalog = new SkillDefinitionCatalog();
         catalog.skills().register(skill);
         CatalogBackedProgressionDefinitionProvider.init(catalog);
-        PlayerRegistrySkillProgressionAccess.resetForTests();
-        SkillRequirementEvaluator.resetForTests();
+
+        evaluator = new SkillRequirementEvaluator(
+                CatalogBackedProgressionDefinitionProvider.instance(),
+                (conditions, ctx) -> true);
+        evaluator.resetForTests();
     }
 
     @AfterEach
     void tearDown() {
-        PlayerRegistrySkillProgressionAccess.resetForTests();
-        SkillRequirementEvaluator.resetForTests();
+        evaluator.resetForTests();
         CatalogBackedProgressionDefinitionProvider.init(null);
     }
 
@@ -47,10 +51,10 @@ class SkillRequirementEvaluatorTest {
     void evaluateBeforeRuntimeInitFallsBackToUninitializedProvider() {
         SkillRuntimeContext ctx = new SkillRuntimeContext(PLAYER_ID, null, null);
 
-        assertFalse(SkillRequirementEvaluator.evaluate(Map.of(
+        assertFalse(evaluator.evaluate(Map.of(
                 "type", "abilityUnlocked",
                 "abilityId", ABILITY_ID), ctx));
-        assertFalse(SkillRequirementEvaluator.evaluate(Map.of(
+        assertFalse(evaluator.evaluate(Map.of(
                 "type", "passiveUnlocked",
                 "passiveId", PASSIVE_ID), ctx));
     }
@@ -59,22 +63,22 @@ class SkillRequirementEvaluatorTest {
     void progressionAccessInitRefreshesUnlockedSkillAccessForRuntimeChecks() {
         SkillRuntimeContext ctx = new SkillRuntimeContext(PLAYER_ID, null, null);
 
-        PlayerRegistrySkillProgressionAccess.init(backendWithUnlockedSkills(Set.of()));
-        assertFalse(SkillRequirementEvaluator.evaluate(Map.of(
+        evaluator.init(accessWithUnlockedSkills(Set.of()));
+        assertFalse(evaluator.evaluate(Map.of(
                 "type", "abilityUnlocked",
                 "abilityId", ABILITY_ID), ctx));
 
-        PlayerRegistrySkillProgressionAccess.init(backendWithUnlockedSkills(Set.of(SKILL_ID)));
-        assertTrue(SkillRequirementEvaluator.evaluate(Map.of(
+        evaluator.init(accessWithUnlockedSkills(Set.of(SKILL_ID)));
+        assertTrue(evaluator.evaluate(Map.of(
                 "type", "abilityUnlocked",
                 "abilityId", ABILITY_ID), ctx));
-        assertTrue(SkillRequirementEvaluator.evaluate(Map.of(
+        assertTrue(evaluator.evaluate(Map.of(
                 "type", "passiveUnlocked",
                 "passiveId", PASSIVE_ID), ctx));
     }
 
-    private static PlayerRegistrySkillProgressionAccess.Backend backendWithUnlockedSkills(Set<String> unlockedSkillIds) {
-        return new PlayerRegistrySkillProgressionAccess.Backend() {
+    private static VampirismSkillProgressionAccess accessWithUnlockedSkills(Set<String> unlockedSkillIds) {
+        return new VampirismSkillProgressionAccess() {
             @Override
             public int getSkillPoints(UUID uuid) {
                 return 0;

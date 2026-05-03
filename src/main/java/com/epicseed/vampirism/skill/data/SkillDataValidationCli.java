@@ -6,6 +6,6 @@ public final class SkillDataValidationCli {
     }
 
     public static void main(String[] args) {
-        new SkillLoader(SkillDataPaths.vampirismDefaults()).ValidateSkillData();
+        new SkillLoader(SkillDataPaths.vampirismDefaults()).validateSkillData();
     }
 }

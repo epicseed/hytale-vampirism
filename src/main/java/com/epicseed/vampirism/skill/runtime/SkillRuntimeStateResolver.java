@@ -1,12 +1,14 @@
 package com.epicseed.vampirism.skill.runtime;
 
+import com.epicseed.epiccore.modifier.ContextKey;
 import com.epicseed.epiccore.skill.runtime.HytaleRuntimeStateResolver;
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeBindings;
-import com.epicseed.epiccore.modifier.ContextKey;
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.vampirism.systems.MorphFlySystem;
 import com.epicseed.vampirism.systems.SunburnSystem;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
+
+import javax.annotation.Nullable;
 
 import java.util.function.Supplier;
 
@@ -19,7 +21,7 @@ import java.util.function.Supplier;
 public final class SkillRuntimeStateResolver {
 
     private static final ContextKey<Boolean> IS_IN_FRENZY = new ContextKey<>() {};
-    private static final HytaleRuntimeStateResolver.StateContextAccess<ModifierContext> MODIFIER_ACCESS =
+    private final HytaleRuntimeStateResolver.StateContextAccess<ModifierContext> modifierAccess =
             new HytaleRuntimeStateResolver.StateContextAccess<>() {
                 @Override
                 public com.hypixel.hytale.component.Ref<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> selfRef(ModifierContext context) {
@@ -38,7 +40,7 @@ public final class SkillRuntimeStateResolver {
                     return context.resolve(key, supplier);
                 }
             };
-    private static final HytaleRuntimeStateResolver.StateContextAccess<SkillRuntimeContext> RUNTIME_ACCESS =
+    private final HytaleRuntimeStateResolver.StateContextAccess<SkillRuntimeContext> runtimeAccess =
             new HytaleRuntimeStateResolver.StateContextAccess<>() {
                 @Override
                 public com.hypixel.hytale.component.Ref<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> selfRef(SkillRuntimeContext context) {
@@ -51,28 +53,26 @@ public final class SkillRuntimeStateResolver {
                 }
             };
 
-    private SkillRuntimeStateResolver() {}
-
-    public static void init(Supplier<SkillRuntimeBindings> runtimeBindingsSupplier) {
+    public SkillRuntimeStateResolver(@Nullable Supplier<SkillRuntimeBindings> runtimeBindingsSupplier) {
         HytaleRuntimeStateResolver.init(runtimeBindingsSupplier);
     }
 
-    public static boolean isStateActive(String stateId, SkillRuntimeContext ctx) {
+    public boolean isStateActive(String stateId, SkillRuntimeContext ctx) {
         ModifierContext modifierContext = ctx != null ? ctx.modifierContext() : null;
         Boolean vampiric = resolveVampiricState(stateId, modifierContext);
         return vampiric != null
                 ? vampiric
-                : HytaleRuntimeStateResolver.isStateActive(stateId, ctx, RUNTIME_ACCESS);
+                : HytaleRuntimeStateResolver.isStateActive(stateId, ctx, runtimeAccess);
     }
 
-    public static boolean isStateActive(String stateId, ModifierContext ctx) {
+    public boolean isStateActive(String stateId, ModifierContext ctx) {
         Boolean vampiric = resolveVampiricState(stateId, ctx);
         return vampiric != null
                 ? vampiric
-                : HytaleRuntimeStateResolver.isStateActive(stateId, ctx, MODIFIER_ACCESS);
+                : HytaleRuntimeStateResolver.isStateActive(stateId, ctx, modifierAccess);
     }
 
-    private static Boolean resolveVampiricState(String stateId, ModifierContext ctx) {
+    private Boolean resolveVampiricState(String stateId, ModifierContext ctx) {
         if (stateId == null || stateId.isBlank() || ctx == null) return null;
         return switch (stateId) {
             case "IN_SUNLIGHT" -> ctx.uuid() != null
@@ -87,7 +87,7 @@ public final class SkillRuntimeStateResolver {
                     && ctx.resolve(MorphFlySystem.IS_IN_BAT_FORM,
                             () -> MorphFlySystem.isMorphActive(ctx.ref(), ctx.store(), ctx.uuid()));
             case "IS_IN_FRENZY" -> ctx.resolve(IS_IN_FRENZY,
-                    () -> isStateActive("IS_IN_BLOOD_THIRST", ctx));
+                    () -> this.isStateActive("IS_IN_BLOOD_THIRST", ctx));
             default -> null;
         };
     }

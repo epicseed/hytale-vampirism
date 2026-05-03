@@ -18,26 +18,11 @@ import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntitySta
 public final class PassiveService extends com.epicseed.epiccore.skill.runtime.passive.PassiveService<SkillRuntimeContext> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-    private static PassiveService instance;
-
-    public static PassiveService init(@Nonnull ProgressionDefinitionProvider definitionProvider,
-                                      @Nonnull SkillProgressionAccess progressionAccess,
-                                      @Nonnull java.util.function.Consumer<TriggerEvent<SkillRuntimeContext>> triggerDispatcher) {
-        instance = new PassiveService(definitionProvider, progressionAccess, triggerDispatcher);
-        return instance;
-    }
-
-    @Nonnull
-    public static PassiveService get() {
-        if (instance == null) throw new IllegalStateException("PassiveService not initialized!");
-        return instance;
-    }
 
     public PassiveService(@Nonnull ProgressionDefinitionProvider definitionProvider,
                           @Nonnull SkillProgressionAccess progressionAccess,
                           @Nonnull java.util.function.Consumer<TriggerEvent<SkillRuntimeContext>> triggerDispatcher) {
         super(definitionProvider, progressionAccess, triggerDispatcher);
-        instance = this;
         LOGGER.atInfo().log("[PassiveService] Initialized.");
     }
 

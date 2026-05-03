@@ -2,17 +2,13 @@ package com.epicseed.vampirism;
 
 import javax.annotation.Nonnull;
 
-import com.epicseed.vampirism.bootstrap.CommandRegistrar;
-import com.epicseed.vampirism.bootstrap.PlayerLifecycleCoordinator;
-import com.epicseed.vampirism.bootstrap.SystemRegistrar;
-import com.epicseed.vampirism.bootstrap.VampirismRuntime;
-import com.epicseed.vampirism.config.VampirismConfig;
-import com.epicseed.vampirism.skill.data.SkillLoader;
-import com.epicseed.vampirism.skill.data.SkillDataPaths;
 import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.epiccore.skill.runtime.CatalogBackedSkillRuntimeBootstrap;
 import com.epicseed.epiccore.skill.runtime.SkillDefinitionCatalog;
-import com.epicseed.vampirism.skill.runtime.SkillRuntimeStateResolver;
+import com.epicseed.vampirism.bootstrap.VampirismRuntime;
+import com.epicseed.vampirism.config.VampirismConfig;
+import com.epicseed.vampirism.skill.data.SkillDataPaths;
+import com.epicseed.vampirism.skill.data.SkillLoader;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector2d;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
@@ -27,8 +23,7 @@ public class Vampirism extends JavaPlugin {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     private final CatalogBackedSkillRuntimeBootstrap skillRuntimeBootstrap =
-            CatalogBackedSkillRuntimeBootstrap.create(bootstrap ->
-                    SkillRuntimeStateResolver.init(bootstrap.runtimeBindings()::snapshot));
+            CatalogBackedSkillRuntimeBootstrap.create();
     private final Vector2d skillTreeBounds;
     private VampirismRuntime runtime;
 
@@ -43,17 +38,8 @@ public class Vampirism extends JavaPlugin {
 
     @Override
     protected void setup() {
-        runtime = VampirismRuntime.create(
-                this.getDataDirectory(),
-                skillRuntimeBootstrap,
-                skillTreeBounds);
-        PlayerLifecycleCoordinator.register(this, runtime);
-
         LOGGER.atInfo().log("[Vampirism] Registering systems and commands...");
-
-        SystemRegistrar.register(this, runtime);
-        CommandRegistrar.register(this, runtime);
-
+        runtime = VampirismRuntime.bootstrap(this, skillRuntimeBootstrap, skillTreeBounds);
         LOGGER.atInfo().log("[Vampirism] All systems registered.");
     }
 

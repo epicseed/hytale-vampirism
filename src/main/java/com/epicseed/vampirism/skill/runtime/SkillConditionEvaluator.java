@@ -4,9 +4,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.annotation.Nonnull;
+
+import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.model.Ability;
 import com.epicseed.epiccore.skill.model.EffectDef;
-import com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.runtime.AbilityCooldownTracker;
 import com.epicseed.epiccore.skill.runtime.conditions.ConditionHandlerPack;
 import com.epicseed.epiccore.skill.runtime.conditions.RegistryBackedConditionEvaluator;
@@ -21,42 +23,44 @@ import com.hypixel.hytale.logger.HytaleLogger;
 public final class SkillConditionEvaluator {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-    private static final RegistryBackedConditionEvaluator<ModifierContext> MODIFIER_EVALUATOR =
-            RuntimeConditionEvaluators.create(modifierSupport(), modifierExtensions());
-    private static final RegistryBackedConditionEvaluator<SkillRuntimeContext> RUNTIME_EVALUATOR =
-            RuntimeConditionEvaluators.create(runtimeSupport(), runtimeExtensions());
+    private final ProgressionDefinitionProvider definitionProvider;
+    private final SkillRuntimeStateResolver runtimeStateResolver;
+    private final RegistryBackedConditionEvaluator<ModifierContext> modifierEvaluator;
+    private final RegistryBackedConditionEvaluator<SkillRuntimeContext> runtimeEvaluator;
 
-    private SkillConditionEvaluator() {}
-
-    public static boolean evaluateAll(List<Map<String, Object>> conditions, ModifierContext ctx) {
-        return MODIFIER_EVALUATOR.evaluateAll(conditions, ctx);
+    public SkillConditionEvaluator(@Nonnull ProgressionDefinitionProvider definitionProvider,
+                                   @Nonnull SkillRuntimeStateResolver runtimeStateResolver) {
+        this.definitionProvider = definitionProvider;
+        this.runtimeStateResolver = runtimeStateResolver;
+        this.modifierEvaluator = RuntimeConditionEvaluators.create(modifierSupport(), modifierExtensions());
+        this.runtimeEvaluator = RuntimeConditionEvaluators.create(runtimeSupport(), runtimeExtensions());
     }
 
-    public static boolean evaluate(Map<String, Object> condition, ModifierContext ctx) {
-        return MODIFIER_EVALUATOR.evaluate(condition, ctx);
+    public boolean evaluateAll(List<Map<String, Object>> conditions, ModifierContext ctx) {
+        return modifierEvaluator.evaluateAll(conditions, ctx);
     }
 
-    public static boolean evaluateAll(List<Map<String, Object>> conditions, SkillRuntimeContext ctx) {
-        return RUNTIME_EVALUATOR.evaluateAll(conditions, ctx);
+    public boolean evaluate(Map<String, Object> condition, ModifierContext ctx) {
+        return modifierEvaluator.evaluate(condition, ctx);
     }
 
-    public static boolean evaluate(Map<String, Object> condition, SkillRuntimeContext ctx) {
-        return RUNTIME_EVALUATOR.evaluate(condition, ctx);
+    public boolean evaluateAll(List<Map<String, Object>> conditions, SkillRuntimeContext ctx) {
+        return runtimeEvaluator.evaluateAll(conditions, ctx);
     }
 
-    public static RegistryBackedConditionEvaluator<SkillRuntimeContext> runtimeEvaluator() {
-        return RUNTIME_EVALUATOR;
+    public boolean evaluate(Map<String, Object> condition, SkillRuntimeContext ctx) {
+        return runtimeEvaluator.evaluate(condition, ctx);
     }
 
-    private static ConditionHandlerPack<ModifierContext> modifierExtensions() {
-        return registry -> registry.register("bloodCompare", SkillConditionEvaluator::evaluateBloodCompare);
+    private ConditionHandlerPack<ModifierContext> modifierExtensions() {
+        return registry -> registry.register("bloodCompare", this::evaluateBloodCompare);
     }
 
-    private static ConditionHandlerPack<SkillRuntimeContext> runtimeExtensions() {
-        return registry -> registry.register("bloodCompare", SkillConditionEvaluator::evaluateBloodCompare);
+    private ConditionHandlerPack<SkillRuntimeContext> runtimeExtensions() {
+        return registry -> registry.register("bloodCompare", this::evaluateBloodCompare);
     }
 
-    private static boolean evaluateBloodCompare(Map<String, Object> condition, SkillRuntimeContext ctx) {
+    private boolean evaluateBloodCompare(Map<String, Object> condition, SkillRuntimeContext ctx) {
         if (!(condition.get("value") instanceof Number n)) {
             LOGGER.atWarning().log("[SkillConditionEvaluator] bloodCompare missing numeric value: " + condition);
             return false;
@@ -67,7 +71,7 @@ public final class SkillConditionEvaluator {
                 n, VampireVitalitySystem.BASE_BLOOD_CAPACITY_UNITS));
     }
 
-    private static boolean evaluateBloodCompare(Map<String, Object> condition, ModifierContext ctx) {
+    private boolean evaluateBloodCompare(Map<String, Object> condition, ModifierContext ctx) {
         if (!(condition.get("value") instanceof Number n)) {
             LOGGER.atWarning().log("[SkillConditionEvaluator] bloodCompare missing numeric value: " + condition);
             return false;
@@ -78,7 +82,7 @@ public final class SkillConditionEvaluator {
                 n, VampireVitalitySystem.BASE_BLOOD_CAPACITY_UNITS));
     }
 
-    private static boolean compareOp(String op, float current, float value) {
+    private boolean compareOp(String op, float current, float value) {
         if (!ConditionEvaluationOperations.isCompareOperatorSupported(op)) {
             LOGGER.atWarning().log("[SkillConditionEvaluator] Unsupported compare op: " + op);
             return false;
@@ -86,39 +90,39 @@ public final class SkillConditionEvaluator {
         return ConditionEvaluationOperations.compare(op, current, value);
     }
 
-    private static boolean isCooldownReady(UUID uuid, String abilityId) {
+    private boolean isCooldownReady(UUID uuid, String abilityId) {
         if (uuid == null) return false;
-        Ability ability = CatalogBackedProgressionDefinitionProvider.instance().getAbility(abilityId);
+        Ability ability = definitionProvider.getAbility(abilityId);
         if (ability == null) return true;
         return !AbilityCooldownTracker.isOnCooldown(uuid, abilityId);
     }
 
-    private static String resolveEffectAssetId(String effectId) {
-        EffectDef def = CatalogBackedProgressionDefinitionProvider.instance().getEffect(effectId);
+    private String resolveEffectAssetId(String effectId) {
+        EffectDef def = definitionProvider.getEffect(effectId);
         return def != null && def.effectId != null && !def.effectId.isBlank()
                 ? def.effectId
                 : effectId;
     }
 
-    private static StandardConditionPacks.StandardConditionSupport<ModifierContext> modifierSupport() {
+    private StandardConditionPacks.StandardConditionSupport<ModifierContext> modifierSupport() {
         return StandardConditionSupports.<ModifierContext>builder()
                 .selfRef(ModifierContext::ref)
                 .store(ModifierContext::store)
-                .stateActive((stateId, context) -> SkillRuntimeStateResolver.isStateActive(stateId, context))
-                .cooldownReady((abilityId, context) -> SkillConditionEvaluator.isCooldownReady(context.uuid(), abilityId))
-                .effectIdResolver((effectId, context) -> resolveEffectAssetId(effectId))
+                .stateActive(runtimeStateResolver::isStateActive)
+                .cooldownReady((abilityId, context) -> isCooldownReady(context.uuid(), abilityId))
+                .effectIdResolver((effectId, context) -> this.resolveEffectAssetId(effectId))
                 .statValueResolver((statId, context) -> VampirismRuntimeStatSupport.MODIFIER.resolveStatValue(statId, context))
                 .build();
     }
 
-    private static StandardConditionPacks.StandardConditionSupport<SkillRuntimeContext> runtimeSupport() {
+    private StandardConditionPacks.StandardConditionSupport<SkillRuntimeContext> runtimeSupport() {
         return StandardConditionSupports.<SkillRuntimeContext>builder()
                 .selfRef(SkillRuntimeContext::ref)
                 .targetRef(SkillRuntimeContext::targetRef)
                 .store(SkillRuntimeContext::store)
-                .stateActive((stateId, context) -> SkillRuntimeStateResolver.isStateActive(stateId, context))
-                .cooldownReady((abilityId, context) -> SkillConditionEvaluator.isCooldownReady(context.uuid(), abilityId))
-                .effectIdResolver((effectId, context) -> resolveEffectAssetId(effectId))
+                .stateActive(runtimeStateResolver::isStateActive)
+                .cooldownReady((abilityId, context) -> isCooldownReady(context.uuid(), abilityId))
+                .effectIdResolver((effectId, context) -> this.resolveEffectAssetId(effectId))
                 .statValueResolver((statId, context) -> VampirismRuntimeStatSupport.RUNTIME.resolveStatValue(statId, context))
                 .healthThresholdResolver((condition, context, declaredThreshold) -> {
                     float thresholdOverride = VampirismRuntimeStatSupport.RUNTIME.resolveStatValue(

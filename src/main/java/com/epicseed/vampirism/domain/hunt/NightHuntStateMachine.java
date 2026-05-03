@@ -8,7 +8,7 @@ import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.hytale.EntityIdentityAdapter;
 import com.epicseed.vampirism.config.VampirismConfig;
-import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
+import com.epicseed.vampirism.skill.runtime.VampirismSkillProgressionAccess;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
@@ -31,7 +31,8 @@ public final class NightHuntStateMachine {
     public static void tickIdle(float dt,
                                 @Nonnull HuntState state,
                                 @Nonnull NightHuntTickContext context,
-                                @Nonnull NightHuntRouteScheduler routeScheduler) {
+                                @Nonnull NightHuntRouteScheduler routeScheduler,
+                                @Nonnull VampirismSkillProgressionAccess progressionAccess) {
         if (state.cooldownRemainingSeconds > 0f) {
             return;
         }
@@ -50,7 +51,7 @@ public final class NightHuntStateMachine {
                 state,
                 context,
                 false,
-                PlayerRegistrySkillProgressionAccess.instance().getAcquiredSkillPoints(context.ownerUuid()))) {
+                progressionAccess.getAcquiredSkillPoints(context.ownerUuid()))) {
             state.cooldownRemainingSeconds = VampirismConfig.get().getNightHuntFailedCooldownSeconds();
             state.idleDelayRemainingSeconds = randomIdleDelaySeconds();
         }
@@ -99,7 +100,8 @@ public final class NightHuntStateMachine {
     public static void tickGuiding(float dt,
                                    @Nonnull HuntState state,
                                    @Nonnull NightHuntTickContext context,
-                                   @Nonnull NightHuntRouteScheduler routeScheduler) {
+                                   @Nonnull NightHuntRouteScheduler routeScheduler,
+                                   @Nonnull VampirismSkillProgressionAccess progressionAccess) {
         if (state.destination == null) {
             resetToIdle(state, 0f);
             return;
@@ -138,7 +140,7 @@ public final class NightHuntStateMachine {
         state.completedWaypoints += 1;
         UUID ownerUuid = extractPlayerUuid(context.playerRef(), context.store());
         if (ownerUuid != null) {
-            applyRouteEvent(ownerUuid, context, state);
+            applyRouteEvent(ownerUuid, context, state, progressionAccess);
         }
 
         if (context.world() != null && state.completedWaypoints < targetWaypointCount(state)) {
@@ -159,7 +161,8 @@ public final class NightHuntStateMachine {
 
     public static void tickSummoning(float dt,
                                      @Nonnull HuntState state,
-                                     @Nonnull NightHuntTickContext context) {
+                                     @Nonnull NightHuntTickContext context,
+                                     @Nonnull VampirismSkillProgressionAccess progressionAccess) {
         if (state.destination == null) {
             resetToIdle(state, VampirismConfig.get().getNightHuntFailedCooldownSeconds());
             return;
@@ -181,7 +184,7 @@ public final class NightHuntStateMachine {
         if (!markerActive) {
             UUID ownerUuid = extractPlayerUuid(context.playerRef(), context.store());
             if (ownerUuid != null) {
-                resolveFailState(ownerUuid, context, FAIL_PHASE_SUMMONING, state);
+                resolveFailState(ownerUuid, context, FAIL_PHASE_SUMMONING, state, progressionAccess);
             } else {
                 state.phase = HuntPhase.GUIDING;
                 state.summonRemainingSeconds = 0f;
@@ -195,13 +198,19 @@ public final class NightHuntStateMachine {
             return;
         }
 
-        context.commandBuffer().run(bufferStore -> spawnMarkedPrey(context.ownerUuid(), context.playerRef(), state, bufferStore));
+        context.commandBuffer().run(bufferStore -> spawnMarkedPrey(
+                context.ownerUuid(),
+                context.playerRef(),
+                state,
+                bufferStore,
+                progressionAccess));
     }
 
     public static void tickPreyActive(float dt,
                                       @Nonnull HuntState state,
                                       @Nonnull Store<EntityStore> store,
-                                      @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+                                      @Nonnull CommandBuffer<EntityStore> commandBuffer,
+                                      @Nonnull VampirismSkillProgressionAccess progressionAccess) {
         if (state.preyRef == null || state.preyEntityUuid == null) {
             resetToIdle(state, VampirismConfig.get().getNightHuntCooldownSeconds());
             return;
@@ -210,7 +219,7 @@ public final class NightHuntStateMachine {
         boolean preyDead = isDead(state.preyRef, store);
         state.preyLifetimeRemainingSeconds -= dt;
         if (state.preyLifetimeRemainingSeconds <= 0f || !state.preyRef.isValid() || preyDead) {
-            if (preyDead && tryCompleteTrackedPreyKill(state, store)) {
+            if (preyDead && tryCompleteTrackedPreyKill(state, store, progressionAccess)) {
                 return;
             }
             if (state.preyRef.isValid()) {
@@ -232,7 +241,8 @@ public final class NightHuntStateMachine {
                                     commandBuffer,
                                     null),
                             FAIL_PHASE_PREY_ACTIVE,
-                            state);
+                            state,
+                            progressionAccess);
                     return;
                 }
             }
@@ -377,7 +387,8 @@ public final class NightHuntStateMachine {
     public static void completeMarkedPreyKill(@Nonnull UUID ownerUuid,
                                               @Nullable Ref<EntityStore> rewardRef,
                                               @Nonnull HuntState state,
-                                              @Nonnull Store<EntityStore> store) {
+                                              @Nonnull Store<EntityStore> store,
+                                              @Nonnull VampirismSkillProgressionAccess progressionAccess) {
         int rewardPoints = Math.max(0, state.preyRewardPoints);
         NightHuntTrackingService.clearPrey(state.preyEntityUuid);
         state.phase = HuntPhase.IDLE;
@@ -410,7 +421,7 @@ public final class NightHuntStateMachine {
         state.forced = false;
         NightHuntCleanupService.clearPendingRoute(state);
 
-        NightHuntRewardService.grantCompletionReward(ownerUuid, rewardRef, store, rewardPoints);
+        NightHuntRewardService.grantCompletionReward(ownerUuid, rewardRef, store, rewardPoints, progressionAccess);
     }
 
     public static int targetWaypointCount(@Nonnull HuntState state) {
@@ -439,7 +450,8 @@ public final class NightHuntStateMachine {
 
     private static void applyRouteEvent(@Nonnull UUID ownerUuid,
                                         @Nonnull NightHuntTickContext context,
-                                        @Nonnull HuntState state) {
+                                        @Nonnull HuntState state,
+                                        @Nonnull VampirismSkillProgressionAccess progressionAccess) {
         NightHuntEventService.applyRouteEvent(
                 ownerUuid,
                 context.playerRef(),
@@ -447,13 +459,15 @@ public final class NightHuntStateMachine {
                 state,
                 context.store(),
                 context.commandBuffer(),
-                NightHuntTimeService.currentHour(context.store()));
+                NightHuntTimeService.currentHour(context.store()),
+                progressionAccess);
     }
 
     private static void resolveFailState(@Nonnull UUID ownerUuid,
                                          @Nonnull NightHuntTickContext context,
                                          @Nonnull String failurePhase,
-                                         @Nonnull HuntState state) {
+                                         @Nonnull HuntState state,
+                                         @Nonnull VampirismSkillProgressionAccess progressionAccess) {
         NightHuntFailureService.resolveFailState(
                 ownerUuid,
                 context.playerRef(),
@@ -464,27 +478,36 @@ public final class NightHuntStateMachine {
                 context.commandBuffer(),
                 NightHuntTimeService.currentHour(context.store()),
                 randomIdleDelaySeconds(),
-                () -> NightHuntMarkerService.clearApproachMarker(state));
+                () -> NightHuntMarkerService.clearApproachMarker(state),
+                progressionAccess);
     }
 
     private static void spawnMarkedPrey(@Nonnull UUID ownerUuid,
                                         @Nonnull Ref<EntityStore> playerRef,
                                         @Nonnull HuntState state,
-                                        @Nonnull Store<EntityStore> store) {
-        if (!NightHuntPreySpawnService.spawnMarkedPrey(ownerUuid, playerRef, state, store, NightHuntTimeService.currentHour(store))) {
+                                        @Nonnull Store<EntityStore> store,
+                                        @Nonnull VampirismSkillProgressionAccess progressionAccess) {
+        if (!NightHuntPreySpawnService.spawnMarkedPrey(
+                ownerUuid,
+                playerRef,
+                state,
+                store,
+                NightHuntTimeService.currentHour(store),
+                progressionAccess)) {
             resetToIdle(state, VampirismConfig.get().getNightHuntFailedCooldownSeconds());
         }
     }
 
     private static boolean tryCompleteTrackedPreyKill(@Nonnull HuntState state,
-                                                      @Nonnull Store<EntityStore> store) {
+                                                      @Nonnull Store<EntityStore> store,
+                                                      @Nonnull VampirismSkillProgressionAccess progressionAccess) {
         if (state.preyEntityUuid == null || state.ownerUuid == null) {
             return false;
         }
         if (!NightHuntTrackingService.hasRecentOwnerHit(state.preyEntityUuid, state.ownerUuid)) {
             return false;
         }
-        completeMarkedPreyKill(state.ownerUuid, state.ownerPlayerRef, state, store);
+        completeMarkedPreyKill(state.ownerUuid, state.ownerPlayerRef, state, store, progressionAccess);
         return true;
     }
 

@@ -8,10 +8,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.epiccore.skill.model.Ability;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
-import com.epicseed.vampirism.skill.runtime.PlayerRegistrySkillProgressionAccess;
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
 import com.epicseed.vampirism.systems.VampireInfectionSystem;
 import com.hypixel.hytale.component.Ref;
@@ -44,8 +44,9 @@ public final class ConsumableMarkerService {
     public static void tick(@Nonnull UUID uuid,
                             @Nonnull Ref<EntityStore> playerRef,
                             float dt,
+                            @Nonnull SkillProgressionAccess progressionAccess,
                             @Nonnull Store<EntityStore> store) {
-        if (!PlayerRegistrySkillProgressionAccess.instance().hasSkill(uuid, BLOOD_SUCKER_ABILITY_ID)
+        if (!progressionAccess.hasSkill(uuid, BLOOD_SUCKER_ABILITY_ID)
                 && !VampireInfectionSystem.allowsTemporaryAbility(uuid, BLOOD_SUCKER_ABILITY_ID)) {
             markerScanAccumulators.remove(uuid);
             return;

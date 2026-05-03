@@ -9,10 +9,14 @@ import java.util.Map;
 
 public final class ModifierScopeMatcher {
 
-    private ModifierScopeMatcher() {}
+    private final SkillConditionEvaluator conditionEvaluator;
 
-    public static boolean applies(@Nonnull InlineModifier mod, @Nonnull ModifierContext ctx) {
-        return matchesTarget(mod.target, ctx) && SkillConditionEvaluator.evaluateAll(mod.conditions, ctx);
+    public ModifierScopeMatcher(@Nonnull SkillConditionEvaluator conditionEvaluator) {
+        this.conditionEvaluator = conditionEvaluator;
+    }
+
+    public boolean applies(@Nonnull InlineModifier mod, @Nonnull ModifierContext ctx) {
+        return matchesTarget(mod.target, ctx) && conditionEvaluator.evaluateAll(mod.conditions, ctx);
     }
 
     public static boolean matchesTarget(@Nullable Map<String, Object> target, @Nonnull ModifierContext ctx) {

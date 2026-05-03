@@ -4,11 +4,12 @@ import javax.annotation.Nonnull;
 
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.epiccore.modifier.ContextKey;
+import com.epicseed.epiccore.modifier.StatType;
 import com.epicseed.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.epiccore.modifier.ModifierTag;
+import com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.skill.runtime.TemporaryModifierTracker;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -111,7 +112,7 @@ public class VampireMovementSystem extends EntityTickingSystem<EntityStore> {
     }
 
     /** Registers global modifiers owned by this system. Call once at plugin startup. */
-    public static void registerModifiers() {
+    public static void registerModifiers(@Nonnull TemporaryModifierTracker<StatType> temporaryModifiers) {
         var reg = ModifierContext.REGISTRY;
         reg.registerGlobal(VampireStatType.SPEED, Tag.WORLD_STATE_SPEED, 10, (current, ctx) -> {
             boolean inSunlight = ctx.resolve(SunburnSystem.IN_SUNLIGHT, () -> SunburnSystem.isInSunlight(ctx.uuid()));
@@ -119,7 +120,7 @@ public class VampireMovementSystem extends EntityTickingSystem<EntityStore> {
         });
         // Boiling Blood: timed speed boost registered by TemporaryModifierTracker on kill
         reg.registerGlobal(VampireStatType.SPEED, Tag.PREDATOR_SURGE, 150, (current, ctx) -> {
-            float boost = TemporaryModifierTracker.sumAdditive(ctx.uuid(), VampireStatType.SPEED);
+            float boost = temporaryModifiers.sumAdditive(ctx.uuid(), VampireStatType.SPEED);
             return boost > 0f ? current + boost : current;
         });
     }
