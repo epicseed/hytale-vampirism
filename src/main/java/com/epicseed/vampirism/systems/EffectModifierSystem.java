@@ -7,7 +7,7 @@ import com.epicseed.epiccore.modifier.ValueModifier;
 import com.epicseed.epiccore.skill.model.EffectDef;
 import com.epicseed.epiccore.skill.model.InlineModifier;
 import com.epicseed.vampirism.config.VampirismConfig;
-import com.epicseed.vampirism.interop.VampirismClassifications;
+import com.epicseed.epiccore.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.skill.runtime.ModifierScopeMatcher;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;

@@ -8,9 +8,9 @@ import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nonnull;
 
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
-import com.epicseed.vampirism.domain.player.VampirePlayerStateStore;
+import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
-import com.epicseed.vampirism.skill.runtime.VampirismSkillProgressionAccess;
+import com.epicseed.epiccore.vampirism.skill.runtime.VampirismSkillProgressionAccess;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;

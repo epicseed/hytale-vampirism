@@ -1,6 +1,7 @@
 package com.epicseed.vampirism.ui;
 
 import com.epicseed.epiccore.skill.ui.ProgressionPageFactory;
+import com.epicseed.epiccore.skill.ui.ProgressionRelicBindingsPage;
 import com.epicseed.epiccore.skill.ui.ProgressionUiPaths;
 import com.epicseed.epiccore.skill.ui.RelicUiAdapter;
 import com.epicseed.epiccore.skill.ui.SkillTreeUiAdapter;
@@ -28,6 +29,6 @@ public final class VampirismProgressionPageFactory implements ProgressionPageFac
 
     @Override
     public InteractiveCustomUIPage<?> createRelicBindingsPage(PlayerRef playerRef) {
-        return new RelicBindingsUI(playerRef, uiPaths, this, relicUiAdapter);
+        return new ProgressionRelicBindingsPage(playerRef, uiPaths, this, relicUiAdapter);
     }
 }

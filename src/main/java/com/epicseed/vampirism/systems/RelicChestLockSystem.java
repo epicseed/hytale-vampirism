@@ -3,7 +3,7 @@ package com.epicseed.vampirism.systems;
 import javax.annotation.Nonnull;
 
 import com.epicseed.epiccore.hytale.InventoryAdapter;
-import com.epicseed.vampirism.relic.RelicInventoryService;
+import com.epicseed.epiccore.relic.application.RelicInventoryService;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -30,7 +30,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
  */
 public class RelicChestLockSystem extends EntityEventSystem<EntityStore, InventoryChangeEvent> {
 
-    private static final String RELIC_ITEM_ID = "VampirismRelic";
     private static final int[] PLAYER_SECTION_IDS = { -1, -2, -3, -5, -8, -9 }; // hotbar, storage, armor, utility, tools, backpack
     private static final long AUTO_GRANT_SUPPRESSION_MS = 750L;
 
@@ -84,7 +83,7 @@ public class RelicChestLockSystem extends EntityEventSystem<EntityStore, Invento
         SlotTransaction removeT = move.getRemoveTransaction();
         ItemStack removedItem = removeT.getSlotBefore();
         if (ItemStack.isEmpty(removedItem)) return;
-        if (!RELIC_ITEM_ID.equals(removedItem.getItemId())) return;
+        if (!RelicInventoryService.itemId().equals(removedItem.getItemId())) return;
 
         // Allow internal moves (hotbar↔storage, etc.) by checking if dest is a player section
         ItemContainer dest = move.getOtherContainer();

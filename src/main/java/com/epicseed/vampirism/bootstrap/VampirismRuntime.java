@@ -6,9 +6,17 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.epiccore.hytale.WorldStoreAdapter;
 import com.epicseed.epiccore.hytale.WorldMapTrackerAdapter;
 import com.epicseed.epiccore.hytale.runtime.PlayerRuntimeCleanupCoordinator;
 import com.epicseed.epiccore.modifier.StatType;
+import com.epicseed.epiccore.relic.application.RelicInventoryConfig;
+import com.epicseed.epiccore.relic.application.RelicInventoryService;
+import com.epicseed.epiccore.relic.application.RelicPresetProjectionConfig;
+import com.epicseed.epiccore.relic.application.RelicPresetProjectionService;
+import com.epicseed.epiccore.relic.domain.RelicBindingService;
+import com.epicseed.epiccore.relic.infrastructure.RelicPresetSelectionAdapter;
+import com.epicseed.epiccore.relic.presentation.StandardRelicUiAdapter;
 import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.runtime.CatalogBackedSkillRuntimeBootstrap;
 import com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker;
@@ -18,6 +26,8 @@ import com.epicseed.epiccore.skill.runtime.passive.PersistentPassiveEffectServic
 import com.epicseed.epiccore.skill.runtime.passive.TriggerDispatcher;
 import com.epicseed.epiccore.skill.runtime.passive.TriggerEvent;
 import com.epicseed.epiccore.skill.ui.ProgressionPageFactory;
+import com.epicseed.epiccore.skill.ui.ProgressionRelicCooldownHud;
+import com.epicseed.epiccore.vampirism.runtime.VampiricPlayerRuntimeCleanupService;
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.commands.VampirismCommand;
 import com.epicseed.vampirism.commands.VampirismPotionCommand;
@@ -29,27 +39,27 @@ import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.blood.BloodHudService;
 import com.epicseed.vampirism.domain.blood.FeedCompletionService;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
-import com.epicseed.vampirism.domain.relic.RelicBindingService;
+import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
+import com.epicseed.vampirism.domain.relic.PlayerRelicBindingsStore;
+import com.epicseed.vampirism.hud.BloodGaugeHud;
 import com.epicseed.vampirism.domain.skill.SkillTreePresenter;
-import com.epicseed.vampirism.hud.RelicCooldownHud;
-import com.epicseed.vampirism.hytale.RelicPresetSelectionAdapter;
-import com.epicseed.vampirism.interop.VampirismClassifications;
+import com.epicseed.epiccore.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
-import com.epicseed.vampirism.registry.VampireStatusRegistry;
-import com.epicseed.vampirism.runtime.PlayerRuntimeCleanupService;
+import com.epicseed.epiccore.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
-import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
+import com.epicseed.vampirism.modifier.ModifierContext;
+import com.epicseed.epiccore.vampirism.skill.registry.PlayerSkillRegistry;
 import com.epicseed.vampirism.skill.runtime.AbilityService;
-import com.epicseed.vampirism.skill.runtime.CooldownTrackerAbilityCooldownAccess;
+import com.epicseed.epiccore.vampirism.skill.runtime.CooldownTrackerAbilityCooldownAccess;
 import com.epicseed.vampirism.skill.runtime.ModifierScopeMatcher;
 import com.epicseed.vampirism.skill.runtime.PassiveService;
 import com.epicseed.vampirism.skill.runtime.SkillActionExecutor;
 import com.epicseed.vampirism.skill.runtime.SkillConditionEvaluator;
 import com.epicseed.vampirism.skill.runtime.SkillRequirementEvaluator;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
-import com.epicseed.vampirism.skill.runtime.SkillRuntimeStateResolver;
+import com.epicseed.epiccore.vampirism.skill.runtime.SkillRuntimeStateResolver;
 import com.epicseed.vampirism.skill.runtime.VampireVitalityAbilityResourcePort;
-import com.epicseed.vampirism.skill.runtime.VampirismSkillProgressionAccess;
+import com.epicseed.epiccore.vampirism.skill.runtime.VampirismSkillProgressionAccess;
 import com.epicseed.vampirism.systems.BloodConversionSystem;
 import com.epicseed.vampirism.systems.BloodFeedSystem;
 import com.epicseed.vampirism.systems.CrimsonUmbrellaVisualSystem;
@@ -64,21 +74,24 @@ import com.epicseed.vampirism.systems.RelicDropPreventSystem;
 import com.epicseed.vampirism.systems.SneakSystem;
 import com.epicseed.vampirism.systems.SunburnSystem;
 import com.epicseed.vampirism.systems.VampireCombatSystem;
+import com.epicseed.vampirism.systems.VampiricSystemsSupport;
 import com.epicseed.vampirism.systems.VampireInfectionSystem;
 import com.epicseed.vampirism.systems.VampireMovementSystem;
 import com.epicseed.vampirism.systems.VampireSleepSystem;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.epicseed.vampirism.ui.VampirismProgressionPageFactory;
-import com.epicseed.vampirism.ui.VampirismRelicUiAdapter;
 import com.epicseed.vampirism.ui.VampirismSkillTreeUiAdapter;
 import com.epicseed.vampirism.ui.VampirismUiPaths;
+import com.epicseed.vampirism.ui.SkillTreeUI;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector2d;
 import com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.event.events.player.RemovedPlayerFromWorldEvent;
+import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class VampirismRuntime {
@@ -86,13 +99,16 @@ public final class VampirismRuntime {
     private final PlayerSkillRegistry playerSkillRegistry;
     private final PlayerRuntimeCleanupCoordinator playerRuntimeCleanupCoordinator;
     private final NightHuntService nightHuntService;
+    private final RelicPresetSelectionAdapter relicPresetSelectionAdapter;
 
     private VampirismRuntime(@Nonnull PlayerSkillRegistry playerSkillRegistry,
                              @Nonnull PlayerRuntimeCleanupCoordinator playerRuntimeCleanupCoordinator,
-                             @Nonnull NightHuntService nightHuntService) {
+                             @Nonnull NightHuntService nightHuntService,
+                             @Nonnull RelicPresetSelectionAdapter relicPresetSelectionAdapter) {
         this.playerSkillRegistry = playerSkillRegistry;
         this.playerRuntimeCleanupCoordinator = playerRuntimeCleanupCoordinator;
         this.nightHuntService = nightHuntService;
+        this.relicPresetSelectionAdapter = relicPresetSelectionAdapter;
     }
 
     @Nonnull
@@ -100,7 +116,7 @@ public final class VampirismRuntime {
                                              @Nonnull CatalogBackedSkillRuntimeBootstrap skillRuntimeBootstrap,
                                              @Nonnull Vector2d highestPosition) {
         Path dataDirectory = plugin.getDataDirectory();
-        VampireStatusRegistry.init(dataDirectory);
+        VampireStatusRegistry.init(dataDirectory, () -> VampirismConfig.get().isVampireDefaultEnabled());
         PlayerSkillRegistry playerSkillRegistry = PlayerSkillRegistry.init(dataDirectory);
         VampirismClassifications.registerProvider();
 
@@ -108,8 +124,64 @@ public final class VampirismRuntime {
         ProgressionDefinitionProvider progressionDefinitionProvider =
                 skillRuntimeBootstrap.progressionDefinitions();
         NightHuntService nightHuntService = new NightHuntService(progressionAccess);
-        SkillRuntimeStateResolver skillRuntimeStateResolver =
-                new SkillRuntimeStateResolver(skillRuntimeBootstrap.runtimeBindings()::snapshot);
+        SkillRuntimeStateResolver<ModifierContext, SkillRuntimeContext> skillRuntimeStateResolver =
+                new SkillRuntimeStateResolver<>(
+                        skillRuntimeBootstrap.runtimeBindings()::snapshot,
+                        new com.epicseed.epiccore.skill.runtime.HytaleRuntimeStateResolver.StateContextAccess<>() {
+                            @Override
+                            public Ref<EntityStore> selfRef(ModifierContext context) {
+                                return context.ref();
+                            }
+
+                            @Override
+                            public com.hypixel.hytale.component.Store<EntityStore> store(ModifierContext context) {
+                                return context.store();
+                            }
+
+                            @Override
+                            public boolean resolve(ModifierContext context,
+                                                   com.epicseed.epiccore.modifier.ContextKey<Boolean> key,
+                                                   java.util.function.Supplier<Boolean> supplier) {
+                                return context.resolve(key, supplier);
+                            }
+                        },
+                        new com.epicseed.epiccore.skill.runtime.HytaleRuntimeStateResolver.StateContextAccess<>() {
+                            @Override
+                            public Ref<EntityStore> selfRef(SkillRuntimeContext context) {
+                                return context.ref();
+                            }
+
+                            @Override
+                            public com.hypixel.hytale.component.Store<EntityStore> store(SkillRuntimeContext context) {
+                                return context.store();
+                            }
+                        },
+                        SkillRuntimeContext::modifierContext,
+                        (stateId, context, stateQuery) -> {
+                            if (stateId == null || stateId.isBlank() || context == null) {
+                                return null;
+                            }
+                            return switch (stateId) {
+                                case "IN_SUNLIGHT" -> context.uuid() != null
+                                        && context.resolve(SunburnSystem.IN_SUNLIGHT,
+                                        () -> SunburnSystem.isInSunlight(context.uuid()));
+                                case "IS_STARVING" -> context.resolve(VampireVitalitySystem.IS_STARVING,
+                                        () -> VampireVitalitySystem.isStarving(context.ref()));
+                                case "IS_OVERFED" -> context.resolve(VampireVitalitySystem.IS_OVERFED,
+                                        () -> VampireVitalitySystem.isOverfed(context.ref()));
+                                case "IS_BLOOD_STATE_NORMAL" -> context.resolve(
+                                        VampireVitalitySystem.IS_BLOOD_STATE_NORMAL,
+                                        () -> VampireVitalitySystem.isBloodStateNormal(context.ref()));
+                                case "IS_IN_BAT_FORM" -> context.uuid() != null
+                                        && context.resolve(MorphFlySystem.IS_IN_BAT_FORM,
+                                        () -> MorphFlySystem.isMorphActive(
+                                                context.ref(),
+                                                context.store(),
+                                                context.uuid()));
+                                case "IS_IN_FRENZY" -> stateQuery.apply("IS_IN_BLOOD_THIRST", context);
+                                default -> null;
+                            };
+                        });
         SkillConditionEvaluator skillConditionEvaluator =
                 new SkillConditionEvaluator(progressionDefinitionProvider, skillRuntimeStateResolver);
         SkillRequirementEvaluator skillRequirementEvaluator = new SkillRequirementEvaluator(
@@ -124,11 +196,20 @@ public final class VampirismRuntime {
                 skillRequirementEvaluator,
                 temporaryModifiers);
 
+        RelicInventoryService.init(RelicInventoryConfig.defaultSections("VampirismRelic"));
+        RelicPresetProjectionService.init(RelicPresetProjectionConfig.defaultSections(
+                "VampirismRelicPresetProxy",
+                "VampirismRelicPresetProxy",
+                "VampirismRelicPresetIndex"));
         RelicBindingService.init(
                 skillRuntimeBootstrap.runtimeBindings()::snapshot,
                 progressionDefinitionProvider,
                 progressionAccess,
-                CooldownTrackerAbilityCooldownAccess.instance());
+                CooldownTrackerAbilityCooldownAccess.instance(),
+                PlayerRelicBindingsStore.instance(),
+                (uuid, slot) -> VampirePlayerStateStore.get().isInfected(uuid)
+                        ? java.util.Optional.of(VampireInfectionSystem.BLOOD_SUCKER_ABILITY_ID)
+                        : java.util.Optional.empty());
 
         SkillTreeManager skillTreeManager = new SkillTreeManager(
                 progressionDefinitionProvider,
@@ -143,9 +224,10 @@ public final class VampirismRuntime {
                 () -> highestPosition,
                 skillTreePresenter,
                 skillTreeManager);
-        VampirismRelicUiAdapter relicUiAdapter = new VampirismRelicUiAdapter(
+        StandardRelicUiAdapter relicUiAdapter = new StandardRelicUiAdapter(
                 progressionDefinitionProvider,
-                () -> VampirismConfig.get().getCooldownHudUpdateIntervalMs());
+                () -> VampirismConfig.get().getCooldownHudUpdateIntervalMs(),
+                RelicInventoryService.itemId());
         ProgressionPageFactory progressionPageFactory = new VampirismProgressionPageFactory(
                 VampirismUiPaths.theme(),
                 skillTreeUiAdapter,
@@ -169,8 +251,9 @@ public final class VampirismRuntime {
         FeedCompletionService.init(
                 passiveService::onFeed,
                 nightHuntService::onPlayerKilledMarkedPrey);
-        BloodHudService.init(playerRef ->
-                new RelicCooldownHud(playerRef, VampirismUiPaths.theme(), relicUiAdapter));
+        BloodHudService.init(
+                BloodGaugeHud::new,
+                playerRef -> new ProgressionRelicCooldownHud(playerRef, VampirismUiPaths.theme(), relicUiAdapter));
         AbilityService abilityService = new AbilityService(skillRequirementEvaluator, skillActionExecutor);
         abilityService.init(
                 progressionDefinitionProvider,
@@ -180,22 +263,48 @@ public final class VampirismRuntime {
                 (ctx, abilityId) -> triggerDispatcher.dispatch(TriggerEvent.onActivate(ctx, abilityId)));
         skillActionExecutor.setAbilityActivator(abilityService::activateFromAction);
 
+        VampiricSystemsSupport.configure(
+                VampirismConfig.get(),
+                page -> page instanceof SkillTreeUI);
+
         NightHuntSpawnRegistry.init();
         SunburnSystem.registerModifiers();
         VampireVitalitySystem.registerModifiers();
         VampireMovementSystem.registerModifiers(temporaryModifiers);
         VampireCombatSystem.registerModifiers();
-        RelicPresetSelectionAdapter.init();
+        RelicPresetSelectionAdapter relicPresetSelectionAdapter = new RelicPresetSelectionAdapter();
+        relicPresetSelectionAdapter.init();
 
         VampirismRuntime runtime = new VampirismRuntime(
                 playerSkillRegistry,
-                PlayerRuntimeCleanupService.create(
-                        playerSkillRegistry,
-                        nightHuntService,
-                        temporaryModifiers,
-                        passiveTriggerRuntimeService,
-                        persistentPassiveEffectService),
-                nightHuntService);
+                VampiricPlayerRuntimeCleanupService.create(new VampiricPlayerRuntimeCleanupService.CleanupPlan(
+                        VampirismRuntime::cleanupProjectedRelicInventory,
+                        (uuid, playerRef) -> MorphFlySystem.captureDisconnectState(uuid),
+                        (uuid, playerRef) -> VampireVitalitySystem.captureDisconnectState(uuid),
+                        (uuid, playerRef) -> VampireVitalitySystem.clearPlayer(uuid),
+                        (uuid, playerRef) -> nightHuntService.captureDisconnectState(uuid),
+                        (uuid, playerRef) -> SkillTreeManager.get().evictPlayer(uuid),
+                        (uuid, playerRef) -> ModifierContext.REGISTRY.evict(uuid),
+                        (uuid, playerRef) -> EffectModifierSystem.clearPlayer(uuid),
+                        (uuid, playerRef) -> playerSkillRegistry.captureDisconnectState(uuid),
+                        (uuid, playerRef) -> MorphFlySystem.clearTransientState(uuid),
+                        (uuid, playerRef) -> FormHealthSystem.clearPlayer(uuid),
+                        (uuid, playerRef) -> BloodFeedSystem.clearPlayer(uuid),
+                        (uuid, playerRef) -> BloodConversionSystem.clearPlayer(uuid),
+                        (uuid, playerRef) -> nightHuntService.clearPlayer(uuid),
+                        (uuid, playerRef) -> SunburnSystem.onPlayerLeave(uuid),
+                        (uuid, playerRef) -> SneakSystem.clearPlayer(uuid),
+                        (uuid, playerRef) -> VampireMovementSystem.clearPlayer(uuid),
+                        (uuid, playerRef) -> VampireCombatSystem.clearPlayer(uuid),
+                        (uuid, playerRef) -> CrimsonUmbrellaVisualSystem.clearPlayer(uuid),
+                        (uuid, playerRef) -> VampireInfectionSystem.clearPlayer(uuid),
+                        (uuid, playerRef) -> temporaryModifiers.clearPlayer(uuid),
+                        (uuid, playerRef) -> PassiveEffectSystem.onPlayerDisconnect(
+                                uuid,
+                                passiveTriggerRuntimeService,
+                                persistentPassiveEffectService))),
+                nightHuntService,
+                relicPresetSelectionAdapter);
         runtime.registerPlayerLifecycle(plugin);
         registerSystems(
                 plugin,
@@ -213,7 +322,7 @@ public final class VampirismRuntime {
 
     public void shutdown() {
         VampirismClassifications.unregisterProvider();
-        RelicPresetSelectionAdapter.shutdown();
+        relicPresetSelectionAdapter.shutdown();
     }
 
     private void registerPlayerLifecycle(@Nonnull Vampirism plugin) {
@@ -262,14 +371,29 @@ public final class VampirismRuntime {
                                         @Nonnull VampirismSkillProgressionAccess progressionAccess,
                                         @Nonnull ModifierScopeMatcher modifierScopeMatcher,
                                         @Nonnull NightHuntService nightHuntService,
-                                        @Nonnull SkillRuntimeStateResolver skillRuntimeStateResolver) {
+                                        @Nonnull SkillRuntimeStateResolver<ModifierContext, SkillRuntimeContext> skillRuntimeStateResolver) {
         plugin.getEntityStoreRegistry().registerSystem(new VampireInfectionSystem());
         plugin.getEntityStoreRegistry().registerSystem(new VampireVitalitySystem());
         plugin.getEntityStoreRegistry().registerSystem(new BloodFeedSystem(progressionAccess));
         plugin.getEntityStoreRegistry().registerSystem(new BloodConversionSystem());
         plugin.getEntityStoreRegistry().registerSystem(new VampireCombatSystem(
                 passiveService,
-                nightHuntService,
+                new VampireCombatSystem.NightHuntCombatSupport() {
+                    @Override
+                    public void recordMarkedPreyHit(@Nullable UUID attackerUuid,
+                                                    @Nonnull Ref<EntityStore> preyRef,
+                                                    @Nonnull Store<EntityStore> store) {
+                        nightHuntService.recordMarkedPreyHit(attackerUuid, preyRef, store);
+                    }
+
+                    @Override
+                    public void onPlayerKilledMarkedPrey(@Nullable UUID attackerUuid,
+                                                         @Nonnull Ref<EntityStore> attackerRef,
+                                                         @Nonnull Ref<EntityStore> preyRef,
+                                                         @Nonnull Store<EntityStore> store) {
+                        nightHuntService.onPlayerKilledMarkedPrey(attackerUuid, attackerRef, preyRef, store);
+                    }
+                },
                 skillRuntimeStateResolver));
         plugin.getEntityStoreRegistry().registerSystem(new VampireMovementSystem());
         plugin.getEntityStoreRegistry().registerSystem(new EffectModifierSystem(modifierScopeMatcher));
@@ -289,5 +413,29 @@ public final class VampirismRuntime {
         plugin.getEntityStoreRegistry().registerSystem(new RelicDeathDropPreventSystem());
         plugin.getEntityStoreRegistry().registerSystem(new RelicChestLockSystem());
         plugin.getEntityStoreRegistry().registerSystem(new VampireSleepSystem());
+    }
+
+    private static void cleanupProjectedRelicInventory(@Nonnull UUID uuid,
+                                                       @Nullable Ref<EntityStore> playerRef) {
+        if (playerRef == null) {
+            RelicPresetProjectionService.clearPlayer(uuid);
+            return;
+        }
+        var store = playerRef.getStore();
+        if (store == null) {
+            RelicPresetProjectionService.clearPlayer(uuid);
+            return;
+        }
+        World world = WorldStoreAdapter.resolveWorld(store);
+        if (world == null) {
+            RelicPresetProjectionService.clearPlayer(uuid);
+            return;
+        }
+        Runnable action = () -> RelicPresetProjectionService.sync(uuid, playerRef, store, false);
+        if (world.isInThread()) {
+            action.run();
+            return;
+        }
+        world.execute(action);
     }
 }

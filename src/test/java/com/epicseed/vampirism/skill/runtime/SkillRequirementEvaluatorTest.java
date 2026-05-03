@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.runtime.SkillDefinitionCatalog;
+import com.epicseed.epiccore.vampirism.skill.runtime.VampirismSkillProgressionAccess;
 
 class SkillRequirementEvaluatorTest {
 

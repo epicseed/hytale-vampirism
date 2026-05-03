@@ -59,8 +59,7 @@ javadoc {
 // compile against their code without bundling it. When a local install is
 // present, we still use its jar for launching the server in IDE run configs.
 dependencies {
-    implementation("${epiccore_maven_group}:epiccore-model:${epiccore_version}")
-    implementation("${epiccore_maven_group}:epiccore-hytale:${epiccore_version}")
+    implementation("${epiccore_maven_group}:epiccore-vampirism:${epiccore_version}")
     compileOnly("com.hypixel.hytale:Server:$hytale_build")
     if (hasHytaleServerJar) {
         runtimeOnly(files(serverJarFile))
@@ -69,8 +68,6 @@ dependencies {
     // MultipleHUD — optional dependency (https://github.com/Buuz135/MultipleHUD)
     // Jar is in libs/ and active — remove to disable HUD support:
     compileOnly(files("libs/MultipleHUD.jar"))
-    implementation("com.fasterxml.jackson.core:jackson-core:2.21.2")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.21.2")
     testImplementation("com.hypixel.hytale:Server:$hytale_build")
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -94,7 +91,7 @@ repositories {
 
 tasks.register('publishEpicCoreToBuildRepo', Exec) {
     group = 'publishing'
-    description = 'Publishes epiccore-model and epiccore-hytale from ../hytale-epiccore to build/repos/epiccore.'
+    description = 'Publishes epiccore-model, epiccore-hytale, epiccore-relic, and epiccore-vampirism from ../hytale-epiccore to build/repos/epiccore.'
     doFirst {
         if (!epiccoreExternalRepoDir.exists()) {
             throw new GradleException("Could not find external EpicCore repository at ${epiccoreExternalRepoDir}.")

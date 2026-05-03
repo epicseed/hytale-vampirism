@@ -28,6 +28,11 @@ public class VampirismRelicBindingCommand extends AbstractPlayerCommand {
                            @Nonnull Ref<EntityStore> ref,
                            @Nonnull PlayerRef playerRef,
                            @Nonnull World world) {
-        VampirismRelicBindingsCommand.openBindingsUi(commandContext, store, ref, playerRef, progressionPageFactory);
+        com.epicseed.epiccore.relic.presentation.RelicBindingsPageCommands.openBindingsUi(
+                commandContext,
+                store,
+                ref,
+                playerRef,
+                progressionPageFactory);
     }
 }

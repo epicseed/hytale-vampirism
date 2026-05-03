@@ -5,10 +5,11 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.relic.application.RelicInventoryService;
+import com.epicseed.epiccore.relic.domain.RelicBindingService;
+import com.epicseed.epiccore.relic.presentation.RelicCommandFeedback;
 import com.epicseed.epiccore.skill.runtime.SkillActivationResult;
-import com.epicseed.vampirism.domain.relic.RelicBindingService;
-import com.epicseed.vampirism.interop.VampirismClassifications;
-import com.epicseed.vampirism.relic.RelicInventoryService;
+import com.epicseed.epiccore.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.skill.runtime.AbilityService;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -58,7 +59,7 @@ public class VampirismRelicCommand extends AbstractCommand {
         }
 
         SkillActivationResult result = abilityService.activate(abilityId, uuid, ref, targetRef, store);
-        handleResult(ctx, result, abilityId);
+        RelicCommandFeedback.sendActivationFailure(ctx, result, abilityId);
     }
 
     private final class SlotSubCommand extends AbstractPlayerCommand {
@@ -97,24 +98,7 @@ public class VampirismRelicCommand extends AbstractCommand {
             if (!isVampire(ctx, uuid)) return;
 
             RelicInventoryService.SyncResult result = RelicInventoryService.ensurePresent(ref, store);
-            if (result.inventoryFull()) {
-                if (result.firstStrandedLocation() != null) {
-                    ctx.sendMessage(Message.raw("Your Vampirism Relic is stuck in " + result.firstStrandedLocation().describe()
-                            + ". Free a visible inventory slot and run /vampirismrelic get again.").color("yellow"));
-                } else {
-                    ctx.sendMessage(Message.raw("Your inventory is full. Free a visible inventory slot and run /vampirismrelic get again.").color("yellow"));
-                }
-                return;
-            }
-            if (result.addedRelic()) {
-                ctx.sendMessage(Message.raw("Your Vampirism Relic has been restored.").color("green"));
-                return;
-            }
-            if (result.firstLocation() != null) {
-                ctx.sendMessage(Message.raw("You already have your Vampirism Relic in " + result.firstLocation().describe() + ".").color("yellow"));
-                return;
-            }
-            ctx.sendMessage(Message.raw("Your Vampirism Relic was not restored, but no free-slot error was reported either.").color("yellow"));
+            RelicCommandFeedback.sendEnsurePresentResult(ctx, result, "Vampirism Relic", "/vampirismrelic get");
         }
     }
 
@@ -124,19 +108,5 @@ public class VampirismRelicCommand extends AbstractCommand {
             return false;
         }
         return true;
-    }
-
-    private static void handleResult(CommandContext ctx, SkillActivationResult result, String abilityName) {
-        if (result.isSuccess()) return;
-        String msg = switch (result.status()) {
-            case ON_COOLDOWN -> result.reason() != null ? result.reason() : abilityName + " is on cooldown.";
-            case REQUIREMENT_NOT_MET -> result.reason() != null
-                    ? result.reason()
-                    : "Requirement not met for: " + abilityName;
-            case NO_TARGET, NO_TARGETS -> "No valid target found.";
-            case UNKNOWN_ABILITY -> "Ability not found: " + abilityName;
-            default -> result.reason() != null ? result.reason() : "Activation denied.";
-        };
-        ctx.sendMessage(Message.raw(msg).color("yellow"));
     }
 }

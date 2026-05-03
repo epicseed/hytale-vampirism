@@ -1,5 +1,7 @@
 package com.epicseed.vampirism.skill.runtime;
 
+import com.epicseed.epiccore.vampirism.skill.runtime.SkillRuntimeStateResolver;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -24,12 +26,12 @@ public final class SkillConditionEvaluator {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private final ProgressionDefinitionProvider definitionProvider;
-    private final SkillRuntimeStateResolver runtimeStateResolver;
+    private final SkillRuntimeStateResolver<ModifierContext, SkillRuntimeContext> runtimeStateResolver;
     private final RegistryBackedConditionEvaluator<ModifierContext> modifierEvaluator;
     private final RegistryBackedConditionEvaluator<SkillRuntimeContext> runtimeEvaluator;
 
     public SkillConditionEvaluator(@Nonnull ProgressionDefinitionProvider definitionProvider,
-                                   @Nonnull SkillRuntimeStateResolver runtimeStateResolver) {
+                                   @Nonnull SkillRuntimeStateResolver<ModifierContext, SkillRuntimeContext> runtimeStateResolver) {
         this.definitionProvider = definitionProvider;
         this.runtimeStateResolver = runtimeStateResolver;
         this.modifierEvaluator = RuntimeConditionEvaluators.create(modifierSupport(), modifierExtensions());
@@ -108,7 +110,7 @@ public final class SkillConditionEvaluator {
         return StandardConditionSupports.<ModifierContext>builder()
                 .selfRef(ModifierContext::ref)
                 .store(ModifierContext::store)
-                .stateActive(runtimeStateResolver::isStateActive)
+                .stateActive(runtimeStateResolver::isModifierStateActive)
                 .cooldownReady((abilityId, context) -> isCooldownReady(context.uuid(), abilityId))
                 .effectIdResolver((effectId, context) -> this.resolveEffectAssetId(effectId))
                 .statValueResolver((statId, context) -> VampirismRuntimeStatSupport.MODIFIER.resolveStatValue(statId, context))
@@ -120,7 +122,7 @@ public final class SkillConditionEvaluator {
                 .selfRef(SkillRuntimeContext::ref)
                 .targetRef(SkillRuntimeContext::targetRef)
                 .store(SkillRuntimeContext::store)
-                .stateActive(runtimeStateResolver::isStateActive)
+                .stateActive(runtimeStateResolver::isRuntimeStateActive)
                 .cooldownReady((abilityId, context) -> isCooldownReady(context.uuid(), abilityId))
                 .effectIdResolver((effectId, context) -> this.resolveEffectAssetId(effectId))
                 .statValueResolver((statId, context) -> VampirismRuntimeStatSupport.RUNTIME.resolveStatValue(statId, context))

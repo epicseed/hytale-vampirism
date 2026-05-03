@@ -2,7 +2,7 @@ package com.epicseed.vampirism.systems;
 
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.vampirism.modifier.VampireStatType;
-import com.epicseed.vampirism.interop.VampirismClassifications;
+import com.epicseed.epiccore.vampirism.interop.VampirismClassifications;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;

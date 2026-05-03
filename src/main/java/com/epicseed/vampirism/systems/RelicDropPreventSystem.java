@@ -3,6 +3,7 @@ package com.epicseed.vampirism.systems;
 import javax.annotation.Nonnull;
 
 import com.epicseed.epiccore.hytale.InventoryAdapter;
+import com.epicseed.epiccore.relic.application.RelicInventoryService;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -21,8 +22,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
  * when the item being dropped is the VampirismRelic.
  */
 public class RelicDropPreventSystem extends EntityEventSystem<EntityStore, DropItemEvent.PlayerRequest> {
-
-    private static final String RELIC_ITEM_ID = "VampirismRelic";
 
     public RelicDropPreventSystem() {
         super(DropItemEvent.PlayerRequest.class);
@@ -51,7 +50,7 @@ public class RelicDropPreventSystem extends EntityEventSystem<EntityStore, DropI
         if (inventory == null) return;
 
         ItemStack stack = inventory.getInventory().getItemStack(event.getSlotId());
-        if (stack != null && RELIC_ITEM_ID.equals(stack.getItemId())) {
+        if (stack != null && RelicInventoryService.itemId().equals(stack.getItemId())) {
             event.setCancelled(true);
         }
     }

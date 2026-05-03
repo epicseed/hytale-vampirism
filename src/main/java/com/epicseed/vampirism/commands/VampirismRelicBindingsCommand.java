@@ -1,13 +1,12 @@
 package com.epicseed.vampirism.commands;
 
+import com.epicseed.epiccore.relic.presentation.RelicBindingsPageCommands;
 import com.epicseed.epiccore.skill.ui.ProgressionPageFactory;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
-import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -30,21 +29,6 @@ public class VampirismRelicBindingsCommand extends AbstractPlayerCommand {
                            @Nonnull Ref<EntityStore> ref,
                            @Nonnull PlayerRef playerRef,
                            @Nonnull World world) {
-        openBindingsUi(commandContext, store, ref, playerRef, progressionPageFactory);
-    }
-
-    static void openBindingsUi(@Nonnull CommandContext commandContext,
-                               @Nonnull Store<EntityStore> store,
-                               @Nonnull Ref<EntityStore> ref,
-                               @Nonnull PlayerRef playerRef,
-                               @Nonnull ProgressionPageFactory progressionPageFactory) {
-        Player player = store.getComponent(ref, Player.getComponentType());
-        if (player == null) {
-            commandContext.sendMessage(Message.raw("Error: Could not find Player"));
-            return;
-        }
-
-        player.getPageManager().openCustomPage(ref, store,
-                progressionPageFactory.createRelicBindingsPage(playerRef));
+        RelicBindingsPageCommands.openBindingsUi(commandContext, store, ref, playerRef, progressionPageFactory);
     }
 }

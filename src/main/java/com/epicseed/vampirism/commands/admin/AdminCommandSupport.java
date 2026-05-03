@@ -10,7 +10,7 @@ import javax.annotation.Nullable;
 import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.epiccore.skill.runtime.SkillActivationResult;
 import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
-import com.epicseed.vampirism.interop.VampirismClassifications;
+import com.epicseed.epiccore.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.Message;
