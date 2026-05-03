@@ -1,5 +1,4 @@
 package com.epicseed.vampirism.runtime;
-import com.epicseed.vampirism.modifier.ModifierContext;
 
 import java.util.UUID;
 
@@ -7,10 +6,15 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.hytale.WorldStoreAdapter;
+import com.epicseed.epiccore.hytale.runtime.PlayerRuntimeCleanupCoordinator;
+import com.epicseed.epiccore.skill.runtime.passive.PassiveTriggerRuntimeService;
+import com.epicseed.epiccore.skill.runtime.passive.PersistentPassiveEffectService;
+import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.relic.RelicPresetProjectionService;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
 import com.epicseed.epiccore.skill.runtime.AbilityCooldownTracker;
+import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.epicseed.vampirism.skill.runtime.TemporaryModifierTracker;
 import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.hypixel.hytale.component.Ref;
@@ -36,32 +40,38 @@ public final class PlayerRuntimeCleanupService {
     private PlayerRuntimeCleanupService() {
     }
 
-    public static void cleanupDisconnectedPlayer(UUID uuid,
-                                                 @Nullable Ref<EntityStore> playerRef,
-                                                 @Nonnull PlayerSkillRegistry playerSkillRegistry) {
-        cleanupProjectedRelicInventory(uuid, playerRef);
-        MorphFlySystem.captureDisconnectState(uuid);
-        VampireVitalitySystem.captureDisconnectState(uuid);
-        VampireVitalitySystem.clearPlayer(uuid);
-        NightHuntService.captureDisconnectState(uuid);
-        SkillTreeManager.get().evictPlayer(uuid);
-        ModifierContext.REGISTRY.evict(uuid);
-        EffectModifierSystem.clearPlayer(uuid);
-        playerSkillRegistry.captureDisconnectState(uuid);
-        MorphFlySystem.clearTransientState(uuid);
-        FormHealthSystem.clearPlayer(uuid);
-        BloodFeedSystem.clearPlayer(uuid);
-        BloodConversionSystem.clearPlayer(uuid);
-        NightHuntService.clearPlayer(uuid);
-        SunburnSystem.onPlayerLeave(uuid);
-        SneakSystem.clearPlayer(uuid);
-        VampireMovementSystem.clearPlayer(uuid);
-        VampireCombatSystem.clearPlayer(uuid);
-        CrimsonUmbrellaVisualSystem.clearPlayer(uuid);
-        VampireInfectionSystem.clearPlayer(uuid);
-        AbilityCooldownTracker.clearPlayer(uuid);
-        TemporaryModifierTracker.clearPlayer(uuid);
-        PassiveEffectSystem.onPlayerDisconnect(uuid);
+    @Nonnull
+    public static PlayerRuntimeCleanupCoordinator create(
+            @Nonnull PlayerSkillRegistry playerSkillRegistry,
+            @Nonnull PassiveTriggerRuntimeService<SkillRuntimeContext> passiveTriggerRuntimeService,
+            @Nonnull PersistentPassiveEffectService<SkillRuntimeContext> persistentPassiveEffectService) {
+        return PlayerRuntimeCleanupCoordinator.of(
+                PlayerRuntimeCleanupService::cleanupProjectedRelicInventory,
+                (uuid, playerRef) -> MorphFlySystem.captureDisconnectState(uuid),
+                (uuid, playerRef) -> VampireVitalitySystem.captureDisconnectState(uuid),
+                (uuid, playerRef) -> VampireVitalitySystem.clearPlayer(uuid),
+                (uuid, playerRef) -> NightHuntService.captureDisconnectState(uuid),
+                (uuid, playerRef) -> SkillTreeManager.get().evictPlayer(uuid),
+                (uuid, playerRef) -> ModifierContext.REGISTRY.evict(uuid),
+                (uuid, playerRef) -> EffectModifierSystem.clearPlayer(uuid),
+                (uuid, playerRef) -> playerSkillRegistry.captureDisconnectState(uuid),
+                (uuid, playerRef) -> MorphFlySystem.clearTransientState(uuid),
+                (uuid, playerRef) -> FormHealthSystem.clearPlayer(uuid),
+                (uuid, playerRef) -> BloodFeedSystem.clearPlayer(uuid),
+                (uuid, playerRef) -> BloodConversionSystem.clearPlayer(uuid),
+                (uuid, playerRef) -> NightHuntService.clearPlayer(uuid),
+                (uuid, playerRef) -> SunburnSystem.onPlayerLeave(uuid),
+                (uuid, playerRef) -> SneakSystem.clearPlayer(uuid),
+                (uuid, playerRef) -> VampireMovementSystem.clearPlayer(uuid),
+                (uuid, playerRef) -> VampireCombatSystem.clearPlayer(uuid),
+                (uuid, playerRef) -> CrimsonUmbrellaVisualSystem.clearPlayer(uuid),
+                (uuid, playerRef) -> VampireInfectionSystem.clearPlayer(uuid),
+                (uuid, playerRef) -> AbilityCooldownTracker.clearPlayer(uuid),
+                (uuid, playerRef) -> TemporaryModifierTracker.clearPlayer(uuid),
+                (uuid, playerRef) -> PassiveEffectSystem.onPlayerDisconnect(
+                        uuid,
+                        passiveTriggerRuntimeService,
+                        persistentPassiveEffectService));
     }
 
     private static void cleanupProjectedRelicInventory(@Nonnull UUID uuid,

@@ -11,6 +11,10 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import com.epicseed.epiccore.skill.runtime.passive.PersistentEffectApplication;
+import com.epicseed.epiccore.skill.runtime.passive.PersistentPassiveOwnerKey;
+import com.epicseed.epiccore.skill.runtime.passive.PersistentPassiveState;
+
 class PersistentPassiveModelTest {
 
     @Test

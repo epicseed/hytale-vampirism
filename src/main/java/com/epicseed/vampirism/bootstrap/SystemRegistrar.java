@@ -5,7 +5,10 @@ import javax.annotation.Nonnull;
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
+import com.epicseed.epiccore.skill.runtime.passive.PassiveTriggerRuntimeService;
+import com.epicseed.epiccore.skill.runtime.passive.PersistentPassiveEffectService;
 import com.epicseed.vampirism.skill.runtime.PassiveService;
+import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.epicseed.vampirism.systems.BloodConversionSystem;
 import com.epicseed.vampirism.systems.BloodFeedSystem;
 import com.epicseed.vampirism.systems.CrimsonUmbrellaVisualSystem;
@@ -32,6 +35,10 @@ public final class SystemRegistrar {
 
     public static void register(@Nonnull Vampirism plugin, @Nonnull VampirismRuntime runtime) {
         PassiveService passiveService = runtime.passiveService();
+        PassiveTriggerRuntimeService<SkillRuntimeContext> passiveTriggerRuntimeService =
+                runtime.passiveTriggerRuntimeService();
+        PersistentPassiveEffectService<SkillRuntimeContext> persistentPassiveEffectService =
+                runtime.persistentPassiveEffectService();
         ProgressionDefinitionProvider progressionDefinitionProvider =
                 runtime.progressionDefinitionProvider();
         SkillProgressionAccess progressionAccess = runtime.progressionAccess();
@@ -51,6 +58,8 @@ public final class SystemRegistrar {
         plugin.getEntityStoreRegistry().registerSystem(new NightMarkedVictimSystem());
         plugin.getEntityStoreRegistry().registerSystem(new PassiveEffectSystem(
                 passiveService,
+                passiveTriggerRuntimeService,
+                persistentPassiveEffectService,
                 progressionDefinitionProvider,
                 progressionAccess));
         plugin.getEntityStoreRegistry().registerSystem(new RelicDropPreventSystem());

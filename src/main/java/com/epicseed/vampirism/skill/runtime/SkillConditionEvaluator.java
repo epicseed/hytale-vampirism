@@ -12,6 +12,7 @@ import com.epicseed.epiccore.skill.runtime.conditions.ConditionHandlerPack;
 import com.epicseed.epiccore.skill.runtime.conditions.RegistryBackedConditionEvaluator;
 import com.epicseed.epiccore.skill.runtime.conditions.RuntimeConditionEvaluators;
 import com.epicseed.epiccore.skill.runtime.conditions.StandardConditionPacks;
+import com.epicseed.epiccore.skill.runtime.conditions.StandardConditionSupports;
 import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
@@ -41,6 +42,10 @@ public final class SkillConditionEvaluator {
 
     public static boolean evaluate(Map<String, Object> condition, SkillRuntimeContext ctx) {
         return RUNTIME_EVALUATOR.evaluate(condition, ctx);
+    }
+
+    public static RegistryBackedConditionEvaluator<SkillRuntimeContext> runtimeEvaluator() {
+        return RUNTIME_EVALUATOR;
     }
 
     private static ConditionHandlerPack<ModifierContext> modifierExtensions() {
@@ -96,93 +101,34 @@ public final class SkillConditionEvaluator {
     }
 
     private static StandardConditionPacks.StandardConditionSupport<ModifierContext> modifierSupport() {
-        return new StandardConditionPacks.StandardConditionSupport<ModifierContext>() {
-            @Override
-            public com.hypixel.hytale.component.Ref<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> selfRef(ModifierContext context) {
-                return context.ref();
-            }
-
-            @Override
-            public com.hypixel.hytale.component.Ref<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> targetRef(ModifierContext context) {
-                return null;
-            }
-
-            @Override
-            public com.hypixel.hytale.component.Store<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> store(ModifierContext context) {
-                return context.store();
-            }
-
-            @Override
-            public boolean isStateActive(String stateId, ModifierContext context) {
-                return SkillRuntimeStateResolver.isStateActive(stateId, context);
-            }
-
-            @Override
-            public boolean isCooldownReady(String abilityId, ModifierContext context) {
-                return SkillConditionEvaluator.isCooldownReady(context.uuid(), abilityId);
-            }
-
-            @Override
-            public String resolveHytaleEffectId(String effectId, ModifierContext context) {
-                return resolveEffectAssetId(effectId);
-            }
-
-            @Override
-            public Float resolveStatValue(String statId, ModifierContext context) {
-                return VampirismRuntimeStatSupport.MODIFIER.resolveStatValue(statId, context);
-            }
-        };
+        return StandardConditionSupports.<ModifierContext>builder()
+                .selfRef(ModifierContext::ref)
+                .store(ModifierContext::store)
+                .stateActive((stateId, context) -> SkillRuntimeStateResolver.isStateActive(stateId, context))
+                .cooldownReady((abilityId, context) -> SkillConditionEvaluator.isCooldownReady(context.uuid(), abilityId))
+                .effectIdResolver((effectId, context) -> resolveEffectAssetId(effectId))
+                .statValueResolver((statId, context) -> VampirismRuntimeStatSupport.MODIFIER.resolveStatValue(statId, context))
+                .build();
     }
 
     private static StandardConditionPacks.StandardConditionSupport<SkillRuntimeContext> runtimeSupport() {
-        return new StandardConditionPacks.StandardConditionSupport<SkillRuntimeContext>() {
-            @Override
-            public com.hypixel.hytale.component.Ref<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> selfRef(SkillRuntimeContext context) {
-                return context.ref();
-            }
-
-            @Override
-            public com.hypixel.hytale.component.Ref<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> targetRef(SkillRuntimeContext context) {
-                return context.targetRef();
-            }
-
-            @Override
-            public com.hypixel.hytale.component.Store<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> store(SkillRuntimeContext context) {
-                return context.store();
-            }
-
-            @Override
-            public boolean isStateActive(String stateId, SkillRuntimeContext context) {
-                return SkillRuntimeStateResolver.isStateActive(stateId, context);
-            }
-
-            @Override
-            public boolean isCooldownReady(String abilityId, SkillRuntimeContext context) {
-                return SkillConditionEvaluator.isCooldownReady(context.uuid(), abilityId);
-            }
-
-            @Override
-            public String resolveHytaleEffectId(String effectId, SkillRuntimeContext context) {
-                return resolveEffectAssetId(effectId);
-            }
-
-            @Override
-            public Float resolveStatValue(String statId, SkillRuntimeContext context) {
-                return VampirismRuntimeStatSupport.RUNTIME.resolveStatValue(statId, context);
-            }
-
-            @Override
-            public double resolveHealthPercentThreshold(Map<String, Object> condition,
-                                                        SkillRuntimeContext context,
-                                                        double declaredThreshold) {
-                float thresholdOverride = VampirismRuntimeStatSupport.RUNTIME.resolveStatValue(
-                        VampireStatType.ABILITY_EXECUTE_HEALTH_THRESHOLD.name(), -1f, context);
-                String subject = condition.get("subject") instanceof String value ? value : "self";
-                if ("target".equals(subject) && thresholdOverride >= 0f) {
-                    return thresholdOverride;
-                }
-                return declaredThreshold;
-            }
-        };
+        return StandardConditionSupports.<SkillRuntimeContext>builder()
+                .selfRef(SkillRuntimeContext::ref)
+                .targetRef(SkillRuntimeContext::targetRef)
+                .store(SkillRuntimeContext::store)
+                .stateActive((stateId, context) -> SkillRuntimeStateResolver.isStateActive(stateId, context))
+                .cooldownReady((abilityId, context) -> SkillConditionEvaluator.isCooldownReady(context.uuid(), abilityId))
+                .effectIdResolver((effectId, context) -> resolveEffectAssetId(effectId))
+                .statValueResolver((statId, context) -> VampirismRuntimeStatSupport.RUNTIME.resolveStatValue(statId, context))
+                .healthThresholdResolver((condition, context, declaredThreshold) -> {
+                    float thresholdOverride = VampirismRuntimeStatSupport.RUNTIME.resolveStatValue(
+                            VampireStatType.ABILITY_EXECUTE_HEALTH_THRESHOLD.name(), -1f, context);
+                    String subject = condition.get("subject") instanceof String value ? value : "self";
+                    if ("target".equals(subject) && thresholdOverride >= 0f) {
+                        return thresholdOverride;
+                    }
+                    return declaredThreshold;
+                })
+                .build();
     }
 }

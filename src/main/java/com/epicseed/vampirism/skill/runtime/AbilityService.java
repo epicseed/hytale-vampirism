@@ -2,21 +2,16 @@ package com.epicseed.vampirism.skill.runtime;
 import com.epicseed.vampirism.modifier.ModifierContext;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.function.BiConsumer;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.skill.model.Ability;
 import com.epicseed.epiccore.skill.model.EffectDef;
-import com.epicseed.epiccore.skill.model.Skill;
-import com.epicseed.epiccore.skill.runtime.AbilityAccessProvider;
 import com.epicseed.epiccore.skill.runtime.AbilityActivationCharge;
-import com.epicseed.epiccore.skill.runtime.AbilityDefinitionProvider;
+import com.epicseed.epiccore.skill.runtime.ConfigurableAbilityRuntimeService;
 import com.epicseed.epiccore.skill.runtime.SkillRuntimeDefinitions;
-import com.epicseed.epiccore.skill.runtime.AbilityRuntimeKernel;
 import com.epicseed.epiccore.skill.runtime.ResolvedTargets;
 import com.epicseed.epiccore.skill.runtime.SkillActivationResult;
 import com.epicseed.epiccore.skill.runtime.TargetingResolver;
@@ -29,114 +24,21 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class AbilityService {
 
-    private static final AbilityDefinitionProvider UNINITIALIZED_DEFINITION_PROVIDER = new AbilityDefinitionProvider() {
-        @Override
-        public Ability getAbility(String id) {
-            return null;
-        }
-
-        @Override
-        public Skill getSkill(String id) {
-            return null;
-        }
-
-        @Override
-        public EffectDef getEffect(String id) {
-            return null;
-        }
-    };
-    private static final AbilityAccessProvider UNINITIALIZED_ACCESS_PROVIDER = new AbilityAccessProvider() {
-        @Override
-        public boolean allowsTemporaryAbility(UUID uuid, String abilityId) {
-            return false;
-        }
-
-        @Override
-        public Set<String> getUnlockedSkillIds(UUID uuid) {
-            return Set.of();
-        }
-    };
-    private static final AbilityResourcePort UNINITIALIZED_RESOURCE_PORT = new AbilityResourcePort() {
-        @Override
-        public boolean canAffordBlood(Ref<EntityStore> casterRef, int bloodCost) {
-            return false;
-        }
-
-        @Override
-        public void spendBlood(Ref<EntityStore> casterRef, int bloodCost) {
-        }
-    };
-
-    private static AbilityDefinitionProvider definitionProvider = UNINITIALIZED_DEFINITION_PROVIDER;
-    private static AbilityAccessProvider accessProvider = UNINITIALIZED_ACCESS_PROVIDER;
-    private static AbilityResourcePort resourcePort = UNINITIALIZED_RESOURCE_PORT;
-    private static BiConsumer<SkillRuntimeContext, String> activationTriggerDispatcher = (ctx, abilityId) -> {};
-
-    private static final AbilityRuntimeKernel<SkillRuntimeContext, Ref<EntityStore>> KERNEL =
-            new AbilityRuntimeKernel<>(
-                    new AbilityDefinitionProvider() {
-                        @Override
-                        public Ability getAbility(String id) {
-                            return definitionProvider.getAbility(id);
-                        }
-
-                        @Override
-                        public Skill getSkill(String id) {
-                            return definitionProvider.getSkill(id);
-                        }
-
-                        @Override
-                        public EffectDef getEffect(String id) {
-                            return definitionProvider.getEffect(id);
-                        }
-                    },
-                    new AbilityAccessProvider() {
-                        @Override
-                        public boolean allowsTemporaryAbility(UUID uuid, String abilityId) {
-                            return accessProvider.allowsTemporaryAbility(uuid, abilityId);
-                        }
-
-                        @Override
-                        public Set<String> getUnlockedSkillIds(UUID uuid) {
-                            return accessProvider.getUnlockedSkillIds(uuid);
-                        }
-                    },
+    private static final ConfigurableAbilityRuntimeService<SkillRuntimeContext, Ref<EntityStore>> SERVICE =
+            new ConfigurableAbilityRuntimeService<>(
                     SkillRequirementEvaluator::evaluateAll,
                     AbilityService::resolveTargets,
                     SkillActionExecutor.sharedExecutor(),
-                    new com.epicseed.epiccore.skill.runtime.AbilityResourcePort<>() {
-                        @Override
-                        public boolean canAfford(Ref<EntityStore> target, int resourceCost) {
-                            return resourcePort.canAffordBlood(target, resourceCost);
-                        }
-
-                        @Override
-                        public void spend(Ref<EntityStore> target, int resourceCost) {
-                            resourcePort.spendBlood(target, resourceCost);
-                        }
-                    },
-                    AbilityService::resolveCharge,
-                    (ctx, abilityId) -> activationTriggerDispatcher.accept(ctx, abilityId));
+                    AbilityService::resolveCharge);
 
     private AbilityService() {
     }
 
-    public static void init(AbilityDefinitionProvider definitionProvider,
-                            AbilityAccessProvider accessProvider,
+    public static void init(com.epicseed.epiccore.skill.runtime.AbilityDefinitionProvider definitionProvider,
+                            com.epicseed.epiccore.skill.runtime.AbilityAccessProvider accessProvider,
                             AbilityResourcePort resourcePort,
-                            BiConsumer<SkillRuntimeContext, String> activationTriggerDispatcher) {
-        AbilityService.definitionProvider = definitionProvider != null
-                ? definitionProvider
-                : UNINITIALIZED_DEFINITION_PROVIDER;
-        AbilityService.accessProvider = accessProvider != null
-                ? accessProvider
-                : UNINITIALIZED_ACCESS_PROVIDER;
-        AbilityService.resourcePort = resourcePort != null
-                ? resourcePort
-                : UNINITIALIZED_RESOURCE_PORT;
-        AbilityService.activationTriggerDispatcher = activationTriggerDispatcher != null
-                ? activationTriggerDispatcher
-                : (ctx, abilityId) -> {};
+                            com.epicseed.epiccore.skill.runtime.AbilityActivationNotifier<SkillRuntimeContext> activationTriggerDispatcher) {
+        SERVICE.init(definitionProvider, accessProvider, resourcePort, activationTriggerDispatcher);
     }
 
     @Nonnull
@@ -145,18 +47,18 @@ public final class AbilityService {
                                                  @Nonnull Ref<EntityStore> casterRef,
                                                  @Nullable Ref<EntityStore> targetRef,
                                                  @Nonnull Store<EntityStore> store) {
-        return KERNEL.activate(abilityId, new SkillRuntimeContext(uuid, casterRef, targetRef, store));
+        return SERVICE.activate(abilityId, new SkillRuntimeContext(uuid, casterRef, targetRef, store));
     }
 
     @Nonnull
     public static SkillActivationResult activateFromAction(@Nonnull String abilityId,
                                                            @Nonnull SkillRuntimeContext ctx) {
-        return KERNEL.activateFromAction(abilityId, ctx);
+        return SERVICE.activateFromAction(abilityId, ctx);
     }
 
     @Nonnull
     static SkillActivationResult activate(@Nonnull String abilityId, @Nonnull SkillRuntimeContext ctx) {
-        return KERNEL.activate(abilityId, ctx);
+        return SERVICE.activate(abilityId, ctx);
     }
 
     @Nonnull
@@ -230,7 +132,7 @@ public final class AbilityService {
             return false;
         }
 
-        EffectDef effectDef = definitionProvider.getEffect(effectId);
+        EffectDef effectDef = SERVICE.definitionProvider().getEffect(effectId);
         if (effectDef == null) {
             return false;
         }

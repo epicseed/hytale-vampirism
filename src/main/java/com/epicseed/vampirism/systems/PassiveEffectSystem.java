@@ -6,10 +6,10 @@ import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
 import com.epicseed.epiccore.skill.model.Passive;
 import com.epicseed.epiccore.skill.model.Skill;
-import com.epicseed.vampirism.skill.runtime.PassiveTriggerRuntimeService;
+import com.epicseed.epiccore.skill.runtime.passive.PassiveTriggerRuntimeService;
+import com.epicseed.epiccore.skill.runtime.passive.PersistentPassiveEffectService;
+import com.epicseed.epiccore.skill.runtime.passive.PersistentPassiveOwnerKey;
 import com.epicseed.vampirism.skill.runtime.PassiveService;
-import com.epicseed.vampirism.skill.runtime.PersistentPassiveEffectService;
-import com.epicseed.vampirism.skill.runtime.PersistentPassiveOwnerKey;
 import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -67,13 +67,20 @@ public class PassiveEffectSystem extends EntityTickingSystem<EntityStore> {
     /** Per-player accumulator for the periodic passive check interval. */
     private static final Map<UUID, Float> checkAccumulators = new ConcurrentHashMap<>();
     private final PassiveService passiveService;
+    private final PassiveTriggerRuntimeService<SkillRuntimeContext> passiveTriggerRuntimeService;
+    private final PersistentPassiveEffectService<SkillRuntimeContext> persistentPassiveEffectService;
     private final ProgressionDefinitionProvider definitionProvider;
     private final SkillProgressionAccess progressionAccess;
 
     public PassiveEffectSystem(@Nonnull PassiveService passiveService,
+                               @Nonnull PassiveTriggerRuntimeService<SkillRuntimeContext> passiveTriggerRuntimeService,
+                               @Nonnull PersistentPassiveEffectService<SkillRuntimeContext> persistentPassiveEffectService,
                                @Nonnull ProgressionDefinitionProvider definitionProvider,
                                @Nonnull SkillProgressionAccess progressionAccess) {
         this.passiveService = Objects.requireNonNull(passiveService, "passiveService");
+        this.passiveTriggerRuntimeService = Objects.requireNonNull(passiveTriggerRuntimeService, "passiveTriggerRuntimeService");
+        this.persistentPassiveEffectService =
+                Objects.requireNonNull(persistentPassiveEffectService, "persistentPassiveEffectService");
         this.definitionProvider = Objects.requireNonNull(definitionProvider, "definitionProvider");
         this.progressionAccess = Objects.requireNonNull(progressionAccess, "progressionAccess");
     }
@@ -107,8 +114,8 @@ public class PassiveEffectSystem extends EntityTickingSystem<EntityStore> {
             UUID uuid = playerRefComp.getUuid();
             SkillRuntimeContext ctx = new SkillRuntimeContext(uuid, playerRef, store);
             if (!VampirismClassifications.isVampiric(uuid)) {
-                PersistentPassiveEffectService.cleanupInactiveOwners(uuid, ctx, Collections.emptySet());
-                onPlayerDisconnect(uuid);
+                persistentPassiveEffectService.cleanupInactiveOwners(uuid, ctx, Collections.emptySet());
+                onPlayerDisconnect(uuid, passiveTriggerRuntimeService, persistentPassiveEffectService);
                 return;
             }
 
@@ -121,12 +128,12 @@ public class PassiveEffectSystem extends EntityTickingSystem<EntityStore> {
 
             Collection<Passive> unlocked = passiveService.getUnlockedPassives(uuid);
             Set<String> activePersistentOwnerKeys = new HashSet<>();
-            PassiveTriggerRuntimeService.initializePlayerSession(ctx);
+            passiveTriggerRuntimeService.initializePlayerSession(ctx);
 
             for (String skillId : progressionAccess.getUnlockedSkillIds(uuid)) {
                 Skill skill = definitionProvider.getSkill(skillId);
                 if (skill != null) {
-                    PersistentPassiveEffectService.registerPersistentOwner(
+                    persistentPassiveEffectService.registerPersistentOwner(
                             activePersistentOwnerKeys,
                             PersistentPassiveOwnerKey.skill(skill.id),
                             skill.triggers,
@@ -137,7 +144,7 @@ public class PassiveEffectSystem extends EntityTickingSystem<EntityStore> {
 
             if (!unlocked.isEmpty()) {
                 for (Passive passive : unlocked) {
-                    PersistentPassiveEffectService.registerPersistentOwner(
+                    persistentPassiveEffectService.registerPersistentOwner(
                             activePersistentOwnerKeys,
                             PersistentPassiveOwnerKey.passive(passive.id),
                             passive.triggers,
@@ -145,7 +152,7 @@ public class PassiveEffectSystem extends EntityTickingSystem<EntityStore> {
                     handlePassive(passive, ctx);
                 }
             }
-            PersistentPassiveEffectService.cleanupInactiveOwners(uuid, ctx, activePersistentOwnerKeys);
+            persistentPassiveEffectService.cleanupInactiveOwners(uuid, ctx, activePersistentOwnerKeys);
 
         } catch (Exception e) {
             LOGGER.atSevere().log("[PassiveEffectSystem] tick error: " + e.getMessage());
@@ -177,48 +184,19 @@ public class PassiveEffectSystem extends EntityTickingSystem<EntityStore> {
                              List<Map<String, Object>> actions,
                              SkillRuntimeContext ctx) {
         if (actions == null || actions.isEmpty()) return;
-        if (PersistentPassiveEffectService.isPersistentOwner(triggers, actions)) {
-            PersistentPassiveEffectService.handleOwner(ownerKey, actions, ctx);
+        if (persistentPassiveEffectService.isPersistentOwner(triggers, actions)) {
+            persistentPassiveEffectService.handleOwner(ownerKey, actions, ctx);
             return;
         }
-        PassiveTriggerRuntimeService.handleOwner(ownerKey, triggers, actions, ctx);
-    }
-
-    // -------------------------------------------------------------------------
-    // Connect / disconnect hooks
-    // -------------------------------------------------------------------------
-
-    /**
-     * Called when a player connects.  Immediately applies persistent (no-trigger) passive
-     * effects so they are active from the start of the session without waiting for the first
-     * interval.
-     */
-    public static void onPlayerConnect(UUID uuid, Ref<EntityStore> playerRef, Store<EntityStore> store) {
-        try {
-            Collection<Passive> unlocked = PassiveService.get().getUnlockedPassives(uuid);
-            if (unlocked.isEmpty()) return;
-
-            SkillRuntimeContext ctx = new SkillRuntimeContext(uuid, playerRef, store);
-            for (Passive passive : unlocked) {
-                List<Map<String, Object>> triggers = passive.triggers != null
-                        ? passive.triggers : Collections.emptyList();
-                if (!triggers.isEmpty()) continue;
-                if (passive.actions == null || passive.actions.isEmpty()) continue;
-
-                PersistentPassiveEffectService.handleOwner(
-                        PersistentPassiveOwnerKey.passive(passive.id),
-                        passive.actions,
-                        ctx);
-            }
-        } catch (Exception e) {
-            LOGGER.atWarning().log("[PassiveEffectSystem] onPlayerConnect error: " + e.getMessage());
-        }
+        passiveTriggerRuntimeService.handleOwner(ownerKey, triggers, actions, ctx);
     }
 
     /** Removes all per-player cooldown / apply tracking for a disconnecting player. */
-    public static void onPlayerDisconnect(UUID uuid) {
+    public static void onPlayerDisconnect(UUID uuid,
+                                          @Nonnull PassiveTriggerRuntimeService<SkillRuntimeContext> passiveTriggerRuntimeService,
+                                          @Nonnull PersistentPassiveEffectService<SkillRuntimeContext> persistentPassiveEffectService) {
         checkAccumulators.remove(uuid);
-        PassiveTriggerRuntimeService.clearPlayer(uuid);
-        PersistentPassiveEffectService.clearPlayer(uuid);
+        passiveTriggerRuntimeService.clearPlayer(uuid);
+        persistentPassiveEffectService.clearPlayer(uuid);
     }
 }

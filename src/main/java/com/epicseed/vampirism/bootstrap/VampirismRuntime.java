@@ -6,9 +6,15 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.epiccore.hytale.runtime.PlayerRuntimeCleanupCoordinator;
 import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
 import com.epicseed.epiccore.skill.runtime.CatalogBackedSkillRuntimeBootstrap;
+import com.epicseed.epiccore.skill.runtime.passive.PassiveTriggerRuntimeService;
+import com.epicseed.epiccore.skill.runtime.passive.PersistentPassiveEffectService;
+import com.epicseed.epiccore.skill.runtime.passive.PassiveRuntimeServices;
+import com.epicseed.epiccore.skill.runtime.passive.TriggerDispatcher;
+import com.epicseed.epiccore.skill.runtime.passive.TriggerEvent;
 import com.epicseed.epiccore.skill.ui.ProgressionPageFactory;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.blood.BloodHudService;
@@ -26,10 +32,9 @@ import com.epicseed.vampirism.skill.registry.PlayerSkillRegistry;
 import com.epicseed.vampirism.skill.runtime.AbilityService;
 import com.epicseed.vampirism.skill.runtime.CooldownTrackerAbilityCooldownAccess;
 import com.epicseed.vampirism.skill.runtime.PassiveService;
-import com.epicseed.vampirism.skill.runtime.PassiveTriggerRuntimeService;
 import com.epicseed.vampirism.skill.runtime.SkillActionExecutor;
-import com.epicseed.vampirism.skill.runtime.TriggerDispatcher;
-import com.epicseed.vampirism.skill.runtime.TriggerEvent;
+import com.epicseed.vampirism.skill.runtime.SkillConditionEvaluator;
+import com.epicseed.vampirism.skill.runtime.SkillRuntimeContext;
 import com.epicseed.vampirism.skill.runtime.VampireVitalityAbilityResourcePort;
 import com.epicseed.vampirism.skill.runtime.VampirismAbilityAccessProvider;
 import com.epicseed.vampirism.systems.SunburnSystem;
@@ -50,18 +55,27 @@ public final class VampirismRuntime {
     private final ProgressionDefinitionProvider progressionDefinitionProvider;
     private final SkillProgressionAccess progressionAccess;
     private final PassiveService passiveService;
+    private final PassiveTriggerRuntimeService<SkillRuntimeContext> passiveTriggerRuntimeService;
+    private final PersistentPassiveEffectService<SkillRuntimeContext> persistentPassiveEffectService;
     private final ProgressionPageFactory progressionPageFactory;
+    private final PlayerRuntimeCleanupCoordinator playerRuntimeCleanupCoordinator;
 
     private VampirismRuntime(@Nonnull PlayerSkillRegistry playerSkillRegistry,
                              @Nonnull ProgressionDefinitionProvider progressionDefinitionProvider,
                              @Nonnull SkillProgressionAccess progressionAccess,
                              @Nonnull PassiveService passiveService,
-                             @Nonnull ProgressionPageFactory progressionPageFactory) {
+                             @Nonnull PassiveTriggerRuntimeService<SkillRuntimeContext> passiveTriggerRuntimeService,
+                             @Nonnull PersistentPassiveEffectService<SkillRuntimeContext> persistentPassiveEffectService,
+                             @Nonnull ProgressionPageFactory progressionPageFactory,
+                             @Nonnull PlayerRuntimeCleanupCoordinator playerRuntimeCleanupCoordinator) {
         this.playerSkillRegistry = playerSkillRegistry;
         this.progressionDefinitionProvider = progressionDefinitionProvider;
         this.progressionAccess = progressionAccess;
         this.passiveService = passiveService;
+        this.passiveTriggerRuntimeService = passiveTriggerRuntimeService;
+        this.persistentPassiveEffectService = persistentPassiveEffectService;
         this.progressionPageFactory = progressionPageFactory;
+        this.playerRuntimeCleanupCoordinator = playerRuntimeCleanupCoordinator;
     }
 
     @Nonnull
@@ -102,15 +116,20 @@ public final class VampirismRuntime {
                 skillTreeUiAdapter,
                 relicUiAdapter);
 
-        TriggerDispatcher triggerDispatcher = new TriggerDispatcher(
-                progressionDefinitionProvider,
-                progressionAccess);
-        PassiveService passiveService = new PassiveService(
-                progressionDefinitionProvider,
-                progressionAccess,
-                triggerDispatcher::dispatch);
+        PassiveRuntimeServices<SkillRuntimeContext, PassiveService> passiveRuntimeServices =
+                PassiveRuntimeServices.create(
+                        progressionDefinitionProvider,
+                        progressionAccess,
+                        SkillActionExecutor.sharedExecutor(),
+                        SkillConditionEvaluator.runtimeEvaluator(),
+                        PassiveService::init);
+        TriggerDispatcher<SkillRuntimeContext> triggerDispatcher = passiveRuntimeServices.triggerDispatcher();
+        PassiveService passiveService = passiveRuntimeServices.passiveService();
+        PassiveTriggerRuntimeService<SkillRuntimeContext> passiveTriggerRuntimeService =
+                passiveRuntimeServices.passiveTriggerRuntimeService();
+        PersistentPassiveEffectService<SkillRuntimeContext> persistentPassiveEffectService =
+                passiveRuntimeServices.persistentPassiveEffectService();
 
-        PassiveTriggerRuntimeService.init(triggerDispatcher::dispatch);
         SkillActionExecutor.init(passiveService::onFeed);
         FeedCompletionService.init(passiveService::onFeed);
         BloodHudService.init(playerRef ->
@@ -133,7 +152,13 @@ public final class VampirismRuntime {
                 progressionDefinitionProvider,
                 progressionAccess,
                 passiveService,
-                progressionPageFactory);
+                passiveTriggerRuntimeService,
+                persistentPassiveEffectService,
+                progressionPageFactory,
+                PlayerRuntimeCleanupService.create(
+                        playerSkillRegistry,
+                        passiveTriggerRuntimeService,
+                        persistentPassiveEffectService));
     }
 
     public void shutdown() {
@@ -147,12 +172,22 @@ public final class VampirismRuntime {
 
     void cleanupDisconnectedPlayer(@Nonnull UUID uuid,
                                    @Nullable Ref<EntityStore> playerRef) {
-        PlayerRuntimeCleanupService.cleanupDisconnectedPlayer(uuid, playerRef, playerSkillRegistry);
+        playerRuntimeCleanupCoordinator.cleanup(uuid, playerRef);
     }
 
     @Nonnull
     PassiveService passiveService() {
         return passiveService;
+    }
+
+    @Nonnull
+    PassiveTriggerRuntimeService<SkillRuntimeContext> passiveTriggerRuntimeService() {
+        return passiveTriggerRuntimeService;
+    }
+
+    @Nonnull
+    PersistentPassiveEffectService<SkillRuntimeContext> persistentPassiveEffectService() {
+        return persistentPassiveEffectService;
     }
 
     @Nonnull

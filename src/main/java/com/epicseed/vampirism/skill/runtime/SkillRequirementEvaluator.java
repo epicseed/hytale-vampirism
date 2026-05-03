@@ -9,8 +9,7 @@ import javax.annotation.Nonnull;
 
 import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
 import com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider;
-import com.epicseed.epiccore.skill.runtime.requirements.RegistryBackedRequirementEvaluator;
-import com.epicseed.epiccore.skill.runtime.requirements.RuntimeRequirementEvaluators;
+import com.epicseed.epiccore.skill.runtime.requirements.ConfigurableRequirementEvaluator;
 
 public final class SkillRequirementEvaluator {
 
@@ -56,65 +55,21 @@ public final class SkillRequirementEvaluator {
                 public void resetSkills(@Nonnull UUID uuid) {
                 }
             };
-    private static volatile SkillProgressionAccess accessProvider;
-    private static final SkillProgressionAccess LIVE_ACCESS_PROVIDER =
-            new SkillProgressionAccess() {
-                @Override
-                public int getSkillPoints(@Nonnull UUID uuid) {
-                    return currentAccessProvider().getSkillPoints(uuid);
-                }
-
-                @Override
-                public boolean hasSkill(@Nonnull UUID uuid, @Nonnull String skillId) {
-                    return currentAccessProvider().hasSkill(uuid, skillId);
-                }
-
-                @Override
-                public boolean canUnlock(@Nonnull UUID uuid,
-                                         @Nonnull String skillId,
-                                         int cost,
-                                         @Nonnull Iterable<String> requirementIds) {
-                    return currentAccessProvider().canUnlock(uuid, skillId, cost, requirementIds);
-                }
-
-                @Override
-                public boolean tryUnlock(@Nonnull UUID uuid,
-                                         @Nonnull String skillId,
-                                         int cost,
-                                         @Nonnull Iterable<String> requirementIds) {
-                    return currentAccessProvider().tryUnlock(uuid, skillId, cost, requirementIds);
-                }
-
-                @Override
-                public boolean grantSkill(@Nonnull UUID uuid, @Nonnull String skillId) {
-                    return currentAccessProvider().grantSkill(uuid, skillId);
-                }
-
-                @Override
-                public @Nonnull Set<String> getUnlockedSkillIds(@Nonnull UUID uuid) {
-                    return currentAccessProvider().getUnlockedSkillIds(uuid);
-                }
-
-                @Override
-                public void resetSkills(@Nonnull UUID uuid) {
-                    currentAccessProvider().resetSkills(uuid);
-                }
-            };
-    private static final RegistryBackedRequirementEvaluator<SkillRuntimeContext> EVALUATOR =
-            RuntimeRequirementEvaluators.create(
+    private static final ConfigurableRequirementEvaluator<SkillRuntimeContext> EVALUATOR =
+            new ConfigurableRequirementEvaluator<>(
                     (condition, ctx) -> SkillConditionEvaluator.evaluateAll(condition, ctx),
-                    LIVE_ACCESS_PROVIDER,
+                    () -> PlayerRegistrySkillProgressionAccess.instanceOr(UNINITIALIZED_ACCESS_PROVIDER),
                     CatalogBackedProgressionDefinitionProvider.instance(),
                     SkillRuntimeContext::uuid);
 
     private SkillRequirementEvaluator() {}
 
     public static void init(SkillProgressionAccess accessProvider) {
-        SkillRequirementEvaluator.accessProvider = accessProvider;
+        EVALUATOR.init(accessProvider);
     }
 
     static void resetForTests() {
-        accessProvider = null;
+        EVALUATOR.reset();
     }
 
     public static boolean evaluateAll(List<Map<String, Object>> requirements, SkillRuntimeContext ctx) {
@@ -123,10 +78,5 @@ public final class SkillRequirementEvaluator {
 
     public static boolean evaluate(Map<String, Object> requirement, SkillRuntimeContext ctx) {
         return EVALUATOR.evaluate(requirement, ctx);
-    }
-    private static SkillProgressionAccess currentAccessProvider() {
-        return accessProvider != null
-                ? accessProvider
-                : PlayerRegistrySkillProgressionAccess.instanceOr(UNINITIALIZED_ACCESS_PROVIDER);
     }
 }
