@@ -21,6 +21,8 @@ import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeService;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
 import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.epiccore.vampirism.interop.VampirismClassifications;
@@ -44,10 +46,12 @@ public class VampirismCommand extends AbstractCommand {
                             @Nonnull AbilityService abilityService,
                             @Nonnull VampiricLineageService lineageService,
                             @Nonnull MasqueradeHeatService masqueradeHeatService,
-                            @Nonnull VampiricRitualService ritualService) {
+                            @Nonnull VampiricRitualService ritualService,
+                            @Nonnull VampiricRitualRuntimeService ritualRuntimeService,
+                            @Nonnull VampiricRitualContextResolver ritualContextResolver) {
         super("vampirism", "Vampirism plugin management");
         this.setPermissionGroups(new String[]{"admin"});
-        this.addSubCommand(new ReloadCommand(lineageService));
+        this.addSubCommand(new ReloadCommand(lineageService, ritualRuntimeService));
         this.addSubCommand(new ConfigInfoCommand());
         this.addSubCommand(new StatusCommand());
         this.addSubCommand(new SatietyInfoCommand());
@@ -55,7 +59,7 @@ public class VampirismCommand extends AbstractCommand {
         this.addSubCommand(new BloodAdminCommands());
         this.addSubCommand(new HuntAdminCommands(progressionAccess, nightHuntService));
         this.addSubCommand(new LineageAdminCommands(lineageService));
-        this.addSubCommand(new RitualAdminCommands(ritualService, progressionAccess));
+        this.addSubCommand(new RitualAdminCommands(ritualService, ritualRuntimeService, progressionAccess, ritualContextResolver));
         this.addSubCommand(new MasqueradeAdminCommands(masqueradeHeatService));
         this.addSubCommand(new AbilityAdminCommands(progressionAccess, abilityService));
         this.addSubCommand(new VampireAdminCommands());
@@ -78,7 +82,8 @@ public class VampirismCommand extends AbstractCommand {
         ctx.sendMessage(Message.raw("/vampirism blood add <player> <percent> - add blood to a player").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism hunt info|force|reset-cooldown <player> - control marked prey hunts").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism lineage info|list|choose|clear <player> [lineageId] - inspect or change lineages").color("yellow"));
-        ctx.sendMessage(Message.raw("/vampirism ritual list|info|sync|begin|progress|complete <player> ... - inspect ritual progress").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirism ritual list|info|sync|begin|progress|complete|runtime|abort <player> ... - inspect ritual progress").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirism ritual editor - open the dev ritual template editor").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism masquerade info|set|add|strike|clear <player> [heat] - inspect masquerade heat").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ability trigger <player> <abilityId> - trigger one ability").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ability trigger-all <player> - trigger all unlocked abilities").color("yellow"));
@@ -94,10 +99,13 @@ public class VampirismCommand extends AbstractCommand {
 
     private static class ReloadCommand extends AbstractCommand {
         private final VampiricLineageService lineageService;
+        private final VampiricRitualRuntimeService ritualRuntimeService;
 
-        ReloadCommand(@Nonnull VampiricLineageService lineageService) {
+        ReloadCommand(@Nonnull VampiricLineageService lineageService,
+                      @Nonnull VampiricRitualRuntimeService ritualRuntimeService) {
             super("reload", "Reload config and registry from disk");
             this.lineageService = lineageService;
+            this.ritualRuntimeService = ritualRuntimeService;
             this.setPermissionGroups(new String[]{"admin"});
         }
 
@@ -109,6 +117,7 @@ public class VampirismCommand extends AbstractCommand {
             NightHuntSpawnRegistry.get().reload();
             VampiricAgeTierService.reload();
             lineageService.registry().reload();
+            ritualRuntimeService.templateRegistry().reload();
             ctx.sendMessage(Message.raw("Vampirism config and registries reloaded.").color("green"));
             return CompletableFuture.completedFuture(null);
         }

@@ -18,6 +18,8 @@ type skillDataSection struct {
 	DefaultJSON string
 }
 
+const ritualTemplatesDefaultJSON = `{"templates":[]}`
+
 var skillDataSections = []skillDataSection{
 	{Key: "abilities", FileName: "abilities.json", DefaultJSON: "[]"},
 	{Key: "passives", FileName: "passives.json", DefaultJSON: "[]"},
@@ -78,6 +80,10 @@ func postData(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("write error: %v", err), http.StatusInternalServerError)
 		return
 	}
+	if err := writeRitualTemplates(rawSections["ritualTemplates"]); err != nil {
+		http.Error(w, fmt.Sprintf("ritual template write error: %v", err), http.StatusInternalServerError)
+		return
+	}
 
 	if legacyJSONPath != "" {
 		if err := os.Remove(legacyJSONPath); err != nil && !os.IsNotExist(err) {
@@ -91,8 +97,8 @@ func postData(w http.ResponseWriter, r *http.Request) {
 }
 
 func readSkillDataDocument() ([]byte, error) {
+	doc := map[string]any{}
 	if hasSplitSkillData() {
-		doc := map[string]any{}
 		for _, section := range skillDataSections {
 			value, err := readSectionValue(section)
 			if err != nil {
@@ -100,14 +106,50 @@ func readSkillDataDocument() ([]byte, error) {
 			}
 			doc[section.Key] = value
 		}
-		return json.MarshalIndent(doc, "", "  ")
+	} else {
+		legacyDoc, err := readLegacySkillDataDocument()
+		if err != nil {
+			return nil, err
+		}
+		doc = legacyDoc
 	}
-	return os.ReadFile(legacyJSONPath)
+
+	ritualTemplates, err := readRitualTemplatesValue()
+	if err != nil {
+		return nil, err
+	}
+	doc["ritualTemplates"] = ritualTemplates
+	return json.MarshalIndent(doc, "", "  ")
 }
 
 func hasSplitSkillData() bool {
 	info, err := os.Stat(skillDataDir)
 	return err == nil && info.IsDir()
+}
+
+func readLegacySkillDataDocument() (map[string]any, error) {
+	doc := map[string]any{}
+	raw, err := os.ReadFile(legacyJSONPath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+	} else if len(raw) > 0 {
+		if err := json.Unmarshal(raw, &doc); err != nil {
+			return nil, err
+		}
+	}
+	for _, section := range skillDataSections {
+		if _, ok := doc[section.Key]; ok {
+			continue
+		}
+		value, err := defaultSectionValue(section.DefaultJSON)
+		if err != nil {
+			return nil, err
+		}
+		doc[section.Key] = value
+	}
+	return doc, nil
 }
 
 func readSectionValue(section skillDataSection) (any, error) {
@@ -123,6 +165,14 @@ func readSectionValue(section skillDataSection) (any, error) {
 	var value any
 	if err := json.Unmarshal(raw, &value); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", section.FileName, err)
+	}
+	return value, nil
+}
+
+func defaultSectionValue(defaultJSON string) (any, error) {
+	var value any
+	if err := json.Unmarshal([]byte(defaultJSON), &value); err != nil {
+		return nil, err
 	}
 	return value, nil
 }
@@ -157,6 +207,65 @@ func writeSplitSkillData(rawSections map[string]json.RawMessage) error {
 	return nil
 }
 
+func readRitualTemplatesValue() (any, error) {
+	raw, err := os.ReadFile(ritualTemplatesPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			raw = []byte(ritualTemplatesDefaultJSON)
+		} else {
+			return nil, err
+		}
+	}
+	var value any
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return nil, fmt.Errorf("parse ritual templates: %w", err)
+	}
+	if value == nil {
+		value = map[string]any{"templates": []any{}}
+	}
+	return value, nil
+}
+
+func writeRitualTemplates(raw json.RawMessage) error {
+	normalized, err := normalizeRitualTemplates(raw)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(ritualTemplatesPath), 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(ritualTemplatesPath, append(normalized, '\n'), 0644)
+}
+
+func normalizeRitualTemplates(raw json.RawMessage) ([]byte, error) {
+	if len(raw) == 0 {
+		raw = json.RawMessage(ritualTemplatesDefaultJSON)
+	}
+
+	var value any
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return nil, err
+	}
+
+	obj, ok := value.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("ritualTemplates must be a JSON object")
+	}
+	if templates, ok := obj["templates"]; ok {
+		if _, ok := templates.([]any); !ok {
+			return nil, fmt.Errorf("ritualTemplates.templates must be an array")
+		}
+	} else {
+		obj["templates"] = []any{}
+	}
+
+	pretty, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return pretty, nil
+}
+
 func normalizeSection(raw json.RawMessage, defaultJSON string) ([]byte, error) {
 	if len(raw) == 0 {
 		raw = json.RawMessage(defaultJSON)
@@ -175,6 +284,16 @@ func normalizeSection(raw json.RawMessage, defaultJSON string) ([]byte, error) {
 func iconsHandler(w http.ResponseWriter, _ *http.Request) {
 	entries, err := os.ReadDir(iconsPath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			body, marshalErr := json.Marshal([]string{})
+			if marshalErr != nil {
+				http.Error(w, "marshal error", http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(body)
+			return
+		}
 		http.Error(w, fmt.Sprintf("read icons error: %v", err), http.StatusInternalServerError)
 		return
 	}

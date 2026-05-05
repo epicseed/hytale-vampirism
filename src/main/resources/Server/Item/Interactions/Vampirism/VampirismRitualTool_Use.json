@@ -1,0 +1,12 @@
+{
+  "Type": "Condition",
+  "Crouching": true,
+  "Next": {
+    "Type": "Command",
+    "Command": "vampirismritual channel"
+  },
+  "Failed": {
+    "Type": "Command",
+    "Command": "vampirismritual use"
+  }
+}

@@ -1,0 +1,62 @@
+Group #RitualHudRoot {
+  Anchor: (Left: 24, Bottom: 132, Width: 332, Height: 108);
+  Visible: false;
+  HitTestVisible: false;
+  Background: #12060a(0.82);
+  Padding: (Full: 10);
+
+  Group #Content {
+    Anchor: (Full: 0);
+    LayoutMode: Top;
+    HitTestVisible: false;
+
+    Label #RitualName {
+      Anchor: (Height: 18, Bottom: 4);
+      Text: "";
+      Style: (FontName: "Secondary", FontSize: 16, TextColor: #f7d2d8, RenderBold: true);
+      HitTestVisible: false;
+    }
+
+    Label #PhaseValue {
+      Anchor: (Height: 14, Bottom: 2);
+      Text: "";
+      Style: (FontSize: 11, TextColor: #f1c0c8, RenderBold: true);
+      HitTestVisible: false;
+    }
+
+    Group #MetricsRow {
+      Anchor: (Height: 14, Bottom: 2);
+      LayoutMode: Left;
+      HitTestVisible: false;
+
+      Label #StabilityValue {
+        Anchor: (Width: 156, Height: 14);
+        Text: "";
+        Style: (FontSize: 10, TextColor: #d7e4dd, RenderBold: true);
+        HitTestVisible: false;
+      }
+
+      Label #CorruptionValue {
+        Anchor: (Width: 156, Height: 14);
+        Text: "";
+        Style: (FontSize: 10, TextColor: #f3c3cf, RenderBold: true);
+        HitTestVisible: false;
+      }
+    }
+
+    Label #ProgressValue {
+      Anchor: (Height: 14, Bottom: 2);
+      Text: "";
+      Style: (FontSize: 10, TextColor: #ffffff, RenderBold: true);
+      HitTestVisible: false;
+    }
+
+    Label #TraceValue {
+      Anchor: (Height: 14);
+      Visible: false;
+      Text: "";
+      Style: (FontSize: 10, TextColor: #f6d48d, RenderBold: true);
+      HitTestVisible: false;
+    }
+  }
+}

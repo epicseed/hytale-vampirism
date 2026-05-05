@@ -18,6 +18,7 @@ const App = (() => {
     targetings:   [],
     stateRegistry: [],
     relicBindings: {},
+    ritualTemplates: { templates: [] },
   };
 
   let dirty = false;
@@ -175,6 +176,14 @@ const App = (() => {
     return out;
   }
 
+  function normalizeRitualTemplates(value) {
+    const doc = cloneObject(value);
+    if (!Array.isArray(doc.templates)) {
+      doc.templates = [];
+    }
+    return doc;
+  }
+
   function normalizeData(data) {
     window.AppData.tree = Array.isArray(data.tree) ? data.tree.map(normalizeSkill) : [];
     window.AppData.passives = Array.isArray(data.passives) ? data.passives.map(normalizePassive) : [];
@@ -190,6 +199,7 @@ const App = (() => {
     window.AppData.targetings = Array.isArray(data.targetings) ? data.targetings.map(normalizeReusableDef) : [];
     window.AppData.stateRegistry = normalizeStateRegistry(data.stateRegistry);
     window.AppData.relicBindings = normalizeRelicBindings(data.relicBindings);
+    window.AppData.ritualTemplates = normalizeRitualTemplates(data.ritualTemplates);
   }
 
   function compactObject(value) {

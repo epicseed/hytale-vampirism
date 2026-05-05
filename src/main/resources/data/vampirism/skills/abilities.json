@@ -5,7 +5,6 @@
         "actionId": "apply_bat_morph"
       }
     ],
-    "resourceCost": 25,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -19,6 +18,7 @@
     "iconPath": "Icon_BatForm.png",
     "id": "BatForm",
     "requirements": [],
+    "resourceCost": 25,
     "tags": [],
     "targeting": {
       "targetingId": "self_target"
@@ -30,7 +30,6 @@
         "actionId": "apply_ancient_morph"
       }
     ],
-    "resourceCost": 60,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -44,6 +43,7 @@
     "iconPath": "",
     "id": "AncientForm",
     "requirements": [],
+    "resourceCost": 60,
     "tags": [],
     "targeting": {
       "targetingId": "self_target"
@@ -58,7 +58,6 @@
         "actionId": "spawn_blood_projectile"
       }
     ],
-    "resourceCost": 20,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -70,6 +69,7 @@
     "iconPath": "",
     "id": "BloodThrow",
     "requirements": [],
+    "resourceCost": 20,
     "tags": [],
     "targeting": {
       "targetingId": "single_enemy_projectile"
@@ -84,7 +84,6 @@
         "actionId": "apply_blood_thirst_speed"
       }
     ],
-    "resourceCost": 20,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -98,6 +97,7 @@
     "iconPath": "",
     "id": "BloodThirst",
     "requirements": [],
+    "resourceCost": 20,
     "tags": [],
     "targeting": {
       "targetingId": "self_target"
@@ -109,7 +109,6 @@
         "actionId": "fear_nearby_enemies"
       }
     ],
-    "resourceCost": 40,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -121,6 +120,7 @@
     "iconPath": "",
     "id": "Hissing",
     "requirements": [],
+    "resourceCost": 40,
     "tags": [],
     "targeting": {
       "targetingId": "nearby_enemies_radius"
@@ -132,7 +132,6 @@
         "actionId": "start_blood_feed_channel"
       }
     ],
-    "resourceCost": 0,
     "castTime": 0,
     "channelDuration": 1.5,
     "charges": 0,
@@ -144,6 +143,7 @@
     "iconPath": "Icon_BloodSucker.png",
     "id": "BloodSucker",
     "requirements": [],
+    "resourceCost": 0,
     "tags": [],
     "targeting": {
       "maxRange": 1.5,
@@ -156,7 +156,6 @@
         "actionId": "start_health_to_blood_channel"
       }
     ],
-    "resourceCost": 0,
     "castTime": 0,
     "channelDuration": 10,
     "charges": 0,
@@ -170,6 +169,7 @@
     "iconPath": "Icon_BloodDrain.png",
     "id": "BloodConversion",
     "requirements": [],
+    "resourceCost": 0,
     "tags": [],
     "targeting": {
       "targetingId": "self_target"
@@ -181,7 +181,6 @@
         "actionId": "apply_crimson_umbrella"
       }
     ],
-    "resourceCost": 40,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -195,6 +194,7 @@
     "iconPath": "Icon_CrimsonUmbrela.png",
     "id": "CrimsonUmbrella",
     "requirements": [],
+    "resourceCost": 40,
     "tags": [],
     "targeting": {
       "targetingId": "self_target"
@@ -206,7 +206,6 @@
         "actionId": "execute_low_health_target"
       }
     ],
-    "resourceCost": 20,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -222,6 +221,7 @@
         "requirementId": "devour_threshold"
       }
     ],
+    "resourceCost": 20,
     "tags": [],
     "targeting": {
       "targetingId": "single_enemy_target"
@@ -233,7 +233,6 @@
         "actionId": "apply_invisibility_effect"
       }
     ],
-    "resourceCost": 100,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -247,6 +246,7 @@
     "iconPath": "",
     "id": "Invisibility",
     "requirements": [],
+    "resourceCost": 100,
     "tags": [],
     "targeting": {
       "targetingId": "self_target"
@@ -258,7 +258,6 @@
         "actionId": "deal_hemorrhage_aoe"
       }
     ],
-    "resourceCost": 0,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -270,6 +269,7 @@
     "iconPath": "",
     "id": "Hemorrhage",
     "requirements": [],
+    "resourceCost": 0,
     "tags": [],
     "targeting": {
       "targetingId": "nearby_enemies_radius"
@@ -281,7 +281,6 @@
         "actionId": "teleport_to_look_target"
       }
     ],
-    "resourceCost": 50,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -293,6 +292,7 @@
     "iconPath": "",
     "id": "Teleport",
     "requirements": [],
+    "resourceCost": 50,
     "tags": [],
     "targeting": {
       "targetingId": "look_position"
@@ -316,7 +316,6 @@
         "actionId": "blood_mist_flavor_message"
       }
     ],
-    "resourceCost": 15,
     "castTime": 0,
     "channelDuration": 0,
     "charges": 0,
@@ -334,6 +333,7 @@
         "requirementId": "blood_mist_blood_cost"
       }
     ],
+    "resourceCost": 15,
     "tags": [],
     "targeting": {
       "targetingId": "blood_mist_area_at_look"

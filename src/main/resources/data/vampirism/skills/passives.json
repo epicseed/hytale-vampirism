@@ -1,14 +1,9 @@
 [
   {
-    "actions": [],
     "description": "Marks the player as having unlocked the vampire progression root.",
     "displayName": "Become a Vampire",
     "iconPath": "Icon_BecomeAVampire.png",
-    "id": "BecomeAVampire",
-    "modifiers": [],
-    "requirements": [],
-    "tags": [],
-    "triggers": []
+    "id": "BecomeAVampire"
   },
   {
     "description": "Reduces sunburn progression and blood thirst drain",

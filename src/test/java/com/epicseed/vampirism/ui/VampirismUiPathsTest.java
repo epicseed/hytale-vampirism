@@ -9,6 +9,7 @@ class VampirismUiPathsTest {
     @Test
     void resolvesBloodBarLayoutFromEpicCore() {
         assertEquals("EpicCore/Huds/ResourceGaugeHud.ui", VampirismUiPaths.theme().resourceGaugeLayout());
+        assertEquals("Vampirism/Huds/RitualStatusHud.ui", VampirismUiPaths.ritualHudLayout());
     }
 
     @Test

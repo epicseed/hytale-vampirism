@@ -1,0 +1,18 @@
+{
+  "Model": "Items/Vampirism/Rituals/Vampirism_RitualGlyph_Symbol.blockymodel",
+  "Texture": "Items/Vampirism/Rituals/Vampirism_RitualGlyph_Symbol_VeinEye.png",
+  "HitBox": {
+    "Max": {
+      "X": 0.05,
+      "Y": 0.05,
+      "Z": 0.05
+    },
+    "Min": {
+      "X": -0.05,
+      "Y": -0.05,
+      "Z": -0.05
+    }
+  },
+  "MinScale": 0.375,
+  "MaxScale": 0.375
+}

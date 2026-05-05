@@ -135,7 +135,7 @@
       "executeThreshold": 0.25,
       "executeThresholdStatId": "ABILITY_EXECUTE_HEALTH_THRESHOLD",
       "feedSpeedStatId": "FEEDING_SPEED",
-        "maxRange": 1.5,
+      "maxRange": 1.5,
       "targetEffectId": "blood_feed_target_root_effect",
       "type": "startFeedChannel"
     },

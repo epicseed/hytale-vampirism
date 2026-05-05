@@ -1,22 +1,26 @@
 package com.epicseed.vampirism.commands.admin;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 
-import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.epiccore.vampirism.skill.runtime.VampirismSkillProgressionAccess;
-import com.epicseed.vampirism.config.VampirismConfig;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualCompletionResult;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContext;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualDefinition;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualEvaluation;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualPointState;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRegistry;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeService;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeSnapshot;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOutcomeTracker;
+import com.epicseed.vampirism.ui.VampiricRitualEditorPage;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
@@ -25,8 +29,8 @@ import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgumentType;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
-import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -34,13 +38,17 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 public final class RitualAdminCommands extends AbstractCommand {
 
     private final VampiricRitualService ritualService;
-    private final VampirismSkillProgressionAccess progressionAccess;
+    private final VampiricRitualRuntimeService runtimeService;
+    private final VampiricRitualContextResolver contextResolver;
 
     public RitualAdminCommands(@Nonnull VampiricRitualService ritualService,
-                               @Nonnull VampirismSkillProgressionAccess progressionAccess) {
+                               @Nonnull VampiricRitualRuntimeService runtimeService,
+                               @Nonnull VampirismSkillProgressionAccess progressionAccess,
+                               @Nonnull VampiricRitualContextResolver contextResolver) {
         super("ritual", "Inspect and manipulate ritual progress");
         this.ritualService = ritualService;
-        this.progressionAccess = progressionAccess;
+        this.runtimeService = runtimeService;
+        this.contextResolver = contextResolver;
         this.setPermissionGroups(new String[]{"admin"});
         this.addSubCommand(new ListCommand());
         this.addSubCommand(new InfoCommand());
@@ -48,6 +56,9 @@ public final class RitualAdminCommands extends AbstractCommand {
         this.addSubCommand(new BeginCommand());
         this.addSubCommand(new ProgressCommand());
         this.addSubCommand(new CompleteCommand());
+        this.addSubCommand(new RuntimeCommand());
+        this.addSubCommand(new AbortCommand());
+        this.addSubCommand(new EditorCommand());
     }
 
     @Nonnull
@@ -60,6 +71,9 @@ public final class RitualAdminCommands extends AbstractCommand {
         ctx.sendMessage(Message.raw("/vampirism ritual begin <player> <ritualId> <tagsCsv>").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ritual progress <player> <ritualId> <objectiveId> <amount>").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ritual complete <player> <ritualId> <tagsCsv>").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirism ritual runtime <player> - inspect prepared/active runtime ritual state").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirism ritual abort <player> <tagsCsv> - break the active runtime ritual").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirism ritual editor - open the dev ritual template editor").color("yellow"));
         return CompletableFuture.completedFuture(null);
     }
 
@@ -84,7 +98,7 @@ public final class RitualAdminCommands extends AbstractCommand {
                 VampiricRitualEvaluation evaluation = ritualService.evaluate(
                         target.getUuid(),
                         definition.id(),
-                        buildContext(target, store, "-"));
+                        contextResolver.buildContext(target, store, Set.of()));
                 ctx.sendMessage(Message.raw(summaryLine(evaluation)).color(evaluation.available() ? "green" : "yellow"));
             }
         }
@@ -109,7 +123,10 @@ public final class RitualAdminCommands extends AbstractCommand {
                                @Nonnull World world) {
             PlayerRef target = playerArg.get(ctx);
             String ritualId = ritualArg.get(ctx);
-            sendEvaluation(ctx, target, ritualService.evaluate(target.getUuid(), ritualId, buildContext(target, store, "-")));
+            sendEvaluation(ctx, target, ritualService.evaluate(
+                    target.getUuid(),
+                    ritualId,
+                    contextResolver.buildContext(target, store, Set.of())));
         }
     }
 
@@ -134,7 +151,7 @@ public final class RitualAdminCommands extends AbstractCommand {
                                @Nonnull World world) {
             PlayerRef target = playerArg.get(ctx);
             String ritualId = ritualArg.get(ctx);
-            VampiricRitualContext ritualContext = buildContext(target, store, tagsArg.get(ctx));
+            VampiricRitualContext ritualContext = contextResolver.buildContext(target, store, parseTags(tagsArg.get(ctx)));
             boolean changed = ritualService.syncAvailability(target.getUuid(), ritualId, ritualContext);
             ctx.sendMessage(Message.raw((changed ? "Synced" : "Checked") + " ritual availability for "
                     + target.getUsername() + ".").color(changed ? "green" : "gray"));
@@ -163,7 +180,7 @@ public final class RitualAdminCommands extends AbstractCommand {
                                @Nonnull World world) {
             PlayerRef target = playerArg.get(ctx);
             String ritualId = ritualArg.get(ctx);
-            VampiricRitualContext ritualContext = buildContext(target, store, tagsArg.get(ctx));
+            VampiricRitualContext ritualContext = contextResolver.buildContext(target, store, parseTags(tagsArg.get(ctx)));
             ritualService.syncAvailability(target.getUuid(), ritualId, ritualContext);
             boolean started = ritualService.begin(target.getUuid(), ritualId, ritualContext, System.currentTimeMillis());
             ctx.sendMessage(Message.raw((started ? "Started" : "Could not start") + " ritual '" + ritualId
@@ -218,7 +235,7 @@ public final class RitualAdminCommands extends AbstractCommand {
                                @Nonnull World world) {
             PlayerRef target = playerArg.get(ctx);
             String ritualId = ritualArg.get(ctx);
-            VampiricRitualContext ritualContext = buildContext(target, store, tagsArg.get(ctx));
+            VampiricRitualContext ritualContext = contextResolver.buildContext(target, store, parseTags(tagsArg.get(ctx)));
             VampiricRitualCompletionResult result = ritualService.tryComplete(
                     target.getUuid(),
                     ritualId,
@@ -241,27 +258,87 @@ public final class RitualAdminCommands extends AbstractCommand {
         }
     }
 
-    @Nonnull
-    private VampiricRitualContext buildContext(@Nonnull PlayerRef target,
-                                               @Nonnull Store<EntityStore> store,
-                                               @Nonnull String extraTagsCsv) {
-        UUID uuid = target.getUuid();
-        VampirePlayerStateStore playerStateStore = VampirePlayerStateStore.get();
-        LinkedHashSet<String> tags = new LinkedHashSet<>();
-        if (playerStateStore.isInfected(uuid)) {
-            tags.add(VampiricRitualRegistry.TAG_INFECTED);
+    private final class RuntimeCommand extends AbstractPlayerCommand {
+        private final RequiredArg<PlayerRef> playerArg;
+
+        private RuntimeCommand() {
+            super("runtime", "Show prepared or active runtime ritual state");
+            this.setPermissionGroups(new String[]{"admin"});
+            this.playerArg = this.withRequiredArg("player", "Target player", (ArgumentType<PlayerRef>) ArgTypes.PLAYER_REF);
         }
-        if (isNight(store)) {
-            tags.add(VampiricRitualRegistry.TAG_NIGHT);
+
+        @Override
+        protected void execute(@Nonnull CommandContext ctx,
+                               @Nonnull Store<EntityStore> store,
+                               @Nonnull Ref<EntityStore> ref,
+                               @Nonnull PlayerRef playerRef,
+                               @Nonnull World world) {
+            PlayerRef target = playerArg.get(ctx);
+            Optional<VampiricRitualRuntimeSnapshot> snapshot = runtimeService.snapshot(target.getUuid());
+            if (snapshot.isEmpty()) {
+                Optional<VampiricRitualOutcomeTracker.RitualOutcome> recentOutcome =
+                        VampiricRitualOutcomeTracker.recentOutcome(target.getUuid());
+                ctx.sendMessage(Message.raw("No prepared or active runtime ritual was found for "
+                        + target.getUsername() + ".").color(recentOutcome.isPresent() ? "gray" : "yellow"));
+                recentOutcome.ifPresent(outcome -> ctx.sendMessage(
+                        Message.raw(VampiricRitualOutcomeTracker.describeOutcome(outcome))
+                                .color(outcome.type() == VampiricRitualOutcomeTracker.RitualOutcomeType.COLLAPSE ? "red" : "yellow")));
+                return;
+            }
+            sendRuntimeSnapshot(ctx, target, snapshot.get());
+            VampiricRitualOutcomeTracker.recentOutcome(target.getUuid()).ifPresent(outcome -> ctx.sendMessage(
+                    Message.raw(VampiricRitualOutcomeTracker.describeOutcome(outcome))
+                            .color(outcome.type() == VampiricRitualOutcomeTracker.RitualOutcomeType.COLLAPSE ? "red" : "yellow")));
         }
-        tags.addAll(parseTags(extraTagsCsv));
-        return new VampiricRitualContext(
-                uuid,
-                playerStateStore.getPersistedBlood(uuid),
-                playerStateStore.getCompletedNightHunts(uuid),
-                playerStateStore.getAgeTierId(uuid),
-                progressionAccess.getUnlockedSkillIds(uuid),
-                tags);
+    }
+
+    private final class AbortCommand extends AbstractPlayerCommand {
+        private final RequiredArg<PlayerRef> playerArg;
+        private final RequiredArg<String> tagsArg;
+
+        private AbortCommand() {
+            super("abort", "Abort the active runtime ritual for a player");
+            this.setPermissionGroups(new String[]{"admin"});
+            this.playerArg = this.withRequiredArg("player", "Target player", (ArgumentType<PlayerRef>) ArgTypes.PLAYER_REF);
+            this.tagsArg = this.withRequiredArg("tagsCsv", "Extra context tags or '-' for none", (ArgumentType<String>) ArgTypes.STRING);
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext ctx,
+                               @Nonnull Store<EntityStore> store,
+                               @Nonnull Ref<EntityStore> ref,
+                               @Nonnull PlayerRef playerRef,
+                               @Nonnull World world) {
+            PlayerRef target = playerArg.get(ctx);
+            VampiricRitualRuntimeService.ClearResult result = runtimeService.abort(
+                    target.getUuid(),
+                    contextResolver.buildContext(target, store, parseTags(tagsArg.get(ctx))));
+            ctx.sendMessage(Message.raw(result.message()).color(result.cleared() ? "green" : "yellow"));
+        }
+    }
+
+    private final class EditorCommand extends AbstractPlayerCommand {
+        private EditorCommand() {
+            super("editor", "Open the dev ritual template editor");
+            this.setPermissionGroups(new String[]{"admin"});
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext ctx,
+                               @Nonnull Store<EntityStore> store,
+                               @Nonnull Ref<EntityStore> ref,
+                               @Nonnull PlayerRef playerRef,
+                               @Nonnull World world) {
+            Player player = store.getComponent(ref, Player.getComponentType());
+            if (player == null) {
+                ctx.sendMessage(Message.raw("Could not find the executing player.").color("red"));
+                return;
+            }
+            player.getPageManager().openCustomPage(
+                    ref,
+                    store,
+                    new VampiricRitualEditorPage(playerRef, runtimeService.templateRegistry()));
+        }
     }
 
     private static void sendEvaluation(@Nonnull CommandContext ctx,
@@ -276,6 +353,36 @@ public final class RitualAdminCommands extends AbstractCommand {
         evaluation.objectiveProgress().values().forEach(objective ->
                 ctx.sendMessage(Message.raw("Objective " + objective.objectiveId() + ": "
                         + objective.currentCount() + "/" + objective.targetCount()).color("white")));
+    }
+
+    private static void sendRuntimeSnapshot(@Nonnull CommandContext ctx,
+                                            @Nonnull PlayerRef target,
+                                            @Nonnull VampiricRitualRuntimeSnapshot snapshot) {
+        VampiricRitualPointState tracingPoint = snapshot.pointStates().stream()
+                .filter(VampiricRitualPointState::tracing)
+                .findFirst()
+                .orElse(null);
+        String tracingSummary = tracingPoint == null
+                ? ""
+                : " | tracing=" + tracingPoint.symbolName()
+                + " " + tracingPoint.traceProgress() + "/" + tracingPoint.totalTraceSteps();
+        ctx.sendMessage(Message.raw("=== Ritual Runtime: " + target.getUsername() + " ===").color("dark_red"));
+        ctx.sendMessage(Message.raw(snapshot.displayName()
+                + " | phase=" + snapshot.phase()
+                + " | active=" + snapshot.active()
+                + " | points=" + snapshot.activatedPoints() + "/" + snapshot.totalPoints()
+                + tracingSummary).color("aqua"));
+        ctx.sendMessage(Message.raw("precision=" + Math.round(snapshot.precision())
+                + " stability=" + Math.round(snapshot.stability())
+                + " corruption=" + Math.round(snapshot.corruption())
+                + " interference=" + snapshot.interferenceCount()
+                + " height=" + Math.round(snapshot.zoneHeight() * 10d) / 10d).color("white"));
+        ctx.sendMessage(Message.raw(VampiricRitualOutcomeTracker.describeAnchorState(snapshot))
+                .color(snapshot.phase() == VampiricRitualRuntimePhase.UNSTABLE ? "yellow" : "gray"));
+        ctx.sendMessage(Message.raw("anchor=" + snapshot.anchorBlockId()
+                + " @ " + snapshot.anchorBlockPosition().x + ","
+                + snapshot.anchorBlockPosition().y + ","
+                + snapshot.anchorBlockPosition().z).color("white"));
     }
 
     @Nonnull
@@ -298,16 +405,5 @@ public final class RitualAdminCommands extends AbstractCommand {
             }
         }
         return Set.copyOf(tokens);
-    }
-
-    private static boolean isNight(@Nonnull Store<EntityStore> store) {
-        WorldTimeResource worldTime = store.getResource(WorldTimeResource.getResourceType());
-        if (worldTime == null) {
-            return false;
-        }
-        int currentHour = worldTime.getCurrentHour();
-        int nightStart = VampirismConfig.get().getNightStartHour();
-        int dayStart = VampirismConfig.get().getDayStartHour();
-        return currentHour >= nightStart || currentHour < dayStart;
     }
 }
