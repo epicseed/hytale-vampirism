@@ -82,7 +82,7 @@ public class VampirismCommand extends AbstractCommand {
         ctx.sendMessage(Message.raw("/vampirism blood add <player> <percent> - add blood to a player").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism hunt info|force|reset-cooldown <player> - control marked prey hunts").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism lineage info|list|choose|clear <player> [lineageId] - inspect or change lineages").color("yellow"));
-        ctx.sendMessage(Message.raw("/vampirism ritual list|info|sync|begin|progress|complete|runtime|abort <player> ... - inspect ritual progress").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirism ritual list|info|sync|begin|progress|complete|runtime|abort|reset|reset-all ... - inspect ritual progress").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ritual editor - open the dev ritual template editor").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism masquerade info|set|add|strike|clear <player> [heat] - inspect masquerade heat").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ability trigger <player> <abilityId> - trigger one ability").color("yellow"));

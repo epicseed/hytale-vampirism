@@ -1,7 +1,7 @@
 {
   "TranslationProperties": {
     "Name": "Crimson Ritual Tool",
-    "Description": "Left Click: Bind Node | Right Click: Clear/Break | Use: Reveal | Shift + Use: Channel Awakening"
+    "Description": "Left Click: Start/Seal Sigil | Move Aim: Draw Stroke | Right Click: Clear/Break | Use: Reveal | Shift + Use: Channel Awakening"
   },
   "Icon": "Icons/ItemsGenerated/Vampirism/VampireFang.png",
   "Model": "Items/Vampirism/Relics/EmptyHands.blockymodel",

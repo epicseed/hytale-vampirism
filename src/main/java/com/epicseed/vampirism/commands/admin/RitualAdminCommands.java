@@ -7,6 +7,7 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.epiccore.vampirism.skill.runtime.VampirismSkillProgressionAccess;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualCompletionResult;
@@ -58,6 +59,8 @@ public final class RitualAdminCommands extends AbstractCommand {
         this.addSubCommand(new CompleteCommand());
         this.addSubCommand(new RuntimeCommand());
         this.addSubCommand(new AbortCommand());
+        this.addSubCommand(new ResetCommand());
+        this.addSubCommand(new ResetAllCommand());
         this.addSubCommand(new EditorCommand());
     }
 
@@ -73,6 +76,8 @@ public final class RitualAdminCommands extends AbstractCommand {
         ctx.sendMessage(Message.raw("/vampirism ritual complete <player> <ritualId> <tagsCsv>").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ritual runtime <player> - inspect prepared/active runtime ritual state").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ritual abort <player> <tagsCsv> - break the active runtime ritual").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirism ritual reset <player> <ritualId> - clear one ritual for a player").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirism ritual reset-all <player> - clear all ritual progress for a player").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ritual editor - open the dev ritual template editor").color("yellow"));
         return CompletableFuture.completedFuture(null);
     }
@@ -341,6 +346,70 @@ public final class RitualAdminCommands extends AbstractCommand {
         }
     }
 
+    private final class ResetCommand extends AbstractPlayerCommand {
+        private final RequiredArg<PlayerRef> playerArg;
+        private final RequiredArg<String> ritualArg;
+
+        private ResetCommand() {
+            super("reset", "Clear one ritual for a player");
+            this.setPermissionGroups(new String[]{"admin"});
+            this.playerArg = this.withRequiredArg("player", "Target player", (ArgumentType<PlayerRef>) ArgTypes.PLAYER_REF);
+            this.ritualArg = this.withRequiredArg("ritualId", "Ritual ID", (ArgumentType<String>) ArgTypes.STRING);
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext ctx,
+                               @Nonnull Store<EntityStore> store,
+                               @Nonnull Ref<EntityStore> ref,
+                               @Nonnull PlayerRef playerRef,
+                               @Nonnull World world) {
+            PlayerRef target = playerArg.get(ctx);
+            String ritualId = ritualArg.get(ctx);
+            boolean changed = VampirePlayerStateStore.get().clearRitualProgress(target.getUuid(), ritualId);
+            Optional<VampiricRitualRuntimeSnapshot> runtime = runtimeService.snapshot(target.getUuid());
+            boolean clearedRuntime = runtime.isPresent() && ritualId.equals(runtime.get().ritualId());
+            if (clearedRuntime) {
+                runtimeService.clearPlayer(target.getUuid());
+                VampiricRitualOutcomeTracker.clearPlayer(target.getUuid());
+            }
+            ctx.sendMessage(Message.raw(
+                    changed || clearedRuntime
+                            ? "Cleared ritual '" + ritualId + "' for " + target.getUsername() + "."
+                            : "No ritual state was found for '" + ritualId + "' on " + target.getUsername() + ".")
+                    .color(changed || clearedRuntime ? "green" : "yellow"));
+        }
+    }
+
+    private final class ResetAllCommand extends AbstractPlayerCommand {
+        private final RequiredArg<PlayerRef> playerArg;
+
+        private ResetAllCommand() {
+            super("reset-all", "Clear all ritual progress for a player");
+            this.setPermissionGroups(new String[]{"admin"});
+            this.playerArg = this.withRequiredArg("player", "Target player", (ArgumentType<PlayerRef>) ArgTypes.PLAYER_REF);
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext ctx,
+                               @Nonnull Store<EntityStore> store,
+                               @Nonnull Ref<EntityStore> ref,
+                               @Nonnull PlayerRef playerRef,
+                               @Nonnull World world) {
+            PlayerRef target = playerArg.get(ctx);
+            boolean changed = VampirePlayerStateStore.get().clearAllRitualProgress(target.getUuid());
+            boolean hadRuntime = runtimeService.snapshot(target.getUuid()).isPresent();
+            if (hadRuntime) {
+                runtimeService.clearPlayer(target.getUuid());
+                VampiricRitualOutcomeTracker.clearPlayer(target.getUuid());
+            }
+            ctx.sendMessage(Message.raw(
+                    changed || hadRuntime
+                            ? "Cleared all ritual progress for " + target.getUsername() + "."
+                            : target.getUsername() + " had no ritual progress to clear.")
+                    .color(changed || hadRuntime ? "green" : "yellow"));
+        }
+    }
+
     private static void sendEvaluation(@Nonnull CommandContext ctx,
                                        @Nonnull PlayerRef target,
                                        @Nonnull VampiricRitualEvaluation evaluation) {
@@ -406,4 +475,5 @@ public final class RitualAdminCommands extends AbstractCommand {
         }
         return Set.copyOf(tokens);
     }
+
 }

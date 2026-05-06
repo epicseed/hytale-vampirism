@@ -73,6 +73,7 @@ class VampiricRitualOutcomeTrackerTest {
                         1,
                         4,
                         false,
-                        List.of(new Vector3d(0d, 0.1d, -2.7d)))));
+                        List.of(new Vector3d(0d, 0.1d, -2.7d)),
+                        List.of())));
     }
 }

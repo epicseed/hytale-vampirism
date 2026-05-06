@@ -379,7 +379,8 @@ public final class VampirismRuntime {
                 masqueradeHeatService,
                 ritualService,
                 ritualRuntimeService,
-                ritualContextResolver);
+                ritualContextResolver,
+                ritualVisualSystem);
         return runtime;
     }
 
@@ -422,7 +423,8 @@ public final class VampirismRuntime {
                                          @Nonnull MasqueradeHeatService masqueradeHeatService,
                                          @Nonnull VampiricRitualService ritualService,
                                          @Nonnull VampiricRitualRuntimeService ritualRuntimeService,
-                                         @Nonnull VampiricRitualContextResolver ritualContextResolver) {
+                                         @Nonnull VampiricRitualContextResolver ritualContextResolver,
+                                         @Nonnull VampiricRitualSystem ritualVisualSystem) {
         plugin.getCommandRegistry().registerCommand(
                 new VampirismCommand(
                         progressionAccess,
@@ -436,7 +438,8 @@ public final class VampirismRuntime {
         plugin.getCommandRegistry().registerCommand(new VampirismSkillTreeCommand(progressionPageFactory));
         plugin.getCommandRegistry().registerCommand(new VampirismPotionCommand());
         plugin.getCommandRegistry().registerCommand(new VampirismRelicCommand(abilityService));
-        plugin.getCommandRegistry().registerCommand(new VampirismRitualCommand(ritualRuntimeService, ritualContextResolver));
+        plugin.getCommandRegistry().registerCommand(
+                new VampirismRitualCommand(ritualRuntimeService, ritualContextResolver, ritualVisualSystem));
         plugin.getCommandRegistry().registerCommand(new VampirismRelicBindingsCommand(progressionPageFactory));
         plugin.getCommandRegistry().registerCommand(new VampirismRelicBindingCommand(progressionPageFactory));
     }

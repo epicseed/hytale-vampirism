@@ -12,6 +12,11 @@ import com.hypixel.hytale.server.core.universe.world.World;
 
 public final class VampiricRitualRevealService {
 
+    public record RevealOptions(boolean showDebugGuides) {
+        public static final RevealOptions FULL = new RevealOptions(true);
+        public static final RevealOptions STROKE_ONLY = new RevealOptions(false);
+    }
+
     private static final float REVEAL_DURATION_SECONDS = 1.1f;
     private static final float ACTIVE_POINT_OPACITY = 0.28f;
     private static final float INACTIVE_POINT_OPACITY = 0.14f;
@@ -20,12 +25,16 @@ public final class VampiricRitualRevealService {
     private static final double INACTIVE_POINT_SCALE = 0.30d;
     private static final double TRACE_POINT_SCALE = 0.12d;
     private static final double TRACE_POINT_FOCUS_SCALE = 0.18d;
+    private static final double LIVE_TRACE_POINT_SCALE = 0.10d;
+    private static final double LIVE_TRACE_TIP_SCALE = 0.20d;
     private static final double LINK_THICKNESS = 0.05d;
     private static final double TRACE_THICKNESS = 0.035d;
+    private static final double LIVE_TRACE_THICKNESS = 0.055d;
     private static final double PILLAR_THICKNESS = 0.08d;
     private static final float STABLE_LINE_DURATION_SECONDS = 0.9f;
     private static final float LINK_OPACITY = 0.52f;
     private static final float TRACE_OPACITY = 0.48f;
+    private static final float LIVE_TRACE_OPACITY = 0.82f;
     private static final float PILLAR_OPACITY = 0.42f;
     private static final float CROSS_OPACITY = 0.50f;
 
@@ -33,123 +42,134 @@ public final class VampiricRitualRevealService {
     }
 
     public static void reveal(@Nonnull World world, @Nonnull VampiricRitualRuntimeSnapshot snapshot) {
+        reveal(world, snapshot, RevealOptions.FULL);
+    }
+
+    public static void reveal(@Nonnull World world,
+                              @Nonnull VampiricRitualRuntimeSnapshot snapshot,
+                              @Nonnull RevealOptions options) {
         PhaseStyle style = PhaseStyle.of(snapshot);
         Vector3d anchor = snapshot.anchorCenter();
-        DebugUtils.addDisc(
-                world,
-                anchor.x,
-                anchor.y + 0.02d,
-                anchor.z,
-                style.ringRadius(),
-                style.ringColor(),
-                style.ringOpacity(),
-                REVEAL_DURATION_SECONDS,
-                DebugUtils.FLAG_FADE);
-        DebugUtils.addSphere(
-                world,
-                anchor.x,
-                anchor.y + 0.25d,
-                anchor.z,
-                style.coreColor(),
-                style.coreOpacity(),
-                style.coreScale(),
-                REVEAL_DURATION_SECONDS);
-        drawAnchorState(world, snapshot, style);
+        if (options.showDebugGuides()) {
+            DebugUtils.addDisc(
+                    world,
+                    anchor.x,
+                    anchor.y + 0.02d,
+                    anchor.z,
+                    style.ringRadius(),
+                    style.ringColor(),
+                    style.ringOpacity(),
+                    REVEAL_DURATION_SECONDS,
+                    DebugUtils.FLAG_FADE);
+            DebugUtils.addSphere(
+                    world,
+                    anchor.x,
+                    anchor.y + 0.25d,
+                    anchor.z,
+                    style.coreColor(),
+                    style.coreOpacity(),
+                    style.coreScale(),
+                    REVEAL_DURATION_SECONDS);
+            drawAnchorState(world, snapshot, style);
+        }
 
         for (int index = 0; index < snapshot.pointStates().size(); index++) {
             VampiricRitualPointState point = snapshot.pointStates().get(index);
-            VampiricRitualPointState next = snapshot.pointStates().get((index + 1) % snapshot.pointStates().size());
-            var color = point.active() ? style.activePointColor() : style.inactivePointColor();
-            float opacity = point.active() ? ACTIVE_POINT_OPACITY : INACTIVE_POINT_OPACITY;
-            double scale = point.active() ? ACTIVE_POINT_SCALE : INACTIVE_POINT_SCALE;
-            DebugUtils.addSphere(
-                    world,
-                    point.position().x,
-                    point.position().y + 0.2d,
-                    point.position().z,
-                    color,
-                    opacity,
-                    scale,
-                    REVEAL_DURATION_SECONDS);
-            VampiricRitualLineRenderer.addBeam(
-                    world,
-                    anchor.x,
-                    anchor.y + 0.12d,
-                    anchor.z,
-                    point.position().x,
-                    point.position().y + 0.12d,
-                    point.position().z,
-                    color,
-                    LINK_THICKNESS,
-                    LINK_OPACITY,
-                    STABLE_LINE_DURATION_SECONDS);
-            VampiricRitualLineRenderer.addBeam(
-                    world,
-                    point.position().x,
-                    point.position().y + 0.08d,
-                    point.position().z,
-                    next.position().x,
-                    next.position().y + 0.08d,
-                    next.position().z,
-                    point.active() && next.active() ? DebugUtils.COLOR_RED : DebugUtils.COLOR_YELLOW,
-                    LINK_THICKNESS,
-                    LINK_OPACITY,
-                    STABLE_LINE_DURATION_SECONDS);
-
-            for (int stepIndex = 0; stepIndex < point.traceStepPositions().size(); stepIndex++) {
-                Vector3d step = point.traceStepPositions().get(stepIndex);
-                boolean completedStep = point.active() || stepIndex < point.traceProgress();
-                boolean focusStep = !point.active()
-                        && ((point.tracing() && stepIndex == point.traceProgress()) || (!point.tracing() && stepIndex == 0));
-                var stepColor = completedStep
-                        ? style.activePointColor()
-                        : focusStep ? style.focusColor() : style.inactivePointColor();
-                double stepScale = focusStep ? TRACE_POINT_FOCUS_SCALE : TRACE_POINT_SCALE;
-                float stepOpacity = completedStep ? 0.30f : focusStep ? 0.24f : 0.16f;
+            if (options.showDebugGuides()) {
+                VampiricRitualPointState next = snapshot.pointStates().get((index + 1) % snapshot.pointStates().size());
+                var color = point.active() ? style.activePointColor() : style.inactivePointColor();
+                float opacity = point.active() ? ACTIVE_POINT_OPACITY : INACTIVE_POINT_OPACITY;
+                double scale = point.active() ? ACTIVE_POINT_SCALE : INACTIVE_POINT_SCALE;
                 DebugUtils.addSphere(
                         world,
-                        step.x,
-                        step.y + 0.08d,
-                        step.z,
-                        stepColor,
-                        stepOpacity,
-                        stepScale,
+                        point.position().x,
+                        point.position().y + 0.2d,
+                        point.position().z,
+                        color,
+                        opacity,
+                        scale,
                         REVEAL_DURATION_SECONDS);
-                if (stepIndex == 0) {
+                VampiricRitualLineRenderer.addBeam(
+                        world,
+                        anchor.x,
+                        anchor.y + 0.12d,
+                        anchor.z,
+                        point.position().x,
+                        point.position().y + 0.12d,
+                        point.position().z,
+                        color,
+                        LINK_THICKNESS,
+                        LINK_OPACITY,
+                        STABLE_LINE_DURATION_SECONDS);
+                VampiricRitualLineRenderer.addBeam(
+                        world,
+                        point.position().x,
+                        point.position().y + 0.08d,
+                        point.position().z,
+                        next.position().x,
+                        next.position().y + 0.08d,
+                        next.position().z,
+                        point.active() && next.active() ? DebugUtils.COLOR_RED : DebugUtils.COLOR_YELLOW,
+                        LINK_THICKNESS,
+                        LINK_OPACITY,
+                        STABLE_LINE_DURATION_SECONDS);
+
+                for (int stepIndex = 0; stepIndex < point.traceStepPositions().size(); stepIndex++) {
+                    Vector3d step = point.traceStepPositions().get(stepIndex);
+                    boolean completedStep = point.active() || stepIndex < point.traceProgress();
+                    boolean focusStep = !point.active()
+                            && ((point.tracing() && stepIndex == point.traceProgress()) || (!point.tracing() && stepIndex == 0));
+                    var stepColor = completedStep
+                            ? style.activePointColor()
+                            : focusStep ? style.focusColor() : style.inactivePointColor();
+                    double stepScale = focusStep ? TRACE_POINT_FOCUS_SCALE : TRACE_POINT_SCALE;
+                    float stepOpacity = completedStep ? 0.30f : focusStep ? 0.24f : 0.16f;
+                    DebugUtils.addSphere(
+                            world,
+                            step.x,
+                            step.y + 0.08d,
+                            step.z,
+                            stepColor,
+                            stepOpacity,
+                            stepScale,
+                            REVEAL_DURATION_SECONDS);
+                    if (stepIndex == 0) {
+                        VampiricRitualLineRenderer.addBeam(
+                                world,
+                                point.position().x,
+                                point.position().y + 0.06d,
+                                point.position().z,
+                                step.x,
+                                step.y + 0.06d,
+                                step.z,
+                                stepColor,
+                                TRACE_THICKNESS,
+                                TRACE_OPACITY,
+                                STABLE_LINE_DURATION_SECONDS);
+                        continue;
+                    }
+                    Vector3d previous = point.traceStepPositions().get(stepIndex - 1);
+                    boolean energizedSegment = point.active()
+                            || (point.tracing() && stepIndex <= point.traceProgress())
+                            || (!point.tracing() && stepIndex == 1);
                     VampiricRitualLineRenderer.addBeam(
                             world,
-                            point.position().x,
-                            point.position().y + 0.06d,
-                            point.position().z,
+                            previous.x,
+                            previous.y + 0.06d,
+                            previous.z,
                             step.x,
                             step.y + 0.06d,
                             step.z,
-                            stepColor,
+                            energizedSegment ? stepColor : style.inactivePointColor(),
                             TRACE_THICKNESS,
                             TRACE_OPACITY,
                             STABLE_LINE_DURATION_SECONDS);
-                    continue;
                 }
-                Vector3d previous = point.traceStepPositions().get(stepIndex - 1);
-                boolean energizedSegment = point.active()
-                        || (point.tracing() && stepIndex <= point.traceProgress())
-                        || (!point.tracing() && stepIndex == 1);
-                VampiricRitualLineRenderer.addBeam(
-                        world,
-                        previous.x,
-                        previous.y + 0.06d,
-                        previous.z,
-                        step.x,
-                        step.y + 0.06d,
-                        step.z,
-                        energizedSegment ? stepColor : style.inactivePointColor(),
-                        TRACE_THICKNESS,
-                        TRACE_OPACITY,
-                        STABLE_LINE_DURATION_SECONDS);
             }
+            drawLiveTrace(world, point, style);
         }
 
-        if (style.showPillar()) {
+        if (options.showDebugGuides() && style.showPillar()) {
             VampiricRitualLineRenderer.addBeam(
                     world,
                     anchor.x,
@@ -161,6 +181,58 @@ public final class VampiricRitualRevealService {
                     style.pillarColor(),
                     PILLAR_THICKNESS,
                     PILLAR_OPACITY,
+                    STABLE_LINE_DURATION_SECONDS);
+        }
+    }
+
+    private static void drawLiveTrace(@Nonnull World world,
+                                      @Nonnull VampiricRitualPointState point,
+                                      @Nonnull PhaseStyle style) {
+        if (!point.tracing() || point.traceStrokePositions().isEmpty()) {
+            return;
+        }
+
+        Vector3d first = point.traceStrokePositions().get(0);
+        VampiricRitualLineRenderer.addBeam(
+                world,
+                point.position().x,
+                point.position().y + 0.07d,
+                point.position().z,
+                first.x,
+                first.y + 0.07d,
+                first.z,
+                style.focusColor(),
+                LIVE_TRACE_THICKNESS,
+                LIVE_TRACE_OPACITY,
+                STABLE_LINE_DURATION_SECONDS);
+
+        for (int index = 0; index < point.traceStrokePositions().size(); index++) {
+            Vector3d stroke = point.traceStrokePositions().get(index);
+            boolean tip = index == point.traceStrokePositions().size() - 1;
+            DebugUtils.addSphere(
+                    world,
+                    stroke.x,
+                    stroke.y + 0.08d,
+                    stroke.z,
+                    tip ? style.focusColor() : style.activePointColor(),
+                    tip ? 0.34f : 0.22f,
+                    tip ? LIVE_TRACE_TIP_SCALE : LIVE_TRACE_POINT_SCALE,
+                    REVEAL_DURATION_SECONDS);
+            if (index == 0) {
+                continue;
+            }
+            Vector3d previous = point.traceStrokePositions().get(index - 1);
+            VampiricRitualLineRenderer.addBeam(
+                    world,
+                    previous.x,
+                    previous.y + 0.07d,
+                    previous.z,
+                    stroke.x,
+                    stroke.y + 0.07d,
+                    stroke.z,
+                    tip ? style.focusColor() : style.activePointColor(),
+                    LIVE_TRACE_THICKNESS,
+                    LIVE_TRACE_OPACITY,
                     STABLE_LINE_DURATION_SECONDS);
         }
     }

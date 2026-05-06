@@ -52,6 +52,7 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
     private final Map<UUID, RitualGlyphPresentationHandle> glyphHandles = new ConcurrentHashMap<>();
     private final Map<UUID, TerminalVisualState> terminalVisuals = new ConcurrentHashMap<>();
     private final Map<UUID, String> lastOverlaySignature = new ConcurrentHashMap<>();
+    private final Set<UUID> debugGuidesDisabled = ConcurrentHashMap.newKeySet();
 
     public VampiricRitualSystem(@Nonnull VampiricRitualRuntimeService runtimeService,
                                 @Nonnull VampiricRitualContextResolver contextResolver) {
@@ -123,6 +124,22 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
             }
         }
 
+        if (world != null
+                && holdingTool
+                && snapshot.isPresent()
+                && !snapshot.get().active()
+                && snapshot.get().pointStates().stream().anyMatch(point -> point.tracing() && !point.active())) {
+            TargetedBlock sampleTarget = VampiricRitualTargeting.resolveTargetedBlock(ref, store, world);
+            Vector3d pointTarget = VampiricRitualTargeting.resolvePointTarget(
+                    ref,
+                    store,
+                    snapshot.get().anchorCenter(),
+                    sampleTarget);
+            if (pointTarget != null && runtimeService.sampleTrace(uuid, pointTarget)) {
+                snapshot = runtimeService.snapshot(uuid);
+            }
+        }
+
         RitualHudService.sync(ref, player, playerRef, snapshot.orElse(null));
 
         Optional<VampiricRitualRuntimeSnapshot> persistentSnapshot =
@@ -186,6 +203,7 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
         nextParticleAtMs.remove(uuid);
         terminalVisuals.remove(uuid);
         lastOverlaySignature.remove(uuid);
+        debugGuidesDisabled.remove(uuid);
         VampiricRitualOutcomeTracker.clearPlayer(uuid);
         RitualGlyphPresentationHandle handle = glyphHandles.remove(uuid);
         if (handle != null) {
@@ -195,6 +213,24 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
 
     public void clearPlayer(@Nonnull UUID uuid) {
         clearPlayer(uuid, null);
+    }
+
+    public boolean debugGuidesEnabled(@Nonnull UUID uuid) {
+        return !debugGuidesDisabled.contains(uuid);
+    }
+
+    public boolean setDebugGuidesEnabled(@Nonnull UUID uuid, boolean enabled) {
+        if (enabled) {
+            debugGuidesDisabled.remove(uuid);
+        } else {
+            debugGuidesDisabled.add(uuid);
+        }
+        lastOverlaySignature.remove(uuid);
+        return enabled;
+    }
+
+    public boolean toggleDebugGuides(@Nonnull UUID uuid) {
+        return setDebugGuidesEnabled(uuid, !debugGuidesEnabled(uuid));
     }
 
     @Nonnull
@@ -274,29 +310,38 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
     private void renderOverlayIfChanged(@Nonnull UUID uuid,
                                         @Nonnull World world,
                                         @Nonnull VampiricRitualRuntimeSnapshot snapshot) {
-        String signature = overlaySignature(snapshot);
+        boolean showDebugGuides = debugGuidesEnabled(uuid);
+        String signature = overlaySignature(snapshot, showDebugGuides);
         String previousSignature = lastOverlaySignature.put(uuid, signature);
         if (signature.equals(previousSignature)) {
             return;
         }
-        VampiricRitualRevealService.reveal(world, snapshot);
+        VampiricRitualRevealService.reveal(
+                world,
+                snapshot,
+                showDebugGuides
+                        ? VampiricRitualRevealService.RevealOptions.FULL
+                        : VampiricRitualRevealService.RevealOptions.STROKE_ONLY);
     }
 
     @Nonnull
-    private static String overlaySignature(@Nonnull VampiricRitualRuntimeSnapshot snapshot) {
+    private static String overlaySignature(@Nonnull VampiricRitualRuntimeSnapshot snapshot,
+                                           boolean showDebugGuides) {
         StringBuilder builder = new StringBuilder(128)
                 .append(snapshot.ritualId()).append('|')
                 .append(snapshot.phase()).append('|')
                 .append(snapshot.complete()).append('|')
                 .append(snapshot.activatedPoints()).append('|')
-                .append(snapshot.pointStates().size());
+                .append(snapshot.pointStates().size()).append('|')
+                .append(showDebugGuides);
         for (var point : snapshot.pointStates()) {
             builder.append('|')
                     .append(point.pointId()).append(':')
                     .append(point.active()).append(':')
                     .append(point.tracing()).append(':')
                     .append(point.traceProgress()).append(':')
-                    .append(point.symbolId());
+                    .append(point.symbolId()).append(':')
+                    .append(point.traceStrokePositions().size());
         }
         return builder.toString();
     }

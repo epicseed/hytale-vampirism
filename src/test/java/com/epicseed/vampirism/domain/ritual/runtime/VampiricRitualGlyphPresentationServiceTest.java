@@ -133,6 +133,7 @@ class VampiricRitualGlyphPresentationServiceTest {
                 active ? 4 : 1,
                 4,
                 false,
-                List.of(new Vector3d(position)));
+                List.of(new Vector3d(position)),
+                List.of());
     }
 }

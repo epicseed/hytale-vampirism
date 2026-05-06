@@ -20,12 +20,16 @@ import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOutcomeTracker
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualRevealService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTargeting;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTargeting.TargetedBlock;
+import com.epicseed.vampirism.systems.VampiricRitualSystem;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
+import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
+import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
+import com.hypixel.hytale.server.core.command.system.arguments.types.ArgumentType;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -35,28 +39,38 @@ public final class VampirismRitualCommand extends AbstractCommand {
 
     private final VampiricRitualRuntimeService runtimeService;
     private final VampiricRitualContextResolver contextResolver;
+    private final VampiricRitualSystem ritualVisualSystem;
 
     public VampirismRitualCommand(@Nonnull VampiricRitualRuntimeService runtimeService,
-                                  @Nonnull VampiricRitualContextResolver contextResolver) {
+                                  @Nonnull VampiricRitualContextResolver contextResolver,
+                                  @Nonnull VampiricRitualSystem ritualVisualSystem) {
         super("vampirismritual", "Vampirism ritual tool actions");
         this.runtimeService = runtimeService;
         this.contextResolver = contextResolver;
+        this.ritualVisualSystem = ritualVisualSystem;
         this.setPermissionGroups(GameMode.Adventure.toString(), GameMode.Creative.toString());
         this.addSubCommand(new PrimarySubCommand());
         this.addSubCommand(new SecondarySubCommand());
         this.addSubCommand(new UseSubCommand());
         this.addSubCommand(new ChannelSubCommand());
+        this.addSubCommand(new DebugSubCommand());
     }
 
     @Nonnull
     @Override
     public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
+        ctx.sendMessage(Message.raw("=== Vampirism Ritual Tool ===").color("dark_red"));
+        ctx.sendMessage(Message.raw("/vampirismritual primary - start or seal the current sigil stroke").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirismritual secondary - clear the assembly or abort the active ritual").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirismritual use - inspect the current ritual circle").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirismritual channel - begin channeling the prepared ritual").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirismritual debug <on|off|toggle|status> - control ritual debug guides").color("yellow"));
         return CompletableFuture.completedFuture(null);
     }
 
     private final class PrimarySubCommand extends AbstractPlayerCommand {
         private PrimarySubCommand() {
-            super("primary", "Toggle a ritual point around the current ancient coffin");
+            super("primary", "Start or seal a ritual sigil around the current ancient coffin");
         }
 
         @Override
@@ -93,7 +107,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
             sendFeedback(ctx, result.message(), result.updated() ? "green" : "yellow");
             if (result.snapshot() != null) {
                 sendSnapshot(ctx, result.snapshot());
-                VampiricRitualRevealService.reveal(world, result.snapshot());
+                revealForPlayer(world, playerRef, result.snapshot());
             }
         }
     }
@@ -136,7 +150,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
             Optional<VampiricRitualRuntimeSnapshot> current = runtimeService.snapshot(playerRef.getUuid());
             if (current.isPresent()) {
                 sendSnapshot(ctx, current.get());
-                VampiricRitualRevealService.reveal(world, current.get());
+                revealForPlayer(world, playerRef, current.get());
                 return;
             }
 
@@ -156,7 +170,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
                 return;
             }
             sendSnapshot(ctx, preview);
-            VampiricRitualRevealService.reveal(world, preview);
+            revealForPlayer(world, playerRef, preview);
         }
     }
 
@@ -186,8 +200,44 @@ public final class VampirismRitualCommand extends AbstractCommand {
             sendFeedback(ctx, result.message(), result.started() ? "green" : "yellow");
             if (result.snapshot() != null) {
                 sendSnapshot(ctx, result.snapshot());
-                VampiricRitualRevealService.reveal(world, result.snapshot());
+                revealForPlayer(world, playerRef, result.snapshot());
             }
+        }
+    }
+
+    private final class DebugSubCommand extends AbstractPlayerCommand {
+        private final RequiredArg<String> actionArg;
+
+        private DebugSubCommand() {
+            super("debug", "Toggle ritual debug guides while keeping the live trace stroke");
+            this.actionArg = this.withRequiredArg("action", "on, off, toggle, or status", (ArgumentType<String>) ArgTypes.STRING);
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext ctx,
+                               @Nonnull Store<EntityStore> store,
+                               @Nonnull Ref<EntityStore> ref,
+                               @Nonnull PlayerRef playerRef,
+                               @Nonnull World world) {
+            String action = actionArg.get(ctx).trim().toLowerCase();
+            Boolean enabled = switch (action) {
+                case "on" -> ritualVisualSystem.setDebugGuidesEnabled(playerRef.getUuid(), true);
+                case "off" -> ritualVisualSystem.setDebugGuidesEnabled(playerRef.getUuid(), false);
+                case "toggle" -> ritualVisualSystem.toggleDebugGuides(playerRef.getUuid());
+                case "status" -> ritualVisualSystem.debugGuidesEnabled(playerRef.getUuid());
+                default -> null;
+            };
+            if (enabled == null) {
+                ctx.sendMessage(Message.raw("Use debug on, off, toggle, or status.").color("red"));
+                return;
+            }
+
+            ctx.sendMessage(Message.raw(
+                    enabled
+                            ? "Ritual debug guides enabled."
+                            : "Ritual debug guides disabled. Live trace strokes stay visible.")
+                    .color(enabled ? "green" : "yellow"));
+            runtimeService.snapshot(playerRef.getUuid()).ifPresent(snapshot -> revealForPlayer(world, playerRef, snapshot));
         }
     }
 
@@ -231,7 +281,8 @@ public final class VampirismRitualCommand extends AbstractCommand {
         String tracingSummary = tracingPoint == null
                 ? ""
                 : " | tracing=" + tracingPoint.symbolName()
-                + " " + tracingPoint.traceProgress() + "/" + tracingPoint.totalTraceSteps();
+                + " " + Math.min(tracingPoint.totalTraceSteps(), tracingPoint.traceProgress() + 1)
+                + "/" + tracingPoint.totalTraceSteps();
         ctx.sendMessage(Message.raw(snapshot.displayName()
                 + " | phase=" + snapshot.phase()
                 + " | points=" + snapshot.activatedPoints() + "/" + snapshot.totalPoints()
@@ -250,5 +301,16 @@ public final class VampirismRitualCommand extends AbstractCommand {
         if (message != null && !message.isBlank()) {
             ctx.sendMessage(Message.raw(message).color(color));
         }
+    }
+
+    private void revealForPlayer(@Nonnull World world,
+                                 @Nonnull PlayerRef playerRef,
+                                 @Nonnull VampiricRitualRuntimeSnapshot snapshot) {
+        VampiricRitualRevealService.reveal(
+                world,
+                snapshot,
+                ritualVisualSystem.debugGuidesEnabled(playerRef.getUuid())
+                        ? VampiricRitualRevealService.RevealOptions.FULL
+                        : VampiricRitualRevealService.RevealOptions.STROKE_ONLY);
     }
 }
