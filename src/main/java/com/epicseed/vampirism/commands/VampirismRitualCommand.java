@@ -44,7 +44,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
     public VampirismRitualCommand(@Nonnull VampiricRitualRuntimeService runtimeService,
                                   @Nonnull VampiricRitualContextResolver contextResolver,
                                   @Nonnull VampiricRitualSystem ritualVisualSystem) {
-        super("vampirismritual", "Vampirism ritual tool actions");
+        super("vampirismritual", "Trace and channel vampiric rituals");
         this.runtimeService = runtimeService;
         this.contextResolver = contextResolver;
         this.ritualVisualSystem = ritualVisualSystem;
@@ -60,17 +60,17 @@ public final class VampirismRitualCommand extends AbstractCommand {
     @Override
     public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
         ctx.sendMessage(Message.raw("=== Vampirism Ritual Tool ===").color("dark_red"));
-        ctx.sendMessage(Message.raw("/vampirismritual primary - start or seal the current sigil stroke").color("yellow"));
-        ctx.sendMessage(Message.raw("/vampirismritual secondary - clear the assembly or abort the active ritual").color("yellow"));
-        ctx.sendMessage(Message.raw("/vampirismritual use - inspect the current ritual circle").color("yellow"));
-        ctx.sendMessage(Message.raw("/vampirismritual channel - begin channeling the prepared ritual").color("yellow"));
-        ctx.sendMessage(Message.raw("/vampirismritual debug <on|off|toggle|status> - control ritual debug guides").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirismritual primary - trace or seal the sigil you are aiming at").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirismritual secondary - clear the prepared circle or break an active rite").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirismritual use - reveal the circle and your next ritual step").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirismritual channel - hold the rite together once the circle is complete").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirismritual debug <on|off|toggle|status> - switch between gameplay view and full debug guides").color("yellow"));
         return CompletableFuture.completedFuture(null);
     }
 
     private final class PrimarySubCommand extends AbstractPlayerCommand {
         private PrimarySubCommand() {
-            super("primary", "Start or seal a ritual sigil around the current ancient coffin");
+            super("primary", "Trace or seal a ritual sigil around the current ancient coffin");
         }
 
         @Override
@@ -114,7 +114,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
 
     private final class SecondarySubCommand extends AbstractPlayerCommand {
         private SecondarySubCommand() {
-            super("secondary", "Clear the assembly or break an active ritual");
+            super("secondary", "Clear the prepared circle or break an active ritual");
         }
 
         @Override
@@ -138,7 +138,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
 
     private final class UseSubCommand extends AbstractPlayerCommand {
         private UseSubCommand() {
-            super("use", "Inspect or reveal the current ritual circle");
+            super("use", "Reveal the current ritual circle and the next step");
         }
 
         @Override
@@ -176,7 +176,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
 
     private final class ChannelSubCommand extends AbstractPlayerCommand {
         private ChannelSubCommand() {
-            super("channel", "Begin channeling the prepared awakening ritual");
+            super("channel", "Begin channeling a completed awakening ritual");
         }
 
         @Override
@@ -209,7 +209,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
         private final RequiredArg<String> actionArg;
 
         private DebugSubCommand() {
-            super("debug", "Toggle ritual debug guides while keeping the live trace stroke");
+            super("debug", "Switch between gameplay visuals and full ritual debug guides");
             this.actionArg = this.withRequiredArg("action", "on, off, toggle, or status", (ArgumentType<String>) ArgTypes.STRING);
         }
 
@@ -234,8 +234,8 @@ public final class VampirismRitualCommand extends AbstractCommand {
 
             ctx.sendMessage(Message.raw(
                     enabled
-                            ? "Ritual debug guides enabled."
-                            : "Ritual debug guides disabled. Live trace strokes stay visible.")
+                            ? "Ritual visuals set to full guides."
+                            : "Ritual visuals set to gameplay view. Live trace strokes and timeline links stay visible.")
                     .color(enabled ? "green" : "yellow"));
             runtimeService.snapshot(playerRef.getUuid()).ifPresent(snapshot -> revealForPlayer(world, playerRef, snapshot));
         }
@@ -278,19 +278,13 @@ public final class VampirismRitualCommand extends AbstractCommand {
                 .filter(VampiricRitualPointState::tracing)
                 .findFirst()
                 .orElse(null);
-        String tracingSummary = tracingPoint == null
-                ? ""
-                : " | tracing=" + tracingPoint.symbolName()
-                + " " + Math.min(tracingPoint.totalTraceSteps(), tracingPoint.traceProgress() + 1)
-                + "/" + tracingPoint.totalTraceSteps();
         ctx.sendMessage(Message.raw(snapshot.displayName()
-                + " | phase=" + snapshot.phase()
-                + " | points=" + snapshot.activatedPoints() + "/" + snapshot.totalPoints()
-                + " | precision=" + Math.round(snapshot.precision())
-                + " | stability=" + Math.round(snapshot.stability())
-                + " | corruption=" + Math.round(snapshot.corruption())
-                + tracingSummary)
+                + " | sigils " + snapshot.activatedPoints() + "/" + snapshot.totalPoints()
+                + traceSummary(tracingPoint)
+                + channelSummary(snapshot))
                 .color(snapshot.active() ? "aqua" : "white"));
+        ctx.sendMessage(Message.raw(nextStepMessage(snapshot, tracingPoint))
+                .color(snapshot.phase() == VampiricRitualRuntimePhase.UNSTABLE ? "yellow" : "gray"));
         ctx.sendMessage(Message.raw("Anchor: "
                 + VampiricRitualAnchorState.fromSnapshot(snapshot).displayName()
                 + " | " + VampiricRitualOutcomeTracker.anchorHint(snapshot))
@@ -311,6 +305,45 @@ public final class VampirismRitualCommand extends AbstractCommand {
                 snapshot,
                 ritualVisualSystem.debugGuidesEnabled(playerRef.getUuid())
                         ? VampiricRitualRevealService.RevealOptions.FULL
-                        : VampiricRitualRevealService.RevealOptions.STROKE_ONLY);
+                        : VampiricRitualRevealService.RevealOptions.GAMEPLAY);
+    }
+
+    @Nonnull
+    private static String traceSummary(@Nullable VampiricRitualPointState tracingPoint) {
+        if (tracingPoint == null) {
+            return "";
+        }
+        return " | tracing " + tracingPoint.symbolName()
+                + " " + Math.min(tracingPoint.totalTraceSteps(), tracingPoint.traceProgress() + 1)
+                + "/" + tracingPoint.totalTraceSteps();
+    }
+
+    @Nonnull
+    private static String channelSummary(@Nonnull VampiricRitualRuntimeSnapshot snapshot) {
+        if (snapshot.phase() != VampiricRitualRuntimePhase.BINDING
+                && snapshot.phase() != VampiricRitualRuntimePhase.CHANNELING
+                && snapshot.phase() != VampiricRitualRuntimePhase.UNSTABLE) {
+            return "";
+        }
+        return " | channel " + Math.round(snapshot.channelProgressSeconds())
+                + "/" + Math.round(snapshot.requiredChannelSeconds()) + "s";
+    }
+
+    @Nonnull
+    private static String nextStepMessage(@Nonnull VampiricRitualRuntimeSnapshot snapshot,
+                                          @Nullable VampiricRitualPointState tracingPoint) {
+        if (tracingPoint != null) {
+            return "Next: finish tracing the " + tracingPoint.symbolName() + " sigil, then strike again to seal it.";
+        }
+        return switch (snapshot.phase()) {
+            case PREPARING -> snapshot.complete()
+                    ? "Next: stand by the coffin and use /vampirismritual channel to begin the rite."
+                    : "Next: seal the remaining sigils around the coffin.";
+            case BINDING -> "Next: keep channeling beside the coffin until the rite rises.";
+            case CHANNELING -> "Next: hold the channel steady and watch the links as the rite completes.";
+            case UNSTABLE -> "Next: keep channeling and regain control before the circle collapses.";
+            case SUCCESS -> "The rite has settled. Step away or prepare the next awakening.";
+            case COLLAPSE -> "The circle has collapsed. Rebuild the sigils before trying again.";
+        };
     }
 }

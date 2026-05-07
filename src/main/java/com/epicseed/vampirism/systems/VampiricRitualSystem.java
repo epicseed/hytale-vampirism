@@ -21,6 +21,7 @@ import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOutcomeTracker
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualRevealService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTargeting;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTargeting.TargetedBlock;
+import com.epicseed.vampirism.hud.RitualHudDisplayMode;
 import com.epicseed.vampirism.hud.RitualHudService;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -51,8 +52,7 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
     private final Map<UUID, Long> nextParticleAtMs = new ConcurrentHashMap<>();
     private final Map<UUID, RitualGlyphPresentationHandle> glyphHandles = new ConcurrentHashMap<>();
     private final Map<UUID, TerminalVisualState> terminalVisuals = new ConcurrentHashMap<>();
-    private final Map<UUID, String> lastOverlaySignature = new ConcurrentHashMap<>();
-    private final Set<UUID> debugGuidesDisabled = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> fullGuidePlayers = ConcurrentHashMap.newKeySet();
 
     public VampiricRitualSystem(@Nonnull VampiricRitualRuntimeService runtimeService,
                                 @Nonnull VampiricRitualContextResolver contextResolver) {
@@ -140,13 +140,24 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
             }
         }
 
-        RitualHudService.sync(ref, player, playerRef, snapshot.orElse(null));
-
         Optional<VampiricRitualRuntimeSnapshot> persistentSnapshot =
                 snapshot.isPresent() ? snapshot : terminalSnapshot(uuid, now);
         if (runtimeOwnedSnapshot) {
             terminalVisuals.remove(uuid);
         }
+
+        Optional<VampiricRitualRuntimeSnapshot> preview = Optional.empty();
+        if (world != null && persistentSnapshot.isEmpty() && holdingTool) {
+            preview = previewSnapshot(ref, store, world);
+        }
+        Optional<VampiricRitualRuntimeSnapshot> hudSnapshot =
+                persistentSnapshot.isPresent() ? persistentSnapshot : preview;
+        RitualHudService.sync(
+                ref,
+                player,
+                playerRef,
+                hudSnapshot.orElse(null),
+                resolveHudDisplayMode(uuid, holdingTool, statePulse, hudSnapshot.orElse(null)));
 
         if (persistentSnapshot.isPresent()) {
             syncGlyphPresentation(uuid, persistentSnapshot.get(), store, commandBuffer);
@@ -156,13 +167,12 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
             if (persistentSnapshot.isEmpty()) {
                 clearGlyphPresentation(uuid, commandBuffer);
                 nextParticleAtMs.remove(uuid);
-                lastOverlaySignature.remove(uuid);
             }
             return;
         }
 
         if (persistentSnapshot.isPresent()) {
-            renderOverlayIfChanged(uuid, world, persistentSnapshot.get());
+            renderOverlay(uuid, world, persistentSnapshot.get());
             if ((holdingTool || statePulse) && nextParticleAtMs.getOrDefault(uuid, 0L) <= now) {
                 spawnStateParticles(store, persistentSnapshot.get());
                 nextParticleAtMs.put(uuid, now + PARTICLE_PULSE_INTERVAL_MS);
@@ -173,17 +183,14 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
         if (!holdingTool) {
             clearGlyphPresentation(uuid, commandBuffer);
             nextParticleAtMs.remove(uuid);
-            lastOverlaySignature.remove(uuid);
             return;
         }
 
-        Optional<VampiricRitualRuntimeSnapshot> preview = previewSnapshot(ref, store, world);
         if (preview.isPresent()) {
             syncGlyphPresentation(uuid, preview.get(), store, commandBuffer);
-            renderOverlayIfChanged(uuid, world, preview.get());
+            renderOverlay(uuid, world, preview.get());
         } else {
             clearGlyphPresentation(uuid, commandBuffer);
-            lastOverlaySignature.remove(uuid);
         }
         if (nextParticleAtMs.getOrDefault(uuid, 0L) > now) {
             return;
@@ -202,8 +209,7 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
         runtimeService.clearPlayer(uuid);
         nextParticleAtMs.remove(uuid);
         terminalVisuals.remove(uuid);
-        lastOverlaySignature.remove(uuid);
-        debugGuidesDisabled.remove(uuid);
+        fullGuidePlayers.remove(uuid);
         VampiricRitualOutcomeTracker.clearPlayer(uuid);
         RitualGlyphPresentationHandle handle = glyphHandles.remove(uuid);
         if (handle != null) {
@@ -216,16 +222,15 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
     }
 
     public boolean debugGuidesEnabled(@Nonnull UUID uuid) {
-        return !debugGuidesDisabled.contains(uuid);
+        return fullGuidePlayers.contains(uuid);
     }
 
     public boolean setDebugGuidesEnabled(@Nonnull UUID uuid, boolean enabled) {
         if (enabled) {
-            debugGuidesDisabled.remove(uuid);
+            fullGuidePlayers.add(uuid);
         } else {
-            debugGuidesDisabled.add(uuid);
+            fullGuidePlayers.remove(uuid);
         }
-        lastOverlaySignature.remove(uuid);
         return enabled;
     }
 
@@ -307,43 +312,36 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
         VampiricRitualGlyphPresentationService.clear(handle, commandBuffer);
     }
 
-    private void renderOverlayIfChanged(@Nonnull UUID uuid,
-                                        @Nonnull World world,
-                                        @Nonnull VampiricRitualRuntimeSnapshot snapshot) {
-        boolean showDebugGuides = debugGuidesEnabled(uuid);
-        String signature = overlaySignature(snapshot, showDebugGuides);
-        String previousSignature = lastOverlaySignature.put(uuid, signature);
-        if (signature.equals(previousSignature)) {
-            return;
-        }
+    private void renderOverlay(@Nonnull UUID uuid,
+                               @Nonnull World world,
+                               @Nonnull VampiricRitualRuntimeSnapshot snapshot) {
         VampiricRitualRevealService.reveal(
                 world,
                 snapshot,
-                showDebugGuides
+                debugGuidesEnabled(uuid)
                         ? VampiricRitualRevealService.RevealOptions.FULL
-                        : VampiricRitualRevealService.RevealOptions.STROKE_ONLY);
+                        : VampiricRitualRevealService.RevealOptions.GAMEPLAY);
     }
 
     @Nonnull
-    private static String overlaySignature(@Nonnull VampiricRitualRuntimeSnapshot snapshot,
-                                           boolean showDebugGuides) {
-        StringBuilder builder = new StringBuilder(128)
-                .append(snapshot.ritualId()).append('|')
-                .append(snapshot.phase()).append('|')
-                .append(snapshot.complete()).append('|')
-                .append(snapshot.activatedPoints()).append('|')
-                .append(snapshot.pointStates().size()).append('|')
-                .append(showDebugGuides);
-        for (var point : snapshot.pointStates()) {
-            builder.append('|')
-                    .append(point.pointId()).append(':')
-                    .append(point.active()).append(':')
-                    .append(point.tracing()).append(':')
-                    .append(point.traceProgress()).append(':')
-                    .append(point.symbolId()).append(':')
-                    .append(point.traceStrokePositions().size());
+    private RitualHudDisplayMode resolveHudDisplayMode(@Nonnull UUID uuid,
+                                                       boolean holdingTool,
+                                                       boolean statePulse,
+                                                       @Nullable VampiricRitualRuntimeSnapshot snapshot) {
+        if (snapshot == null) {
+            return RitualHudDisplayMode.MINIMAL;
         }
-        return builder.toString();
+        if (debugGuidesEnabled(uuid)) {
+            return RitualHudDisplayMode.EXPANDED;
+        }
+        if (holdingTool || statePulse || snapshot.active() || hasTracingPoint(snapshot) || snapshot.interferenceCount() > 0) {
+            return RitualHudDisplayMode.CONTEXTUAL;
+        }
+        return RitualHudDisplayMode.MINIMAL;
+    }
+
+    private static boolean hasTracingPoint(@Nonnull VampiricRitualRuntimeSnapshot snapshot) {
+        return snapshot.pointStates().stream().anyMatch(point -> point.tracing() && !point.active());
     }
 
     private static void spawnStateParticles(@Nonnull Store<EntityStore> store,

@@ -536,18 +536,36 @@ public final class VampirismRuntime {
             return;
         }
         Store<EntityStore> store = playerRef.getStore();
-        if (store == null) {
+        if (store == null || store.isShutdown()) {
             ritualRuntimeService.clearPlayer(uuid);
             return;
         }
-        PlayerRef playerRefComponent = store.getComponent(playerRef, PlayerRef.getComponentType());
-        if (playerRefComponent == null) {
+        Runnable action = () -> {
+            if (store.isShutdown()) {
+                ritualRuntimeService.clearPlayer(uuid);
+                return;
+            }
+            ritualRuntimeService.abort(
+                    uuid,
+                    ritualContextResolver.buildContext(
+                            uuid,
+                            store,
+                            Set.of(VampiricRitualRegistry.TAG_ANCIENT_COFFIN)));
             ritualRuntimeService.clearPlayer(uuid);
+        };
+        World world = WorldStoreAdapter.resolveWorld(store);
+        if (world != null) {
+            if (world.isInThread()) {
+                action.run();
+                return;
+            }
+            world.execute(action);
             return;
         }
-        ritualRuntimeService.abort(
-                uuid,
-                ritualContextResolver.buildContext(playerRefComponent, store, Set.of(VampiricRitualRegistry.TAG_ANCIENT_COFFIN)));
+        if (store.isInThread()) {
+            action.run();
+            return;
+        }
         ritualRuntimeService.clearPlayer(uuid);
     }
 }

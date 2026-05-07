@@ -17,6 +17,7 @@ func withTestEditorRoots(t *testing.T) func() {
 	previousSkillDataDir := skillDataDir
 	previousLegacyJSONPath := legacyJSONPath
 	previousRitualTemplatesPath := ritualTemplatesPath
+	previousRitualGlyphDefinitionsPath := ritualGlyphDefinitionsPath
 	previousRitualGlyphsDir := ritualGlyphsDir
 	previousIconsPath := iconsPath
 
@@ -25,12 +26,14 @@ func withTestEditorRoots(t *testing.T) func() {
 	legacyJSONPath = filepath.Join(tempDir, "SkillsData.json")
 	iconsPath = filepath.Join(tempDir, "Icons")
 	ritualTemplatesPath = filepath.Join(resourcesRoot, "data", "vampirism", "rituals", "templates.json")
+	ritualGlyphDefinitionsPath = filepath.Join(resourcesRoot, "data", "vampirism", "rituals", "glyphs.json")
 	ritualGlyphsDir = filepath.Join(resourcesRoot, "Common", "UI", "Custom", "Vampirism", "Assets", "Rituals")
 
 	return func() {
 		skillDataDir = previousSkillDataDir
 		legacyJSONPath = previousLegacyJSONPath
 		ritualTemplatesPath = previousRitualTemplatesPath
+		ritualGlyphDefinitionsPath = previousRitualGlyphDefinitionsPath
 		ritualGlyphsDir = previousRitualGlyphsDir
 		iconsPath = previousIconsPath
 		restoreAssets()
@@ -56,21 +59,37 @@ func TestDataHandlerRoundTripIncludesRitualTemplates(t *testing.T) {
 					"baseStability":          70.0,
 					"baseCorruption":         8.0,
 					"instabilityThreshold":   30.0,
+					"activationLinks": []interface{}{
+						map[string]interface{}{
+							"fromPointId":           "north",
+							"toPointId":             "north",
+							"startTimeSeconds":      0.0,
+							"activeDurationSeconds": 0.0,
+						},
+					},
 					"points": []interface{}{
 						map[string]interface{}{
-							"id":                       "north",
-							"symbolId":                 "fang_wake",
-							"symbolName":               "Fang Wake",
-							"offsetX":                  0.0,
-							"offsetY":                  0.15,
-							"offsetZ":                  -3.0,
-							"traceTolerance":           0.48,
-							"mistakeStabilityPenalty":  6.0,
-							"mistakeCorruptionPenalty": 5.0,
-							"traceSteps": []interface{}{
-								map[string]interface{}{"offsetX": -0.3, "offsetY": 0.0, "offsetZ": -0.2},
-							},
+							"id":      "north",
+							"glyphId": "fang_wake",
+							"offsetX": 0.0,
+							"offsetY": 0.15,
+							"offsetZ": -3.0,
 						},
+					},
+				},
+			},
+		},
+		"ritualGlyphs": map[string]interface{}{
+			"glyphs": []interface{}{
+				map[string]interface{}{
+					"glyphId":                  "fang_wake",
+					"symbolId":                 "fang_wake",
+					"displayName":              "Fang Wake",
+					"traceTolerance":           0.48,
+					"mistakeStabilityPenalty":  6.0,
+					"mistakeCorruptionPenalty": 5.0,
+					"traceSteps": []interface{}{
+						map[string]interface{}{"offsetX": -0.3, "offsetY": 0.0, "offsetZ": -0.2},
 					},
 				},
 			},
@@ -92,8 +111,19 @@ func TestDataHandlerRoundTripIncludesRitualTemplates(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read ritual templates: %v", err)
 	}
-	if !bytes.Contains(ritualFile, []byte(`"symbolId": "fang_wake"`)) {
+	if !bytes.Contains(ritualFile, []byte(`"glyphId": "fang_wake"`)) {
 		t.Fatalf("ritual templates were not written: %s", string(ritualFile))
+	}
+	if bytes.Contains(ritualFile, []byte(`"traceSteps"`)) {
+		t.Fatalf("ritual templates should no longer inline glyph traces: %s", string(ritualFile))
+	}
+
+	glyphFile, err := os.ReadFile(ritualGlyphDefinitionsPath)
+	if err != nil {
+		t.Fatalf("read ritual glyphs: %v", err)
+	}
+	if !bytes.Contains(glyphFile, []byte(`"glyphId": "fang_wake"`)) {
+		t.Fatalf("ritual glyphs were not written: %s", string(glyphFile))
 	}
 
 	getReq := httptest.NewRequest(http.MethodGet, "/api/data", nil)
@@ -115,6 +145,14 @@ func TestDataHandlerRoundTripIncludesRitualTemplates(t *testing.T) {
 	templates, ok := ritualTemplates["templates"].([]interface{})
 	if !ok || len(templates) != 1 {
 		t.Fatalf("unexpected ritual templates payload: %#v", ritualTemplates["templates"])
+	}
+	ritualGlyphs, ok := doc["ritualGlyphs"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("ritualGlyphs missing or invalid: %#v", doc["ritualGlyphs"])
+	}
+	glyphs, ok := ritualGlyphs["glyphs"].([]interface{})
+	if !ok || len(glyphs) != 1 {
+		t.Fatalf("unexpected ritual glyph payload: %#v", ritualGlyphs["glyphs"])
 	}
 }
 

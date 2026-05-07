@@ -18,6 +18,7 @@ const App = (() => {
     targetings:   [],
     stateRegistry: [],
     relicBindings: {},
+    ritualGlyphs: { glyphs: [] },
     ritualTemplates: { templates: [] },
   };
 
@@ -184,6 +185,14 @@ const App = (() => {
     return doc;
   }
 
+  function normalizeRitualGlyphs(value) {
+    const doc = cloneObject(value);
+    if (!Array.isArray(doc.glyphs)) {
+      doc.glyphs = [];
+    }
+    return doc;
+  }
+
   function normalizeData(data) {
     window.AppData.tree = Array.isArray(data.tree) ? data.tree.map(normalizeSkill) : [];
     window.AppData.passives = Array.isArray(data.passives) ? data.passives.map(normalizePassive) : [];
@@ -199,6 +208,7 @@ const App = (() => {
     window.AppData.targetings = Array.isArray(data.targetings) ? data.targetings.map(normalizeReusableDef) : [];
     window.AppData.stateRegistry = normalizeStateRegistry(data.stateRegistry);
     window.AppData.relicBindings = normalizeRelicBindings(data.relicBindings);
+    window.AppData.ritualGlyphs = normalizeRitualGlyphs(data.ritualGlyphs);
     window.AppData.ritualTemplates = normalizeRitualTemplates(data.ritualTemplates);
   }
 

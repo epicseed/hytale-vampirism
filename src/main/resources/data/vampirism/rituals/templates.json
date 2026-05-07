@@ -1,192 +1,109 @@
 {
   "templates": [
     {
+      "activationLinks": [
+        {
+          "activeDurationSeconds": 9.5,
+          "fromPointId": "north",
+          "startTimeSeconds": 1,
+          "toPointId": "north_east"
+        },
+        {
+          "activeDurationSeconds": 8.5,
+          "fromPointId": "north_east",
+          "startTimeSeconds": 2,
+          "toPointId": "south_east"
+        },
+        {
+          "activeDurationSeconds": 7.5,
+          "fromPointId": "south_east",
+          "startTimeSeconds": 3,
+          "toPointId": "south_west"
+        },
+        {
+          "activeDurationSeconds": 6.5,
+          "fromPointId": "south_west",
+          "startTimeSeconds": 4,
+          "toPointId": "north_west"
+        },
+        {
+          "activeDurationSeconds": 5.5,
+          "fromPointId": "north_west",
+          "startTimeSeconds": 5,
+          "toPointId": "north"
+        },
+        {
+          "activeDurationSeconds": 0,
+          "fromPointId": "north",
+          "startTimeSeconds": 6,
+          "toPointId": "south_west"
+        },
+        {
+          "activeDurationSeconds": 0,
+          "fromPointId": "south_west",
+          "startTimeSeconds": 7,
+          "toPointId": "north_east"
+        },
+        {
+          "activeDurationSeconds": 0,
+          "fromPointId": "north_east",
+          "startTimeSeconds": 8,
+          "toPointId": "north_west"
+        },
+        {
+          "activeDurationSeconds": 0,
+          "fromPointId": "north_west",
+          "startTimeSeconds": 9,
+          "toPointId": "south_east"
+        },
+        {
+          "activeDurationSeconds": 0,
+          "fromPointId": "south_east",
+          "startTimeSeconds": 10,
+          "toPointId": "north"
+        }
+      ],
       "baseCorruption": 8,
       "baseStability": 70,
-      "channelDurationSeconds": 8,
+      "channelDurationSeconds": 11,
       "displayName": "Crimson Awakening",
       "instabilityThreshold": 30,
       "pointTolerance": 0.95,
       "points": [
         {
+          "glyphId": "fang_wake",
           "id": "north",
-          "mistakeCorruptionPenalty": 5,
-          "mistakeStabilityPenalty": 6,
           "offsetX": 0,
           "offsetY": 0.15,
-          "offsetZ": -3,
-          "symbolId": "fang_wake",
-          "symbolName": "Fang Wake",
-          "traceSteps": [
-            {
-              "offsetX": -0.258,
-              "offsetY": 0,
-              "offsetZ": -0.261
-            },
-            {
-              "offsetX": -0.059,
-              "offsetY": 0,
-              "offsetZ": 0.221
-            },
-            {
-              "offsetX": 0.046,
-              "offsetY": 0,
-              "offsetZ": -0.062
-            },
-            {
-              "offsetX": 0.288,
-              "offsetY": 0,
-              "offsetZ": 0.277
-            }
-          ],
-          "traceTolerance": 0.48
+          "offsetZ": -3
         },
         {
+          "glyphId": "moon_scar",
           "id": "north_east",
-          "mistakeCorruptionPenalty": 5,
-          "mistakeStabilityPenalty": 6,
           "offsetX": 2.85,
           "offsetY": 0.15,
-          "offsetZ": -0.93,
-          "symbolId": "moon_scar",
-          "symbolName": "Moon Scar",
-          "traceSteps": [
-            {
-              "offsetX": -0.251,
-              "offsetY": 0,
-              "offsetZ": -0.225
-            },
-            {
-              "offsetX": 0.036,
-              "offsetY": 0,
-              "offsetZ": -0.261
-            },
-            {
-              "offsetX": 0.282,
-              "offsetY": 0,
-              "offsetZ": 0.005
-            },
-            {
-              "offsetX": 0.085,
-              "offsetY": 0,
-              "offsetZ": 0.254
-            },
-            {
-              "offsetX": -0.193,
-              "offsetY": 0,
-              "offsetZ": 0.187
-            }
-          ],
-          "traceTolerance": 0.48
+          "offsetZ": -0.93
         },
         {
+          "glyphId": "blood_spiral",
           "id": "south_east",
-          "mistakeCorruptionPenalty": 5,
-          "mistakeStabilityPenalty": 6,
           "offsetX": 1.76,
           "offsetY": 0.15,
-          "offsetZ": 2.43,
-          "symbolId": "blood_spiral",
-          "symbolName": "Blood Spiral",
-          "traceSteps": [
-            {
-              "offsetX": -0.253,
-              "offsetY": 0,
-              "offsetZ": -0.138
-            },
-            {
-              "offsetX": 0.059,
-              "offsetY": 0,
-              "offsetZ": -0.257
-            },
-            {
-              "offsetX": 0.247,
-              "offsetY": 0,
-              "offsetZ": 0.007
-            },
-            {
-              "offsetX": 0.028,
-              "offsetY": 0,
-              "offsetZ": 0.239
-            },
-            {
-              "offsetX": -0.212,
-              "offsetY": 0,
-              "offsetZ": 0.123
-            }
-          ],
-          "traceTolerance": 0.48
+          "offsetZ": 2.43
         },
         {
+          "glyphId": "vein_eye",
           "id": "south_west",
-          "mistakeCorruptionPenalty": 5,
-          "mistakeStabilityPenalty": 6,
           "offsetX": -1.76,
           "offsetY": 0.15,
-          "offsetZ": 2.43,
-          "symbolId": "vein_eye",
-          "symbolName": "Vein Eye",
-          "traceSteps": [
-            {
-              "offsetX": -0.247,
-              "offsetY": 0,
-              "offsetZ": -0.004
-            },
-            {
-              "offsetX": 0,
-              "offsetY": 0,
-              "offsetZ": -0.252
-            },
-            {
-              "offsetX": 0.259,
-              "offsetY": 0,
-              "offsetZ": -0.006
-            },
-            {
-              "offsetX": 0.007,
-              "offsetY": 0,
-              "offsetZ": 0.252
-            }
-          ],
-          "traceTolerance": 0.48
+          "offsetZ": 2.43
         },
         {
+          "glyphId": "crown_claw",
           "id": "north_west",
-          "mistakeCorruptionPenalty": 5,
-          "mistakeStabilityPenalty": 6,
           "offsetX": -2.85,
           "offsetY": 0.15,
-          "offsetZ": -0.93,
-          "symbolId": "crown_claw",
-          "symbolName": "Crown Claw",
-          "traceSteps": [
-            {
-              "offsetX": -0.238,
-              "offsetY": 0,
-              "offsetZ": 0.25
-            },
-            {
-              "offsetX": -0.144,
-              "offsetY": 0,
-              "offsetZ": -0.263
-            },
-            {
-              "offsetX": 0.002,
-              "offsetY": 0,
-              "offsetZ": 0.204
-            },
-            {
-              "offsetX": 0.142,
-              "offsetY": 0,
-              "offsetZ": -0.263
-            },
-            {
-              "offsetX": 0.251,
-              "offsetY": 0,
-              "offsetZ": 0.237
-            }
-          ],
-          "traceTolerance": 0.48
+          "offsetZ": -0.93
         }
       ],
       "requiredAnchorBlockId": "Furniture_Ancient_Coffin",

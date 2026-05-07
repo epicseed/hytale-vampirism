@@ -2,8 +2,10 @@ package com.epicseed.vampirism.domain.ritual;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.epiccore.vampirism.skill.runtime.VampirismSkillProgressionAccess;
@@ -26,28 +28,38 @@ public final class VampiricRitualContextResolver {
     public VampiricRitualContext buildContext(@Nonnull PlayerRef target,
                                               @Nonnull Store<EntityStore> store,
                                               @Nonnull Set<String> extraTags) {
+        return buildContext(target.getUuid(), store, extraTags);
+    }
+
+    @Nonnull
+    public VampiricRitualContext buildContext(@Nonnull UUID uuid,
+                                              @Nullable Store<EntityStore> store,
+                                              @Nonnull Set<String> extraTags) {
         LinkedHashSet<String> tags = new LinkedHashSet<>();
-        if (VampirePlayerStateStore.get().isInfected(target.getUuid())) {
+        if (VampirePlayerStateStore.get().isInfected(uuid)) {
             tags.add(VampiricRitualRegistry.TAG_INFECTED);
         }
         if (isNight(store)) {
             tags.add(VampiricRitualRegistry.TAG_NIGHT);
         }
         tags.addAll(extraTags);
-        int blood = VampireVitalitySystem.getBloodByUuid(target.getUuid());
+        int blood = VampireVitalitySystem.getBloodByUuid(uuid);
         if (blood < 0) {
-            blood = VampirePlayerStateStore.get().getPersistedBlood(target.getUuid());
+            blood = VampirePlayerStateStore.get().getPersistedBlood(uuid);
         }
         return new VampiricRitualContext(
-                target.getUuid(),
+                uuid,
                 blood,
-                VampirePlayerStateStore.get().getCompletedNightHunts(target.getUuid()),
-                VampirePlayerStateStore.get().getAgeTierId(target.getUuid()),
-                progressionAccess.getUnlockedSkillIds(target.getUuid()),
+                VampirePlayerStateStore.get().getCompletedNightHunts(uuid),
+                VampirePlayerStateStore.get().getAgeTierId(uuid),
+                progressionAccess.getUnlockedSkillIds(uuid),
                 Set.copyOf(tags));
     }
 
-    public boolean isNight(@Nonnull Store<EntityStore> store) {
+    public boolean isNight(@Nullable Store<EntityStore> store) {
+        if (store == null) {
+            return false;
+        }
         WorldTimeResource worldTime = store.getResource(WorldTimeResource.getResourceType());
         if (worldTime == null) {
             return false;

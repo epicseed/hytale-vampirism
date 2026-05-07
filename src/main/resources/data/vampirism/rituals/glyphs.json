@@ -1,0 +1,169 @@
+{
+  "glyphs": [
+    {
+      "displayName": "Blood Spiral",
+      "glyphId": "blood_spiral",
+      "mistakeCorruptionPenalty": 5,
+      "mistakeStabilityPenalty": 6,
+      "symbolId": "blood_spiral",
+      "traceSteps": [
+        {
+          "offsetX": -0.341,
+          "offsetY": 0,
+          "offsetZ": -0.2
+        },
+        {
+          "offsetX": 0.115,
+          "offsetY": 0,
+          "offsetZ": -0.367
+        },
+        {
+          "offsetX": 0.333,
+          "offsetY": 0,
+          "offsetZ": 0.003
+        },
+        {
+          "offsetX": 0.036,
+          "offsetY": 0,
+          "offsetZ": 0.303
+        },
+        {
+          "offsetX": -0.258,
+          "offsetY": 0,
+          "offsetZ": 0.175
+        }
+      ],
+      "traceTolerance": 0.48
+    },
+    {
+      "displayName": "Crown Claw",
+      "glyphId": "crown_claw",
+      "mistakeCorruptionPenalty": 5,
+      "mistakeStabilityPenalty": 6,
+      "symbolId": "crown_claw",
+      "traceSteps": [
+        {
+          "offsetX": -0.351,
+          "offsetY": 0,
+          "offsetZ": 0.342
+        },
+        {
+          "offsetX": -0.212,
+          "offsetY": 0,
+          "offsetZ": -0.369
+        },
+        {
+          "offsetX": 0.008,
+          "offsetY": 0,
+          "offsetZ": 0.263
+        },
+        {
+          "offsetX": 0.21,
+          "offsetY": 0,
+          "offsetZ": -0.378
+        },
+        {
+          "offsetX": 0.365,
+          "offsetY": 0,
+          "offsetZ": 0.344
+        }
+      ],
+      "traceTolerance": 0.48
+    },
+    {
+      "displayName": "Fang Wake",
+      "glyphId": "fang_wake",
+      "mistakeCorruptionPenalty": 5,
+      "mistakeStabilityPenalty": 6,
+      "symbolId": "fang_wake",
+      "traceSteps": [
+        {
+          "offsetX": -0.483,
+          "offsetY": 0,
+          "offsetZ": -0.514
+        },
+        {
+          "offsetX": -0.109,
+          "offsetY": 0,
+          "offsetZ": 0.568
+        },
+        {
+          "offsetX": 0.084,
+          "offsetY": 0,
+          "offsetZ": -0.111
+        },
+        {
+          "offsetX": 0.498,
+          "offsetY": 0,
+          "offsetZ": 0.466
+        }
+      ],
+      "traceTolerance": 0.48
+    },
+    {
+      "displayName": "Moon Scar",
+      "glyphId": "moon_scar",
+      "mistakeCorruptionPenalty": 5,
+      "mistakeStabilityPenalty": 6,
+      "symbolId": "moon_scar",
+      "traceSteps": [
+        {
+          "offsetX": -0.299,
+          "offsetY": 0,
+          "offsetZ": -0.286
+        },
+        {
+          "offsetX": 0.051,
+          "offsetY": 0,
+          "offsetZ": -0.335
+        },
+        {
+          "offsetX": 0.319,
+          "offsetY": 0,
+          "offsetZ": 0.006
+        },
+        {
+          "offsetX": 0.082,
+          "offsetY": 0,
+          "offsetZ": 0.305
+        },
+        {
+          "offsetX": -0.251,
+          "offsetY": 0,
+          "offsetZ": 0.23
+        }
+      ],
+      "traceTolerance": 0.48
+    },
+    {
+      "displayName": "Vein Eye",
+      "glyphId": "vein_eye",
+      "mistakeCorruptionPenalty": 5,
+      "mistakeStabilityPenalty": 6,
+      "symbolId": "vein_eye",
+      "traceSteps": [
+        {
+          "offsetX": -0.316,
+          "offsetY": 0,
+          "offsetZ": -0.009
+        },
+        {
+          "offsetX": 0.002,
+          "offsetY": 0,
+          "offsetZ": -0.322
+        },
+        {
+          "offsetX": 0.326,
+          "offsetY": 0,
+          "offsetZ": -0.009
+        },
+        {
+          "offsetX": 0,
+          "offsetY": 0,
+          "offsetZ": 0.3
+        }
+      ],
+      "traceTolerance": 0.48
+    }
+  ]
+}
