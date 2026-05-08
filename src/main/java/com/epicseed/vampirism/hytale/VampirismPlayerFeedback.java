@@ -10,7 +10,9 @@ import com.epicseed.epiccore.hytale.PlayerFeedbackAdapter;
 import com.epicseed.epiccore.hytale.runtime.PlayerRuntimeIndex;
 import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.epiccore.skill.runtime.CatalogBackedProgressionDefinitionProvider;
+import com.epicseed.epiccore.vampirism.skill.registry.PlayerSkillRegistry;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageDefinition;
+import com.epicseed.vampirism.domain.player.VampirismUxPreferenceKeys;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.NotificationStyle;
@@ -24,7 +26,7 @@ public final class VampirismPlayerFeedback {
     }
 
     public static void notifySkillPoints(@Nullable UUID uuid, int amount) {
-        if (uuid == null || amount == 0) {
+        if (uuid == null || amount == 0 || !notificationEnabled(uuid, VampirismUxPreferenceKeys.GAMEPLAY_NOTIFICATIONS)) {
             return;
         }
         notify(uuid,
@@ -38,7 +40,10 @@ public final class VampirismPlayerFeedback {
     }
 
     public static void notifySkillUnlocked(@Nullable UUID uuid, @Nullable String skillId) {
-        if (uuid == null || skillId == null || skillId.isBlank()) {
+        if (uuid == null
+                || skillId == null
+                || skillId.isBlank()
+                || !notificationEnabled(uuid, VampirismUxPreferenceKeys.GAMEPLAY_NOTIFICATIONS)) {
             return;
         }
         notify(uuid,
@@ -49,7 +54,10 @@ public final class VampirismPlayerFeedback {
     public static void showAgeTierReached(@Nullable UUID uuid,
                                           @Nullable String tierId,
                                           @Nullable String tierDisplayName) {
-        if (uuid == null || tierId == null || tierId.isBlank()) {
+        if (uuid == null
+                || tierId == null
+                || tierId.isBlank()
+                || !notificationEnabled(uuid, VampirismUxPreferenceKeys.GAMEPLAY_NOTIFICATIONS)) {
             return;
         }
         String displayName = normalizedDisplayName(tierDisplayName, tierId);
@@ -65,7 +73,9 @@ public final class VampirismPlayerFeedback {
 
     public static void notifyLineageChosen(@Nullable UUID uuid,
                                            @Nullable VampiricLineageDefinition definition) {
-        if (uuid == null || definition == null) {
+        if (uuid == null
+                || definition == null
+                || !notificationEnabled(uuid, VampirismUxPreferenceKeys.GAMEPLAY_NOTIFICATIONS)) {
             return;
         }
         notify(uuid,
@@ -74,7 +84,8 @@ public final class VampirismPlayerFeedback {
     }
 
     public static void showVampiricAscension(@Nullable PlayerRef playerRef) {
-        if (playerRef == null) {
+        if (playerRef == null
+                || !notificationEnabled(playerRef.getUuid(), VampirismUxPreferenceKeys.GAMEPLAY_NOTIFICATIONS)) {
             return;
         }
         Message primary = Message.raw("Vampiric Ascension").color("dark_red");
@@ -90,6 +101,9 @@ public final class VampirismPlayerFeedback {
     public static void showRitualAscension(@Nullable UUID uuid,
                                            @Nonnull String primary,
                                            @Nonnull String secondary) {
+        if (!notificationEnabled(uuid, VampirismUxPreferenceKeys.GAMEPLAY_NOTIFICATIONS)) {
+            return;
+        }
         showTitle(uuid,
                 Message.raw(primary).color("dark_red"),
                 Message.raw(secondary).color("red"),
@@ -99,7 +113,8 @@ public final class VampirismPlayerFeedback {
     public static void notifyMarkedPreyKilled(@Nullable Ref<EntityStore> attackerRef,
                                               @Nullable Store<EntityStore> store) {
         PlayerRef playerRef = resolvePlayerRef(attackerRef, store);
-        if (playerRef == null) {
+        if (playerRef == null
+                || !notificationEnabled(playerRef.getUuid(), VampirismUxPreferenceKeys.GAMEPLAY_NOTIFICATIONS)) {
             return;
         }
         Message message = labeledMessage("Marked Prey", "green", "Slain and claimed.", "white");
@@ -114,7 +129,10 @@ public final class VampirismPlayerFeedback {
                                      @Nonnull String message,
                                      @Nullable NotificationStyle style,
                                      @Nonnull String color) {
-        if (uuid == null || message == null || message.isBlank()) {
+        if (uuid == null
+                || message == null
+                || message.isBlank()
+                || !notificationEnabled(uuid, VampirismUxPreferenceKeys.RITUAL_RUNTIME_NOTIFICATIONS)) {
             return;
         }
         notify(uuid, splitLabeledMessage(message, color, bodyColor(style, color)), style);
@@ -237,5 +255,11 @@ public final class VampirismPlayerFeedback {
             case Success -> "white";
             default -> fallbackColor;
         };
+    }
+
+    private static boolean notificationEnabled(@Nullable UUID uuid, @Nonnull String notificationKey) {
+        return uuid != null
+                && (!PlayerSkillRegistry.isInitialized()
+                || PlayerSkillRegistry.get().isNotificationEnabled(uuid, notificationKey));
     }
 }

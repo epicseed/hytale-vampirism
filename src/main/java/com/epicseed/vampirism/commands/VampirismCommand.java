@@ -2,9 +2,11 @@ package com.epicseed.vampirism.commands;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.registry.ReloadRegistry;
 import com.epicseed.vampirism.commands.admin.AbilityAdminCommands;
 import com.epicseed.vampirism.commands.admin.AgeAdminCommands;
 import com.epicseed.vampirism.commands.admin.AnimationAdminCommand;
@@ -125,17 +127,14 @@ public class VampirismCommand extends AbstractCommand {
         @Nonnull
         @Override
         public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
+            AtomicReference<Vampirism.ReloadedSkillDefinitions> skillReloadRef = new AtomicReference<>();
+            AtomicReference<VampirismRuntime.ReloadRuntimeStateSummary> runtimeReloadRef = new AtomicReference<>();
             try {
-                Vampirism.ReloadedSkillDefinitions skillReload = plugin.reloadSkillDefinitions();
-                VampirismConfig.reload();
-                VampireStatusRegistry.get().reload();
-                NightHuntSpawnRegistry.get().reload();
-                VampiricAgeTierService.reload();
-                lineageService.registry().reload();
-                ritualRuntimeService.templateRegistry().reload();
-                VampirismRuntime.ReloadRuntimeStateSummary runtimeReload =
-                        runtime.refreshReloadedJsonState(ritualRuntimeService, ritualContextResolver);
+                ReloadRegistry.ReloadReport report = createReloadRegistry(skillReloadRef, runtimeReloadRef).reloadAll();
+                Vampirism.ReloadedSkillDefinitions skillReload = requireSkillReload(skillReloadRef);
+                VampirismRuntime.ReloadRuntimeStateSummary runtimeReload = requireRuntimeReload(runtimeReloadRef);
                 ctx.sendMessage(Message.raw("Vampirism JSON/config reload complete.").color("green"));
+                ctx.sendMessage(Message.raw("Reload steps: " + String.join(", ", report.reloadedNames())).color("gray"));
                 ctx.sendMessage(Message.raw(
                         "Skills=" + skillReload.skillCount()
                                 + ", abilities=" + skillReload.abilityCount()
@@ -151,11 +150,62 @@ public class VampirismCommand extends AbstractCommand {
                 ctx.sendMessage(Message.raw(
                         "Note: hard-coded ritual definitions still require a rebuild; the command reloads JSON-backed data.")
                         .color("gray"));
+            } catch (ReloadRegistry.ReloadFailedException exception) {
+                Throwable cause = exception.getCause();
+                String completed = exception.completedReloadables().isEmpty()
+                        ? "none"
+                        : String.join(", ", exception.completedReloadables());
+                String causeMessage = cause != null && cause.getMessage() != null && !cause.getMessage().isBlank()
+                        ? cause.getMessage()
+                        : exception.getMessage();
+                plugin.getLogger().atSevere().log(
+                        "[Vampirism] Reload failed during '" + exception.failedReloadable()
+                                + "' after [" + completed + "]: " + causeMessage);
+                ctx.sendMessage(Message.raw(
+                        "Reload failed during " + exception.failedReloadable()
+                                + ". Completed steps: " + completed).color("red"));
+                ctx.sendMessage(Message.raw("Cause: " + causeMessage).color("red"));
             } catch (RuntimeException exception) {
                 plugin.getLogger().atSevere().log("[Vampirism] Reload failed: " + exception.getMessage());
                 ctx.sendMessage(Message.raw("Reload failed: " + exception.getMessage()).color("red"));
             }
             return CompletableFuture.completedFuture(null);
+        }
+
+        @Nonnull
+        private ReloadRegistry createReloadRegistry(
+                @Nonnull AtomicReference<Vampirism.ReloadedSkillDefinitions> skillReloadRef,
+                @Nonnull AtomicReference<VampirismRuntime.ReloadRuntimeStateSummary> runtimeReloadRef) {
+            return new ReloadRegistry()
+                    .register("skill definitions", () -> skillReloadRef.set(plugin.reloadSkillDefinitions()))
+                    .register("vampirism config", VampirismConfig::reload)
+                    .register("vampire status registry", () -> VampireStatusRegistry.get().reload())
+                    .register("night hunt spawn registry", () -> NightHuntSpawnRegistry.get().reload())
+                    .register("vampiric age tiers", VampiricAgeTierService::reload)
+                    .register("vampiric lineages", () -> lineageService.registry().reload())
+                    .register("ritual templates", () -> ritualRuntimeService.templateRegistry().reload())
+                    .register("runtime refresh", () -> runtimeReloadRef.set(
+                            runtime.refreshReloadedJsonState(ritualRuntimeService, ritualContextResolver)));
+        }
+
+        @Nonnull
+        private static Vampirism.ReloadedSkillDefinitions requireSkillReload(
+                @Nonnull AtomicReference<Vampirism.ReloadedSkillDefinitions> skillReloadRef) {
+            Vampirism.ReloadedSkillDefinitions skillReload = skillReloadRef.get();
+            if (skillReload == null) {
+                throw new IllegalStateException("Skill definitions were not reloaded.");
+            }
+            return skillReload;
+        }
+
+        @Nonnull
+        private static VampirismRuntime.ReloadRuntimeStateSummary requireRuntimeReload(
+                @Nonnull AtomicReference<VampirismRuntime.ReloadRuntimeStateSummary> runtimeReloadRef) {
+            VampirismRuntime.ReloadRuntimeStateSummary runtimeReload = runtimeReloadRef.get();
+            if (runtimeReload == null) {
+                throw new IllegalStateException("Runtime state was not refreshed.");
+            }
+            return runtimeReload;
         }
     }
 

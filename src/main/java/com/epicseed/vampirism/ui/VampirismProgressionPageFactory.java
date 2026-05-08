@@ -13,13 +13,16 @@ public final class VampirismProgressionPageFactory implements ProgressionPageFac
     private final ProgressionUiPaths uiPaths;
     private final SkillTreeUiAdapter skillTreeUiAdapter;
     private final RelicUiAdapter relicUiAdapter;
+    private final VampirismSettingsUiAdapter settingsUiAdapter;
 
     public VampirismProgressionPageFactory(ProgressionUiPaths uiPaths,
                                            SkillTreeUiAdapter skillTreeUiAdapter,
-                                           RelicUiAdapter relicUiAdapter) {
+                                           RelicUiAdapter relicUiAdapter,
+                                           VampirismSettingsUiAdapter settingsUiAdapter) {
         this.uiPaths = uiPaths;
         this.skillTreeUiAdapter = skillTreeUiAdapter;
         this.relicUiAdapter = relicUiAdapter;
+        this.settingsUiAdapter = settingsUiAdapter;
     }
 
     @Override
@@ -30,5 +33,10 @@ public final class VampirismProgressionPageFactory implements ProgressionPageFac
     @Override
     public InteractiveCustomUIPage<?> createRelicBindingsPage(PlayerRef playerRef) {
         return new ProgressionRelicBindingsPage(playerRef, uiPaths, this, relicUiAdapter);
+    }
+
+    @Override
+    public InteractiveCustomUIPage<?> createSettingsPage(PlayerRef playerRef) {
+        return new VampirismSettingsPage(playerRef, this, settingsUiAdapter);
     }
 }

@@ -1,0 +1,196 @@
+// Hytale UI Definition: ProgressionSettings
+$C = "../../Common.ui";
+
+Group #SettingsRoot {
+  Anchor: (Full: 0);
+  Background: #0b1218;
+}
+
+Group #NavTabs {
+  Anchor: (Left: 0, Top: 0, Width: 440, Height: 44);
+
+  Group #TabSkillTreeWrapper {
+    Anchor: (Left: 0, Top: 0, Width: 140, Height: 44);
+    Background: #0d1820;
+    Label {
+      Anchor: (Full: 0);
+      Text: "Skill Tree";
+      Style: (FontSize: 12, TextColor: #999999, HorizontalAlignment: Center, VerticalAlignment: Center);
+    }
+    Button #TabSkillTreeBtn {
+      Anchor: (Full: 0);
+      Style: $C.@TertiaryButtonStyle;
+    }
+  }
+
+  Group #TabRelicBindingsWrapper {
+    Anchor: (Left: 144, Top: 0, Width: 146, Height: 44);
+    Background: #0d1820;
+    Label {
+      Anchor: (Full: 0);
+      Text: "Relic Bindings";
+      Style: (FontSize: 12, TextColor: #999999, HorizontalAlignment: Center, VerticalAlignment: Center);
+    }
+    Button #TabRelicBindingsBtn {
+      Anchor: (Full: 0);
+      Style: $C.@TertiaryButtonStyle;
+    }
+  }
+
+  Group #TabSettings {
+    Anchor: (Left: 294, Top: 0, Width: 146, Height: 44);
+    Background: #1e3048;
+    Label {
+      Anchor: (Full: 0);
+      Text: "Settings";
+      Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+    }
+  }
+}
+
+Group #HeaderBtns {
+  Anchor: (Right: 16, Top: 14, Width: 100, Height: 38);
+
+  $C.@CancelTextButton #CloseBtn {
+    @Text = "Close";
+    @Anchor = (Right: 0, Width: 100, Height: 32);
+  }
+}
+
+Group #SettingsPanel {
+  Anchor: (Left: 40, Right: 40, Top: 72, Bottom: 40);
+}
+
+Group #BloodHudCard {
+  Anchor: (Left: 0, Right: 0, Top: 0, Height: 82);
+  Background: #14202c;
+  Label {
+    Anchor: (Left: 18, Top: 12, Width: 240, Height: 18);
+    Text: "Blood HUD";
+    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+  }
+  Label {
+    Anchor: (Left: 18, Top: 34, Right: 170, Height: 16);
+    Text: "Show or hide the persistent blood resource HUD.";
+    Style: (FontSize: 11, TextColor: #9bb0c2);
+  }
+  Label #BloodHudValue {
+    Anchor: (Left: 18, Top: 56, Width: 160, Height: 16);
+    Text: "Visible";
+    Style: (FontSize: 12, TextColor: #7dd3fc, RenderBold: true);
+  }
+  $C.@SecondaryTextButton #BloodHudToggleBtn {
+    @Text = "Toggle";
+    @Anchor = (Right: 16, Top: 24, Width: 120, Height: 32);
+  }
+}
+
+Group #RitualHudCard {
+  Anchor: (Left: 0, Right: 0, Top: 96, Height: 82);
+  Background: #14202c;
+  Label {
+    Anchor: (Left: 18, Top: 12, Width: 240, Height: 18);
+    Text: "Ritual HUD";
+    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+  }
+  Label {
+    Anchor: (Left: 18, Top: 34, Right: 170, Height: 16);
+    Text: "Show or hide the ritual status overlay and native fallback slot.";
+    Style: (FontSize: 11, TextColor: #9bb0c2);
+  }
+  Label #RitualHudValue {
+    Anchor: (Left: 18, Top: 56, Width: 160, Height: 16);
+    Text: "Visible";
+    Style: (FontSize: 12, TextColor: #7dd3fc, RenderBold: true);
+  }
+  $C.@SecondaryTextButton #RitualHudToggleBtn {
+    @Text = "Toggle";
+    @Anchor = (Right: 16, Top: 24, Width: 120, Height: 32);
+  }
+}
+
+Group #RitualModeCard {
+  Anchor: (Left: 0, Right: 0, Top: 192, Height: 108);
+  Background: #14202c;
+  Label {
+    Anchor: (Left: 18, Top: 12, Width: 280, Height: 18);
+    Text: "Ritual HUD Detail";
+    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+  }
+  Label {
+    Anchor: (Left: 18, Top: 34, Right: 24, Height: 16);
+    Text: "Minimal stays quiet, Contextual reacts to ritual state, Expanded keeps the full panel visible.";
+    Style: (FontSize: 11, TextColor: #9bb0c2);
+  }
+  Label #RitualModeValue {
+    Anchor: (Left: 18, Top: 56, Width: 180, Height: 16);
+    Text: "Contextual";
+    Style: (FontSize: 12, TextColor: #facc15, RenderBold: true);
+  }
+  $C.@SecondaryTextButton #RitualModeMinimalBtn {
+    @Text = "Minimal";
+    @Anchor = (Right: 276, Bottom: 14, Width: 92, Height: 32);
+  }
+  $C.@SecondaryTextButton #RitualModeContextualBtn {
+    @Text = "Contextual";
+    @Anchor = (Right: 146, Bottom: 14, Width: 120, Height: 32);
+  }
+  $C.@SecondaryTextButton #RitualModeExpandedBtn {
+    @Text = "Expanded";
+    @Anchor = (Right: 16, Bottom: 14, Width: 120, Height: 32);
+  }
+}
+
+Group #GameplayNotificationsCard {
+  Anchor: (Left: 0, Right: 0, Top: 314, Height: 82);
+  Background: #14202c;
+  Label {
+    Anchor: (Left: 18, Top: 12, Width: 320, Height: 18);
+    Text: "Gameplay Alerts";
+    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+  }
+  Label {
+    Anchor: (Left: 18, Top: 34, Right: 170, Height: 16);
+    Text: "Mute or enable Vampirism progression and general gameplay notifications.";
+    Style: (FontSize: 11, TextColor: #9bb0c2);
+  }
+  Label #GameplayNotificationsValue {
+    Anchor: (Left: 18, Top: 56, Width: 160, Height: 16);
+    Text: "Enabled";
+    Style: (FontSize: 12, TextColor: #7dd3fc, RenderBold: true);
+  }
+  $C.@SecondaryTextButton #GameplayNotificationsToggleBtn {
+    @Text = "Toggle";
+    @Anchor = (Right: 16, Top: 24, Width: 120, Height: 32);
+  }
+}
+
+Group #RitualRuntimeNotificationsCard {
+  Anchor: (Left: 0, Right: 0, Top: 410, Height: 82);
+  Background: #14202c;
+  Label {
+    Anchor: (Left: 18, Top: 12, Width: 320, Height: 18);
+    Text: "Ritual Runtime Alerts";
+    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+  }
+  Label {
+    Anchor: (Left: 18, Top: 34, Right: 170, Height: 16);
+    Text: "Mute or enable ritual tick alerts such as instability, tracing, and collapse warnings.";
+    Style: (FontSize: 11, TextColor: #9bb0c2);
+  }
+  Label #RitualRuntimeNotificationsValue {
+    Anchor: (Left: 18, Top: 56, Width: 160, Height: 16);
+    Text: "Enabled";
+    Style: (FontSize: 12, TextColor: #7dd3fc, RenderBold: true);
+  }
+  $C.@SecondaryTextButton #RitualRuntimeNotificationsToggleBtn {
+    @Text = "Toggle";
+    @Anchor = (Right: 16, Top: 24, Width: 120, Height: 32);
+  }
+}
+
+Label #FooterHint {
+  Anchor: (Left: 56, Right: 56, Bottom: 18, Height: 16);
+  Text: "";
+  Style: (FontSize: 11, TextColor: #8ea2b5, HorizontalAlignment: Center);
+}

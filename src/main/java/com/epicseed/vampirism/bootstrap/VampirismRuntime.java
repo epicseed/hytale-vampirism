@@ -12,6 +12,8 @@ import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.hytale.WorldStoreAdapter;
 import com.epicseed.epiccore.hytale.WorldMapTrackerAdapter;
+import com.epicseed.epiccore.hytale.hud.HudBackendResolver;
+import com.epicseed.epiccore.hytale.hud.SingleSlotHudCoordinator;
 import com.epicseed.epiccore.hytale.runtime.PlayerRuntimeCleanupCoordinator;
 import com.epicseed.epiccore.modifier.StatType;
 import com.epicseed.epiccore.relic.application.RelicInventoryConfig;
@@ -104,6 +106,7 @@ import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.epicseed.vampirism.systems.VampiricRitualCompanionSystem;
 import com.epicseed.vampirism.systems.VampiricRitualSystem;
 import com.epicseed.vampirism.ui.VampirismProgressionPageFactory;
+import com.epicseed.vampirism.ui.VampirismSettingsUiAdapter;
 import com.epicseed.vampirism.ui.VampirismSkillTreeUiAdapter;
 import com.epicseed.vampirism.ui.VampirismUiPaths;
 import com.epicseed.vampirism.ui.SkillTreeUI;
@@ -282,10 +285,12 @@ public final class VampirismRuntime {
                 progressionDefinitionProvider,
                 () -> VampirismConfig.get().getCooldownHudUpdateIntervalMs(),
                 RelicInventoryService.itemId());
+        VampirismSettingsUiAdapter settingsUiAdapter = new VampirismSettingsUiAdapter();
         ProgressionPageFactory progressionPageFactory = new VampirismProgressionPageFactory(
                 VampirismUiPaths.theme(),
                 skillTreeUiAdapter,
-                relicUiAdapter);
+                relicUiAdapter,
+                settingsUiAdapter);
 
         PassiveRuntimeServices<SkillRuntimeContext, PassiveService> passiveRuntimeServices =
                 PassiveRuntimeServices.create(
@@ -305,10 +310,14 @@ public final class VampirismRuntime {
         FeedCompletionService.init(
                 passiveService::onFeed,
                 nightHuntService::onPlayerKilledMarkedPrey);
+        HudBackendResolver hudBackendResolver = HudBackendResolver.createDefault();
+        SingleSlotHudCoordinator singleSlotHudCoordinator = new SingleSlotHudCoordinator();
         BloodHudService.init(
+                hudBackendResolver,
+                singleSlotHudCoordinator,
                 BloodGaugeHud::new,
                 playerRef -> new ProgressionRelicCooldownHud(playerRef, VampirismUiPaths.theme(), relicUiAdapter));
-        RitualHudService.init(RitualStatusHud::new);
+        RitualHudService.init(hudBackendResolver, singleSlotHudCoordinator, RitualStatusHud::new);
         AbilityService abilityService = new AbilityService(skillRequirementEvaluator, skillActionExecutor);
         abilityService.init(
                 progressionDefinitionProvider,

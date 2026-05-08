@@ -11,6 +11,7 @@ import javax.annotation.Nullable;
 
 import com.epicseed.vampirism.hytale.VampirismPlayerFeedback;
 import com.epicseed.epiccore.hytale.WorldStoreAdapter;
+import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRegistry;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeService;
@@ -318,6 +319,15 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
                                                        boolean holdingTool,
                                                        boolean statePulse,
                                                        @Nullable VampiricRitualRuntimeSnapshot snapshot) {
+        String preference = VampirePlayerStateStore.isInitialized()
+                ? VampirePlayerStateStore.get().getRitualHudDisplayMode(uuid)
+                : "contextual";
+        if ("minimal".equalsIgnoreCase(preference)) {
+            return RitualHudDisplayMode.MINIMAL;
+        }
+        if ("expanded".equalsIgnoreCase(preference)) {
+            return RitualHudDisplayMode.EXPANDED;
+        }
         if (snapshot == null) {
             return RitualHudDisplayMode.MINIMAL;
         }
