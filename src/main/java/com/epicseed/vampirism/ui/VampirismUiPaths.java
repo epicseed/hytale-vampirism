@@ -35,4 +35,5 @@ public final class VampirismUiPaths {
     public static String ritualEditorLayout() {
         return ROOT + "/Screens/RitualEditor.ui";
     }
+
 }

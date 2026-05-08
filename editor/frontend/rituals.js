@@ -1,6 +1,10 @@
 (() => {
   const pane = document.getElementById('pane-rituals');
   const GLYPH_ASSET_API = '/api/ritual-glyphs';
+  const GLYPH_TEXTURE_SIZE = 64;
+  const GLYPH_TEXTURE_PADDING_PX = 6;
+  const GLYPH_PREVIEW_FIXED_EXTENT = 0.4;
+  const GLYPH_PREVIEW_LIMIT = 0.4;
   const FALLBACK_GLYPH_ASSETS = [
     { id: 'fang_wake', displayName: 'Fang Wake', url: '/api/ritual-glyphs/fang_wake' },
     { id: 'moon_scar', displayName: 'Moon Scar', url: '/api/ritual-glyphs/moon_scar' },
@@ -9,7 +13,6 @@
     { id: 'crown_claw', displayName: 'Crown Claw', url: '/api/ritual-glyphs/crown_claw' },
     { id: 'generic', displayName: 'Generic', url: '/api/ritual-glyphs/generic' },
   ];
-
   const state = {
     mode: 'builder',
     assetGlyphs: [],
@@ -22,7 +25,6 @@
     glyphStepIndex: 0,
     linkIndex: 0,
     glyphPreviewDrag: null,
-    glyphPreviewExtents: {},
     layoutPreviewDrag: null,
     layoutPreviewExtents: {},
     layoutPreviewSeconds: 0,
@@ -197,6 +199,7 @@
         opacity:0.9;
         pointer-events:none;
         user-select:none;
+        image-rendering:pixelated;
       }
       .ritual-layout-stage svg,
       .ritual-glyph-stage svg {
@@ -423,6 +426,8 @@
       ritualId: String(template?.ritualId || `ritual_${index + 1}`).trim() || `ritual_${index + 1}`,
       displayName: String(template?.displayName || `New Ritual ${index + 1}`).trim() || `New Ritual ${index + 1}`,
       requiredAnchorBlockId: String(template?.requiredAnchorBlockId || 'Furniture_Ancient_Coffin').trim() || 'Furniture_Ancient_Coffin',
+      baseLayer: null,
+      coreLayer: null,
       pointTolerance: parseNumericInput(template?.pointTolerance, 0.95),
       channelDurationSeconds: parseNumericInput(template?.channelDurationSeconds, 8),
       baseStability: parseNumericInput(template?.baseStability, 70),
@@ -434,6 +439,8 @@
 
     const pointEntries = Array.isArray(template?.points) ? template.points : [];
     normalizedTemplate.points = pointEntries.map((point, pointIndex) => normalizePoint(point, pointIndex, glyphMap, fallbackGlyph?.glyphId)).filter(Boolean);
+    normalizedTemplate.baseLayer = normalizeAnchorLayer(template?.baseLayer || template?.centerGlyph, 0.035);
+    normalizedTemplate.coreLayer = normalizeAnchorLayer(template?.coreLayer, 0.09);
     normalizedTemplate.activationLinks = normalizeActivationLinks(template?.activationLinks, normalizedTemplate.points);
     return normalizedTemplate;
   }
@@ -454,6 +461,12 @@
       offsetY: parseNumericInput(point?.offsetY, 0.15),
       offsetZ: parseNumericInput(point?.offsetZ, 0),
       glyphId,
+    };
+  }
+
+  function normalizeAnchorLayer(anchorLayer, defaultOffsetY) {
+    return {
+      offsetY: parseNumericInput(anchorLayer?.offsetY, defaultOffsetY),
     };
   }
 
@@ -500,9 +513,9 @@
 
   function normalizeTraceSteps(traceSteps) {
     const normalized = Array.isArray(traceSteps) ? traceSteps.map((step) => ({
-      offsetX: parseNumericInput(step?.offsetX, 0),
+      offsetX: clampGlyphAxis(parseNumericInput(step?.offsetX, 0)),
       offsetY: parseNumericInput(step?.offsetY, 0),
-      offsetZ: parseNumericInput(step?.offsetZ, 0),
+      offsetZ: clampGlyphAxis(parseNumericInput(step?.offsetZ, 0)),
     })) : [];
     return normalized.length ? normalized : [makeStep(0, 0, 0)];
   }
@@ -652,6 +665,12 @@
       ritualId: `ritual_${index}`,
       displayName: `New Ritual ${index}`,
       requiredAnchorBlockId: 'Furniture_Ancient_Coffin',
+      baseLayer: {
+        offsetY: 0.035,
+      },
+      coreLayer: {
+        offsetY: 0.09,
+      },
       pointTolerance: 0.95,
       channelDurationSeconds: 8,
       baseStability: 70,
@@ -861,6 +880,7 @@
               <div class="ritual-list-item-subtitle">
                 ${escapeHtml(glyph?.displayName || humanizeId(point.glyphId))}
                 · dx ${escapeHtml(numberForInput(point.offsetX))}
+                · dy ${escapeHtml(numberForInput(point.offsetY))}
                 · dz ${escapeHtml(numberForInput(point.offsetZ))}
               </div>
             </div>
@@ -922,6 +942,8 @@
           ${inputGroup('Base Corruption', 'number', template.baseCorruption, { 'data-template-field': 'baseCorruption', step: '0.1' })}
           ${inputGroup('Instability Threshold', 'number', template.instabilityThreshold, { 'data-template-field': 'instabilityThreshold', step: '0.1' })}
         </div>
+        ${renderAnchorGlyphEditor(template)}
+        ${renderPointHeightTools(template)}
       </section>
       <section class="ritual-card">
         <h3>Point Settings</h3>
@@ -970,10 +992,11 @@
           <div>
             <div class="ritual-glyph-stage" id="ritual-glyph-stage">
               <img id="ritual-glyph-image" alt="Selected ritual glyph asset" src="${escapeAttr(asset?.url || `${GLYPH_ASSET_API}/${glyph.symbolId}`)}" />
-              <svg id="ritual-glyph-svg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+              <svg id="ritual-glyph-svg" viewBox="0 0 64 64" preserveAspectRatio="none"></svg>
             </div>
             <div class="ritual-help">
               Draw the reusable trace directly over the sigil art. This edits the shared glyph definition, so every ritual point referencing <code>${escapeHtml(glyph.glyphId)}</code> will reuse the same stroke in game.
+              The overlay respects the authored <strong>64x64</strong> texture frame, uses a fixed authoring size, and clamps trace points to <code>-0.4..0.4</code> on both axes.
             </div>
           </div>
           <div>
@@ -1028,6 +1051,40 @@
         <span class="ritual-distance-pill">dz ${escapeHtml(numberForInput(point.offsetZ))}</span>
         <span class="ritual-distance-pill">radius ${escapeHtml(numberForInput(pointRadius(point)))}</span>
         <button class="btn-secondary" type="button" data-action="open-point-glyph">Edit Glyph</button>
+      </div>
+    `;
+  }
+
+  function renderAnchorGlyphEditor(template) {
+    return `
+      <div style="margin-top:16px">
+        <h3 style="margin:0 0 12px 0">Anchor Layers</h3>
+        <div class="ritual-form-grid">
+          ${inputGroup('Base Offset Y', 'number', template.baseLayer?.offsetY, { 'data-template-anchor-field': 'offsetY', 'data-template-anchor-layer': 'baseLayer', step: '0.01' })}
+          ${inputGroup('Core Offset Y', 'number', template.coreLayer?.offsetY, { 'data-template-anchor-field': 'offsetY', 'data-template-anchor-layer': 'coreLayer', step: '0.01' })}
+        </div>
+        <div class="ritual-inline-actions" style="margin-top:10px">
+          <span class="ritual-distance-pill">Base @ ${escapeHtml(numberForInput(template.baseLayer?.offsetY))}</span>
+          <span class="ritual-distance-pill">Core @ ${escapeHtml(numberForInput(template.coreLayer?.offsetY))}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderPointHeightTools(template) {
+    const seedY = template.points?.[0]?.offsetY ?? 0.15;
+    return `
+      <div style="margin-top:16px">
+        <h3 style="margin:0 0 12px 0">Point Height Tools</h3>
+        <div class="ritual-inline-actions">
+          <input type="number" step="0.01" value="${escapeAttr(numberForInput(seedY))}" data-bulk-point-y-value />
+          <button class="btn-secondary" type="button" data-action="set-all-point-y"${template.points?.length ? '' : ' disabled'}>Set all point Y</button>
+          <input type="number" step="0.01" value="0.05" data-bulk-point-y-delta />
+          <button class="btn-secondary" type="button" data-action="shift-all-point-y"${template.points?.length ? '' : ' disabled'}>Add Y delta to all points</button>
+        </div>
+        <div class="ritual-help">
+          Use one value to flatten every ritual point to the same height, or apply a delta to raise/lower the full ring together.
+        </div>
       </div>
     `;
   }
@@ -1272,6 +1329,18 @@
       input.addEventListener('change', () => updateField(selectedTemplate(), input.dataset.templateField, input.value, true));
     });
 
+    pane.querySelectorAll('[data-template-anchor-field]').forEach((input) => {
+      input.addEventListener('change', () => {
+        const template = selectedTemplate();
+        const layer = template?.[input.dataset.templateAnchorLayer];
+        if (!template || !layer) return;
+        const field = input.dataset.templateAnchorField;
+        layer[field] = parseNumericInput(input.value, layer[field]);
+        App.markDirty();
+        render();
+      });
+    });
+
     pane.querySelectorAll('[data-point-field]').forEach((input) => {
       input.addEventListener('change', () => {
         const point = selectedPoint();
@@ -1343,7 +1412,9 @@
         if (!glyph) return;
         const step = glyph.traceSteps?.[Number(input.dataset.glyphStepIndex)];
         if (!step) return;
-        step[input.dataset.glyphStepField] = parseNumericInput(input.value, 0);
+        const field = input.dataset.glyphStepField;
+        const next = parseNumericInput(input.value, 0);
+        step[field] = field === 'offsetX' || field === 'offsetZ' ? clampGlyphAxis(next) : next;
         App.markDirty();
         render();
       });
@@ -1412,6 +1483,32 @@
         renderLayoutPreview();
       });
     }
+
+    pane.querySelectorAll('[data-action="set-all-point-y"]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const template = selectedTemplate();
+        if (!template?.points?.length) return;
+        const value = parseNumericInput(pane.querySelector('[data-bulk-point-y-value]')?.value, template.points[0]?.offsetY ?? 0.15);
+        template.points.forEach((point) => {
+          point.offsetY = value;
+        });
+        App.markDirty();
+        render();
+      });
+    });
+
+    pane.querySelectorAll('[data-action="shift-all-point-y"]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const template = selectedTemplate();
+        if (!template?.points?.length) return;
+        const delta = parseNumericInput(pane.querySelector('[data-bulk-point-y-delta]')?.value, 0);
+        template.points.forEach((point) => {
+          point.offsetY = roundValue(point.offsetY + delta, 3);
+        });
+        App.markDirty();
+        render();
+      });
+    });
   }
 
   function renderGlyphPreview() {
@@ -1425,12 +1522,13 @@
     const polyline = points.map((entry) => `${entry.x},${entry.y}`).join(' ');
 
     svg.innerHTML = `
-      <line x1="50" y1="4" x2="50" y2="96" stroke="rgba(255,255,255,0.18)" stroke-width="0.4" stroke-dasharray="1.8 1.8"></line>
-      <line x1="4" y1="50" x2="96" y2="50" stroke="rgba(255,255,255,0.18)" stroke-width="0.4" stroke-dasharray="1.8 1.8"></line>
+      <rect x="0.5" y="0.5" width="63" height="63" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"></rect>
+      <line x1="32" y1="2" x2="32" y2="62" stroke="rgba(255,255,255,0.18)" stroke-width="0.35" stroke-dasharray="1.2 1.2"></line>
+      <line x1="2" y1="32" x2="62" y2="32" stroke="rgba(255,255,255,0.18)" stroke-width="0.35" stroke-dasharray="1.2 1.2"></line>
       ${points.length > 1 ? `<polyline points="${polyline}" fill="none" stroke="rgba(233,69,96,0.92)" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"></polyline>` : ''}
       ${points.map((entry, index) => `
-        <circle cx="${entry.x}" cy="${entry.y}" r="${index === state.glyphStepIndex ? 3.5 : 2.6}" fill="${index === state.glyphStepIndex ? '#2ecc71' : '#e94560'}" stroke="#ffffff" stroke-width="0.8" data-glyph-step-handle="${index}" style="cursor:grab"></circle>
-        <text x="${entry.x}" y="${entry.y - 5}" fill="#ffffff" font-size="4" text-anchor="middle" font-weight="700" pointer-events="none">${index + 1}</text>
+        <circle cx="${entry.x}" cy="${entry.y}" r="${index === state.glyphStepIndex ? 2.4 : 1.8}" fill="${index === state.glyphStepIndex ? '#2ecc71' : '#e94560'}" stroke="#ffffff" stroke-width="0.55" data-glyph-step-handle="${index}" style="cursor:grab"></circle>
+        <text x="${entry.x}" y="${entry.y - 3.6}" fill="#ffffff" font-size="2.8" text-anchor="middle" font-weight="700" pointer-events="none">${index + 1}</text>
       `).join('')}
     `;
 
@@ -1476,8 +1574,8 @@
     if (!svg || !glyph || !step) return;
 
     const rect = svg.getBoundingClientRect();
-    const localX = ((event.clientX - rect.left) / rect.width) * 100;
-    const localY = ((event.clientY - rect.top) / rect.height) * 100;
+    const localX = ((event.clientX - rect.left) / rect.width) * GLYPH_TEXTURE_SIZE;
+    const localY = ((event.clientY - rect.top) / rect.height) * GLYPH_TEXTURE_SIZE;
     const extent = currentGlyphPreviewExtent(glyph);
     const next = previewPointToGlyphStep(localX, localY, extent);
     step.offsetX = next.offsetX;
@@ -1525,6 +1623,10 @@
       <circle cx="50" cy="50" r="39" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="0.5" stroke-dasharray="2 2"></circle>
       <line x1="50" y1="6" x2="50" y2="94" stroke="rgba(255,255,255,0.18)" stroke-width="0.4" stroke-dasharray="1.8 1.8"></line>
       <line x1="6" y1="50" x2="94" y2="50" stroke="rgba(255,255,255,0.18)" stroke-width="0.4" stroke-dasharray="1.8 1.8"></line>
+      <circle cx="50" cy="50" r="6.2" fill="rgba(240,192,64,0.18)" stroke="rgba(240,192,64,0.75)" stroke-width="0.6"></circle>
+      <circle cx="50" cy="50" r="3.6" fill="rgba(233,69,96,0.18)" stroke="rgba(233,69,96,0.86)" stroke-width="0.6"></circle>
+      <text x="50" y="38" fill="#f0c040" font-size="3.4" text-anchor="middle" font-weight="700" pointer-events="none">${escapeSvgText(`Base ${numberForInput(template.baseLayer?.offsetY)}`)}</text>
+      <text x="50" y="61" fill="#e94560" font-size="3.4" text-anchor="middle" font-weight="700" pointer-events="none">${escapeSvgText(`Core ${numberForInput(template.coreLayer?.offsetY)}`)}</text>
       ${lines}
       ${(template.points || []).map((point, index) => {
         const preview = pointToLayoutPreviewPoint(point, extent);
@@ -1700,8 +1802,7 @@
   }
 
   function glyphPreviewExtent(steps) {
-    const maxMagnitude = glyphPreviewMagnitude(steps);
-    return Math.max(0.38, maxMagnitude * 1.3);
+    return GLYPH_PREVIEW_FIXED_EXTENT;
   }
 
   function glyphPreviewMagnitude(steps) {
@@ -1714,17 +1815,10 @@
   }
 
   function currentGlyphPreviewExtent(glyph) {
-    const glyphKey = glyphPreviewKey(glyph);
-    if (state.glyphPreviewDrag?.glyphKey === glyphKey && Number.isFinite(state.glyphPreviewDrag?.extent)) {
+    if (state.glyphPreviewDrag?.glyphKey === glyphPreviewKey(glyph) && Number.isFinite(state.glyphPreviewDrag?.extent)) {
       return state.glyphPreviewDrag.extent;
     }
-    const stored = state.glyphPreviewExtents[glyphKey];
-    const requiredExtent = Math.max(0.38, glyphPreviewMagnitude(glyph?.traceSteps || []));
-    const nextExtent = stored == null
-      ? glyphPreviewExtent(glyph?.traceSteps || [])
-      : Math.max(stored, requiredExtent);
-    state.glyphPreviewExtents[glyphKey] = nextExtent;
-    return nextExtent;
+    return GLYPH_PREVIEW_FIXED_EXTENT;
   }
 
   function glyphPreviewKey(glyph) {
@@ -1732,19 +1826,23 @@
   }
 
   function glyphStepToPreviewPoint(step, extent) {
-    const radius = 38;
+    const radius = (GLYPH_TEXTURE_SIZE / 2) - GLYPH_TEXTURE_PADDING_PX;
     return {
-      x: 50 + ((Number(step.offsetX) || 0) / extent) * radius,
-      y: 50 - ((Number(step.offsetZ) || 0) / extent) * radius,
+      x: (GLYPH_TEXTURE_SIZE / 2) + ((Number(step.offsetX) || 0) / extent) * radius,
+      y: (GLYPH_TEXTURE_SIZE / 2) - ((Number(step.offsetZ) || 0) / extent) * radius,
     };
   }
 
   function previewPointToGlyphStep(x, y, extent) {
-    const radius = 38;
+    const radius = (GLYPH_TEXTURE_SIZE / 2) - GLYPH_TEXTURE_PADDING_PX;
     return {
-      offsetX: roundValue(((x - 50) / radius) * extent, 3),
-      offsetZ: roundValue(-((y - 50) / radius) * extent, 3),
+      offsetX: clampGlyphAxis(roundValue(((x - (GLYPH_TEXTURE_SIZE / 2)) / radius) * extent, 3)),
+      offsetZ: clampGlyphAxis(roundValue(-((y - (GLYPH_TEXTURE_SIZE / 2)) / radius) * extent, 3)),
     };
+  }
+
+  function clampGlyphAxis(value) {
+    return Math.max(-GLYPH_PREVIEW_LIMIT, Math.min(GLYPH_PREVIEW_LIMIT, value));
   }
 
   function layoutPreviewExtent(points) {

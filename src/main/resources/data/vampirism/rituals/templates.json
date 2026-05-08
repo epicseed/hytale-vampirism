@@ -64,8 +64,14 @@
         }
       ],
       "baseCorruption": 8,
+      "baseLayer": {
+        "offsetY": 1.035
+      },
       "baseStability": 70,
       "channelDurationSeconds": 11,
+      "coreLayer": {
+        "offsetY": 1.09
+      },
       "displayName": "Crimson Awakening",
       "instabilityThreshold": 30,
       "pointTolerance": 0.95,
@@ -74,40 +80,485 @@
           "glyphId": "fang_wake",
           "id": "north",
           "offsetX": 0,
-          "offsetY": 0.15,
+          "offsetY": 0.05,
           "offsetZ": -3
         },
         {
           "glyphId": "moon_scar",
           "id": "north_east",
           "offsetX": 2.85,
-          "offsetY": 0.15,
+          "offsetY": 0.05,
           "offsetZ": -0.93
         },
         {
           "glyphId": "blood_spiral",
           "id": "south_east",
           "offsetX": 1.76,
-          "offsetY": 0.15,
+          "offsetY": 0.05,
           "offsetZ": 2.43
         },
         {
           "glyphId": "vein_eye",
           "id": "south_west",
           "offsetX": -1.76,
-          "offsetY": 0.15,
+          "offsetY": 0.05,
           "offsetZ": 2.43
         },
         {
           "glyphId": "crown_claw",
           "id": "north_west",
           "offsetX": -2.85,
-          "offsetY": 0.15,
+          "offsetY": 0.05,
           "offsetZ": -0.93
         }
       ],
       "requiredAnchorBlockId": "Furniture_Ancient_Coffin",
       "ritualId": "awakening"
+    },
+    {
+      "activationLinks": [
+        {
+          "activeDurationSeconds": 8.2,
+          "fromPointId": "north",
+          "startTimeSeconds": 0.8,
+          "toPointId": "east"
+        },
+        {
+          "activeDurationSeconds": 7.2,
+          "fromPointId": "east",
+          "startTimeSeconds": 1.8,
+          "toPointId": "south_east"
+        },
+        {
+          "activeDurationSeconds": 6.2,
+          "fromPointId": "south_east",
+          "startTimeSeconds": 2.8,
+          "toPointId": "south_west"
+        },
+        {
+          "activeDurationSeconds": 5.2,
+          "fromPointId": "south_west",
+          "startTimeSeconds": 3.8,
+          "toPointId": "west"
+        },
+        {
+          "activeDurationSeconds": 4.2,
+          "fromPointId": "west",
+          "startTimeSeconds": 4.8,
+          "toPointId": "north"
+        },
+        {
+          "activeDurationSeconds": 0,
+          "fromPointId": "north",
+          "startTimeSeconds": 6,
+          "toPointId": "south_east"
+        },
+        {
+          "activeDurationSeconds": 0,
+          "fromPointId": "east",
+          "startTimeSeconds": 7,
+          "toPointId": "south_west"
+        },
+        {
+          "activeDurationSeconds": 0,
+          "fromPointId": "west",
+          "startTimeSeconds": 8,
+          "toPointId": "south_east"
+        }
+      ],
+      "baseCorruption": 11,
+      "baseLayer": {
+        "offsetY": 0.035
+      },
+      "baseStability": 67,
+      "channelDurationSeconds": 9.5,
+      "coreLayer": {
+        "offsetY": 0.09
+      },
+      "displayName": "Mark Prey",
+      "instabilityThreshold": 29,
+      "pointTolerance": 0.93,
+      "points": [
+        {
+          "glyphId": "prey_brand",
+          "id": "north",
+          "offsetX": 0,
+          "offsetY": 0.15,
+          "offsetZ": -3.1
+        },
+        {
+          "glyphId": "mirror_fang",
+          "id": "east",
+          "offsetX": 2.9,
+          "offsetY": 0.15,
+          "offsetZ": -0.35
+        },
+        {
+          "glyphId": "blood_spiral",
+          "id": "south_east",
+          "offsetX": 1.35,
+          "offsetY": 0.15,
+          "offsetZ": 2.65
+        },
+        {
+          "glyphId": "vein_eye",
+          "id": "south_west",
+          "offsetX": -1.35,
+          "offsetY": 0.15,
+          "offsetZ": 2.65
+        },
+        {
+          "glyphId": "crown_claw",
+          "id": "west",
+          "offsetX": -2.9,
+          "offsetY": 0.15,
+          "offsetZ": -0.35
+        }
+      ],
+      "requiredAnchorBlockId": "Furniture_Ancient_Coffin",
+      "ritualId": "mark_prey"
+    },
+    {
+      "activationLinks": [
+        {
+          "activeDurationSeconds": 11,
+          "fromPointId": "west_outer",
+          "startTimeSeconds": 1,
+          "toPointId": "north_west"
+        },
+        {
+          "activeDurationSeconds": 10,
+          "fromPointId": "north_west",
+          "startTimeSeconds": 2,
+          "toPointId": "north_east"
+        },
+        {
+          "activeDurationSeconds": 9,
+          "fromPointId": "north_east",
+          "startTimeSeconds": 3,
+          "toPointId": "east_outer"
+        },
+        {
+          "activeDurationSeconds": 8,
+          "fromPointId": "west_outer",
+          "startTimeSeconds": 4,
+          "toPointId": "south_west"
+        },
+        {
+          "activeDurationSeconds": 7,
+          "fromPointId": "south_west",
+          "startTimeSeconds": 5,
+          "toPointId": "south_east"
+        },
+        {
+          "activeDurationSeconds": 6,
+          "fromPointId": "south_east",
+          "startTimeSeconds": 6,
+          "toPointId": "east_outer"
+        },
+        {
+          "activeDurationSeconds": 0,
+          "fromPointId": "north_west",
+          "startTimeSeconds": 7.5,
+          "toPointId": "south_west"
+        },
+        {
+          "activeDurationSeconds": 0,
+          "fromPointId": "north_east",
+          "startTimeSeconds": 8.5,
+          "toPointId": "south_east"
+        }
+      ],
+      "baseCorruption": 9,
+      "baseLayer": {
+        "offsetY": 0.035
+      },
+      "baseStability": 74,
+      "channelDurationSeconds": 13,
+      "coreLayer": {
+        "offsetY": 0.09
+      },
+      "displayName": "Veil of Night",
+      "instabilityThreshold": 35,
+      "pointTolerance": 0.97,
+      "points": [
+        {
+          "glyphId": "mirror_fang",
+          "id": "north_east",
+          "offsetX": 2.2,
+          "offsetY": 0.15,
+          "offsetZ": -2.4
+        },
+        {
+          "glyphId": "dusk_shroud",
+          "id": "east_outer",
+          "offsetX": 3.55,
+          "offsetY": 0.15,
+          "offsetZ": -0.15
+        },
+        {
+          "glyphId": "soul_lattice",
+          "id": "south_east",
+          "offsetX": 2.45,
+          "offsetY": 0.15,
+          "offsetZ": 2.2
+        },
+        {
+          "glyphId": "soul_lattice",
+          "id": "south_west",
+          "offsetX": -2.45,
+          "offsetY": 0.15,
+          "offsetZ": 2.2
+        },
+        {
+          "glyphId": "dusk_shroud",
+          "id": "west_outer",
+          "offsetX": -3.55,
+          "offsetY": 0.15,
+          "offsetZ": -0.15
+        },
+        {
+          "glyphId": "mirror_fang",
+          "id": "north_west",
+          "offsetX": -2.2,
+          "offsetY": 0.15,
+          "offsetZ": -2.4
+        }
+      ],
+      "requiredAnchorBlockId": "Furniture_Ancient_Coffin",
+      "ritualId": "veil_of_night"
+    },
+    {
+      "activationLinks": [
+        {
+          "activeDurationSeconds": 9,
+          "fromPointId": "north",
+          "startTimeSeconds": 0.8,
+          "toPointId": "north_east"
+        },
+        {
+          "activeDurationSeconds": 8,
+          "fromPointId": "north_east",
+          "startTimeSeconds": 1.8,
+          "toPointId": "south_east"
+        },
+        {
+          "activeDurationSeconds": 7,
+          "fromPointId": "south_east",
+          "startTimeSeconds": 2.8,
+          "toPointId": "south_inner"
+        },
+        {
+          "activeDurationSeconds": 6,
+          "fromPointId": "south_inner",
+          "startTimeSeconds": 3.8,
+          "toPointId": "south_west"
+        },
+        {
+          "activeDurationSeconds": 5,
+          "fromPointId": "south_west",
+          "startTimeSeconds": 4.8,
+          "toPointId": "north_west"
+        },
+        {
+          "activeDurationSeconds": 4,
+          "fromPointId": "north_west",
+          "startTimeSeconds": 5.8,
+          "toPointId": "north"
+        },
+        {
+          "activeDurationSeconds": 0,
+          "fromPointId": "north_east",
+          "startTimeSeconds": 6.8,
+          "toPointId": "south_inner"
+        },
+        {
+          "activeDurationSeconds": 0,
+          "fromPointId": "north_west",
+          "startTimeSeconds": 7.8,
+          "toPointId": "south_inner"
+        },
+        {
+          "activeDurationSeconds": 0,
+          "fromPointId": "south_east",
+          "startTimeSeconds": 8.8,
+          "toPointId": "south_west"
+        }
+      ],
+      "baseCorruption": 13,
+      "baseLayer": {
+        "offsetY": 0.035
+      },
+      "baseStability": 64,
+      "channelDurationSeconds": 10.5,
+      "coreLayer": {
+        "offsetY": 0.09
+      },
+      "displayName": "Summon Familiar",
+      "instabilityThreshold": 28,
+      "pointTolerance": 0.92,
+      "points": [
+        {
+          "glyphId": "familiar_step",
+          "id": "north",
+          "offsetX": 0,
+          "offsetY": 0.15,
+          "offsetZ": -3
+        },
+        {
+          "glyphId": "pact_knot",
+          "id": "north_east",
+          "offsetX": 2.45,
+          "offsetY": 0.15,
+          "offsetZ": -1.55
+        },
+        {
+          "glyphId": "prey_brand",
+          "id": "south_east",
+          "offsetX": 2.15,
+          "offsetY": 0.15,
+          "offsetZ": 1.65
+        },
+        {
+          "glyphId": "familiar_step",
+          "id": "south_inner",
+          "offsetX": 0,
+          "offsetY": 0.15,
+          "offsetZ": 2.85
+        },
+        {
+          "glyphId": "prey_brand",
+          "id": "south_west",
+          "offsetX": -2.15,
+          "offsetY": 0.15,
+          "offsetZ": 1.65
+        },
+        {
+          "glyphId": "pact_knot",
+          "id": "north_west",
+          "offsetX": -2.45,
+          "offsetY": 0.15,
+          "offsetZ": -1.55
+        }
+      ],
+      "requiredAnchorBlockId": "Furniture_Ancient_Coffin",
+      "ritualId": "summon_familiar"
+    },
+    {
+      "activationLinks": [
+        {
+          "activeDurationSeconds": 11.5,
+          "fromPointId": "north",
+          "startTimeSeconds": 1,
+          "toPointId": "north_east_inner"
+        },
+        {
+          "activeDurationSeconds": 10.5,
+          "fromPointId": "north_east_inner",
+          "startTimeSeconds": 2,
+          "toPointId": "south_east_inner"
+        },
+        {
+          "activeDurationSeconds": 9.5,
+          "fromPointId": "south_east_inner",
+          "startTimeSeconds": 3,
+          "toPointId": "south"
+        },
+        {
+          "activeDurationSeconds": 8.5,
+          "fromPointId": "south",
+          "startTimeSeconds": 4,
+          "toPointId": "south_west_inner"
+        },
+        {
+          "activeDurationSeconds": 7.5,
+          "fromPointId": "south_west_inner",
+          "startTimeSeconds": 5,
+          "toPointId": "north_west_inner"
+        },
+        {
+          "activeDurationSeconds": 6.5,
+          "fromPointId": "north_west_inner",
+          "startTimeSeconds": 6,
+          "toPointId": "north"
+        },
+        {
+          "activeDurationSeconds": 0,
+          "fromPointId": "north",
+          "startTimeSeconds": 7,
+          "toPointId": "south"
+        },
+        {
+          "activeDurationSeconds": 0,
+          "fromPointId": "north_east_inner",
+          "startTimeSeconds": 8,
+          "toPointId": "south_west_inner"
+        },
+        {
+          "activeDurationSeconds": 0,
+          "fromPointId": "north_west_inner",
+          "startTimeSeconds": 9,
+          "toPointId": "south_east_inner"
+        }
+      ],
+      "baseCorruption": 17,
+      "baseLayer": {
+        "offsetY": 0.035
+      },
+      "baseStability": 59,
+      "channelDurationSeconds": 13.5,
+      "coreLayer": {
+        "offsetY": 0.09
+      },
+      "displayName": "Soul Exchange",
+      "instabilityThreshold": 25,
+      "pointTolerance": 0.91,
+      "points": [
+        {
+          "glyphId": "soul_lattice",
+          "id": "north",
+          "offsetX": 0,
+          "offsetY": 0.15,
+          "offsetZ": -3.35
+        },
+        {
+          "glyphId": "pact_knot",
+          "id": "north_east_inner",
+          "offsetX": 1.35,
+          "offsetY": 0.15,
+          "offsetZ": -1.5
+        },
+        {
+          "glyphId": "mirror_fang",
+          "id": "south_east_inner",
+          "offsetX": 1.35,
+          "offsetY": 0.15,
+          "offsetZ": 1.5
+        },
+        {
+          "glyphId": "soul_lattice",
+          "id": "south",
+          "offsetX": 0,
+          "offsetY": 0.15,
+          "offsetZ": 3.35
+        },
+        {
+          "glyphId": "mirror_fang",
+          "id": "south_west_inner",
+          "offsetX": -1.35,
+          "offsetY": 0.15,
+          "offsetZ": 1.5
+        },
+        {
+          "glyphId": "pact_knot",
+          "id": "north_west_inner",
+          "offsetX": -1.35,
+          "offsetY": 0.15,
+          "offsetZ": -1.5
+        }
+      ],
+      "requiredAnchorBlockId": "Furniture_Ancient_Coffin",
+      "ritualId": "soul_exchange"
     }
   ]
 }

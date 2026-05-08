@@ -13,10 +13,10 @@ import com.epicseed.epiccore.hytale.WorldStoreAdapter;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRegistry;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeService;
-import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeSnapshot;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualGlyphPresentationService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualGlyphPresentationService.RitualGlyphPresentationHandle;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOutcomeTracker;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualRevealService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTargeting;
@@ -32,32 +32,30 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.Message;
-import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSystem;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.universe.world.ParticleUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore> {
 
-    private static final long PARTICLE_PULSE_INTERVAL_MS = 700L;
     private static final long TERMINAL_VISUAL_DURATION_MS = 1_600L;
-    private static final String RITUAL_PARTICLE_ID = "Effect_BloodMist";
 
     private final VampiricRitualRuntimeService runtimeService;
     private final VampiricRitualContextResolver contextResolver;
-    private final Map<UUID, Long> nextParticleAtMs = new ConcurrentHashMap<>();
+    private final VampiricRitualFeedbackService feedbackService;
     private final Map<UUID, RitualGlyphPresentationHandle> glyphHandles = new ConcurrentHashMap<>();
     private final Map<UUID, TerminalVisualState> terminalVisuals = new ConcurrentHashMap<>();
     private final Set<UUID> fullGuidePlayers = ConcurrentHashMap.newKeySet();
 
     public VampiricRitualSystem(@Nonnull VampiricRitualRuntimeService runtimeService,
-                                @Nonnull VampiricRitualContextResolver contextResolver) {
+                                @Nonnull VampiricRitualContextResolver contextResolver,
+                                @Nonnull VampiricRitualFeedbackService feedbackService) {
         this.runtimeService = runtimeService;
         this.contextResolver = contextResolver;
+        this.feedbackService = feedbackService;
     }
 
     @Override
@@ -163,26 +161,22 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
             syncGlyphPresentation(uuid, persistentSnapshot.get(), store, commandBuffer);
         }
 
+        feedbackService.sync(uuid, store, world, snapshot.orElse(null), now);
+
         if (world == null) {
             if (persistentSnapshot.isEmpty()) {
                 clearGlyphPresentation(uuid, commandBuffer);
-                nextParticleAtMs.remove(uuid);
             }
             return;
         }
 
         if (persistentSnapshot.isPresent()) {
             renderOverlay(uuid, world, persistentSnapshot.get());
-            if ((holdingTool || statePulse) && nextParticleAtMs.getOrDefault(uuid, 0L) <= now) {
-                spawnStateParticles(store, persistentSnapshot.get());
-                nextParticleAtMs.put(uuid, now + PARTICLE_PULSE_INTERVAL_MS);
-            }
             return;
         }
 
         if (!holdingTool) {
             clearGlyphPresentation(uuid, commandBuffer);
-            nextParticleAtMs.remove(uuid);
             return;
         }
 
@@ -192,24 +186,13 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
         } else {
             clearGlyphPresentation(uuid, commandBuffer);
         }
-        if (nextParticleAtMs.getOrDefault(uuid, 0L) > now) {
-            return;
-        }
-
-        if (preview.isPresent()) {
-            spawnStateParticles(store, preview.get());
-            nextParticleAtMs.put(uuid, now + PARTICLE_PULSE_INTERVAL_MS);
-            return;
-        }
-
-        nextParticleAtMs.remove(uuid);
     }
 
     public void clearPlayer(@Nonnull UUID uuid, @Nullable Ref<EntityStore> playerRef) {
         runtimeService.clearPlayer(uuid);
-        nextParticleAtMs.remove(uuid);
         terminalVisuals.remove(uuid);
         fullGuidePlayers.remove(uuid);
+        feedbackService.clearPlayer(uuid);
         VampiricRitualOutcomeTracker.clearPlayer(uuid);
         RitualGlyphPresentationHandle handle = glyphHandles.remove(uuid);
         if (handle != null) {
@@ -342,51 +325,6 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
 
     private static boolean hasTracingPoint(@Nonnull VampiricRitualRuntimeSnapshot snapshot) {
         return snapshot.pointStates().stream().anyMatch(point -> point.tracing() && !point.active());
-    }
-
-    private static void spawnStateParticles(@Nonnull Store<EntityStore> store,
-                                            @Nonnull VampiricRitualRuntimeSnapshot snapshot) {
-        if (ParticleSystem.getAssetMap().getAsset(RITUAL_PARTICLE_ID) == null) {
-            return;
-        }
-        Vector3d anchor = new Vector3d(snapshot.anchorCenter()).add(0.0d, particleYOffset(snapshot.phase()), 0.0d);
-        ParticleUtil.spawnParticleEffect(RITUAL_PARTICLE_ID, anchor, store);
-        switch (snapshot.phase()) {
-            case PREPARING -> {
-                if (!snapshot.complete()) {
-                    return;
-                }
-            }
-            case BINDING, CHANNELING -> {
-                for (var point : snapshot.pointStates()) {
-                    if (point.active()) {
-                        ParticleUtil.spawnParticleEffect(
-                                RITUAL_PARTICLE_ID,
-                                new Vector3d(point.position()).add(0.0d, 0.16d, 0.0d),
-                                store);
-                    }
-                }
-            }
-            case UNSTABLE, SUCCESS, COLLAPSE -> {
-                for (var point : snapshot.pointStates()) {
-                    ParticleUtil.spawnParticleEffect(
-                            RITUAL_PARTICLE_ID,
-                            new Vector3d(point.position()).add(0.0d, 0.16d, 0.0d),
-                            store);
-                }
-            }
-        }
-    }
-
-    private static double particleYOffset(@Nonnull VampiricRitualRuntimePhase phase) {
-        return switch (phase) {
-            case PREPARING -> 0.14d;
-            case BINDING -> 0.28d;
-            case CHANNELING -> 0.6d;
-            case UNSTABLE -> 0.42d;
-            case SUCCESS -> 0.72d;
-            case COLLAPSE -> 0.22d;
-        };
     }
 
     private record TerminalVisualState(@Nonnull VampiricRitualRuntimeSnapshot snapshot,

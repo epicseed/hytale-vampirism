@@ -7,6 +7,7 @@ import java.util.List;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualActivationLink;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualPointState;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeSnapshot;
+import com.epicseed.vampirism.hytale.debug.VampiricDebugShapeRenderer;
 import com.epicseed.vampirism.hytale.debug.VampiricRitualLineRenderer;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
@@ -25,22 +26,24 @@ public final class VampiricRitualRevealService {
     private static final float ACTIVE_POINT_OPACITY = 0.28f;
     private static final float INACTIVE_POINT_OPACITY = 0.14f;
     private static final float RING_OPACITY = 0.12f;
-    private static final double ACTIVE_POINT_SCALE = 0.42d;
-    private static final double INACTIVE_POINT_SCALE = 0.30d;
-    private static final double TRACE_POINT_SCALE = 0.12d;
-    private static final double TRACE_POINT_FOCUS_SCALE = 0.18d;
-    private static final double LIVE_TRACE_POINT_SCALE = 0.10d;
-    private static final double LIVE_TRACE_TIP_SCALE = 0.20d;
-    private static final double LINK_THICKNESS = 0.05d;
-    private static final double TRACE_THICKNESS = 0.035d;
-    private static final double LIVE_TRACE_THICKNESS = 0.055d;
-    private static final double PILLAR_THICKNESS = 0.08d;
+    private static final double ACTIVE_POINT_SCALE = 0.24d;
+    private static final double INACTIVE_POINT_SCALE = 0.16d;
+    private static final double TRACE_POINT_SCALE = 0.055d;
+    private static final double TRACE_POINT_FOCUS_SCALE = 0.085d;
+    private static final double LIVE_TRACE_POINT_SCALE = 0.040d;
+    private static final double LIVE_TRACE_TIP_SCALE = 0.085d;
+    private static final double LINK_THICKNESS = 0.028d;
+    private static final double TRACE_THICKNESS = 0.020d;
+    private static final double LIVE_TRACE_THICKNESS = 0.030d;
+    private static final double PILLAR_THICKNESS = 0.05d;
     private static final float STABLE_LINE_DURATION_SECONDS = 0.18f;
     private static final float LINK_OPACITY = 0.52f;
     private static final float TRACE_OPACITY = 0.48f;
     private static final float LIVE_TRACE_OPACITY = 0.82f;
     private static final float PILLAR_OPACITY = 0.42f;
     private static final float CROSS_OPACITY = 0.50f;
+    private static final double LINK_ENERGY_SPHERE_SCALE = 0.070d;
+    private static final double ACTIVE_LINK_PULSE_SCALE = 0.080d;
 
     private VampiricRitualRevealService() {
     }
@@ -52,10 +55,11 @@ public final class VampiricRitualRevealService {
     public static void reveal(@Nonnull World world,
                               @Nonnull VampiricRitualRuntimeSnapshot snapshot,
                               @Nonnull RevealOptions options) {
+        double animationSeconds = System.currentTimeMillis() / 1000d;
         PhaseStyle style = PhaseStyle.of(snapshot);
         Vector3d anchor = snapshot.anchorCenter();
         if (options.showDebugGuides()) {
-            DebugUtils.addDisc(
+            VampiricDebugShapeRenderer.addCleanDisc(
                     world,
                     anchor.x,
                     anchor.y + 0.02d,
@@ -65,7 +69,7 @@ public final class VampiricRitualRevealService {
                     style.ringOpacity(),
                     REVEAL_DURATION_SECONDS,
                     0);
-            DebugUtils.addSphere(
+            VampiricDebugShapeRenderer.addCleanSphere(
                     world,
                     anchor.x,
                     anchor.y + 0.25d,
@@ -74,7 +78,7 @@ public final class VampiricRitualRevealService {
                     style.coreOpacity(),
                     style.coreScale(),
                     REVEAL_DURATION_SECONDS);
-            drawAnchorState(world, snapshot, style);
+            drawAnchorState(world, snapshot, style, animationSeconds);
         }
 
         for (int index = 0; index < snapshot.pointStates().size(); index++) {
@@ -83,7 +87,7 @@ public final class VampiricRitualRevealService {
                 var color = point.active() ? style.activePointColor() : style.inactivePointColor();
                 float opacity = point.active() ? ACTIVE_POINT_OPACITY : INACTIVE_POINT_OPACITY;
                 double scale = point.active() ? ACTIVE_POINT_SCALE : INACTIVE_POINT_SCALE;
-                DebugUtils.addSphere(
+                VampiricDebugShapeRenderer.addCleanSphere(
                         world,
                         point.position().x,
                         point.position().y + 0.2d,
@@ -115,7 +119,7 @@ public final class VampiricRitualRevealService {
                             : focusStep ? style.focusColor() : style.inactivePointColor();
                     double stepScale = focusStep ? TRACE_POINT_FOCUS_SCALE : TRACE_POINT_SCALE;
                     float stepOpacity = completedStep ? 0.30f : focusStep ? 0.24f : 0.16f;
-                    DebugUtils.addSphere(
+                    VampiricDebugShapeRenderer.addCleanSphere(
                             world,
                             step.x,
                             step.y + 0.08d,
@@ -157,11 +161,11 @@ public final class VampiricRitualRevealService {
                             STABLE_LINE_DURATION_SECONDS);
                 }
             }
-            drawLiveTrace(world, point, style);
+            drawLiveTrace(world, point, style, animationSeconds, options.showDebugGuides());
         }
 
         if (options.showActivationTimeline()) {
-            drawActivationLinks(world, snapshot, style);
+            drawActivationLinks(world, snapshot, style, animationSeconds);
         }
 
         if (options.showDebugGuides() && style.showPillar()) {
@@ -182,7 +186,8 @@ public final class VampiricRitualRevealService {
 
     private static void drawActivationLinks(@Nonnull World world,
                                             @Nonnull VampiricRitualRuntimeSnapshot snapshot,
-                                            @Nonnull PhaseStyle style) {
+                                            @Nonnull PhaseStyle style,
+                                            double animationSeconds) {
         List<VampiricRitualActivationLink> links = snapshot.activationLinks().isEmpty()
                 ? fallbackLinks(snapshot.pointStates())
                 : snapshot.activationLinks().stream()
@@ -194,6 +199,10 @@ public final class VampiricRitualRevealService {
             if (from == null || to == null) {
                 continue;
             }
+            boolean activeLink = from.active() && to.active();
+            double pulse = 1.0d + Math.sin(animationSeconds * (activeLink ? 6.5d : 4.2d) + link.startTimeSeconds()) * 0.18d;
+            double thickness = LINK_THICKNESS * pulse;
+            float opacity = (float) Math.max(0.20d, Math.min(0.86d, LINK_OPACITY * pulse));
             VampiricRitualLineRenderer.addBeam(
                     world,
                     from.position().x,
@@ -202,10 +211,21 @@ public final class VampiricRitualRevealService {
                     to.position().x,
                     to.position().y + 0.08d,
                     to.position().z,
-                    from.active() && to.active() ? DebugUtils.COLOR_RED : style.focusColor(),
-                    LINK_THICKNESS,
-                    LINK_OPACITY,
+                    activeLink ? DebugUtils.COLOR_RED : style.focusColor(),
+                    thickness,
+                    opacity,
                     STABLE_LINE_DURATION_SECONDS);
+            double travel = animationProgress(animationSeconds * (activeLink ? 0.95d : 0.55d) + link.startTimeSeconds() * 0.33d);
+            Vector3d focus = interpolate(from.position(), to.position(), travel);
+            VampiricDebugShapeRenderer.addCleanSphere(
+                    world,
+                    focus.x,
+                    focus.y + 0.10d,
+                    focus.z,
+                    activeLink ? DebugUtils.COLOR_RED : style.focusColor(),
+                    activeLink ? 0.30f : 0.22f,
+                    activeLink ? LINK_ENERGY_SPHERE_SCALE + ACTIVE_LINK_PULSE_SCALE * 0.2d : LINK_ENERGY_SPHERE_SCALE,
+                    REVEAL_DURATION_SECONDS);
         }
     }
 
@@ -235,37 +255,44 @@ public final class VampiricRitualRevealService {
 
     private static void drawLiveTrace(@Nonnull World world,
                                       @Nonnull VampiricRitualPointState point,
-                                      @Nonnull PhaseStyle style) {
+                                      @Nonnull PhaseStyle style,
+                                      double animationSeconds,
+                                      boolean showDebugGuides) {
         if (!point.tracing() || point.traceStrokePositions().isEmpty()) {
             return;
         }
 
-        Vector3d first = point.traceStrokePositions().get(0);
-        VampiricRitualLineRenderer.addBeam(
-                world,
-                point.position().x,
-                point.position().y + 0.07d,
-                point.position().z,
-                first.x,
-                first.y + 0.07d,
-                first.z,
-                style.focusColor(),
-                LIVE_TRACE_THICKNESS,
-                LIVE_TRACE_OPACITY,
-                STABLE_LINE_DURATION_SECONDS);
+        if (showDebugGuides) {
+            Vector3d first = point.traceStrokePositions().get(0);
+            VampiricRitualLineRenderer.addBeam(
+                    world,
+                    point.position().x,
+                    point.position().y + 0.07d,
+                    point.position().z,
+                    first.x,
+                    first.y + 0.07d,
+                    first.z,
+                    style.focusColor(),
+                    LIVE_TRACE_THICKNESS,
+                    LIVE_TRACE_OPACITY,
+                    STABLE_LINE_DURATION_SECONDS);
+        }
 
         for (int index = 0; index < point.traceStrokePositions().size(); index++) {
             Vector3d stroke = point.traceStrokePositions().get(index);
             boolean tip = index == point.traceStrokePositions().size() - 1;
-            DebugUtils.addSphere(
-                    world,
-                    stroke.x,
-                    stroke.y + 0.08d,
-                    stroke.z,
-                    tip ? style.focusColor() : style.activePointColor(),
-                    tip ? 0.34f : 0.22f,
-                    tip ? LIVE_TRACE_TIP_SCALE : LIVE_TRACE_POINT_SCALE,
-                    REVEAL_DURATION_SECONDS);
+            double tipPulse = tip ? 1.0d + Math.sin(animationSeconds * 12.0d) * 0.12d : 1.0d;
+            if (showDebugGuides || tip) {
+                VampiricDebugShapeRenderer.addCleanSphere(
+                        world,
+                        stroke.x,
+                        stroke.y + 0.08d,
+                        stroke.z,
+                        style.activePointColor(),
+                        tip ? (float) Math.min(0.30d, 0.24d * tipPulse) : 0.18f,
+                        tip ? LIVE_TRACE_TIP_SCALE * tipPulse : LIVE_TRACE_POINT_SCALE,
+                        REVEAL_DURATION_SECONDS);
+            }
             if (index == 0) {
                 continue;
             }
@@ -278,7 +305,7 @@ public final class VampiricRitualRevealService {
                     stroke.x,
                     stroke.y + 0.07d,
                     stroke.z,
-                    tip ? style.focusColor() : style.activePointColor(),
+                    style.activePointColor(),
                     LIVE_TRACE_THICKNESS,
                     LIVE_TRACE_OPACITY,
                     STABLE_LINE_DURATION_SECONDS);
@@ -287,13 +314,14 @@ public final class VampiricRitualRevealService {
 
     private static void drawAnchorState(@Nonnull World world,
                                         @Nonnull VampiricRitualRuntimeSnapshot snapshot,
-                                        @Nonnull PhaseStyle style) {
+                                        @Nonnull PhaseStyle style,
+                                        double animationSeconds) {
         Vector3d anchor = snapshot.anchorCenter();
         switch (VampiricRitualAnchorState.fromSnapshot(snapshot)) {
             case PREPARED -> drawHorizontalCross(world, anchor, style.focusColor(), 0.55d, 0.18d, 0.04d);
             case BINDING -> drawHorizontalCross(world, anchor, style.focusColor(), 0.75d, 0.22d, 0.05d);
             case ACTIVE -> {
-                DebugUtils.addDisc(
+                VampiricDebugShapeRenderer.addCleanDisc(
                         world,
                         anchor.x,
                         anchor.y + Math.max(0.55d, snapshot.zoneHeight() * 0.45d),
@@ -303,9 +331,18 @@ public final class VampiricRitualRevealService {
                         0.12f,
                         REVEAL_DURATION_SECONDS,
                         0);
+                VampiricDebugShapeRenderer.addCleanSphere(
+                        world,
+                        anchor.x,
+                        anchor.y + 0.60d,
+                        anchor.z,
+                        style.focusColor(),
+                        0.16f,
+                        0.11d + Math.sin(animationSeconds * 6.0d) * 0.025d,
+                        REVEAL_DURATION_SECONDS);
             }
             case UNSTABLE -> {
-                DebugUtils.addDisc(
+                VampiricDebugShapeRenderer.addCleanDisc(
                         world,
                         anchor.x,
                         anchor.y + 0.05d,
@@ -316,9 +353,18 @@ public final class VampiricRitualRevealService {
                         REVEAL_DURATION_SECONDS,
                         0);
                 drawDiagonalCross(world, anchor, DebugUtils.COLOR_YELLOW, 0.95d, 0.18d, 0.06d);
+                VampiricDebugShapeRenderer.addCleanSphere(
+                        world,
+                        anchor.x,
+                        anchor.y + 0.42d,
+                        anchor.z,
+                        DebugUtils.COLOR_YELLOW,
+                        0.18f,
+                        0.13d + Math.sin(animationSeconds * 9.0d) * 0.03d,
+                        REVEAL_DURATION_SECONDS);
             }
             case COLLAPSE -> {
-                DebugUtils.addDisc(
+                VampiricDebugShapeRenderer.addCleanDisc(
                         world,
                         anchor.x,
                         anchor.y + 0.03d,
@@ -330,9 +376,18 @@ public final class VampiricRitualRevealService {
                         0);
                 drawDiagonalCross(world, anchor, DebugUtils.COLOR_RED, 1.25d, 0.16d, 0.07d);
                 drawHorizontalCross(world, anchor, DebugUtils.COLOR_YELLOW, 0.70d, 0.12d, 0.05d);
+                VampiricDebugShapeRenderer.addCleanSphere(
+                        world,
+                        anchor.x,
+                        anchor.y + 0.28d,
+                        anchor.z,
+                        DebugUtils.COLOR_RED,
+                        0.20f,
+                        0.14d + Math.sin(animationSeconds * 8.2d) * 0.025d,
+                        REVEAL_DURATION_SECONDS);
             }
             case COMPLETE -> {
-                DebugUtils.addDisc(
+                VampiricDebugShapeRenderer.addCleanDisc(
                         world,
                         anchor.x,
                         anchor.y + Math.max(0.6d, snapshot.zoneHeight() + 0.55d),
@@ -342,8 +397,30 @@ public final class VampiricRitualRevealService {
                         0.12f,
                         REVEAL_DURATION_SECONDS,
                         0);
+                VampiricDebugShapeRenderer.addCleanSphere(
+                        world,
+                        anchor.x,
+                        anchor.y + Math.max(0.72d, snapshot.zoneHeight() + 0.58d),
+                        anchor.z,
+                        DebugUtils.COLOR_MAGENTA,
+                        0.16f,
+                        0.13d + Math.sin(animationSeconds * 6.4d) * 0.025d,
+                        REVEAL_DURATION_SECONDS);
             }
         }
+    }
+
+    @Nonnull
+    private static Vector3d interpolate(@Nonnull Vector3d start, @Nonnull Vector3d end, double alpha) {
+        double clamped = Math.max(0.0d, Math.min(1.0d, alpha));
+        return new Vector3d(
+                start.x + (end.x - start.x) * clamped,
+                start.y + (end.y - start.y) * clamped,
+                start.z + (end.z - start.z) * clamped);
+    }
+
+    private static double animationProgress(double value) {
+        return value - Math.floor(value);
     }
 
     private static void drawHorizontalCross(@Nonnull World world,
@@ -431,7 +508,7 @@ public final class VampiricRitualRevealService {
                         3.25d,
                         DebugUtils.COLOR_MAGENTA,
                         0.14f,
-                        0.30d,
+                        0.18d,
                         DebugUtils.COLOR_RED,
                         DebugUtils.COLOR_YELLOW,
                         DebugUtils.COLOR_MAGENTA,
@@ -443,7 +520,7 @@ public final class VampiricRitualRevealService {
                         3.4d,
                         DebugUtils.COLOR_MAGENTA,
                         0.20f,
-                        0.44d,
+                        0.24d,
                         DebugUtils.COLOR_RED,
                         DebugUtils.COLOR_YELLOW,
                         DebugUtils.COLOR_MAGENTA,
@@ -455,7 +532,7 @@ public final class VampiricRitualRevealService {
                         3.55d,
                         DebugUtils.COLOR_RED,
                         0.22f,
-                        0.48d,
+                        0.28d,
                         DebugUtils.COLOR_RED,
                         DebugUtils.COLOR_MAGENTA,
                         DebugUtils.COLOR_MAGENTA,
@@ -467,7 +544,7 @@ public final class VampiricRitualRevealService {
                         3.7d,
                         DebugUtils.COLOR_YELLOW,
                         0.24f,
-                        0.54d,
+                        0.32d,
                         DebugUtils.COLOR_RED,
                         DebugUtils.COLOR_YELLOW,
                         DebugUtils.COLOR_YELLOW,
@@ -479,7 +556,7 @@ public final class VampiricRitualRevealService {
                         3.95d,
                         DebugUtils.COLOR_RED,
                         0.26f,
-                        0.58d,
+                        0.34d,
                         DebugUtils.COLOR_RED,
                         DebugUtils.COLOR_YELLOW,
                         DebugUtils.COLOR_YELLOW,
@@ -491,7 +568,7 @@ public final class VampiricRitualRevealService {
                         3.6d,
                         DebugUtils.COLOR_RED,
                         0.22f,
-                        0.50d,
+                        0.30d,
                         DebugUtils.COLOR_RED,
                         DebugUtils.COLOR_MAGENTA,
                         DebugUtils.COLOR_MAGENTA,

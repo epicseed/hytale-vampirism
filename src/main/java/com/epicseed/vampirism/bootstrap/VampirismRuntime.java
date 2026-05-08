@@ -1,9 +1,11 @@
 package com.epicseed.vampirism.bootstrap;
 
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -56,6 +58,8 @@ import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeService;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeSnapshot;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualTemplateRegistry;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualCompanionTracker;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackService;
 import com.epicseed.vampirism.hud.BloodGaugeHud;
 import com.epicseed.vampirism.hud.RitualHudService;
 import com.epicseed.vampirism.hud.RitualStatusHud;
@@ -96,12 +100,14 @@ import com.epicseed.vampirism.systems.VampireInfectionSystem;
 import com.epicseed.vampirism.systems.VampireMovementSystem;
 import com.epicseed.vampirism.systems.VampireSleepSystem;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
+import com.epicseed.vampirism.systems.VampiricRitualCompanionSystem;
 import com.epicseed.vampirism.systems.VampiricRitualSystem;
 import com.epicseed.vampirism.ui.VampirismProgressionPageFactory;
 import com.epicseed.vampirism.ui.VampirismSkillTreeUiAdapter;
 import com.epicseed.vampirism.ui.VampirismUiPaths;
 import com.epicseed.vampirism.ui.SkillTreeUI;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector2d;
 import com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent;
@@ -120,6 +126,7 @@ public final class VampirismRuntime {
     private final NightHuntService nightHuntService;
     private final RelicPresetSelectionAdapter relicPresetSelectionAdapter;
     private final VampiricLineageService lineageService;
+    private final Set<UUID> connectedPlayers = ConcurrentHashMap.newKeySet();
 
     private VampirismRuntime(@Nonnull PlayerSkillRegistry playerSkillRegistry,
                              @Nonnull PlayerRuntimeCleanupCoordinator playerRuntimeCleanupCoordinator,
@@ -136,7 +143,7 @@ public final class VampirismRuntime {
     @Nonnull
     public static VampirismRuntime bootstrap(@Nonnull Vampirism plugin,
                                              @Nonnull CatalogBackedSkillRuntimeBootstrap skillRuntimeBootstrap,
-                                             @Nonnull Vector2d highestPosition) {
+                                             @Nonnull java.util.function.Supplier<Vector2d> highestPositionSupplier) {
         Path dataDirectory = plugin.getDataDirectory();
         VampireStatusRegistry.init(dataDirectory, () -> VampirismConfig.get().isVampireDefaultEnabled());
         PlayerSkillRegistry playerSkillRegistry = PlayerSkillRegistry.init(dataDirectory);
@@ -214,11 +221,17 @@ public final class VampirismRuntime {
                 progressionAccess);
         VampiricRitualService ritualService = new VampiricRitualService(
                 VampiricRitualRegistry.defaultAscensionRegistry(),
-                new RuntimeVampiricRitualRewardPort(progressionAccess, lineageService));
+                new RuntimeVampiricRitualRewardPort(
+                        progressionAccess,
+                        lineageService,
+                        nightHuntService,
+                        masqueradeHeatService,
+                        temporaryModifiers));
         VampiricRitualTemplateRegistry ritualTemplateRegistry = new VampiricRitualTemplateRegistry();
         VampiricRitualRuntimeService ritualRuntimeService =
                 new VampiricRitualRuntimeService(ritualService, ritualTemplateRegistry);
         VampiricRitualContextResolver ritualContextResolver = new VampiricRitualContextResolver(progressionAccess);
+        VampiricRitualFeedbackService ritualFeedbackService = new VampiricRitualFeedbackService();
         SkillRequirementEvaluator skillRequirementEvaluator = new SkillRequirementEvaluator(
                 progressionDefinitionProvider,
                 skillConditionEvaluator,
@@ -258,7 +271,7 @@ public final class VampirismRuntime {
         VampirismSkillTreeUiAdapter skillTreeUiAdapter = new VampirismSkillTreeUiAdapter(
                 progressionDefinitionProvider,
                 progressionAccess,
-                () -> highestPosition,
+                highestPositionSupplier,
                 skillTreePresenter,
                 skillTreeManager,
                 lineageService,
@@ -303,7 +316,10 @@ public final class VampirismRuntime {
                 new VampireVitalityAbilityResourcePort(),
                 (ctx, abilityId) -> triggerDispatcher.dispatch(TriggerEvent.onActivate(ctx, abilityId)));
         skillActionExecutor.setAbilityActivator(abilityService::activateFromAction);
-        VampiricRitualSystem ritualVisualSystem = new VampiricRitualSystem(ritualRuntimeService, ritualContextResolver);
+        VampiricRitualSystem ritualVisualSystem = new VampiricRitualSystem(
+                ritualRuntimeService,
+                ritualContextResolver,
+                ritualFeedbackService);
 
         VampiricSystemsSupport.configure(
                 VampirismConfig.get(),
@@ -341,6 +357,13 @@ public final class VampirismRuntime {
                             abortRuntimeRitual(uuid, playerRef, ritualRuntimeService, ritualContextResolver);
                             RitualHudService.cleanup(playerRef);
                             ritualVisualSystem.clearPlayer(uuid, playerRef);
+                            var familiar = VampiricRitualCompanionTracker.clearPlayer(uuid);
+                            if (familiar != null && familiar.companionRef().isValid()) {
+                                Store<EntityStore> store = familiar.companionRef().getStore();
+                                if (store != null) {
+                                    store.removeEntity(familiar.companionRef(), RemoveReason.REMOVE);
+                                }
+                            }
                         },
                         (uuid, playerRef) -> nightHuntService.clearPlayer(uuid),
                         (uuid, playerRef) -> SunburnSystem.onPlayerLeave(uuid),
@@ -380,7 +403,9 @@ public final class VampirismRuntime {
                 ritualService,
                 ritualRuntimeService,
                 ritualContextResolver,
-                ritualVisualSystem);
+                runtime,
+                ritualVisualSystem,
+                ritualFeedbackService);
         return runtime;
     }
 
@@ -401,6 +426,7 @@ public final class VampirismRuntime {
     }
 
     private void onPlayerConnect(@Nonnull UUID uuid) {
+        connectedPlayers.add(uuid);
         playerSkillRegistry.restoreRuntimeState(uuid);
         nightHuntService.onPlayerConnect(uuid);
         EffectModifierSystem.clearPlayer(uuid);
@@ -411,7 +437,32 @@ public final class VampirismRuntime {
     }
 
     private void onPlayerDisconnect(@Nonnull UUID uuid, @Nullable Ref<EntityStore> playerRef) {
+        connectedPlayers.remove(uuid);
         playerRuntimeCleanupCoordinator.cleanup(uuid, playerRef);
+    }
+
+    @Nonnull
+    public ReloadRuntimeStateSummary refreshReloadedJsonState(@Nonnull VampiricRitualRuntimeService ritualRuntimeService,
+                                                              @Nonnull VampiricRitualContextResolver ritualContextResolver) {
+        int refreshedPlayers = 0;
+        int abortedRituals = 0;
+        int clearedAssemblies = 0;
+        for (UUID uuid : new LinkedHashSet<>(connectedPlayers)) {
+            Optional<VampiricRitualRuntimeSnapshot> ritualSnapshot = ritualRuntimeService.snapshot(uuid);
+            if (ritualSnapshot.isPresent()) {
+                if (ritualSnapshot.get().active()) {
+                    abortedRituals++;
+                } else {
+                    clearedAssemblies++;
+                }
+                abortRuntimeRitual(uuid, VampireVitalitySystem.getRefByUuid(uuid), ritualRuntimeService, ritualContextResolver);
+            }
+            EffectModifierSystem.clearPlayer(uuid);
+            SkillTreeManager.get().reloadModifiers(uuid);
+            lineageService.syncModifiers(uuid);
+            refreshedPlayers++;
+        }
+        return new ReloadRuntimeStateSummary(refreshedPlayers, abortedRituals, clearedAssemblies);
     }
 
     private static void registerCommands(@Nonnull Vampirism plugin,
@@ -424,9 +475,12 @@ public final class VampirismRuntime {
                                          @Nonnull VampiricRitualService ritualService,
                                          @Nonnull VampiricRitualRuntimeService ritualRuntimeService,
                                          @Nonnull VampiricRitualContextResolver ritualContextResolver,
-                                         @Nonnull VampiricRitualSystem ritualVisualSystem) {
+                                         @Nonnull VampirismRuntime runtime,
+                                         @Nonnull VampiricRitualSystem ritualVisualSystem,
+                                         @Nonnull VampiricRitualFeedbackService ritualFeedbackService) {
         plugin.getCommandRegistry().registerCommand(
                 new VampirismCommand(
+                        plugin,
                         progressionAccess,
                         nightHuntService,
                         abilityService,
@@ -434,14 +488,24 @@ public final class VampirismRuntime {
                         masqueradeHeatService,
                         ritualService,
                         ritualRuntimeService,
-                        ritualContextResolver));
+                        ritualContextResolver,
+                        runtime));
         plugin.getCommandRegistry().registerCommand(new VampirismSkillTreeCommand(progressionPageFactory));
         plugin.getCommandRegistry().registerCommand(new VampirismPotionCommand());
         plugin.getCommandRegistry().registerCommand(new VampirismRelicCommand(abilityService));
         plugin.getCommandRegistry().registerCommand(
-                new VampirismRitualCommand(ritualRuntimeService, ritualContextResolver, ritualVisualSystem));
+                new VampirismRitualCommand(
+                        ritualRuntimeService,
+                        ritualContextResolver,
+                        ritualVisualSystem,
+                        ritualFeedbackService));
         plugin.getCommandRegistry().registerCommand(new VampirismRelicBindingsCommand(progressionPageFactory));
         plugin.getCommandRegistry().registerCommand(new VampirismRelicBindingCommand(progressionPageFactory));
+    }
+
+    public record ReloadRuntimeStateSummary(int refreshedPlayers,
+                                            int abortedRituals,
+                                            int clearedAssemblies) {
     }
 
     private static void registerSystems(@Nonnull Vampirism plugin,
@@ -459,6 +523,7 @@ public final class VampirismRuntime {
         plugin.getEntityStoreRegistry().registerSystem(new BloodFeedSystem(progressionAccess));
         plugin.getEntityStoreRegistry().registerSystem(new BloodConversionSystem());
         plugin.getEntityStoreRegistry().registerSystem(ritualVisualSystem);
+        plugin.getEntityStoreRegistry().registerSystem(new VampiricRitualCompanionSystem());
         plugin.getEntityStoreRegistry().registerSystem(new VampireCombatSystem(
                 passiveService,
                 new VampireCombatSystem.NightHuntCombatSupport() {

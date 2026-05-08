@@ -17,6 +17,8 @@ import com.epicseed.vampirism.commands.admin.MorphAdminCommands;
 import com.epicseed.vampirism.commands.admin.RitualAdminCommands;
 import com.epicseed.vampirism.commands.admin.SkillAdminCommands;
 import com.epicseed.vampirism.commands.admin.VampireAdminCommands;
+import com.epicseed.vampirism.bootstrap.VampirismRuntime;
+import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
@@ -41,17 +43,19 @@ import com.hypixel.hytale.server.core.command.system.arguments.types.ArgumentTyp
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 
 public class VampirismCommand extends AbstractCommand {
-    public VampirismCommand(@Nonnull VampirismSkillProgressionAccess progressionAccess,
+    public VampirismCommand(@Nonnull Vampirism plugin,
+                            @Nonnull VampirismSkillProgressionAccess progressionAccess,
                             @Nonnull NightHuntService nightHuntService,
                             @Nonnull AbilityService abilityService,
                             @Nonnull VampiricLineageService lineageService,
                             @Nonnull MasqueradeHeatService masqueradeHeatService,
                             @Nonnull VampiricRitualService ritualService,
                             @Nonnull VampiricRitualRuntimeService ritualRuntimeService,
-                            @Nonnull VampiricRitualContextResolver ritualContextResolver) {
+                            @Nonnull VampiricRitualContextResolver ritualContextResolver,
+                            @Nonnull VampirismRuntime runtime) {
         super("vampirism", "Vampirism plugin management");
         this.setPermissionGroups(new String[]{"admin"});
-        this.addSubCommand(new ReloadCommand(lineageService, ritualRuntimeService));
+        this.addSubCommand(new ReloadCommand(plugin, lineageService, ritualRuntimeService, ritualContextResolver, runtime));
         this.addSubCommand(new ConfigInfoCommand());
         this.addSubCommand(new StatusCommand());
         this.addSubCommand(new SatietyInfoCommand());
@@ -74,7 +78,7 @@ public class VampirismCommand extends AbstractCommand {
     @Override
     public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
         ctx.sendMessage(Message.raw("=== Vampirism ===").color("dark_red"));
-        ctx.sendMessage(Message.raw("/vampirism reload - reload config & registry").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirism reload - reload config, JSON registries, skills, and refresh online players").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism config - show active config values").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism status <player> - full debug overview").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism satiety <player> - satiety details").color("yellow"));
@@ -98,27 +102,59 @@ public class VampirismCommand extends AbstractCommand {
     }
 
     private static class ReloadCommand extends AbstractCommand {
+        private final Vampirism plugin;
         private final VampiricLineageService lineageService;
         private final VampiricRitualRuntimeService ritualRuntimeService;
+        private final VampiricRitualContextResolver ritualContextResolver;
+        private final VampirismRuntime runtime;
 
-        ReloadCommand(@Nonnull VampiricLineageService lineageService,
-                      @Nonnull VampiricRitualRuntimeService ritualRuntimeService) {
-            super("reload", "Reload config and registry from disk");
+        ReloadCommand(@Nonnull Vampirism plugin,
+                      @Nonnull VampiricLineageService lineageService,
+                      @Nonnull VampiricRitualRuntimeService ritualRuntimeService,
+                      @Nonnull VampiricRitualContextResolver ritualContextResolver,
+                      @Nonnull VampirismRuntime runtime) {
+            super("reload", "Reload config, JSON registries, and skills from disk");
+            this.plugin = plugin;
             this.lineageService = lineageService;
             this.ritualRuntimeService = ritualRuntimeService;
+            this.ritualContextResolver = ritualContextResolver;
+            this.runtime = runtime;
             this.setPermissionGroups(new String[]{"admin"});
         }
 
         @Nonnull
         @Override
         public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
-            VampirismConfig.reload();
-            VampireStatusRegistry.get().reload();
-            NightHuntSpawnRegistry.get().reload();
-            VampiricAgeTierService.reload();
-            lineageService.registry().reload();
-            ritualRuntimeService.templateRegistry().reload();
-            ctx.sendMessage(Message.raw("Vampirism config and registries reloaded.").color("green"));
+            try {
+                Vampirism.ReloadedSkillDefinitions skillReload = plugin.reloadSkillDefinitions();
+                VampirismConfig.reload();
+                VampireStatusRegistry.get().reload();
+                NightHuntSpawnRegistry.get().reload();
+                VampiricAgeTierService.reload();
+                lineageService.registry().reload();
+                ritualRuntimeService.templateRegistry().reload();
+                VampirismRuntime.ReloadRuntimeStateSummary runtimeReload =
+                        runtime.refreshReloadedJsonState(ritualRuntimeService, ritualContextResolver);
+                ctx.sendMessage(Message.raw("Vampirism JSON/config reload complete.").color("green"));
+                ctx.sendMessage(Message.raw(
+                        "Skills=" + skillReload.skillCount()
+                                + ", abilities=" + skillReload.abilityCount()
+                                + ", passives=" + skillReload.passiveCount()
+                                + ", effects=" + skillReload.effectCount()
+                                + ", treeBounds=" + (int) skillReload.bounds().getX() + "x" + (int) skillReload.bounds().getY())
+                        .color("yellow"));
+                ctx.sendMessage(Message.raw(
+                        "Online players refreshed=" + runtimeReload.refreshedPlayers()
+                                + ", active rituals aborted=" + runtimeReload.abortedRituals()
+                                + ", prepared circles cleared=" + runtimeReload.clearedAssemblies())
+                        .color("yellow"));
+                ctx.sendMessage(Message.raw(
+                        "Note: hard-coded ritual definitions still require a rebuild; the command reloads JSON-backed data.")
+                        .color("gray"));
+            } catch (RuntimeException exception) {
+                plugin.getLogger().atSevere().log("[Vampirism] Reload failed: " + exception.getMessage());
+                ctx.sendMessage(Message.raw("Reload failed: " + exception.getMessage()).color("red"));
+            }
             return CompletableFuture.completedFuture(null);
         }
     }

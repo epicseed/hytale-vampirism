@@ -18,6 +18,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.hytale.WorldStoreAdapter;
+import com.epicseed.vampirism.hytale.debug.VampiricDebugShapeRenderer;
 import com.hypixel.hytale.builtin.buildertools.BuilderToolsPlugin;
 import com.hypixel.hytale.builtin.buildertools.BuilderToolsPlugin.BuilderState;
 import com.hypixel.hytale.component.ArchetypeChunk;
@@ -525,7 +526,7 @@ public final class DebugShapeAdminCommands extends AbstractCommand {
     private static void drawLocator(@Nonnull World world,
                                     @Nonnull Vector3d viewerPosition,
                                     @Nonnull Vector3d targetPosition) {
-        DebugUtils.addSphere(
+        VampiricDebugShapeRenderer.addCleanSphere(
                 world,
                 targetPosition.getX(),
                 targetPosition.getY() + 1.0d,
@@ -533,8 +534,9 @@ public final class DebugShapeAdminCommands extends AbstractCommand {
                 DebugUtils.COLOR_RED,
                 TARGET_SPHERE_OPACITY,
                 TARGET_SPHERE_SCALE,
-                LOCATOR_DURATION_SECONDS);
-        DebugUtils.addDisc(
+                LOCATOR_DURATION_SECONDS,
+                0);
+        VampiricDebugShapeRenderer.addCleanDisc(
                 world,
                 targetPosition.getX(),
                 targetPosition.getY() + 2.7d,

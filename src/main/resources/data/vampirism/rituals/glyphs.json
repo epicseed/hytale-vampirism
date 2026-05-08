@@ -8,29 +8,29 @@
       "symbolId": "blood_spiral",
       "traceSteps": [
         {
-          "offsetX": -0.341,
+          "offsetX": -0.238,
           "offsetY": 0,
-          "offsetZ": -0.2
+          "offsetZ": -0.173
         },
         {
-          "offsetX": 0.115,
+          "offsetX": 0.088,
           "offsetY": 0,
-          "offsetZ": -0.367
+          "offsetZ": -0.279
         },
         {
-          "offsetX": 0.333,
+          "offsetX": 0.242,
           "offsetY": 0,
-          "offsetZ": 0.003
+          "offsetZ": -0.001
         },
         {
           "offsetX": 0.036,
           "offsetY": 0,
-          "offsetZ": 0.303
+          "offsetZ": 0.217
         },
         {
-          "offsetX": -0.258,
+          "offsetX": -0.183,
           "offsetY": 0,
-          "offsetZ": 0.175
+          "offsetZ": 0.12
         }
       ],
       "traceTolerance": 0.48
@@ -43,29 +43,104 @@
       "symbolId": "crown_claw",
       "traceSteps": [
         {
-          "offsetX": -0.351,
+          "offsetX": -0.252,
           "offsetY": 0,
-          "offsetZ": 0.342
+          "offsetZ": 0.258
         },
         {
-          "offsetX": -0.212,
+          "offsetX": -0.15,
           "offsetY": 0,
-          "offsetZ": -0.369
+          "offsetZ": -0.289
         },
         {
-          "offsetX": 0.008,
+          "offsetX": 0.012,
           "offsetY": 0,
-          "offsetZ": 0.263
+          "offsetZ": 0.16
         },
         {
-          "offsetX": 0.21,
+          "offsetX": 0.164,
           "offsetY": 0,
-          "offsetZ": -0.378
+          "offsetZ": -0.298
         },
         {
-          "offsetX": 0.365,
+          "offsetX": 0.276,
           "offsetY": 0,
-          "offsetZ": 0.344
+          "offsetZ": 0.246
+        }
+      ],
+      "traceTolerance": 0.48
+    },
+    {
+      "displayName": "Dusk Shroud",
+      "glyphId": "dusk_shroud",
+      "mistakeCorruptionPenalty": 5,
+      "mistakeStabilityPenalty": 6,
+      "symbolId": "dusk_shroud",
+      "traceSteps": [
+        {
+          "offsetX": -0.242,
+          "offsetY": 0,
+          "offsetZ": -0.201
+        },
+        {
+          "offsetX": -0.059,
+          "offsetY": 0,
+          "offsetZ": -0.291
+        },
+        {
+          "offsetX": 0.176,
+          "offsetY": 0,
+          "offsetZ": -0.182
+        },
+        {
+          "offsetX": 0.264,
+          "offsetY": 0,
+          "offsetZ": 0.056
+        },
+        {
+          "offsetX": 0.064,
+          "offsetY": 0,
+          "offsetZ": 0.234
+        },
+        {
+          "offsetX": -0.173,
+          "offsetY": 0,
+          "offsetZ": 0.17
+        }
+      ],
+      "traceTolerance": 0.48
+    },
+    {
+      "displayName": "Familiar Step",
+      "glyphId": "familiar_step",
+      "mistakeCorruptionPenalty": 5,
+      "mistakeStabilityPenalty": 6,
+      "symbolId": "familiar_step",
+      "traceSteps": [
+        {
+          "offsetX": -0.295,
+          "offsetY": 0,
+          "offsetZ": -0.106
+        },
+        {
+          "offsetX": -0.086,
+          "offsetY": 0,
+          "offsetZ": -0.265
+        },
+        {
+          "offsetX": 0.109,
+          "offsetY": 0,
+          "offsetZ": -0.004
+        },
+        {
+          "offsetX": 0.283,
+          "offsetY": 0,
+          "offsetZ": -0.173
+        },
+        {
+          "offsetX": 0.031,
+          "offsetY": 0,
+          "offsetZ": 0.22
         }
       ],
       "traceTolerance": 0.48
@@ -75,27 +150,62 @@
       "glyphId": "fang_wake",
       "mistakeCorruptionPenalty": 5,
       "mistakeStabilityPenalty": 6,
+      "symbolId": "mirror_fang",
+      "traceSteps": [
+        {
+          "offsetX": -0.337,
+          "offsetY": 0,
+          "offsetZ": -0.386
+        },
+        {
+          "offsetX": -0.069,
+          "offsetY": 0,
+          "offsetZ": 0.348
+        },
+        {
+          "offsetX": 0.067,
+          "offsetY": 0,
+          "offsetZ": -0.087
+        },
+        {
+          "offsetX": 0.366,
+          "offsetY": 0,
+          "offsetZ": 0.322
+        }
+      ],
+      "traceTolerance": 0.48
+    },
+    {
+      "displayName": "Mirror Fang",
+      "glyphId": "mirror_fang",
+      "mistakeCorruptionPenalty": 5,
+      "mistakeStabilityPenalty": 6,
       "symbolId": "fang_wake",
       "traceSteps": [
         {
-          "offsetX": -0.483,
+          "offsetX": -0.321,
           "offsetY": 0,
-          "offsetZ": -0.514
+          "offsetZ": 0.229
         },
         {
-          "offsetX": -0.109,
+          "offsetX": -0.14,
           "offsetY": 0,
-          "offsetZ": 0.568
+          "offsetZ": -0.225
         },
         {
-          "offsetX": 0.084,
+          "offsetX": 0.002,
           "offsetY": 0,
-          "offsetZ": -0.111
+          "offsetZ": 0.039
         },
         {
-          "offsetX": 0.498,
+          "offsetX": 0.145,
           "offsetY": 0,
-          "offsetZ": 0.466
+          "offsetZ": -0.213
+        },
+        {
+          "offsetX": 0.328,
+          "offsetY": 0,
+          "offsetZ": 0.234
         }
       ],
       "traceTolerance": 0.48
@@ -108,29 +218,144 @@
       "symbolId": "moon_scar",
       "traceSteps": [
         {
-          "offsetX": -0.299,
+          "offsetX": -0.223,
           "offsetY": 0,
-          "offsetZ": -0.286
+          "offsetZ": -0.234
         },
         {
-          "offsetX": 0.051,
+          "offsetX": 0.043,
           "offsetY": 0,
-          "offsetZ": -0.335
+          "offsetZ": -0.26
         },
         {
-          "offsetX": 0.319,
+          "offsetX": 0.228,
           "offsetY": 0,
-          "offsetZ": 0.006
+          "offsetZ": -0.011
         },
         {
-          "offsetX": 0.082,
+          "offsetX": 0.076,
           "offsetY": 0,
-          "offsetZ": 0.305
+          "offsetZ": 0.227
         },
         {
-          "offsetX": -0.251,
+          "offsetX": -0.178,
           "offsetY": 0,
-          "offsetZ": 0.23
+          "offsetZ": 0.158
+        }
+      ],
+      "traceTolerance": 0.48
+    },
+    {
+      "displayName": "Pact Knot",
+      "glyphId": "pact_knot",
+      "mistakeCorruptionPenalty": 5,
+      "mistakeStabilityPenalty": 6,
+      "symbolId": "pact_knot",
+      "traceSteps": [
+        {
+          "offsetX": -0.23,
+          "offsetY": 0,
+          "offsetZ": -0.194
+        },
+        {
+          "offsetX": -0.002,
+          "offsetY": 0,
+          "offsetZ": -0.004
+        },
+        {
+          "offsetX": -0.052,
+          "offsetY": 0,
+          "offsetZ": 0.203
+        },
+        {
+          "offsetX": 0.211,
+          "offsetY": 0,
+          "offsetZ": 0.17
+        },
+        {
+          "offsetX": 0.061,
+          "offsetY": 0,
+          "offsetZ": -0.038
+        },
+        {
+          "offsetX": 0.264,
+          "offsetY": 0,
+          "offsetZ": -0.23
+        }
+      ],
+      "traceTolerance": 0.48
+    },
+    {
+      "displayName": "Prey Brand",
+      "glyphId": "prey_brand",
+      "mistakeCorruptionPenalty": 5,
+      "mistakeStabilityPenalty": 6,
+      "symbolId": "prey_brand",
+      "traceSteps": [
+        {
+          "offsetX": -0.337,
+          "offsetY": 0,
+          "offsetZ": -0.298
+        },
+        {
+          "offsetX": -0.095,
+          "offsetY": 0,
+          "offsetZ": -0.063
+        },
+        {
+          "offsetX": 0.166,
+          "offsetY": 0,
+          "offsetZ": -0.249
+        },
+        {
+          "offsetX": 0.266,
+          "offsetY": 0,
+          "offsetZ": 0.046
+        },
+        {
+          "offsetX": 0.031,
+          "offsetY": 0,
+          "offsetZ": 0.231
+        }
+      ],
+      "traceTolerance": 0.48
+    },
+    {
+      "displayName": "Soul Lattice",
+      "glyphId": "soul_lattice",
+      "mistakeCorruptionPenalty": 5,
+      "mistakeStabilityPenalty": 6,
+      "symbolId": "soul_lattice",
+      "traceSteps": [
+        {
+          "offsetX": -0.261,
+          "offsetY": 0,
+          "offsetZ": -0.251
+        },
+        {
+          "offsetX": -0.052,
+          "offsetY": 0,
+          "offsetZ": 0.003
+        },
+        {
+          "offsetX": 0.147,
+          "offsetY": 0,
+          "offsetZ": -0.168
+        },
+        {
+          "offsetX": 0.261,
+          "offsetY": 0,
+          "offsetZ": 0.063
+        },
+        {
+          "offsetX": 0.036,
+          "offsetY": 0,
+          "offsetZ": 0.246
+        },
+        {
+          "offsetX": -0.147,
+          "offsetY": 0,
+          "offsetZ": 0.053
         }
       ],
       "traceTolerance": 0.48
@@ -143,24 +368,24 @@
       "symbolId": "vein_eye",
       "traceSteps": [
         {
-          "offsetX": -0.316,
+          "offsetX": -0.228,
           "offsetY": 0,
-          "offsetZ": -0.009
+          "offsetZ": -0.018
         },
         {
-          "offsetX": 0.002,
+          "offsetX": 0.012,
           "offsetY": 0,
-          "offsetZ": -0.322
+          "offsetZ": -0.249
         },
         {
-          "offsetX": 0.326,
+          "offsetX": 0.257,
           "offsetY": 0,
-          "offsetZ": -0.009
+          "offsetZ": -0.018
         },
         {
           "offsetX": 0,
           "offsetY": 0,
-          "offsetZ": 0.3
+          "offsetZ": 0.224
         }
       ],
       "traceTolerance": 0.48

@@ -41,42 +41,59 @@ public final class VampiricRitualGlyphPresentationService {
     static final String NODE_INACTIVE_PROJECTILE_ID = "Vampirism_RitualGlyph_Node_Inactive";
     static final String GENERIC_SYMBOL_PROJECTILE_ID = "Vampirism_RitualGlyph_Symbol_Generic";
 
-    private static final double BASE_Y_OFFSET = 0.035d;
-    private static final double CORE_Y_OFFSET = 0.09d;
     private static final double NODE_Y_OFFSET = 0.045d;
     private static final double SYMBOL_Y_OFFSET = 0.095d;
     private static final double DISPLAY_TERMINAL_VELOCITY = 0.001d;
+    private static final double CORE_BOB_AMPLITUDE = 0.020d;
+    private static final double ACTIVE_NODE_BOB_AMPLITUDE = 0.012d;
+    private static final double TRACING_NODE_BOB_AMPLITUDE = 0.018d;
+    private static final double ACTIVE_SYMBOL_BOB_AMPLITUDE = 0.020d;
+    private static final double TRACING_SYMBOL_BOB_AMPLITUDE = 0.028d;
+    private static final float ACTIVE_SYMBOL_SPIN_DEGREES_PER_SECOND = 68f;
+    private static final float TRACING_SYMBOL_SPIN_DEGREES_PER_SECOND = 104f;
+    private static final float CORE_SPIN_DEGREES_PER_SECOND = 52f;
 
     private VampiricRitualGlyphPresentationService() {
     }
 
     @Nonnull
     public static RitualGlyphPresentationLayout describe(@Nonnull VampiricRitualRuntimeSnapshot snapshot) {
+        return describe(snapshot, System.currentTimeMillis() / 1000d);
+    }
+
+    @Nonnull
+    public static RitualGlyphPresentationLayout describe(@Nonnull VampiricRitualRuntimeSnapshot snapshot,
+                                                         double animationSeconds) {
         List<GlyphVisualSpec> visuals = new ArrayList<>();
         Vector3d anchor = snapshot.anchorCenter();
         visuals.add(new GlyphVisualSpec(
                 "anchor/base",
                 BASE_PROJECTILE_ID,
-                offset(anchor, BASE_Y_OFFSET),
+                offset(anchor, snapshot.baseLayer() != null ? snapshot.baseLayer().offsetY() : 0.035d),
                 new Vector3f()));
         visuals.add(new GlyphVisualSpec(
                 "anchor/core",
                 anchorCoreProjectileId(snapshot),
-                offset(anchor, CORE_Y_OFFSET),
-                new Vector3f()));
+                offset(anchor, (snapshot.coreLayer() != null ? snapshot.coreLayer().offsetY() : 0.09d)
+                        + coreLift(snapshot.phase(), animationSeconds)),
+                new Vector3f(0.0f, coreRotation(snapshot.phase(), animationSeconds), 0.0f)));
 
         for (VampiricRitualPointState point : snapshot.pointStates()) {
+            double phaseOffset = phaseOffset(point.pointId());
             Vector3f outwardRotation = outwardRotation(anchor, point.position());
             visuals.add(new GlyphVisualSpec(
                     "point/" + point.pointId() + "/node",
                     point.active() ? NODE_ACTIVE_PROJECTILE_ID : NODE_INACTIVE_PROJECTILE_ID,
-                    offset(point.position(), NODE_Y_OFFSET),
-                    outwardRotation));
+                    offset(point.position(), NODE_Y_OFFSET + nodeLift(point, animationSeconds, phaseOffset)),
+                    rotated(outwardRotation, nodeRotationOffset(point, animationSeconds, phaseOffset))));
+            if (point.tracing() && !point.active()) {
+                continue;
+            }
             visuals.add(new GlyphVisualSpec(
                     "point/" + point.pointId() + "/symbol",
                     symbolProjectileId(point.symbolId()),
-                    offset(point.position(), SYMBOL_Y_OFFSET),
-                    outwardRotation));
+                    offset(point.position(), SYMBOL_Y_OFFSET + symbolLift(point, animationSeconds, phaseOffset)),
+                    rotated(outwardRotation, symbolRotationOffset(point, animationSeconds, phaseOffset))));
         }
 
         return new RitualGlyphPresentationLayout(snapshot.ritualId(), visuals);
@@ -165,6 +182,12 @@ public final class VampiricRitualGlyphPresentationService {
             case "blood_spiral" -> "Vampirism_RitualGlyph_Symbol_BloodSpiral";
             case "vein_eye" -> "Vampirism_RitualGlyph_Symbol_VeinEye";
             case "crown_claw" -> "Vampirism_RitualGlyph_Symbol_CrownClaw";
+            case "prey_brand" -> "Vampirism_RitualGlyph_Symbol_PreyBrand";
+            case "dusk_shroud" -> "Vampirism_RitualGlyph_Symbol_DuskShroud";
+            case "pact_knot" -> "Vampirism_RitualGlyph_Symbol_PactKnot";
+            case "familiar_step" -> "Vampirism_RitualGlyph_Symbol_FamiliarStep";
+            case "soul_lattice" -> "Vampirism_RitualGlyph_Symbol_SoulLattice";
+            case "mirror_fang" -> "Vampirism_RitualGlyph_Symbol_MirrorFang";
             default -> GENERIC_SYMBOL_PROJECTILE_ID;
         };
     }
@@ -175,8 +198,103 @@ public final class VampiricRitualGlyphPresentationService {
     }
 
     @Nonnull
+    private static Vector3f rotated(@Nonnull Vector3f baseRotation, float yawOffset) {
+        return new Vector3f(baseRotation.getPitch(), normalizeYaw(baseRotation.getYaw() + yawOffset), baseRotation.getRoll());
+    }
+
+    @Nonnull
     private static Vector3f outwardRotation(@Nonnull Vector3d anchor, @Nonnull Vector3d pointPosition) {
         return new Vector3f(0.0f, VampiricRitualGeometry.outwardYawDegrees(anchor, pointPosition), 0.0f);
+    }
+
+    private static double coreLift(@Nonnull com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase phase,
+                                   double animationSeconds) {
+        double amplitude = switch (phase) {
+            case PREPARING -> CORE_BOB_AMPLITUDE * 0.45d;
+            case BINDING -> CORE_BOB_AMPLITUDE * 0.7d;
+            case CHANNELING -> CORE_BOB_AMPLITUDE;
+            case UNSTABLE -> CORE_BOB_AMPLITUDE * 1.2d;
+            case SUCCESS -> CORE_BOB_AMPLITUDE * 1.35d;
+            case COLLAPSE -> CORE_BOB_AMPLITUDE * 0.85d;
+        };
+        double speed = switch (phase) {
+            case PREPARING -> 2.1d;
+            case BINDING -> 3.2d;
+            case CHANNELING -> 5.0d;
+            case UNSTABLE -> 7.6d;
+            case SUCCESS -> 6.2d;
+            case COLLAPSE -> 8.4d;
+        };
+        return Math.sin(animationSeconds * speed) * amplitude;
+    }
+
+    private static float coreRotation(@Nonnull com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase phase,
+                                      double animationSeconds) {
+        float speedMultiplier = switch (phase) {
+            case PREPARING -> 0.35f;
+            case BINDING -> 0.75f;
+            case CHANNELING -> 1.2f;
+            case UNSTABLE -> 1.7f;
+            case SUCCESS -> 2.05f;
+            case COLLAPSE -> 1.45f;
+        };
+        return normalizeYaw((float) (animationSeconds * CORE_SPIN_DEGREES_PER_SECOND * speedMultiplier));
+    }
+
+    private static double nodeLift(@Nonnull VampiricRitualPointState point,
+                                   double animationSeconds,
+                                   double phaseOffset) {
+        if (point.tracing() && !point.active()) {
+            return Math.sin(animationSeconds * 9.2d + phaseOffset) * TRACING_NODE_BOB_AMPLITUDE;
+        }
+        if (point.active()) {
+            return Math.sin(animationSeconds * 5.3d + phaseOffset) * ACTIVE_NODE_BOB_AMPLITUDE;
+        }
+        return 0.0d;
+    }
+
+    private static double symbolLift(@Nonnull VampiricRitualPointState point,
+                                     double animationSeconds,
+                                     double phaseOffset) {
+        if (point.tracing() && !point.active()) {
+            return Math.sin(animationSeconds * 9.8d + phaseOffset) * TRACING_SYMBOL_BOB_AMPLITUDE;
+        }
+        if (point.active()) {
+            return Math.sin(animationSeconds * 6.1d + phaseOffset) * ACTIVE_SYMBOL_BOB_AMPLITUDE;
+        }
+        return 0.0d;
+    }
+
+    private static float nodeRotationOffset(@Nonnull VampiricRitualPointState point,
+                                            double animationSeconds,
+                                            double phaseOffset) {
+        if (!point.active() && !point.tracing()) {
+            return 0.0f;
+        }
+        return (float) (Math.sin(animationSeconds * (point.tracing() ? 8.0d : 4.5d) + phaseOffset) * 8.0d);
+    }
+
+    private static float symbolRotationOffset(@Nonnull VampiricRitualPointState point,
+                                              double animationSeconds,
+                                              double phaseOffset) {
+        if (point.tracing() && !point.active()) {
+            return normalizeYaw((float) (Math.toDegrees(phaseOffset)
+                    + animationSeconds * TRACING_SYMBOL_SPIN_DEGREES_PER_SECOND));
+        }
+        if (point.active()) {
+            return normalizeYaw((float) (Math.toDegrees(phaseOffset)
+                    + animationSeconds * ACTIVE_SYMBOL_SPIN_DEGREES_PER_SECOND));
+        }
+        return 0.0f;
+    }
+
+    private static double phaseOffset(@Nonnull String pointId) {
+        return Math.toRadians(Math.floorMod(pointId.hashCode(), 360));
+    }
+
+    private static float normalizeYaw(float yaw) {
+        float normalized = yaw % 360.0f;
+        return normalized < 0.0f ? normalized + 360.0f : normalized;
     }
 
     @Nullable

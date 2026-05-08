@@ -54,6 +54,12 @@ func TestDataHandlerRoundTripIncludesRitualTemplates(t *testing.T) {
 					"ritualId":               "awakening",
 					"displayName":            "Crimson Awakening",
 					"requiredAnchorBlockId":  "Furniture_Ancient_Coffin",
+					"baseLayer": map[string]interface{}{
+						"offsetY": 0.04,
+					},
+					"coreLayer": map[string]interface{}{
+						"offsetY": 0.09,
+					},
 					"pointTolerance":         0.95,
 					"channelDurationSeconds": 8.0,
 					"baseStability":          70.0,
@@ -113,6 +119,9 @@ func TestDataHandlerRoundTripIncludesRitualTemplates(t *testing.T) {
 	}
 	if !bytes.Contains(ritualFile, []byte(`"glyphId": "fang_wake"`)) {
 		t.Fatalf("ritual templates were not written: %s", string(ritualFile))
+	}
+	if !bytes.Contains(ritualFile, []byte(`"baseLayer"`)) || !bytes.Contains(ritualFile, []byte(`"coreLayer"`)) {
+		t.Fatalf("anchor layer configuration was not written: %s", string(ritualFile))
 	}
 	if bytes.Contains(ritualFile, []byte(`"traceSteps"`)) {
 		t.Fatalf("ritual templates should no longer inline glyph traces: %s", string(ritualFile))

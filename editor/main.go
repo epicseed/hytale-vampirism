@@ -76,6 +76,7 @@ func main() {
 	mux.Handle("/api/ritual-glyphs/", http.HandlerFunc(ritualGlyphFileHandler))
 	mux.Handle("/api/ritual-glyphs", http.HandlerFunc(ritualGlyphsHandler))
 	mux.Handle("/api/hytale-assets/file", http.HandlerFunc(hytaleAssetFileHandler))
+	mux.Handle("/api/hytale-assets/resource", http.HandlerFunc(hytaleAssetResourceHandler))
 	mux.Handle("/api/hytale-assets", http.HandlerFunc(hytaleAssetsHandler))
 	mux.Handle("/", http.FileServer(http.FS(frontend)))
 

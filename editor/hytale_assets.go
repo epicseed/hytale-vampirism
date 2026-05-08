@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"os"
 	"path"
@@ -15,9 +16,10 @@ import (
 )
 
 type hytaleAssetCategory struct {
-	Key    string
-	Label  string
-	Prefix string
+	Key        string
+	Label      string
+	Prefix     string
+	Extensions []string
 }
 
 type hytaleAssetIndexEntry struct {
@@ -42,6 +44,7 @@ type hytaleAssetListResponse struct {
 	Category       string                `json:"category"`
 	Label          string                `json:"label"`
 	LocalAssets    []hytaleAssetListItem `json:"localAssets"`
+	OfficialAssets []hytaleAssetListItem `json:"officialAssets"`
 	LocalRefs      []string              `json:"localRefs"`
 	OfficialRefs   []string              `json:"officialRefs"`
 	ResolvableRefs []string              `json:"resolvableRefs"`
@@ -53,6 +56,8 @@ type hytaleAssetFileResponse struct {
 	Path     string      `json:"path"`
 	Summary  string      `json:"summary"`
 	Warnings []string    `json:"warnings"`
+	Origin   string      `json:"origin"`
+	ReadOnly bool        `json:"readOnly"`
 	Data     interface{} `json:"data"`
 }
 
@@ -63,59 +68,70 @@ type hytaleAssetSaveRequest struct {
 
 var hytaleAssetCategories = map[string]hytaleAssetCategory{
 	"effects": {
-		Key:    "effects",
-		Label:  "Entity Effects",
-		Prefix: "Server/Entity/Effects",
+		Key:        "effects",
+		Label:      "Entity Effects",
+		Prefix:     "Server/Entity/Effects",
+		Extensions: []string{".json"},
 	},
 	"entityStats": {
-		Key:    "entityStats",
-		Label:  "Entity Stats",
-		Prefix: "Server/Entity/Stats",
+		Key:        "entityStats",
+		Label:      "Entity Stats",
+		Prefix:     "Server/Entity/Stats",
+		Extensions: []string{".json"},
 	},
 	"soundEvents": {
-		Key:    "soundEvents",
-		Label:  "Sound Events",
-		Prefix: "Server/Audio/SoundEvents",
+		Key:        "soundEvents",
+		Label:      "Sound Events",
+		Prefix:     "Server/Audio/SoundEvents",
+		Extensions: []string{".json"},
 	},
 	"items": {
-		Key:    "items",
-		Label:  "Items",
-		Prefix: "Server/Item/Items",
+		Key:        "items",
+		Label:      "Items",
+		Prefix:     "Server/Item/Items",
+		Extensions: []string{".json"},
 	},
 	"itemAnimations": {
-		Key:    "itemAnimations",
-		Label:  "Item Animations",
-		Prefix: "Server/Item/Animations",
+		Key:        "itemAnimations",
+		Label:      "Item Animations",
+		Prefix:     "Server/Item/Animations",
+		Extensions: []string{".json"},
 	},
 	"itemQualities": {
-		Key:    "itemQualities",
-		Label:  "Item Qualities",
-		Prefix: "Server/Item/Qualities",
+		Key:        "itemQualities",
+		Label:      "Item Qualities",
+		Prefix:     "Server/Item/Qualities",
+		Extensions: []string{".json"},
 	},
 	"models": {
-		Key:    "models",
-		Label:  "Models",
-		Prefix: "Server/Models",
+		Key:        "models",
+		Label:      "Models",
+		Prefix:     "Server/Models",
+		Extensions: []string{".json"},
 	},
 	"projectiles": {
-		Key:    "projectiles",
-		Label:  "Projectiles",
-		Prefix: "Server/Projectiles",
+		Key:        "projectiles",
+		Label:      "Projectiles",
+		Prefix:     "Server/Projectiles",
+		Extensions: []string{".json"},
 	},
 	"projectileConfigs": {
-		Key:    "projectileConfigs",
-		Label:  "Projectile Configs",
-		Prefix: "Server/ProjectileConfigs",
+		Key:        "projectileConfigs",
+		Label:      "Projectile Configs",
+		Prefix:     "Server/ProjectileConfigs",
+		Extensions: []string{".json"},
 	},
 	"interactions": {
-		Key:    "interactions",
-		Label:  "Interactions",
-		Prefix: "Server/Item/Interactions",
+		Key:        "interactions",
+		Label:      "Interactions",
+		Prefix:     "Server/Item/Interactions",
+		Extensions: []string{".json"},
 	},
 	"rootInteractions": {
-		Key:    "rootInteractions",
-		Label:  "Root Interactions",
-		Prefix: "Server/Item/RootInteractions",
+		Key:        "rootInteractions",
+		Label:      "Root Interactions",
+		Prefix:     "Server/Item/RootInteractions",
+		Extensions: []string{".json"},
 	},
 }
 
@@ -158,6 +174,43 @@ func hytaleAssetFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func hytaleAssetResourceHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	resourcePath, err := sanitizeResourcePath(r.URL.Query().Get("path"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	origin := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("origin")))
+	if origin == "" {
+		origin = "auto"
+	}
+
+	data, resolvedPath, resolvedOrigin, err := resolveResourceBytes(resourcePath, origin)
+	if err != nil {
+		if os.IsNotExist(err) {
+			http.NotFound(w, r)
+			return
+		}
+		http.Error(w, fmt.Sprintf("resource load error: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	contentType := mime.TypeByExtension(strings.ToLower(filepath.Ext(resolvedPath)))
+	if contentType == "" {
+		contentType = http.DetectContentType(data)
+	}
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("X-Hytale-Asset-Origin", resolvedOrigin)
+	w.Header().Set("X-Hytale-Asset-Path", resolvedPath)
+	w.Write(data)
+}
+
 func getHytaleAssetFile(w http.ResponseWriter, r *http.Request, category hytaleAssetCategory) {
 	id, err := sanitizeAssetID(r.URL.Query().Get("id"))
 	if err != nil {
@@ -172,21 +225,37 @@ func getHytaleAssetFile(w http.ResponseWriter, r *http.Request, category hytaleA
 	}
 
 	data, err := readJSONFile(path)
+	origin := "local"
+	readOnly := false
+	resolvedPath := toSlash(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			http.NotFound(w, r)
+		if !os.IsNotExist(err) {
+			http.Error(w, fmt.Sprintf("read asset error: %v", err), http.StatusInternalServerError)
 			return
 		}
-		http.Error(w, fmt.Sprintf("read asset error: %v", err), http.StatusInternalServerError)
-		return
+		officialPath, officialData, officialErr := readOfficialAssetData(category, id)
+		if officialErr != nil {
+			if os.IsNotExist(officialErr) {
+				http.NotFound(w, r)
+				return
+			}
+			http.Error(w, fmt.Sprintf("read official asset error: %v", officialErr), http.StatusInternalServerError)
+			return
+		}
+		data = officialData
+		origin = "official"
+		readOnly = true
+		resolvedPath = officialPath
 	}
 
 	payload := hytaleAssetFileResponse{
 		Category: category.Key,
 		ID:       id,
-		Path:     toSlash(path),
+		Path:     resolvedPath,
 		Summary:  summarizeHytaleAsset(category.Key, data),
 		Warnings: validateHytaleAsset(category.Key, data),
+		Origin:   origin,
+		ReadOnly: readOnly,
 		Data:     data,
 	}
 	writeJSON(w, payload)
@@ -247,6 +316,8 @@ func postHytaleAssetFile(w http.ResponseWriter, r *http.Request, category hytale
 		Path:     toSlash(path),
 		Summary:  summarizeHytaleAsset(category.Key, req.Data),
 		Warnings: validateHytaleAsset(category.Key, req.Data),
+		Origin:   "local",
+		ReadOnly: false,
 		Data:     req.Data,
 	}
 	writeJSON(w, payload)
@@ -291,13 +362,16 @@ func buildAssetListResponse(category hytaleAssetCategory) (hytaleAssetListRespon
 	if err != nil {
 		return hytaleAssetListResponse{}, err
 	}
-	officialRefs := collectResolvableRefs(officialIndex[category.Key])
+	officialEntry := officialIndex[category.Key]
+	officialAssets := collectOfficialAssets(category, officialEntry)
+	officialRefs := collectResolvableRefs(officialEntry)
 	resolvableRefs := appendUniqueSorted(localRefs, officialRefs)
 
 	return hytaleAssetListResponse{
 		Category:       category.Key,
 		Label:          category.Label,
 		LocalAssets:    localAssets,
+		OfficialAssets: officialAssets,
 		LocalRefs:      localRefs,
 		OfficialRefs:   officialRefs,
 		ResolvableRefs: resolvableRefs,
@@ -316,7 +390,7 @@ func collectLocalAssets(category hytaleAssetCategory) ([]hytaleAssetListItem, []
 		if walkErr != nil {
 			return walkErr
 		}
-		if d.IsDir() || !strings.EqualFold(filepath.Ext(d.Name()), ".json") {
+		if d.IsDir() || !matchesAssetExtension(category, current) {
 			return nil
 		}
 
@@ -324,7 +398,7 @@ func collectLocalAssets(category hytaleAssetCategory) ([]hytaleAssetListItem, []
 		if err != nil {
 			return err
 		}
-		id := trimJSONSuffix(toSlash(relativePath))
+		id := trimAssetSuffix(category, toSlash(relativePath))
 		data, err := readJSONFile(current)
 		if err != nil {
 			return err
@@ -361,14 +435,14 @@ func collectLocalRefs(category hytaleAssetCategory) ([]string, error) {
 		if walkErr != nil {
 			return walkErr
 		}
-		if d.IsDir() || !strings.EqualFold(filepath.Ext(d.Name()), ".json") {
+		if d.IsDir() || !matchesAssetExtension(category, current) {
 			return nil
 		}
 		relativePath, err := filepath.Rel(baseDir, current)
 		if err != nil {
 			return err
 		}
-		id := trimJSONSuffix(toSlash(relativePath))
+		id := trimAssetSuffix(category, toSlash(relativePath))
 		refs[id] = struct{}{}
 		refs[path.Base(id)] = struct{}{}
 		return nil
@@ -377,6 +451,40 @@ func collectLocalRefs(category hytaleAssetCategory) ([]string, error) {
 		return nil, err
 	}
 	return mapKeysSorted(refs), nil
+}
+
+func collectOfficialAssets(category hytaleAssetCategory, entry hytaleAssetIndexEntry) []hytaleAssetListItem {
+	pathByID := map[string]string{}
+	prefix := strings.TrimSuffix(toSlash(category.Prefix), "/") + "/"
+	for _, assetPath := range entry.Paths {
+		normalized := toSlash(assetPath)
+		if !strings.HasPrefix(normalized, prefix) {
+			continue
+		}
+		assetID := trimAssetSuffix(category, strings.TrimPrefix(normalized, prefix))
+		if assetID == "" {
+			continue
+		}
+		pathByID[assetID] = normalized
+	}
+
+	assets := make([]hytaleAssetListItem, 0, len(entry.IDs))
+	for _, id := range entry.IDs {
+		trimmedID := strings.TrimSpace(id)
+		if trimmedID == "" {
+			continue
+		}
+		assetPath := pathByID[trimmedID]
+		if assetPath == "" {
+			assetPath = toSlash(path.Join(category.Prefix, trimmedID+primaryAssetExtension(category)))
+		}
+		assets = append(assets, hytaleAssetListItem{
+			ID:      trimmedID,
+			Path:    assetPath,
+			Summary: "Official asset reference",
+		})
+	}
+	return assets
 }
 
 func validateHytaleAsset(category string, data interface{}) []string {
@@ -752,16 +860,19 @@ func collectAssetEntriesFromZip(zipPath string) (map[string]hytaleAssetIndexEntr
 	}
 
 	for _, file := range reader.File {
-		if file.FileInfo().IsDir() || !strings.HasSuffix(file.Name, ".json") {
+		if file.FileInfo().IsDir() {
 			continue
 		}
 		for key, category := range hytaleAssetCategories {
+			if !matchesAssetExtension(category, file.Name) {
+				continue
+			}
 			prefix := strings.TrimSuffix(toSlash(category.Prefix), "/") + "/"
 			if !strings.HasPrefix(file.Name, prefix) {
 				continue
 			}
 			relativePath := strings.TrimPrefix(file.Name, prefix)
-			assetID := trimJSONSuffix(relativePath)
+			assetID := trimAssetSuffix(category, relativePath)
 			acc[key][assetID] = struct{}{}
 			base[key][path.Base(assetID)] = struct{}{}
 			paths[key][file.Name] = struct{}{}
@@ -809,7 +920,7 @@ func sanitizeAssetID(raw string) (string, error) {
 
 func localAssetPath(category hytaleAssetCategory, id string) (string, error) {
 	baseDir := filepath.Join(resourcesRoot, filepath.FromSlash(category.Prefix))
-	target := filepath.Join(baseDir, filepath.FromSlash(id)+".json")
+	target := filepath.Join(baseDir, filepath.FromSlash(id)+primaryAssetExtension(category))
 	cleanBase := filepath.Clean(baseDir)
 	cleanTarget := filepath.Clean(target)
 	if cleanTarget != cleanBase && !strings.HasPrefix(cleanTarget, cleanBase+string(filepath.Separator)) {
@@ -823,6 +934,14 @@ func readJSONFile(path string) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	var parsed interface{}
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return nil, err
+	}
+	return parsed, nil
+}
+
+func readJSONBytes(data []byte) (interface{}, error) {
 	var parsed interface{}
 	if err := json.Unmarshal(data, &parsed); err != nil {
 		return nil, err
@@ -948,8 +1067,186 @@ func numberField(obj map[string]interface{}, key string) float64 {
 	}
 }
 
-func trimJSONSuffix(value string) string {
-	return strings.TrimSuffix(value, ".json")
+func minMaxAtPath(obj map[string]interface{}, dottedPath string) (float64, float64) {
+	raw, ok := valueAtPath(obj, dottedPath).(map[string]interface{})
+	if !ok {
+		return 0, 0
+	}
+	return numberField(raw, "Min"), numberField(raw, "Max")
+}
+
+func trimAssetSuffix(category hytaleAssetCategory, value string) string {
+	for _, ext := range assetExtensions(category) {
+		if strings.HasSuffix(strings.ToLower(value), ext) {
+			return value[:len(value)-len(ext)]
+		}
+	}
+	return value
+}
+
+func assetExtensions(category hytaleAssetCategory) []string {
+	if len(category.Extensions) == 0 {
+		return []string{".json"}
+	}
+	result := make([]string, 0, len(category.Extensions))
+	for _, ext := range category.Extensions {
+		trimmed := strings.ToLower(strings.TrimSpace(ext))
+		if trimmed == "" {
+			continue
+		}
+		if !strings.HasPrefix(trimmed, ".") {
+			trimmed = "." + trimmed
+		}
+		result = append(result, trimmed)
+	}
+	if len(result) == 0 {
+		return []string{".json"}
+	}
+	return result
+}
+
+func primaryAssetExtension(category hytaleAssetCategory) string {
+	return assetExtensions(category)[0]
+}
+
+func matchesAssetExtension(category hytaleAssetCategory, value string) bool {
+	lower := strings.ToLower(value)
+	for _, ext := range assetExtensions(category) {
+		if strings.HasSuffix(lower, ext) {
+			return true
+		}
+	}
+	return false
+}
+
+func readOfficialAssetData(category hytaleAssetCategory, id string) (string, interface{}, error) {
+	assetPath, err := findOfficialAssetPath(category, id)
+	if err != nil {
+		return "", nil, err
+	}
+	data, err := readOfficialAssetBytes(assetPath)
+	if err != nil {
+		return "", nil, err
+	}
+	parsed, err := readJSONBytes(data)
+	if err != nil {
+		return "", nil, err
+	}
+	return assetPath, parsed, nil
+}
+
+func findOfficialAssetPath(category hytaleAssetCategory, id string) (string, error) {
+	officialIndex, err := loadOfficialHytaleIndex()
+	if err != nil {
+		return "", err
+	}
+	entry := officialIndex[category.Key]
+	prefix := strings.TrimSuffix(toSlash(category.Prefix), "/") + "/"
+	basename := path.Base(id)
+	var basenameMatch string
+	for _, assetPath := range entry.Paths {
+		normalized := toSlash(assetPath)
+		if !strings.HasPrefix(normalized, prefix) || !matchesAssetExtension(category, normalized) {
+			continue
+		}
+		relative := strings.TrimPrefix(normalized, prefix)
+		assetID := trimAssetSuffix(category, relative)
+		if assetID == id {
+			return normalized, nil
+		}
+		if path.Base(assetID) == basename && basenameMatch == "" {
+			basenameMatch = normalized
+		}
+	}
+	if basenameMatch != "" {
+		return basenameMatch, nil
+	}
+	return "", os.ErrNotExist
+}
+
+func officialAssetsZipPath() string {
+	return filepath.Join(repoRoot, "bin", "server", "install", "release", "package", "game", "latest", "Assets.zip")
+}
+
+func readOfficialAssetBytes(assetPath string) ([]byte, error) {
+	reader, err := zip.OpenReader(officialAssetsZipPath())
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+
+	for _, file := range reader.File {
+		if toSlash(file.Name) != toSlash(assetPath) {
+			continue
+		}
+		rc, err := file.Open()
+		if err != nil {
+			return nil, err
+		}
+		defer rc.Close()
+		return io.ReadAll(rc)
+	}
+	return nil, os.ErrNotExist
+}
+
+func sanitizeResourcePath(raw string) (string, error) {
+	cleaned := path.Clean(strings.ReplaceAll(strings.TrimSpace(raw), "\\", "/"))
+	if cleaned == "." || cleaned == "" {
+		return "", fmt.Errorf("resource path is required")
+	}
+	if strings.HasPrefix(cleaned, "../") || strings.Contains(cleaned, ":") || strings.HasPrefix(cleaned, "/") {
+		return "", fmt.Errorf("invalid resource path")
+	}
+	return cleaned, nil
+}
+
+func candidateResourcePaths(resourcePath string) []string {
+	if strings.HasPrefix(resourcePath, "Common/") || strings.HasPrefix(resourcePath, "Server/") {
+		return []string{resourcePath}
+	}
+	return appendUniqueSorted(
+		[]string{resourcePath},
+		[]string{"Common/" + resourcePath},
+		[]string{"Server/" + resourcePath},
+	)
+}
+
+func resolveResourceBytes(resourcePath string, origin string) ([]byte, string, string, error) {
+	candidates := candidateResourcePaths(resourcePath)
+	tryLocal := origin == "auto" || origin == "local"
+	tryOfficial := origin == "auto" || origin == "official"
+
+	if tryLocal {
+		for _, candidate := range candidates {
+			localPath := filepath.Join(resourcesRoot, filepath.FromSlash(candidate))
+			cleanBase := filepath.Clean(resourcesRoot)
+			cleanTarget := filepath.Clean(localPath)
+			if cleanTarget != cleanBase && !strings.HasPrefix(cleanTarget, cleanBase+string(filepath.Separator)) {
+				continue
+			}
+			data, err := os.ReadFile(cleanTarget)
+			if err == nil {
+				return data, toSlash(candidate), "local", nil
+			}
+			if err != nil && !os.IsNotExist(err) {
+				return nil, "", "", err
+			}
+		}
+	}
+
+	if tryOfficial {
+		for _, candidate := range candidates {
+			data, err := readOfficialAssetBytes(candidate)
+			if err == nil {
+				return data, toSlash(candidate), "official", nil
+			}
+			if err != nil && !os.IsNotExist(err) {
+				return nil, "", "", err
+			}
+		}
+	}
+
+	return nil, "", "", os.ErrNotExist
 }
 
 func toSlash(value string) string {

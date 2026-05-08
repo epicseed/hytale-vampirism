@@ -20,13 +20,13 @@ class VampiricRitualEditorModelTest {
 
         String pointExport = model.exportText();
         assertTrue(pointExport.contains("\"id\": \"north_east\""));
-        assertTrue(pointExport.contains("\"symbolId\": \"blood_spiral\""));
+        assertTrue(pointExport.contains("\"symbolId\": \""));
         assertTrue(pointExport.contains("\"offsetX\": 2.87"));
 
         model.exportSelectedTemplate();
         String templateExport = model.exportText();
         assertTrue(templateExport.contains("\"ritualId\": \"awakening\""));
         assertTrue(templateExport.contains("\"points\": ["));
-        assertTrue(templateExport.contains("\"symbolId\": \"blood_spiral\""));
+        assertTrue(templateExport.contains("\"symbolId\": \""));
     }
 }

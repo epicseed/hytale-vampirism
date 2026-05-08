@@ -3,29 +3,76 @@ package com.epicseed.vampirism.domain.ritual;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
+import com.epicseed.epiccore.hytale.EffectAdapter;
 import com.epicseed.epiccore.hytale.runtime.PlayerRuntimeIndex;
+import com.epicseed.epiccore.modifier.StatType;
 import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.epiccore.vampirism.registry.VampireStatusRegistry;
+import com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker;
 import com.epicseed.epiccore.vampirism.skill.runtime.VampirismSkillProgressionAccess;
+import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
+import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualCompanionTracker;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOutcomeTracker;
+import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.entity.nameplate.Nameplate;
+import com.hypixel.hytale.server.core.modules.entity.component.DisplayNameComponent;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
+import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
+import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.npc.INonPlayerCharacter;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.npc.NPCPlugin;
+
+import it.unimi.dsi.fastutil.Pair;
 
 public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVampiricRitualRewardPort {
 
+    private static final String VEIL_EFFECT_ID = "Potion_NightVision";
+    private static final float VEIL_DURATION_SECONDS = 45.0f;
+    private static final float VEIL_SPEED_BONUS = 1.15f;
+    private static final double VEIL_HEAT_REDUCTION = 12.0d;
+
+    // Reduced grounded version until ownership / ally AI is wired for ritual summons.
+    private static final String FAMILIAR_ROLE_ID = "Fox";
+    private static final String FAMILIAR_NAME = "Night Familiar";
+    private static final float FAMILIAR_DURATION_SECONDS = 60.0f;
+    private static final double FAMILIAR_OFFSET = 2.0d;
+
+    private static final float SOUL_EXCHANGE_MIN_HEALTH = 6.0f;
+    private static final float SOUL_EXCHANGE_HEALTH_TO_BLOOD = 6.0f;
+    private static final int SOUL_EXCHANGE_BLOOD_GAIN = 12;
+    private static final int SOUL_EXCHANGE_BLOOD_TO_HEALTH = 12;
+    private static final float SOUL_EXCHANGE_HEAL_AMOUNT = 6.0f;
+
     private final VampiricLineageService lineageService;
+    private final NightHuntService nightHuntService;
+    private final MasqueradeHeatService masqueradeHeatService;
+    private final TemporaryModifierTracker<StatType> temporaryModifiers;
 
     public RuntimeVampiricRitualRewardPort(@Nonnull VampirismSkillProgressionAccess progressionAccess,
-                                           @Nonnull VampiricLineageService lineageService) {
+                                           @Nonnull VampiricLineageService lineageService,
+                                           @Nonnull NightHuntService nightHuntService,
+                                           @Nonnull MasqueradeHeatService masqueradeHeatService,
+                                           @Nonnull TemporaryModifierTracker<StatType> temporaryModifiers) {
         super(progressionAccess);
         this.lineageService = lineageService;
+        this.nightHuntService = nightHuntService;
+        this.masqueradeHeatService = masqueradeHeatService;
+        this.temporaryModifiers = temporaryModifiers;
     }
 
     @Override
@@ -69,6 +116,10 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
                     VampirePlayerStateStore.get().clearInfection(uuid);
                 }
             }
+            case VampiricRitualRegistry.SIDE_EFFECT_MARK_PREY -> applyMarkedPrey(uuid);
+            case VampiricRitualRegistry.SIDE_EFFECT_VEIL_OF_NIGHT -> applyVeilOfNight(uuid);
+            case VampiricRitualRegistry.SIDE_EFFECT_SUMMON_FAMILIAR -> summonFamiliar(uuid);
+            case VampiricRitualRegistry.SIDE_EFFECT_SOUL_EXCHANGE -> applySoulExchange(uuid);
             default -> {
             }
         }
@@ -117,6 +168,150 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
         }
         PlayerRef playerRefComponent = store.getComponent(playerRef, PlayerRef.getComponentType());
         return playerRefComponent != null ? playerRefComponent.getUsername() : uuid.toString();
+    }
+
+    private void applyMarkedPrey(@Nonnull UUID uuid) {
+        Ref<EntityStore> playerRef = PlayerRuntimeIndex.get(uuid);
+        Store<EntityStore> store = playerRef != null ? playerRef.getStore() : null;
+        if (playerRef == null || store == null) {
+            return;
+        }
+        nightHuntService.resetCooldown(uuid);
+        boolean started = nightHuntService.forceStart(uuid, playerRef, store);
+        sendRuntimeFeedback(
+                uuid,
+                started
+                        ? "Mark Prey: the hunt answers immediately and fresh prey is loosed into the night."
+                        : "Mark Prey: your current hunt is already circling nearby.",
+                started ? "green" : "yellow");
+    }
+
+    private void applyVeilOfNight(@Nonnull UUID uuid) {
+        Ref<EntityStore> playerRef = PlayerRuntimeIndex.get(uuid);
+        Store<EntityStore> store = playerRef != null ? playerRef.getStore() : null;
+        if (playerRef == null || store == null) {
+            return;
+        }
+        temporaryModifiers.addAdditive(uuid, VampireStatType.SPEED, VEIL_SPEED_BONUS, VEIL_DURATION_SECONDS);
+        masqueradeHeatService.addHeat(uuid, -VEIL_HEAT_REDUCTION, System.currentTimeMillis());
+
+        int effectIndex = EffectAdapter.resolveEffectIndex(VEIL_EFFECT_ID);
+        var effect = effectIndex >= 0 ? EffectAdapter.resolveEffect(effectIndex) : null;
+        if (effect != null) {
+            EffectAdapter.applyOrReplace(playerRef, effectIndex, effect, VEIL_DURATION_SECONDS, store);
+        }
+
+        sendRuntimeFeedback(
+                uuid,
+                "Veil of Night: shadows quicken your step and dull the trail you leave behind.",
+                "green");
+    }
+
+    private void summonFamiliar(@Nonnull UUID uuid) {
+        Ref<EntityStore> playerRef = PlayerRuntimeIndex.get(uuid);
+        Store<EntityStore> store = playerRef != null ? playerRef.getStore() : null;
+        if (playerRef == null || store == null) {
+            return;
+        }
+        TransformComponent transform = (TransformComponent) store.getComponent(playerRef, TransformComponent.getComponentType());
+        if (transform == null) {
+            return;
+        }
+
+        removeTrackedCompanion(uuid, store);
+
+        Vector3d origin = transform.getPosition();
+        Vector3d spawnPosition = new Vector3d(origin.x + FAMILIAR_OFFSET, origin.y, origin.z);
+        Pair<Ref<EntityStore>, INonPlayerCharacter> spawn =
+                NPCPlugin.get().spawnNPC(store, FAMILIAR_ROLE_ID, null, spawnPosition, new Vector3f());
+        if (spawn == null || spawn.first() == null) {
+            sendRuntimeFeedback(uuid, "Summon Familiar: the call goes unanswered.", "yellow");
+            return;
+        }
+
+        Ref<EntityStore> familiarRef = spawn.first();
+        store.putComponent(
+                familiarRef,
+                DisplayNameComponent.getComponentType(),
+                new DisplayNameComponent(Message.raw(FAMILIAR_NAME).color("green")));
+        Nameplate nameplate = (Nameplate) store.ensureAndGetComponent(familiarRef, Nameplate.getComponentType());
+        nameplate.setText(FAMILIAR_NAME);
+        VampiricRitualCompanionTracker.replace(
+                uuid,
+                familiarRef,
+                FAMILIAR_ROLE_ID,
+                System.currentTimeMillis() + (long) (FAMILIAR_DURATION_SECONDS * 1000L));
+
+        sendRuntimeFeedback(
+                uuid,
+                "Summon Familiar: a night familiar pads out beside you to scout the dark.",
+                "green");
+    }
+
+    private void applySoulExchange(@Nonnull UUID uuid) {
+        Ref<EntityStore> playerRef = PlayerRuntimeIndex.get(uuid);
+        Store<EntityStore> store = playerRef != null ? playerRef.getStore() : null;
+        if (playerRef == null || store == null) {
+            return;
+        }
+        EntityStatMap stats = (EntityStatMap) store.getComponent(playerRef, EntityStatMap.getComponentType());
+        if (stats == null) {
+            return;
+        }
+        EntityStatValue health = stats.get(DefaultEntityStatTypes.getHealth());
+        if (health == null) {
+            return;
+        }
+
+        int currentBlood = VampireVitalitySystem.getBlood(playerRef);
+        int maxBlood = VampireVitalitySystem.getMaxBlood(playerRef);
+        int missingBlood = Math.max(0, maxBlood - currentBlood);
+        float healthAvailable = health.get() - SOUL_EXCHANGE_MIN_HEALTH;
+        if (missingBlood > 0 && healthAvailable > 0.01f) {
+            float drainedHealth = Math.min(SOUL_EXCHANGE_HEALTH_TO_BLOOD, healthAvailable);
+            int bloodGain = Math.min(
+                    missingBlood,
+                    Math.max(1, Math.round(drainedHealth * (SOUL_EXCHANGE_BLOOD_GAIN / SOUL_EXCHANGE_HEALTH_TO_BLOOD))));
+            stats.addStatValue(DefaultEntityStatTypes.getHealth(), -drainedHealth);
+            VampireVitalitySystem.addBlood(playerRef, bloodGain);
+            persistBlood(uuid, playerRef);
+            sendRuntimeFeedback(
+                    uuid,
+                    "Soul Exchange: " + Math.round(drainedHealth) + " vitality is rendered into " + bloodGain + " blood.",
+                    "green");
+            return;
+        }
+
+        float missingHealth = Math.max(0f, health.getMax() - health.get());
+        int bloodSpent = Math.min(currentBlood, SOUL_EXCHANGE_BLOOD_TO_HEALTH);
+        if (bloodSpent > 0 && missingHealth > 0.01f) {
+            float healAmount = Math.min(
+                    missingHealth,
+                    bloodSpent * (SOUL_EXCHANGE_HEAL_AMOUNT / SOUL_EXCHANGE_BLOOD_TO_HEALTH));
+            VampireVitalitySystem.spendBlood(playerRef, bloodSpent);
+            persistBlood(uuid, playerRef);
+            stats.addStatValue(DefaultEntityStatTypes.getHealth(), healAmount);
+            sendRuntimeFeedback(
+                    uuid,
+                    "Soul Exchange: " + bloodSpent + " blood is burned back into " + Math.round(healAmount) + " vitality.",
+                    "green");
+            return;
+        }
+
+        sendRuntimeFeedback(uuid, "Soul Exchange: there is nothing left to trade right now.", "yellow");
+    }
+
+    private static void persistBlood(@Nonnull UUID uuid, @Nonnull Ref<EntityStore> playerRef) {
+        if (VampirePlayerStateStore.isInitialized()) {
+            VampirePlayerStateStore.get().setPersistedBlood(uuid, VampireVitalitySystem.getBlood(playerRef));
+        }
+    }
+
+    private static void removeTrackedCompanion(@Nonnull UUID uuid, @Nonnull Store<EntityStore> store) {
+        VampiricRitualCompanionTracker.CompanionState existing = VampiricRitualCompanionTracker.clearPlayer(uuid);
+        if (existing != null && existing.companionRef() != null && existing.companionRef().isValid()) {
+            store.removeEntity(existing.companionRef(), RemoveReason.REMOVE);
+        }
     }
 
     private static void sendRuntimeFeedback(@Nonnull UUID uuid, @Nonnull String message, @Nonnull String color) {

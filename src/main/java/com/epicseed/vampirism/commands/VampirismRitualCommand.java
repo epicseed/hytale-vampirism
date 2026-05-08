@@ -16,6 +16,7 @@ import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeService;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeSnapshot;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualAnchorState;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOutcomeTracker;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualRevealService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTargeting;
@@ -40,14 +41,17 @@ public final class VampirismRitualCommand extends AbstractCommand {
     private final VampiricRitualRuntimeService runtimeService;
     private final VampiricRitualContextResolver contextResolver;
     private final VampiricRitualSystem ritualVisualSystem;
+    private final VampiricRitualFeedbackService feedbackService;
 
     public VampirismRitualCommand(@Nonnull VampiricRitualRuntimeService runtimeService,
                                   @Nonnull VampiricRitualContextResolver contextResolver,
-                                  @Nonnull VampiricRitualSystem ritualVisualSystem) {
+                                  @Nonnull VampiricRitualSystem ritualVisualSystem,
+                                  @Nonnull VampiricRitualFeedbackService feedbackService) {
         super("vampirismritual", "Trace and channel vampiric rituals");
         this.runtimeService = runtimeService;
         this.contextResolver = contextResolver;
         this.ritualVisualSystem = ritualVisualSystem;
+        this.feedbackService = feedbackService;
         this.setPermissionGroups(GameMode.Adventure.toString(), GameMode.Creative.toString());
         this.addSubCommand(new PrimarySubCommand());
         this.addSubCommand(new SecondarySubCommand());
@@ -151,6 +155,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
             if (current.isPresent()) {
                 sendSnapshot(ctx, current.get());
                 revealForPlayer(world, playerRef, current.get());
+                feedbackService.reveal(playerRef.getUuid(), store, world, current.get(), System.currentTimeMillis());
                 return;
             }
 
@@ -171,6 +176,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
             }
             sendSnapshot(ctx, preview);
             revealForPlayer(world, playerRef, preview);
+            feedbackService.reveal(playerRef.getUuid(), store, world, preview, System.currentTimeMillis());
         }
     }
 
