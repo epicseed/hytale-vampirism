@@ -148,7 +148,7 @@ public final class VampirismRuntime {
     public static VampirismRuntime bootstrap(@Nonnull Vampirism plugin,
                                              @Nonnull CatalogBackedSkillRuntimeBootstrap skillRuntimeBootstrap,
                                              @Nonnull java.util.function.Supplier<Vector2d> highestPositionSupplier) {
-        Path dataDirectory = plugin.getDataDirectory();
+        Path dataDirectory = plugin.getPersistentDataDirectory();
         VampireStatusRegistry.init(dataDirectory, () -> VampirismConfig.get().isVampireDefaultEnabled());
         PlayerSkillRegistry playerSkillRegistry = PlayerSkillRegistry.init(dataDirectory);
         VampirismClassifications.registerProvider();

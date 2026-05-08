@@ -816,7 +816,7 @@ func loadOfficialHytaleIndex() (map[string]hytaleAssetIndexEntry, error) {
 		}
 	}
 
-	assetsZipPath := filepath.Join(repoRoot, "bin", "server", "install", "release", "package", "game", "latest", "Assets.zip")
+	assetsZipPath := officialAssetsZipPath()
 	if _, err := os.Stat(assetsZipPath); err == nil {
 		zipCategories, zipErr := collectAssetEntriesFromZip(assetsZipPath)
 		if zipErr != nil {
@@ -1165,7 +1165,16 @@ func findOfficialAssetPath(category hytaleAssetCategory, id string) (string, err
 }
 
 func officialAssetsZipPath() string {
-	return filepath.Join(repoRoot, "bin", "server", "install", "release", "package", "game", "latest", "Assets.zip")
+	candidates := []string{
+		filepath.Join(repoRoot, "..", "bin", "server", "install", "release", "package", "game", "latest", "Assets.zip"),
+		filepath.Join(repoRoot, "bin", "server", "install", "release", "package", "game", "latest", "Assets.zip"),
+	}
+	for _, candidate := range candidates {
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate
+		}
+	}
+	return candidates[0]
 }
 
 func readOfficialAssetBytes(assetPath string) ([]byte, error) {

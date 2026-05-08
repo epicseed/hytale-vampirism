@@ -31,7 +31,7 @@ ext {
 }
 
 def installedHytalePackageDir = file("${hytaleHome}/install/${patchline}/package/game/latest")
-def repoHytalePackageDir = file("${projectDir}/bin/server/install/release/package/game/latest")
+def repoHytalePackageDir = file("${projectDir}/../bin/server/install/release/package/game/latest")
 def hytalePackageDir = installedHytalePackageDir.exists() ? installedHytalePackageDir : (repoHytalePackageDir.exists() ? repoHytalePackageDir : null)
 def assetsZipFile = hytalePackageDir != null ? file("${hytalePackageDir}/Assets.zip") : null
 def serverJarFile = hytalePackageDir != null ? file("${hytalePackageDir}/Server/HytaleServer.jar") : null
@@ -41,7 +41,7 @@ def epiccoreBuildRepoDir = file(findProperty('epiccore_build_repo') ?: "${rootDi
 def epiccoreExternalRepoDir = file('../hytale-epiccore')
 
 if (!hasHytaleAssets) {
-    logger.lifecycle("Hytale assets not detected; asset indexing/validation and run configs will be skipped. Set -Phytale_home=/path/to/Hytale or provide bin/server/install/release/package/game/latest/Assets.zip.")
+    logger.lifecycle("Hytale assets not detected; asset indexing/validation and run configs will be skipped. Set -Phytale_home=/path/to/Hytale or provide ../bin/server/install/release/package/game/latest/Assets.zip.")
 }
 
 java {
@@ -551,8 +551,9 @@ tasks.named('shadowJar') {
 }
 
 def devModsDir = layout.buildDirectory.dir('dev-mods')
-def devServerRunDir = layout.buildDirectory.dir('dev-run')
-def devServerModsDir = devServerRunDir.map { it.dir('mods') }
+def devServerRunDir = providers.provider { file("$buildDir/dev-run") }
+def devServerModsDir = devServerRunDir.map { new File(it, 'mods') }
+def liveDevAssetRoots = ['Common', 'Server']
 def legacyRootServerArtifacts = [
         file("$projectDir/.cache"),
         file("$projectDir/auth.enc"),
@@ -595,13 +596,164 @@ tasks.named('build') {
 
 if (hasHytaleAssets && hasHytaleServerJar) {
     // Create the working directory to run the server if it does not already exist.
-    def serverRunDir = devServerRunDir.get().asFile
+    def serverRunDir = devServerRunDir.get()
     if (!serverRunDir.exists()) {
         serverRunDir.mkdirs()
     }
 
+    def copyLiveAssetRoot = { File sourceDir, File targetDir, String failureReason ->
+        project.copy {
+            from(sourceDir)
+            into(targetDir)
+        }
+        logger.warn("Could not create live asset symlink ${targetDir} -> ${sourceDir}; copied assets instead. Asset Editor changes will not reflect directly into src/main/resources. Cause: ${failureReason}")
+    }
+
+    def canonicalFile = { File fileObject ->
+        try {
+            return fileObject.canonicalFile
+        } catch (IOException ignored) {
+            return fileObject.absoluteFile
+        }
+    }
+
+    def sameFile = { File left, File right ->
+        canonicalFile(left).toPath() == canonicalFile(right).toPath()
+    }
+
+    def collectLiveAssetSources = { String rootName ->
+        LinkedHashSet<File> roots = new LinkedHashSet<>()
+        File localRoot = file("$projectDir/src/main/resources/${rootName}")
+        if (localRoot.exists()) {
+            roots.add(canonicalFile(localRoot))
+        }
+        return roots as List
+    }
+
+    def mountSingleAssetRoot = { File sourceDir, File targetDir ->
+        try {
+            java.nio.file.Files.createSymbolicLink(targetDir.toPath(), sourceDir.toPath())
+            logger.lifecycle("Mounted live asset root ${targetDir} -> ${sourceDir}")
+        } catch (UnsupportedOperationException e) {
+            copyLiveAssetRoot(sourceDir, targetDir, e.message ?: e.class.simpleName)
+        } catch (SecurityException e) {
+            copyLiveAssetRoot(sourceDir, targetDir, e.message ?: e.class.simpleName)
+        } catch (java.io.IOException e) {
+            copyLiveAssetRoot(sourceDir, targetDir, e.message ?: e.class.simpleName)
+        }
+    }
+
+    Closure mountLivePath
+    Closure linkDirectory
+    Closure linkFile
+
+    linkDirectory = { File sourceDir, File targetDir ->
+        if (!targetDir.exists()) {
+            targetDir.parentFile?.mkdirs()
+            java.nio.file.Files.createSymbolicLink(targetDir.toPath(), sourceDir.toPath())
+            logger.lifecycle("Mounted live asset root ${targetDir} -> ${sourceDir}")
+            return
+        }
+        if (java.nio.file.Files.isSymbolicLink(targetDir.toPath())) {
+            File existingTarget = targetDir.toPath().toRealPath().toFile()
+            if (sameFile(existingTarget, sourceDir)) {
+                return
+            }
+            delete(targetDir)
+            targetDir.mkdirs()
+            existingTarget.listFiles()?.sort { a, b -> a.name <=> b.name }?.each { child ->
+                mountLivePath(child, new File(targetDir, child.name))
+            }
+        } else if (!targetDir.isDirectory()) {
+            throw new GradleException("Cannot merge live asset directory ${sourceDir} into file ${targetDir}.")
+        }
+        sourceDir.listFiles()?.sort { a, b -> a.name <=> b.name }?.each { child ->
+            mountLivePath(child, new File(targetDir, child.name))
+        }
+    }
+
+    linkFile = { File sourceFile, File targetFile ->
+        if (!targetFile.exists()) {
+            targetFile.parentFile?.mkdirs()
+            java.nio.file.Files.createSymbolicLink(targetFile.toPath(), sourceFile.toPath())
+            return
+        }
+        if (java.nio.file.Files.isSymbolicLink(targetFile.toPath())) {
+            File existingTarget = targetFile.toPath().toRealPath().toFile()
+            if (sameFile(existingTarget, sourceFile)) {
+                return
+            }
+        }
+        throw new GradleException("Live asset collision at ${targetFile}. Both ${sourceFile} and another source provide the same path.")
+    }
+
+    mountLivePath = { File sourcePath, File targetPath ->
+        if (sourcePath.isDirectory()) {
+            linkDirectory(sourcePath, targetPath)
+        } else if (sourcePath.isFile()) {
+            linkFile(sourcePath, targetPath)
+        }
+    }
+
+    def mountLiveAssetRoot = { String rootName ->
+        List<File> sourceRoots = collectLiveAssetSources(rootName)
+        if (sourceRoots.isEmpty()) {
+            return
+        }
+        File targetDir = new File(serverRunDir, rootName)
+        delete(targetDir)
+        if (sourceRoots.size() == 1) {
+            mountSingleAssetRoot(sourceRoots.first(), targetDir)
+            return
+        }
+        targetDir.mkdirs()
+        try {
+            sourceRoots.each { sourceRoot ->
+                sourceRoot.listFiles()?.sort { a, b -> a.name <=> b.name }?.each { child ->
+                    mountLivePath(child, new File(targetDir, child.name))
+                }
+            }
+            logger.lifecycle("Mounted merged live asset root ${targetDir} from ${sourceRoots*.path}")
+        } catch (UnsupportedOperationException e) {
+            delete(targetDir)
+            sourceRoots.each { sourceRoot ->
+                project.copy {
+                    from(sourceRoot)
+                    into(targetDir)
+                }
+            }
+            logger.warn("Could not create merged live asset symlinks for ${rootName}; copied assets instead. Asset Editor changes will not reflect directly into source repositories. Cause: ${e.message ?: e.class.simpleName}")
+        } catch (SecurityException e) {
+            delete(targetDir)
+            sourceRoots.each { sourceRoot ->
+                project.copy {
+                    from(sourceRoot)
+                    into(targetDir)
+                }
+            }
+            logger.warn("Could not create merged live asset symlinks for ${rootName}; copied assets instead. Asset Editor changes will not reflect directly into source repositories. Cause: ${e.message ?: e.class.simpleName}")
+        } catch (java.io.IOException e) {
+            delete(targetDir)
+            sourceRoots.each { sourceRoot ->
+                project.copy {
+                    from(sourceRoot)
+                    into(targetDir)
+                }
+            }
+            logger.warn("Could not create merged live asset symlinks for ${rootName}; copied assets instead. Asset Editor changes will not reflect directly into source repositories. Cause: ${e.message ?: e.class.simpleName}")
+        }
+    }
+
+    tasks.named('prepareHytaleServerDebug') {
+        doLast {
+            liveDevAssetRoots.each { rootName ->
+                mountLiveAssetRoot(rootName)
+            }
+        }
+    }
+
     def createServerJarPath = { String basePath ->
-        return basePath + "/bin/server/install/release/package/game/latest/Server/HytaleServer.jar"
+        return serverJarFile.absolutePath
     }
 
     def createVsCodeClassPaths = { String basePath ->

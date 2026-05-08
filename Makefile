@@ -8,10 +8,10 @@ else
     GRADLE_WRAPPER = ./gradlew
 endif
 
-HYTALE_HOME=$(CURDIR)/bin/server
+HYTALE_HOME=$(abspath ../bin/server)
 
 # Optional: Set Hytale home path (e.g., make setup-vscode HYTALE_HOME=/path/to/hytale)
-# Falls back to bin/server if HYTALE_HOME is not set
+# Falls back to the shared workspace bin/server if HYTALE_HOME is not set
 ifdef HYTALE_HOME
     GRADLE_PROPS = -Phytale_home=$(HYTALE_HOME)
 else
@@ -33,8 +33,8 @@ help:
 	@echo "  make test           - Run tests (if available)"
 	@echo "  make setup-vscode   - Generate VS Code debug configuration"
 	@echo "  make update-manifest - Update manifest.json with properties"
-	@echo "  make install-tools  - Download and install Hytale tools to bin/tools"
-	@echo "  make install-server - Download and install Hytale server to bin/server"
+	@echo "  make install-tools  - Download and install Hytale tools to ../bin/tools"
+	@echo "  make install-server - Download and install Hytale server to ../bin/server"
 	@echo "  make install-downscaler - Install jimp image downscaler to tools/"
 	@echo "    Usage: node tools/downscale.js <input> <output> <width> <height>"
 	@echo "  make downscale-common   - Downscale all @2x assets in Vampirism/Common to 1x (removes originals)"
@@ -86,26 +86,11 @@ endif
 
 # Download and install Hytale tools to bin/tools
 install-tools:
-	@echo "Downloading Hytale tools..."
-	@mkdir -p bin/tools
-	@curl -L https://downloader.hytale.com/hytale-downloader.zip -o /tmp/hytale-downloader.zip
-	@unzip -o /tmp/hytale-downloader.zip -d bin/tools
-	@rm /tmp/hytale-downloader.zip
-	@echo "Tools installed to bin/tools/"
+	@$(MAKE) -C .. install-tools
 
 # Download and install Hytale server to bin/server
 install-server:
-	@echo "Downloading Hytale server..."
-	@mkdir -p bin/server
-ifeq ($(OS),Windows_NT)
-	@bin/tools/hytale-downloader-windows-amd64.exe -download-path /tmp/hytale-server.zip -skip-update-check
-else
-	@chmod +x bin/tools/hytale-downloader-linux-amd64
-	@bin/tools/hytale-downloader-linux-amd64 -download-path /tmp/hytale-server.zip -skip-update-check
-endif
-	@unzip -o /tmp/hytale-server.zip -d bin/server/install/release/package/game/latest
-	@rm /tmp/hytale-server.zip
-	@echo "Server installed to bin/server/"
+	@$(MAKE) -C .. install-server
 
 # Start the split skill-data visual editor (Go)
 editor:
