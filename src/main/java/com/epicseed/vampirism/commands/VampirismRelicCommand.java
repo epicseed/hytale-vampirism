@@ -5,6 +5,7 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.hytale.PlayerFeedbackAdapter;
 import com.epicseed.epiccore.relic.application.RelicInventoryService;
 import com.epicseed.epiccore.relic.domain.RelicBindingService;
 import com.epicseed.epiccore.relic.presentation.RelicCommandFeedback;
@@ -14,6 +15,7 @@ import com.epicseed.vampirism.skill.runtime.AbilityService;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
+import com.hypixel.hytale.protocol.packets.interface_.NotificationStyle;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
@@ -45,21 +47,29 @@ public class VampirismRelicCommand extends AbstractCommand {
     }
 
     private void activateBinding(@Nonnull CommandContext ctx,
+                                 @Nonnull PlayerRef playerRef,
                                  @Nonnull UUID uuid,
                                  @Nonnull Ref<EntityStore> ref,
                                  Ref<EntityStore> targetRef,
                                  @Nonnull Store<EntityStore> store,
                                  @Nonnull String slotKey) {
-        if (!isVampire(ctx, uuid)) return;
+        if (!isVampire(ctx, playerRef, uuid)) return;
 
         String abilityId = RelicBindingService.resolveActivationAbility(uuid, slotKey).orElse(null);
         if (abilityId == null || abilityId.isBlank()) {
-            ctx.sendMessage(Message.raw("No ability is bound to slot '" + slotKey + "'.").color("yellow"));
+            sendPlayerFeedback(
+                    ctx,
+                    playerRef,
+                    Message.join(
+                            Message.raw("Relic Slot").color("yellow"),
+                            Message.raw(": ").color("gray"),
+                            Message.raw("No ability is bound to '" + slotKey + "'.").color("yellow")),
+                    NotificationStyle.Warning);
             return;
         }
 
         SkillActivationResult result = abilityService.activate(abilityId, uuid, ref, targetRef, store);
-        RelicCommandFeedback.sendActivationFailure(ctx, result, abilityId);
+        RelicCommandFeedback.sendActivationFailure(ctx, playerRef, result, abilityId);
     }
 
     private final class SlotSubCommand extends AbstractPlayerCommand {
@@ -78,7 +88,7 @@ public class VampirismRelicCommand extends AbstractCommand {
                                @Nonnull World world) {
             UUID uuid = playerRef.getUuid();
             Ref<EntityStore> targetRef = com.hypixel.hytale.server.core.util.TargetUtil.getTargetEntity(ref, store);
-            activateBinding(ctx, uuid, ref, targetRef, store, slotKey);
+            activateBinding(ctx, playerRef, uuid, ref, targetRef, store, slotKey);
         }
     }
 
@@ -95,18 +105,40 @@ public class VampirismRelicCommand extends AbstractCommand {
                                @Nonnull PlayerRef playerRef,
                                @Nonnull World world) {
             UUID uuid = playerRef.getUuid();
-            if (!isVampire(ctx, uuid)) return;
+            if (!isVampire(ctx, playerRef, uuid)) return;
 
             RelicInventoryService.SyncResult result = RelicInventoryService.ensurePresent(ref, store);
-            RelicCommandFeedback.sendEnsurePresentResult(ctx, result, "Vampirism Relic", "/vampirismrelic get");
+            RelicCommandFeedback.sendEnsurePresentResult(
+                    ctx,
+                    playerRef,
+                    result,
+                    "Vampirism Relic",
+                    "/vampirismrelic get");
         }
     }
 
-    private static boolean isVampire(CommandContext ctx, UUID uuid) {
+    private static boolean isVampire(CommandContext ctx, PlayerRef playerRef, UUID uuid) {
         if (!VampirismClassifications.isVampiric(uuid)) {
-            ctx.sendMessage(Message.raw("Only vampires can use the staff.").color("red"));
+            sendPlayerFeedback(
+                    ctx,
+                    playerRef,
+                    Message.join(
+                            Message.raw("Relic Denied").color("red"),
+                            Message.raw(": ").color("gray"),
+                            Message.raw("Only vampires can use the staff.").color("red")),
+                    NotificationStyle.Danger);
             return false;
         }
         return true;
+    }
+
+    private static void sendPlayerFeedback(@Nonnull CommandContext ctx,
+                                           @Nonnull PlayerRef playerRef,
+                                           @Nonnull Message message,
+                                           @Nonnull NotificationStyle style) {
+        if (PlayerFeedbackAdapter.sendNotificationWithFallback(playerRef, message, style, message)) {
+            return;
+        }
+        ctx.sendMessage(message);
     }
 }

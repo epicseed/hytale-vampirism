@@ -8,21 +8,24 @@ import javax.annotation.Nullable;
 import com.epicseed.epiccore.hytale.EffectAdapter;
 import com.epicseed.epiccore.hytale.runtime.PlayerRuntimeIndex;
 import com.epicseed.epiccore.modifier.StatType;
+import com.epicseed.epiccore.vampirism.skill.runtime.VampirismSkillProgressionAccess;
+import com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker;
 import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.epiccore.vampirism.registry.VampireStatusRegistry;
-import com.epicseed.epiccore.skill.runtime.TemporaryModifierTracker;
-import com.epicseed.epiccore.vampirism.skill.runtime.VampirismSkillProgressionAccess;
+import com.epicseed.vampirism.domain.age.VampiricAgeTierService;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualCompanionTracker;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOutcomeTracker;
+import com.epicseed.vampirism.hytale.VampirismPlayerFeedback;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.protocol.packets.interface_.NotificationStyle;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.server.core.Message;
@@ -97,10 +100,44 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
 
     @Override
     public void setLineage(UUID uuid, String lineageId) {
-        super.setLineage(uuid, lineageId);
-        if (uuid != null) {
-            lineageService.syncModifiers(uuid);
+        if (uuid == null || lineageId == null || lineageId.isBlank()) {
+            return;
         }
+        String currentLineageId = VampirePlayerStateStore.get().getLineageId(uuid);
+        super.setLineage(uuid, lineageId);
+        lineageService.syncModifiers(uuid);
+        String nextLineageId = VampirePlayerStateStore.get().getLineageId(uuid);
+        if (nextLineageId != null && !nextLineageId.equals(currentLineageId)) {
+            lineageService.currentLineage(uuid).ifPresent(definition -> VampirismPlayerFeedback.notifyLineageChosen(uuid, definition));
+        }
+    }
+
+    @Override
+    public void setAgeTier(UUID uuid, String ageTierId) {
+        if (uuid == null || ageTierId == null || ageTierId.isBlank()) {
+            return;
+        }
+        String previousTierId = VampiricAgeTierService.snapshot(uuid).currentTier().id();
+        super.setAgeTier(uuid, ageTierId);
+        var snapshot = VampiricAgeTierService.snapshot(uuid);
+        if (!snapshot.currentTier().id().equals(previousTierId)) {
+            VampirismPlayerFeedback.showAgeTierReached(
+                    uuid,
+                    snapshot.currentTier().id(),
+                    snapshot.currentTier().displayName());
+        }
+    }
+
+    @Override
+    public void grantSkill(UUID uuid, String skillId) {
+        super.grantSkill(uuid, skillId);
+        VampirismPlayerFeedback.notifySkillUnlocked(uuid, skillId);
+    }
+
+    @Override
+    public void addSkillPoints(UUID uuid, int amount) {
+        super.addSkillPoints(uuid, amount);
+        VampirismPlayerFeedback.notifySkillPoints(uuid, amount);
     }
 
     @Override
@@ -109,8 +146,13 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
             return;
         }
         switch (sideEffectId.trim()) {
-            case VampiricRitualRegistry.SIDE_EFFECT_GRANT_PERMANENT_VAMPIRISM ->
-                    VampireStatusRegistry.get().addVampire(uuid, resolvePlayerName(uuid));
+            case VampiricRitualRegistry.SIDE_EFFECT_GRANT_PERMANENT_VAMPIRISM -> {
+                VampireStatusRegistry.get().addVampire(uuid, resolvePlayerName(uuid));
+                VampirismPlayerFeedback.showRitualAscension(
+                        uuid,
+                        "Crimson Awakening",
+                        "You have become a true vampire.");
+            }
             case VampiricRitualRegistry.SIDE_EFFECT_CLEAR_INFECTION -> {
                 if (VampirePlayerStateStore.isInitialized()) {
                     VampirePlayerStateStore.get().clearInfection(uuid);
@@ -325,7 +367,15 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
         }
         PlayerRef playerRefComponent = store.getComponent(playerRef, PlayerRef.getComponentType());
         if (playerRefComponent != null) {
-            playerRefComponent.sendMessage(Message.raw(message).color(color));
+            VampirismPlayerFeedback.notifyRuntime(
+                    uuid,
+                    message,
+                    "red".equals(color)
+                            ? NotificationStyle.Danger
+                            : "yellow".equals(color)
+                            ? NotificationStyle.Warning
+                            : NotificationStyle.Success,
+                    color);
         }
     }
 }

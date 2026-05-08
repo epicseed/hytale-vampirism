@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.vampirism.hytale.VampirismPlayerFeedback;
 import com.epicseed.epiccore.hytale.WorldStoreAdapter;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRegistry;
@@ -31,7 +32,7 @@ import com.hypixel.hytale.component.SystemGroup;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.protocol.packets.interface_.NotificationStyle;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
@@ -102,12 +103,18 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
                     holdingTool,
                     now);
             if (result.message() != null) {
-                playerRef.sendMessage(Message.raw(result.message()).color(
-                        result.collapsed() ? "red"
-                                : result.completionResult() != null ? "green"
-                                : result.snapshot() != null && result.snapshot().phase() == com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase.UNSTABLE
-                                ? "yellow"
-                                : "aqua"));
+                String color = result.collapsed() ? "red"
+                        : result.completionResult() != null ? "green"
+                        : result.snapshot() != null && result.snapshot().phase() == com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase.UNSTABLE
+                        ? "yellow"
+                        : "aqua";
+                NotificationStyle style = result.collapsed()
+                        ? NotificationStyle.Danger
+                        : result.completionResult() != null ? NotificationStyle.Success
+                        : result.snapshot() != null && result.snapshot().phase() == com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase.UNSTABLE
+                        ? NotificationStyle.Warning
+                        : NotificationStyle.Default;
+                VampirismPlayerFeedback.notifyRuntime(uuid, result.message(), style, color);
             }
             if (result.completionResult() != null) {
                 VampiricRitualOutcomeTracker.clearPlayer(uuid);

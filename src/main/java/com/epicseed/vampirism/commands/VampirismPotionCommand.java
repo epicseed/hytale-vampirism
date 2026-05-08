@@ -4,12 +4,14 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.hytale.PlayerFeedbackAdapter;
 import com.epicseed.epiccore.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.systems.VampireInfectionSystem;
 import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
+import com.hypixel.hytale.protocol.packets.interface_.NotificationStyle;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
@@ -48,7 +50,11 @@ public class VampirismPotionCommand extends AbstractCommand {
                 int maxBlood = VampireVitalitySystem.getMaxBlood(ref);
                 int recovery = Math.max(1, Math.round(maxBlood * 0.3f));
                 VampireVitalitySystem.addBlood(ref, recovery);
-                ctx.sendMessage(Message.raw("The potion restores your blood.").color("red"));
+                Message feedback = Message.join(
+                        Message.raw("Blood Restored").color("red"),
+                        Message.raw(": ").color("gray"),
+                        Message.raw("The potion replenishes your veins.").color("white"));
+                PlayerFeedbackAdapter.sendNotificationWithFallback(playerRef, feedback, NotificationStyle.Success, feedback);
                 return;
             }
             VampireInfectionSystem.beginInfection(

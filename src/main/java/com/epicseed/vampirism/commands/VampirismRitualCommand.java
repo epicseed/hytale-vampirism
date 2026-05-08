@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.epiccore.hytale.PlayerFeedbackAdapter;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualPointState;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRegistry;
@@ -25,6 +26,7 @@ import com.epicseed.vampirism.systems.VampiricRitualSystem;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
+import com.hypixel.hytale.protocol.packets.interface_.NotificationStyle;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
@@ -85,19 +87,19 @@ public final class VampirismRitualCommand extends AbstractCommand {
                                @Nonnull World world) {
             TargetedBlock target = VampiricRitualTargeting.resolveTargetedBlock(ref, store, world);
             if (target == null) {
-                ctx.sendMessage(Message.raw("Aim at the ground or coffin to place a ritual point.").color("red"));
+                sendPlayerFeedback(ctx, playerRef, "Aim at the ground or coffin to place a ritual point.", "red");
                 return;
             }
 
             TargetedBlock anchor = resolveAnchor(playerRef.getUuid(), world, target);
             if (anchor == null) {
-                ctx.sendMessage(Message.raw("Look at an ancient coffin first to attune the circle.").color("yellow"));
+                sendPlayerFeedback(ctx, playerRef, "Look at an ancient coffin first to attune the circle.", "yellow");
                 return;
             }
 
             var pointTarget = VampiricRitualTargeting.resolvePointTarget(ref, store, anchor.topCenter(), target);
             if (pointTarget == null) {
-                ctx.sendMessage(Message.raw("Aim at the ritual plane around the coffin.").color("red"));
+                sendPlayerFeedback(ctx, playerRef, "Aim at the ritual plane around the coffin.", "red");
                 return;
             }
 
@@ -108,7 +110,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
                     anchor.blockPosition(),
                     anchor.topCenter(),
                     pointTarget);
-            sendFeedback(ctx, result.message(), result.updated() ? "green" : "yellow");
+            sendFeedback(ctx, playerRef, result.message(), result.updated() ? "green" : "yellow");
             if (result.snapshot() != null) {
                 sendSnapshot(ctx, result.snapshot());
                 revealForPlayer(world, playerRef, result.snapshot());
@@ -132,11 +134,11 @@ public final class VampirismRitualCommand extends AbstractCommand {
                 VampiricRitualRuntimeService.ClearResult result = runtimeService.abort(
                         playerRef.getUuid(),
                         contextResolver.buildContext(playerRef, store, extraTagsForSnapshot(ref, store, world, snapshot.get())));
-                sendFeedback(ctx, result.message(), result.cleared() ? "green" : "yellow");
+                sendFeedback(ctx, playerRef, result.message(), result.cleared() ? "green" : "yellow");
                 return;
             }
             VampiricRitualRuntimeService.ClearResult result = runtimeService.clearAssembly(playerRef.getUuid());
-            sendFeedback(ctx, result.message(), result.cleared() ? "green" : "yellow");
+            sendFeedback(ctx, playerRef, result.message(), result.cleared() ? "green" : "yellow");
         }
     }
 
@@ -161,7 +163,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
 
             TargetedBlock target = VampiricRitualTargeting.resolveTargetedBlock(ref, store, world);
             if (!VampiricRitualTargeting.isAwakeningAnchor(target)) {
-                ctx.sendMessage(Message.raw("Look at an ancient coffin to reveal the awakening circle.").color("yellow"));
+                sendPlayerFeedback(ctx, playerRef, "Look at an ancient coffin to reveal the awakening circle.", "yellow");
                 return;
             }
 
@@ -171,7 +173,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
                     target.blockPosition(),
                     target.topCenter()).orElse(null);
             if (preview == null) {
-                ctx.sendMessage(Message.raw("That anchor does not accept the awakening ritual.").color("red"));
+                sendPlayerFeedback(ctx, playerRef, "That anchor does not accept the awakening ritual.", "red");
                 return;
             }
             sendSnapshot(ctx, preview);
@@ -193,7 +195,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
                                @Nonnull World world) {
             Optional<VampiricRitualRuntimeSnapshot> snapshot = runtimeService.snapshot(playerRef.getUuid());
             if (snapshot.isEmpty()) {
-                ctx.sendMessage(Message.raw("Trace the awakening circle around an ancient coffin first.").color("yellow"));
+                sendPlayerFeedback(ctx, playerRef, "Trace the awakening circle around an ancient coffin first.", "yellow");
                 return;
             }
 
@@ -203,7 +205,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
                     VampiricRitualRegistry.AWAKENING_RITUAL_ID,
                     contextResolver.buildContext(playerRef, store, extraTags),
                     System.currentTimeMillis());
-            sendFeedback(ctx, result.message(), result.started() ? "green" : "yellow");
+            sendFeedback(ctx, playerRef, result.message(), result.started() ? "green" : "yellow");
             if (result.snapshot() != null) {
                 sendSnapshot(ctx, result.snapshot());
                 revealForPlayer(world, playerRef, result.snapshot());
@@ -297,10 +299,38 @@ public final class VampirismRitualCommand extends AbstractCommand {
                 .color(snapshot.phase() == VampiricRitualRuntimePhase.UNSTABLE ? "yellow" : "gray"));
     }
 
-    private static void sendFeedback(@Nonnull CommandContext ctx, @Nullable String message, @Nonnull String color) {
+    private static void sendFeedback(@Nonnull CommandContext ctx,
+                                     @Nonnull PlayerRef playerRef,
+                                     @Nullable String message,
+                                     @Nonnull String color) {
         if (message != null && !message.isBlank()) {
-            ctx.sendMessage(Message.raw(message).color(color));
+            sendPlayerFeedback(ctx, playerRef, message, color);
         }
+    }
+
+    private static void sendPlayerFeedback(@Nonnull CommandContext ctx,
+                                           @Nonnull PlayerRef playerRef,
+                                           @Nonnull String message,
+                                           @Nonnull String color) {
+        Message feedback = Message.raw(message).color(color);
+        if (PlayerFeedbackAdapter.sendNotificationWithFallback(
+                playerRef,
+                feedback,
+                notificationStyle(color),
+                feedback)) {
+            return;
+        }
+        ctx.sendMessage(feedback);
+    }
+
+    @Nonnull
+    private static NotificationStyle notificationStyle(@Nonnull String color) {
+        return switch (color.toLowerCase()) {
+            case "green" -> NotificationStyle.Success;
+            case "yellow", "gold", "orange" -> NotificationStyle.Warning;
+            case "red", "dark_red" -> NotificationStyle.Danger;
+            default -> NotificationStyle.Default;
+        };
     }
 
     private void revealForPlayer(@Nonnull World world,

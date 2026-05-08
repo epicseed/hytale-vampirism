@@ -63,6 +63,7 @@ import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackServic
 import com.epicseed.vampirism.hud.BloodGaugeHud;
 import com.epicseed.vampirism.hud.RitualHudService;
 import com.epicseed.vampirism.hud.RitualStatusHud;
+import com.epicseed.vampirism.hytale.VampirismPlayerFeedback;
 import com.epicseed.vampirism.domain.skill.SkillTreePresenter;
 import com.epicseed.epiccore.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
@@ -540,6 +541,7 @@ public final class VampirismRuntime {
                                                          @Nonnull Ref<EntityStore> preyRef,
                                                          @Nonnull Store<EntityStore> store) {
                         nightHuntService.onPlayerKilledMarkedPrey(attackerUuid, attackerRef, preyRef, store);
+                        VampirismPlayerFeedback.notifyMarkedPreyKilled(attackerRef, store);
                     }
                 },
                 skillRuntimeStateResolver));

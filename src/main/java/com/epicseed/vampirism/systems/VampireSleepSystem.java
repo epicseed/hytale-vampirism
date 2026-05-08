@@ -1,6 +1,7 @@
 package com.epicseed.vampirism.systems;
 
 import com.epicseed.vampirism.config.VampirismConfig;
+import com.epicseed.epiccore.hytale.PlayerFeedbackAdapter;
 import com.epicseed.epiccore.vampirism.interop.VampirismClassifications;
 import com.hypixel.hytale.builtin.beds.sleep.components.PlayerSomnolence;
 import com.hypixel.hytale.builtin.beds.sleep.resources.WorldSomnolence;
@@ -17,6 +18,7 @@ import com.hypixel.hytale.component.SystemGroup;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.protocol.BlockMountType;
+import com.hypixel.hytale.protocol.packets.interface_.NotificationStyle;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
@@ -150,7 +152,11 @@ public class VampireSleepSystem extends EntityTickingSystem<EntityStore> {
         commandBuffer.putComponent(ref, PlayerSomnolence.getComponentType(), PlayerSomnolence.AWAKE);
         processedMounts.remove(ref);
         processedNightSkips.remove(ref);
-        playerRef.sendMessage(Message.raw(message).color("red"));
+        Message feedback = Message.join(
+                Message.raw("Rest Denied").color("red"),
+                Message.raw(": ").color("gray"),
+                Message.raw(message).color("yellow"));
+        PlayerFeedbackAdapter.sendNotificationWithFallback(playerRef, feedback, NotificationStyle.Warning, feedback);
     }
 
     private void tryAdvanceCoffinNight(@Nonnull Ref<EntityStore> ref,
