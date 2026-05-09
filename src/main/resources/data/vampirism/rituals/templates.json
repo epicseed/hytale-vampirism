@@ -65,12 +65,20 @@
       ],
       "baseCorruption": 8,
       "baseLayer": {
-        "offsetY": 1.035
+        "offsetY": 0.9
       },
       "baseStability": 70,
+      "cancelPolicy": {
+        "cancelIfAnchorInvalid": true,
+        "cancelOnOwnerDeath": true,
+        "cancelOnUnequipTool": true,
+        "distanceGraceSeconds": 1,
+        "maxDistanceFromAnchor": 8,
+        "timeoutSeconds": 45
+      },
       "channelDurationSeconds": 11,
       "coreLayer": {
-        "offsetY": 1.09
+        "offsetY": 1.02
       },
       "displayName": "Crimson Awakening",
       "instabilityThreshold": 30,
@@ -171,6 +179,14 @@
         "offsetY": 0.035
       },
       "baseStability": 67,
+      "cancelPolicy": {
+        "cancelIfAnchorInvalid": true,
+        "cancelOnOwnerDeath": true,
+        "cancelOnUnequipTool": true,
+        "distanceGraceSeconds": 1,
+        "maxDistanceFromAnchor": 8,
+        "timeoutSeconds": 45
+      },
       "channelDurationSeconds": 9.5,
       "coreLayer": {
         "offsetY": 0.09
@@ -274,6 +290,14 @@
         "offsetY": 0.035
       },
       "baseStability": 74,
+      "cancelPolicy": {
+        "cancelIfAnchorInvalid": true,
+        "cancelOnOwnerDeath": true,
+        "cancelOnUnequipTool": true,
+        "distanceGraceSeconds": 1,
+        "maxDistanceFromAnchor": 8,
+        "timeoutSeconds": 45
+      },
       "channelDurationSeconds": 13,
       "coreLayer": {
         "offsetY": 0.09
@@ -390,6 +414,14 @@
         "offsetY": 0.035
       },
       "baseStability": 64,
+      "cancelPolicy": {
+        "cancelIfAnchorInvalid": true,
+        "cancelOnOwnerDeath": true,
+        "cancelOnUnequipTool": true,
+        "distanceGraceSeconds": 1,
+        "maxDistanceFromAnchor": 8,
+        "timeoutSeconds": 45
+      },
       "channelDurationSeconds": 10.5,
       "coreLayer": {
         "offsetY": 0.09
@@ -506,6 +538,14 @@
         "offsetY": 0.035
       },
       "baseStability": 59,
+      "cancelPolicy": {
+        "cancelIfAnchorInvalid": true,
+        "cancelOnOwnerDeath": true,
+        "cancelOnUnequipTool": true,
+        "distanceGraceSeconds": 1,
+        "maxDistanceFromAnchor": 8,
+        "timeoutSeconds": 45
+      },
       "channelDurationSeconds": 13.5,
       "coreLayer": {
         "offsetY": 0.09

@@ -433,6 +433,7 @@
       baseStability: parseNumericInput(template?.baseStability, 70),
       baseCorruption: parseNumericInput(template?.baseCorruption, 8),
       instabilityThreshold: parseNumericInput(template?.instabilityThreshold, 30),
+      cancelPolicy: normalizeCancelPolicy(template?.cancelPolicy),
       activationLinks: [],
       points: [],
     };
@@ -467,6 +468,17 @@
   function normalizeAnchorLayer(anchorLayer, defaultOffsetY) {
     return {
       offsetY: parseNumericInput(anchorLayer?.offsetY, defaultOffsetY),
+    };
+  }
+
+  function normalizeCancelPolicy(cancelPolicy) {
+    return {
+      timeoutSeconds: Math.max(0, parseNumericInput(cancelPolicy?.timeoutSeconds, 0)),
+      maxDistanceFromAnchor: Math.max(0, parseNumericInput(cancelPolicy?.maxDistanceFromAnchor, 0)),
+      distanceGraceSeconds: Math.max(0, parseNumericInput(cancelPolicy?.distanceGraceSeconds, 0)),
+      cancelIfAnchorInvalid: parseBooleanInput(cancelPolicy?.cancelIfAnchorInvalid, false),
+      cancelOnUnequipTool: parseBooleanInput(cancelPolicy?.cancelOnUnequipTool, false),
+      cancelOnOwnerDeath: parseBooleanInput(cancelPolicy?.cancelOnOwnerDeath, false),
     };
   }
 
@@ -676,6 +688,7 @@
       baseStability: 70,
       baseCorruption: 8,
       instabilityThreshold: 30,
+      cancelPolicy: normalizeCancelPolicy(),
       activationLinks: [],
       points: [makePoint(1, glyph.glyphId)],
     };
@@ -942,6 +955,7 @@
           ${inputGroup('Base Corruption', 'number', template.baseCorruption, { 'data-template-field': 'baseCorruption', step: '0.1' })}
           ${inputGroup('Instability Threshold', 'number', template.instabilityThreshold, { 'data-template-field': 'instabilityThreshold', step: '0.1' })}
         </div>
+        ${renderCancelPolicyEditor(template)}
         ${renderAnchorGlyphEditor(template)}
         ${renderPointHeightTools(template)}
       </section>
@@ -1029,6 +1043,25 @@
           </div>
         </div>
       </section>
+    `;
+  }
+
+  function renderCancelPolicyEditor(template) {
+    const cancelPolicy = normalizeCancelPolicy(template?.cancelPolicy);
+    template.cancelPolicy = cancelPolicy;
+    return `
+      <div style="margin-top:16px">
+        <h3 style="margin-bottom:12px">Cancel Policy</h3>
+        <div class="ritual-form-grid">
+          ${inputGroup('Timeout (s)', 'number', cancelPolicy.timeoutSeconds, { 'data-template-cancel-policy-field': 'timeoutSeconds', step: '0.1', min: '0' })}
+          ${inputGroup('Max Distance From Anchor', 'number', cancelPolicy.maxDistanceFromAnchor, { 'data-template-cancel-policy-field': 'maxDistanceFromAnchor', step: '0.1', min: '0' })}
+          ${inputGroup('Distance Grace (s)', 'number', cancelPolicy.distanceGraceSeconds, { 'data-template-cancel-policy-field': 'distanceGraceSeconds', step: '0.1', min: '0' })}
+          ${checkboxGroup('Cancel if Anchor Invalid', cancelPolicy.cancelIfAnchorInvalid, { 'data-template-cancel-policy-field': 'cancelIfAnchorInvalid' })}
+          ${checkboxGroup('Cancel on Unequip Tool', cancelPolicy.cancelOnUnequipTool, { 'data-template-cancel-policy-field': 'cancelOnUnequipTool' })}
+          ${checkboxGroup('Cancel on Owner Death', cancelPolicy.cancelOnOwnerDeath, { 'data-template-cancel-policy-field': 'cancelOnOwnerDeath' })}
+        </div>
+        <div class="ritual-help">Set timeout or max distance to <code>0</code> to disable that cancellation check.</div>
+      </div>
     `;
   }
 
@@ -1327,6 +1360,22 @@
 
     pane.querySelectorAll('[data-template-field]').forEach((input) => {
       input.addEventListener('change', () => updateField(selectedTemplate(), input.dataset.templateField, input.value, true));
+    });
+
+    pane.querySelectorAll('[data-template-cancel-policy-field]').forEach((input) => {
+      input.addEventListener('change', () => {
+        const template = selectedTemplate();
+        if (!template) return;
+        template.cancelPolicy = normalizeCancelPolicy(template.cancelPolicy);
+        const field = input.dataset.templateCancelPolicyField;
+        if (input.type === 'checkbox') {
+          template.cancelPolicy[field] = input.checked;
+        } else {
+          template.cancelPolicy[field] = Math.max(0, parseNumericInput(input.value, template.cancelPolicy[field]));
+        }
+        App.markDirty();
+        render();
+      });
     });
 
     pane.querySelectorAll('[data-template-anchor-field]').forEach((input) => {
@@ -1938,6 +1987,20 @@
     `;
   }
 
+  function checkboxGroup(label, checked, attrs = {}) {
+    const attributes = Object.entries(attrs)
+      .map(([key, attrValue]) => `${key}="${escapeAttr(attrValue)}"`)
+      .join(' ');
+    return `
+      <div class="form-group">
+        <label>
+          <input type="checkbox" ${checked ? 'checked' : ''} ${attributes} />
+          ${label}
+        </label>
+      </div>
+    `;
+  }
+
   function clampIndex(value, length) {
     if (!length) return 0;
     return Math.max(0, Math.min(Number(value) || 0, length - 1));
@@ -1946,6 +2009,16 @@
   function parseNumericInput(value, fallback = 0) {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  function parseBooleanInput(value, fallback = false) {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'true' || normalized === '1' || normalized === 'yes') return true;
+      if (normalized === 'false' || normalized === '0' || normalized === 'no') return false;
+    }
+    return fallback;
   }
 
   function roundValue(value, precision = 3) {

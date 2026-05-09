@@ -20,7 +20,9 @@ final class VampirismRitualToolBindingsTest {
         assertTrue(primary.contains("\"Type\": \"Charging\""));
         assertTrue(primary.contains("\"AllowIndefiniteHold\": true"));
         assertTrue(primary.contains("\"ItemAnimationId\": \"CastHurlCharging\""));
-        assertTrue(primary.contains("\"0.01\""));
+        assertTrue(primary.contains("\"ItemAnimationId\": \"CastHurlCharged\""));
+        assertTrue(primary.contains("\"0.0\""));
+        assertTrue(primary.contains("\"Command\": \"vampirismritual primaryrelease\""));
         assertTrue(primary.contains("\"Failed\""));
         assertFalse(primary.contains("vampirismritual secondary"));
         assertFalse(primary.contains("vampirismritual use"));
@@ -36,7 +38,11 @@ final class VampirismRitualToolBindingsTest {
         String item = readResource("/Server/Item/Items/Vampirism/VampirismRitualTool.json");
 
         assertTrue(ability1.contains("\"Command\": \"vampirismritual ability1\""));
-        assertTrue(ability1.contains("\"AllowIndefiniteHold\": false"));
+        assertTrue(ability1.contains("\"AllowIndefiniteHold\": true"));
+        assertTrue(ability1.contains("\"0.0\""));
+        assertTrue(ability1.contains("\"0.35\""));
+        assertTrue(ability1.contains("\"WaitForAnimationToFinish\": true"));
+        assertTrue(ability1.contains("\"ItemAnimationId\": \"CastPushCharged\""));
         assertTrue(ability2.contains("\"Command\": \"vampirismritual ability2\""));
         assertTrue(secondary.contains("\"Command\": \"vampirismritual secondary\""));
         assertTrue(secondary.contains("\"Type\": \"Simple\""));

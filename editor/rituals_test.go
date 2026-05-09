@@ -66,6 +66,14 @@ func TestDataHandlerRoundTripIncludesRitualTemplates(t *testing.T) {
 					"baseStability":          70.0,
 					"baseCorruption":         8.0,
 					"instabilityThreshold":   30.0,
+					"cancelPolicy": map[string]interface{}{
+						"timeoutSeconds":        12.0,
+						"maxDistanceFromAnchor": 6.5,
+						"distanceGraceSeconds":  1.5,
+						"cancelIfAnchorInvalid": true,
+						"cancelOnUnequipTool":   true,
+						"cancelOnOwnerDeath":    false,
+					},
 					"activationLinks": []interface{}{
 						map[string]interface{}{
 							"fromPointId":           "north",
@@ -124,6 +132,9 @@ func TestDataHandlerRoundTripIncludesRitualTemplates(t *testing.T) {
 	if !bytes.Contains(ritualFile, []byte(`"baseLayer"`)) || !bytes.Contains(ritualFile, []byte(`"coreLayer"`)) {
 		t.Fatalf("anchor layer configuration was not written: %s", string(ritualFile))
 	}
+	if !bytes.Contains(ritualFile, []byte(`"cancelPolicy"`)) || !bytes.Contains(ritualFile, []byte(`"maxDistanceFromAnchor": 6.5`)) {
+		t.Fatalf("cancel policy was not written: %s", string(ritualFile))
+	}
 	if bytes.Contains(ritualFile, []byte(`"traceSteps"`)) {
 		t.Fatalf("ritual templates should no longer inline glyph traces: %s", string(ritualFile))
 	}
@@ -155,6 +166,20 @@ func TestDataHandlerRoundTripIncludesRitualTemplates(t *testing.T) {
 	templates, ok := ritualTemplates["templates"].([]interface{})
 	if !ok || len(templates) != 1 {
 		t.Fatalf("unexpected ritual templates payload: %#v", ritualTemplates["templates"])
+	}
+	template, ok := templates[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("unexpected ritual template entry: %#v", templates[0])
+	}
+	cancelPolicy, ok := template["cancelPolicy"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("cancelPolicy missing or invalid: %#v", template["cancelPolicy"])
+	}
+	if timeoutSeconds, ok := cancelPolicy["timeoutSeconds"].(float64); !ok || timeoutSeconds != 12.0 {
+		t.Fatalf("unexpected cancelPolicy timeoutSeconds: %#v", cancelPolicy["timeoutSeconds"])
+	}
+	if cancelOnUnequipTool, ok := cancelPolicy["cancelOnUnequipTool"].(bool); !ok || !cancelOnUnequipTool {
+		t.Fatalf("unexpected cancelPolicy cancelOnUnequipTool: %#v", cancelPolicy["cancelOnUnequipTool"])
 	}
 	ritualGlyphs, ok := doc["ritualGlyphs"].(map[string]interface{})
 	if !ok {
@@ -262,6 +287,137 @@ func TestDataHandlerRejectsTemplatesWithMissingGlyphReferences(t *testing.T) {
 	}
 	if _, err := os.Stat(ritualGlyphDefinitionsPath); !os.IsNotExist(err) {
 		t.Fatalf("ritual glyphs should not be written on validation failure, stat err = %v", err)
+	}
+}
+
+func TestDataHandlerAppliesDefaultCancelPolicyWhenMissing(t *testing.T) {
+	restore := withTestEditorRoots(t)
+	defer restore()
+
+	payload := map[string]any{
+		"abilities": []any{},
+		"ritualTemplates": map[string]any{
+			"templates": []any{
+				map[string]any{
+					"ritualId":        "awakening",
+					"displayName":     "Crimson Awakening",
+					"activationLinks": []any{},
+					"points": []any{
+						map[string]any{
+							"id":      "north",
+							"glyphId": "fang_wake",
+							"offsetX": 0.0,
+							"offsetY": 0.15,
+							"offsetZ": -3.0,
+						},
+					},
+				},
+			},
+		},
+		"ritualGlyphs": map[string]any{
+			"glyphs": []any{
+				map[string]any{
+					"glyphId":                  "fang_wake",
+					"symbolId":                 "fang_wake",
+					"displayName":              "Fang Wake",
+					"traceTolerance":           0.48,
+					"mistakeStabilityPenalty":  6.0,
+					"mistakeCorruptionPenalty": 5.0,
+					"traceSteps":               []any{},
+				},
+			},
+		},
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/data", bytes.NewReader(body))
+	res := httptest.NewRecorder()
+	dataHandler(res, req)
+	if res.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", res.Code, res.Body.String())
+	}
+
+	ritualFile, err := os.ReadFile(ritualTemplatesPath)
+	if err != nil {
+		t.Fatalf("read ritual templates: %v", err)
+	}
+	for _, snippet := range []string{
+		`"cancelPolicy"`,
+		`"timeoutSeconds": 0`,
+		`"maxDistanceFromAnchor": 0`,
+		`"distanceGraceSeconds": 0`,
+		`"cancelIfAnchorInvalid": false`,
+		`"cancelOnUnequipTool": false`,
+		`"cancelOnOwnerDeath": false`,
+	} {
+		if !bytes.Contains(ritualFile, []byte(snippet)) {
+			t.Fatalf("expected default cancel policy snippet %q in %s", snippet, string(ritualFile))
+		}
+	}
+}
+
+func TestDataHandlerRejectsInvalidCancelPolicy(t *testing.T) {
+	restore := withTestEditorRoots(t)
+	defer restore()
+
+	payload := map[string]any{
+		"abilities": []any{},
+		"ritualTemplates": map[string]any{
+			"templates": []any{
+				map[string]any{
+					"ritualId":    "awakening",
+					"displayName": "Crimson Awakening",
+					"cancelPolicy": map[string]any{
+						"timeoutSeconds":        -1.0,
+						"cancelOnOwnerDeath":    "yes",
+						"maxDistanceFromAnchor": 0.0,
+					},
+					"activationLinks": []any{},
+					"points": []any{
+						map[string]any{
+							"id":      "north",
+							"glyphId": "fang_wake",
+							"offsetX": 0.0,
+							"offsetY": 0.15,
+							"offsetZ": -3.0,
+						},
+					},
+				},
+			},
+		},
+		"ritualGlyphs": map[string]any{
+			"glyphs": []any{
+				map[string]any{
+					"glyphId":                  "fang_wake",
+					"symbolId":                 "fang_wake",
+					"displayName":              "Fang Wake",
+					"traceTolerance":           0.48,
+					"mistakeStabilityPenalty":  6.0,
+					"mistakeCorruptionPenalty": 5.0,
+					"traceSteps":               []any{},
+				},
+			},
+		},
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/data", bytes.NewReader(body))
+	res := httptest.NewRecorder()
+	dataHandler(res, req)
+	if res.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, body = %s", res.Code, res.Body.String())
+	}
+	if !bytes.Contains(res.Body.Bytes(), []byte("cancelPolicy.timeoutSeconds must be >= 0")) {
+		t.Fatalf("unexpected error body: %s", res.Body.String())
+	}
+	if _, err := os.Stat(ritualTemplatesPath); !os.IsNotExist(err) {
+		t.Fatalf("ritual templates should not be written on validation failure, stat err = %v", err)
 	}
 }
 

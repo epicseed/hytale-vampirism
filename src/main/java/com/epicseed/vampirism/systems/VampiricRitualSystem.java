@@ -13,6 +13,7 @@ import com.epicseed.vampirism.hytale.VampirismPlayerFeedback;
 import com.epicseed.epiccore.hytale.WorldStoreAdapter;
 import com.epicseed.epiccore.vampirism.domain.player.PersistedRitualRuntimeState;
 import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
+import com.epicseed.vampirism.domain.hunt.NightHuntStateMachine;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRegistry;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeService;
@@ -47,7 +48,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore> {
 
     private static final long TERMINAL_VISUAL_DURATION_MS = 1_600L;
-    private static final long PRIMARY_HOLD_GRACE_MS = 350L;
 
     private final VampiricRitualRuntimeService runtimeService;
     private final VampiricRitualContextResolver contextResolver;
@@ -55,8 +55,7 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
     private final VampiricRitualSelectionService selectionService;
     private final Map<UUID, RitualGlyphPresentationHandle> glyphHandles = new ConcurrentHashMap<>();
     private final Map<UUID, TerminalVisualState> terminalVisuals = new ConcurrentHashMap<>();
-    private final Map<UUID, Long> primaryHoldExpiresAtMs = new ConcurrentHashMap<>();
-    private final Set<UUID> primaryHeldLastTick = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> primaryHeldPlayers = ConcurrentHashMap.newKeySet();
     private final Set<UUID> fullGuidePlayers = ConcurrentHashMap.newKeySet();
 
     public VampiricRitualSystem(@Nonnull VampiricRitualRuntimeService runtimeService,
@@ -100,14 +99,7 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
         long now = System.currentTimeMillis();
         World world = WorldStoreAdapter.resolveWorld(store);
         boolean toolEquipped = isRitualToolInHand(ref, store);
-        boolean holdingPrimary = toolEquipped && isPrimaryHeld(uuid, now);
-        boolean wasHoldingPrimary = primaryHeldLastTick.contains(uuid);
-        if (holdingPrimary) {
-            primaryHeldLastTick.add(uuid);
-        } else {
-            primaryHeldLastTick.remove(uuid);
-        }
-        boolean releasedPrimary = wasHoldingPrimary && !holdingPrimary;
+        boolean holdingPrimary = toolEquipped && primaryHeldPlayers.contains(uuid);
         if (world != null) {
             restorePersistedRuntime(playerRef, ref, store, world);
         }
@@ -121,17 +113,20 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
                     uuid,
                     dt,
                     contextResolver.buildContext(playerRef, store, extraTags),
-                    holdingPrimary,
-                    now);
+                    toolEquipped,
+                    now,
+                    runtimeConditions(ref, store, world, snapshot.get()));
             if (result.message() != null) {
                 String color = result.collapsed() ? "red"
                         : result.completionResult() != null ? "green"
+                        : result.aborted() ? "yellow"
                         : result.snapshot() != null && result.snapshot().phase() == com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase.UNSTABLE
                         ? "yellow"
                         : "aqua";
                 NotificationStyle style = result.collapsed()
                         ? NotificationStyle.Danger
                         : result.completionResult() != null ? NotificationStyle.Success
+                        : result.aborted() ? NotificationStyle.Warning
                         : result.snapshot() != null && result.snapshot().phase() == com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase.UNSTABLE
                         ? NotificationStyle.Warning
                         : NotificationStyle.Default;
@@ -141,8 +136,32 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
                 VampiricRitualOutcomeTracker.clearPlayer(uuid);
             }
             snapshot = Optional.ofNullable(result.snapshot());
-            statePulse = result.phaseChanged() || result.collapsed() || result.completionResult() != null;
-            runtimeOwnedSnapshot = snapshot.isPresent() && !result.collapsed() && result.completionResult() == null;
+            statePulse = result.phaseChanged() || result.collapsed() || result.aborted() || result.completionResult() != null;
+            runtimeOwnedSnapshot = snapshot.isPresent()
+                    && !result.collapsed()
+                    && !result.aborted()
+                    && result.completionResult() == null;
+            if (statePulse && result.snapshot() != null) {
+                terminalVisuals.put(uuid, new TerminalVisualState(result.snapshot(), now + TERMINAL_VISUAL_DURATION_MS));
+            } else if (snapshot.isPresent()) {
+                terminalVisuals.remove(uuid);
+            }
+        } else if (snapshot.isPresent()) {
+            VampiricRitualRuntimeService.TickResult result = runtimeService.tickPrepared(
+                    uuid,
+                    dt,
+                    toolEquipped,
+                    runtimeConditions(ref, store, world, snapshot.get()));
+            if (result.message() != null) {
+                VampirismPlayerFeedback.notifyRuntime(
+                        uuid,
+                        result.message(),
+                        result.aborted() ? NotificationStyle.Warning : NotificationStyle.Default,
+                        result.aborted() ? "yellow" : "aqua");
+            }
+            snapshot = Optional.ofNullable(result.snapshot());
+            statePulse = result.aborted();
+            runtimeOwnedSnapshot = snapshot.isPresent() && !result.aborted();
             if (statePulse && result.snapshot() != null) {
                 terminalVisuals.put(uuid, new TerminalVisualState(result.snapshot(), now + TERMINAL_VISUAL_DURATION_MS));
             } else if (snapshot.isPresent()) {
@@ -164,24 +183,6 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
             if (pointTarget != null && runtimeService.sampleTrace(uuid, pointTarget)) {
                 snapshot = runtimeService.snapshot(uuid);
             }
-        }
-
-        if (releasedPrimary
-                && snapshot.isPresent()
-                && !snapshot.get().active()
-                && snapshot.get().pointStates().stream().anyMatch(point -> point.tracing() && !point.active())) {
-            VampiricRitualRuntimeService.TraceStopResult stop = runtimeService.stopTrace(uuid);
-            if (stop.message() != null) {
-                String color = stop.sealed() ? "green" : stop.rejected() ? "red" : "yellow";
-                NotificationStyle style = stop.sealed()
-                        ? NotificationStyle.Success
-                        : stop.rejected()
-                        ? NotificationStyle.Danger
-                        : NotificationStyle.Warning;
-                VampirismPlayerFeedback.notifyRuntime(uuid, stop.message(), style, color);
-            }
-            snapshot = Optional.ofNullable(stop.snapshot());
-            statePulse = statePulse || stop.stopped();
         }
 
         Optional<VampiricRitualRuntimeSnapshot> persistentSnapshot =
@@ -237,8 +238,7 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
     public void clearPlayer(@Nonnull UUID uuid, @Nullable Ref<EntityStore> playerRef) {
         runtimeService.clearPlayer(uuid);
         terminalVisuals.remove(uuid);
-        primaryHoldExpiresAtMs.remove(uuid);
-        primaryHeldLastTick.remove(uuid);
+        primaryHeldPlayers.remove(uuid);
         fullGuidePlayers.remove(uuid);
         feedbackService.clearPlayer(uuid);
         VampiricRitualOutcomeTracker.clearPlayer(uuid);
@@ -269,8 +269,30 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
         return setDebugGuidesEnabled(uuid, !debugGuidesEnabled(uuid));
     }
 
-    public void pulsePrimaryHold(@Nonnull UUID uuid, long nowMs) {
-        primaryHoldExpiresAtMs.put(uuid, nowMs + PRIMARY_HOLD_GRACE_MS);
+    public void beginPrimaryHold(@Nonnull UUID uuid) {
+        primaryHeldPlayers.add(uuid);
+    }
+
+    public void releasePrimaryHold(@Nonnull UUID uuid) {
+        primaryHeldPlayers.remove(uuid);
+    }
+
+    private static boolean isRitualToolInHand(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
+        ItemStack stack = InventoryComponent.getItemInHand(store, ref);
+        return stack != null && VampiricRitualTargeting.RITUAL_TOOL_ITEM_ID.equals(stack.getItemId());
+    }
+
+    @Nonnull
+    private static VampiricRitualRuntimeService.RuntimeConditions runtimeConditions(@Nonnull Ref<EntityStore> ref,
+                                                                                    @Nonnull Store<EntityStore> store,
+                                                                                    @Nullable World world,
+                                                                                    @Nonnull VampiricRitualRuntimeSnapshot snapshot) {
+        boolean anchorValid = world == null
+                || VampiricRitualTargeting.isAnchorBlock(world, snapshot.anchorBlockPosition(), snapshot.anchorBlockId());
+        return new VampiricRitualRuntimeService.RuntimeConditions(
+                anchorValid,
+                VampiricRitualTargeting.distanceToAnchor(ref, store, snapshot.anchorCenter()),
+                NightHuntStateMachine.isDead(ref, store));
     }
 
     @Nonnull
@@ -295,23 +317,6 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
                 ritual.anchorBlockId(),
                 target.blockPosition(),
                 target.topCenter());
-    }
-
-    private static boolean isRitualToolInHand(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
-        ItemStack stack = InventoryComponent.getItemInHand(store, ref);
-        return stack != null && VampiricRitualTargeting.RITUAL_TOOL_ITEM_ID.equals(stack.getItemId());
-    }
-
-    private boolean isPrimaryHeld(@Nonnull UUID uuid, long nowMs) {
-        Long expiresAtMs = primaryHoldExpiresAtMs.get(uuid);
-        if (expiresAtMs == null) {
-            return false;
-        }
-        if (expiresAtMs <= nowMs) {
-            primaryHoldExpiresAtMs.remove(uuid, expiresAtMs);
-            return false;
-        }
-        return true;
     }
 
     @Nonnull

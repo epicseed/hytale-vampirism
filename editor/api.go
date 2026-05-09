@@ -23,6 +23,15 @@ const ritualGlyphDefinitionsDefaultJSON = `{"glyphs":[]}`
 
 var writeFileAtomically = atomicWriteFile
 
+const (
+	defaultRitualCancelPolicyTimeoutSeconds        = 0.0
+	defaultRitualCancelPolicyMaxDistanceFromAnchor = 0.0
+	defaultRitualCancelPolicyDistanceGraceSeconds  = 0.0
+	defaultRitualCancelPolicyCancelIfAnchorInvalid = false
+	defaultRitualCancelPolicyCancelOnUnequipTool   = false
+	defaultRitualCancelPolicyCancelOnOwnerDeath    = false
+)
+
 type skillDataWritePlan struct {
 	sections         map[string][]byte
 	ritualTemplates  []byte
@@ -503,6 +512,9 @@ func validateRitualTemplatesDocument(doc map[string]any, glyphIDs map[string]str
 		}
 		ritualIDs[ritualID] = struct{}{}
 		template["ritualId"] = ritualID
+		if err := validateRitualCancelPolicy(template, templateIndex); err != nil {
+			return err
+		}
 
 		points, ok := template["points"]
 		if !ok {
@@ -570,6 +582,111 @@ func validateRitualTemplatesDocument(doc map[string]any, glyphIDs map[string]str
 		}
 	}
 	return nil
+}
+
+func validateRitualCancelPolicy(template map[string]any, templateIndex int) error {
+	pathPrefix := fmt.Sprintf("ritualTemplates.templates[%d].cancelPolicy", templateIndex)
+	cancelPolicyEntry, ok := template["cancelPolicy"]
+	if !ok || cancelPolicyEntry == nil {
+		cancelPolicyEntry = map[string]any{}
+		template["cancelPolicy"] = cancelPolicyEntry
+	}
+
+	cancelPolicy, ok := cancelPolicyEntry.(map[string]any)
+	if !ok {
+		return fmt.Errorf("%s must be an object", pathPrefix)
+	}
+
+	if err := normalizeNonNegativeNumberField(cancelPolicy, "timeoutSeconds", defaultRitualCancelPolicyTimeoutSeconds, pathPrefix); err != nil {
+		return err
+	}
+	if err := normalizeNonNegativeNumberField(cancelPolicy, "maxDistanceFromAnchor", defaultRitualCancelPolicyMaxDistanceFromAnchor, pathPrefix); err != nil {
+		return err
+	}
+	if err := normalizeNonNegativeNumberField(cancelPolicy, "distanceGraceSeconds", defaultRitualCancelPolicyDistanceGraceSeconds, pathPrefix); err != nil {
+		return err
+	}
+	if err := normalizeBoolField(cancelPolicy, "cancelIfAnchorInvalid", defaultRitualCancelPolicyCancelIfAnchorInvalid, pathPrefix); err != nil {
+		return err
+	}
+	if err := normalizeBoolField(cancelPolicy, "cancelOnUnequipTool", defaultRitualCancelPolicyCancelOnUnequipTool, pathPrefix); err != nil {
+		return err
+	}
+	if err := normalizeBoolField(cancelPolicy, "cancelOnOwnerDeath", defaultRitualCancelPolicyCancelOnOwnerDeath, pathPrefix); err != nil {
+		return err
+	}
+	template["cancelPolicy"] = cancelPolicy
+	return nil
+}
+
+func normalizeNonNegativeNumberField(obj map[string]any, field string, defaultValue float64, pathPrefix string) error {
+	value, ok := obj[field]
+	if !ok || value == nil {
+		obj[field] = defaultValue
+		return nil
+	}
+
+	numberValue, ok := asNumber(value)
+	if !ok {
+		return fmt.Errorf("%s.%s must be a number", pathPrefix, field)
+	}
+	if numberValue < 0 {
+		return fmt.Errorf("%s.%s must be >= 0", pathPrefix, field)
+	}
+	obj[field] = numberValue
+	return nil
+}
+
+func normalizeBoolField(obj map[string]any, field string, defaultValue bool, pathPrefix string) error {
+	value, ok := obj[field]
+	if !ok || value == nil {
+		obj[field] = defaultValue
+		return nil
+	}
+
+	boolValue, ok := value.(bool)
+	if !ok {
+		return fmt.Errorf("%s.%s must be a boolean", pathPrefix, field)
+	}
+	obj[field] = boolValue
+	return nil
+}
+
+func asNumber(value any) (float64, bool) {
+	switch typed := value.(type) {
+	case float64:
+		return typed, true
+	case float32:
+		return float64(typed), true
+	case int:
+		return float64(typed), true
+	case int8:
+		return float64(typed), true
+	case int16:
+		return float64(typed), true
+	case int32:
+		return float64(typed), true
+	case int64:
+		return float64(typed), true
+	case uint:
+		return float64(typed), true
+	case uint8:
+		return float64(typed), true
+	case uint16:
+		return float64(typed), true
+	case uint32:
+		return float64(typed), true
+	case uint64:
+		return float64(typed), true
+	case json.Number:
+		parsed, err := typed.Float64()
+		if err != nil {
+			return 0, false
+		}
+		return parsed, true
+	default:
+		return 0, false
+	}
 }
 
 func glyphDocumentEmpty(doc map[string]any) bool {

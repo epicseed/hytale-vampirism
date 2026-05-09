@@ -73,6 +73,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
         this.selectionService = selectionService;
         this.setPermissionGroups(GameMode.Adventure.toString(), GameMode.Creative.toString());
         this.addSubCommand(new PrimarySubCommand());
+        this.addSubCommand(new PrimaryReleaseSubCommand());
         this.addSubCommand(new SecondarySubCommand());
         this.addSubCommand(new Ability1SubCommand());
         this.addSubCommand(new Ability2SubCommand());
@@ -109,6 +110,21 @@ public final class VampirismRitualCommand extends AbstractCommand {
                                @Nonnull PlayerRef playerRef,
                                @Nonnull World world) {
             drawSigil(ctx, store, ref, playerRef, world);
+        }
+    }
+
+    private final class PrimaryReleaseSubCommand extends AbstractPlayerCommand {
+        private PrimaryReleaseSubCommand() {
+            super("primaryrelease", "Internal release hook for ritual tracing");
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext ctx,
+                               @Nonnull Store<EntityStore> store,
+                               @Nonnull Ref<EntityStore> ref,
+                               @Nonnull PlayerRef playerRef,
+                               @Nonnull World world) {
+            releaseSigil(ctx, store, ref, playerRef, world);
         }
     }
 
@@ -489,10 +505,9 @@ public final class VampirismRitualCommand extends AbstractCommand {
                            @Nonnull Ref<EntityStore> ref,
                            @Nonnull PlayerRef playerRef,
                            @Nonnull World world) {
-        long now = System.currentTimeMillis();
-        ritualVisualSystem.pulsePrimaryHold(playerRef.getUuid(), now);
         VampiricRitualPointState tracingPoint = tracingPoint(runtimeService.snapshot(playerRef.getUuid()).orElse(null));
         if (tracingPoint != null) {
+            ritualVisualSystem.beginPrimaryHold(playerRef.getUuid());
             return;
         }
 
@@ -534,7 +549,36 @@ public final class VampirismRitualCommand extends AbstractCommand {
                 anchor.blockPosition(),
                 anchor.topCenter(),
                 pointTarget);
+        if (result.snapshot() != null && tracingPoint(result.snapshot()) != null) {
+            ritualVisualSystem.beginPrimaryHold(playerRef.getUuid());
+        } else {
+            ritualVisualSystem.releasePrimaryHold(playerRef.getUuid());
+        }
         sendFeedback(ctx, playerRef, result.message(), result.updated() ? "green" : "yellow");
+        if (result.snapshot() != null) {
+            sendSnapshot(ctx, result.snapshot());
+            revealForPlayer(world, playerRef, result.snapshot());
+        }
+    }
+
+    private void releaseSigil(@Nonnull CommandContext ctx,
+                              @Nonnull Store<EntityStore> store,
+                              @Nonnull Ref<EntityStore> ref,
+                              @Nonnull PlayerRef playerRef,
+                              @Nonnull World world) {
+        ritualVisualSystem.releasePrimaryHold(playerRef.getUuid());
+        Optional<VampiricRitualRuntimeSnapshot> snapshot = runtimeService.snapshot(playerRef.getUuid());
+        VampiricRitualPointState tracingPoint = tracingPoint(snapshot.orElse(null));
+        if (tracingPoint == null || snapshot.map(VampiricRitualRuntimeSnapshot::active).orElse(false)) {
+            return;
+        }
+
+        VampiricRitualRuntimeService.TraceStopResult result = runtimeService.stopTrace(playerRef.getUuid());
+        sendFeedback(
+                ctx,
+                playerRef,
+                result.message(),
+                result.sealed() ? "green" : result.rejected() ? "red" : "yellow");
         if (result.snapshot() != null) {
             sendSnapshot(ctx, result.snapshot());
             revealForPlayer(world, playerRef, result.snapshot());

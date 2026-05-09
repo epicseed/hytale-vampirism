@@ -2,18 +2,29 @@
   "Type": "Charging",
   "Effects": {
     "ItemAnimationId": "CastPushCharging",
-    "WorldSoundEventId": "SFX_Skeleton_Mage_Spellbook_Charge"
+    "WorldSoundEventId": "SFX_Skeleton_Mage_Spellbook_Charge",
+    "ClearAnimationOnFinish": true
   },
-  "AllowIndefiniteHold": false,
+  "AllowIndefiniteHold": true,
   "HorizontalSpeedMultiplier": 0.8,
   "CancelOnItemChange": true,
   "RunTime": 0,
   "Next": {
-    "0.167": {
+    "0.0": {
+      "Type": "Simple",
+      "Effects": {
+        "ItemAnimationId": "Interact",
+        "ClearAnimationOnFinish": true
+      },
+      "RunTime": 0.05
+    },
+    "0.35": {
       "Type": "Simple",
       "Effects": {
         "ItemAnimationId": "CastPushCharged",
-        "WorldSoundEventId": "SFX_Skeleton_Mage_Spellbook_Impact"
+        "WorldSoundEventId": "SFX_Skeleton_Mage_Spellbook_Impact",
+        "WaitForAnimationToFinish": true,
+        "ClearAnimationOnFinish": true
       },
       "RunTime": 0.167,
       "Next": {
@@ -25,7 +36,9 @@
   "Failed": {
     "Type": "Simple",
     "Effects": {
-      "ItemAnimationId": "Interact"
-    }
+      "ItemAnimationId": "Interact",
+      "ClearAnimationOnFinish": true
+    },
+    "RunTime": 0.05
   }
 }

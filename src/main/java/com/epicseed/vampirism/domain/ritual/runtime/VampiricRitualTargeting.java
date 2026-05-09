@@ -126,15 +126,21 @@ public final class VampiricRitualTargeting {
                                        @Nonnull Store<EntityStore> store,
                                        @Nonnull Vector3d anchorCenter,
                                        double maxDistance) {
+        return distanceToAnchor(ref, store, anchorCenter) <= maxDistance;
+    }
+
+    public static double distanceToAnchor(@Nonnull Ref<EntityStore> ref,
+                                          @Nonnull Store<EntityStore> store,
+                                          @Nonnull Vector3d anchorCenter) {
         TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
         if (transform == null) {
-            return false;
+            return Double.POSITIVE_INFINITY;
         }
         Vector3d position = new Vector3d(transform.getPosition());
         double dx = position.x - anchorCenter.x;
         double dy = position.y - anchorCenter.y;
         double dz = position.z - anchorCenter.z;
-        return dx * dx + dy * dy + dz * dz <= maxDistance * maxDistance;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
     @Nullable

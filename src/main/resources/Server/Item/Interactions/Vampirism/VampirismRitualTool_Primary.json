@@ -12,14 +12,28 @@
     "CancelOnItemChange": true,
     "RunTime": 0,
     "Next": {
-      "0.01": {
-        "Type": "Command",
-        "Command": "vampirismritual primary"
+      "0.0": {
+        "Type": "Simple",
+        "Effects": {
+          "ItemAnimationId": "CastHurlCharged"
+        },
+        "RunTime": 0.05,
+        "Next": {
+          "Type": "Command",
+          "Command": "vampirismritual primaryrelease"
+        }
       }
     },
     "Failed": {
-      "Type": "Command",
-      "Command": "vampirismritual primary"
+      "Type": "Simple",
+      "Effects": {
+        "ItemAnimationId": "CastHurlCharged"
+      },
+      "RunTime": 0.05,
+      "Next": {
+        "Type": "Command",
+        "Command": "vampirismritual primaryrelease"
+      }
     }
   }
 }
