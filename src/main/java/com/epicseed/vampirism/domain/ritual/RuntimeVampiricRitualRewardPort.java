@@ -1,5 +1,9 @@
 package com.epicseed.vampirism.domain.ritual;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
@@ -44,6 +48,11 @@ import it.unimi.dsi.fastutil.Pair;
 
 public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVampiricRitualRewardPort {
 
+    @FunctionalInterface
+    interface SideEffectHandler {
+        void apply(@Nonnull UUID uuid, @Nullable String ritualId);
+    }
+
     private static final String VEIL_EFFECT_ID = "Potion_NightVision";
     private static final float VEIL_DURATION_SECONDS = 45.0f;
     private static final float VEIL_SPEED_BONUS = 1.15f;
@@ -65,17 +74,30 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
     private final NightHuntService nightHuntService;
     private final MasqueradeHeatService masqueradeHeatService;
     private final TemporaryModifierTracker<StatType> temporaryModifiers;
+    private final Map<String, SideEffectHandler> sideEffectHandlers;
 
     public RuntimeVampiricRitualRewardPort(@Nonnull VampirismSkillProgressionAccess progressionAccess,
                                            @Nonnull VampiricLineageService lineageService,
                                            @Nonnull NightHuntService nightHuntService,
                                            @Nonnull MasqueradeHeatService masqueradeHeatService,
                                            @Nonnull TemporaryModifierTracker<StatType> temporaryModifiers) {
+        this(progressionAccess, lineageService, nightHuntService, masqueradeHeatService, temporaryModifiers, null);
+    }
+
+    RuntimeVampiricRitualRewardPort(@Nonnull VampirismSkillProgressionAccess progressionAccess,
+                                    @Nonnull VampiricLineageService lineageService,
+                                    @Nonnull NightHuntService nightHuntService,
+                                    @Nonnull MasqueradeHeatService masqueradeHeatService,
+                                    @Nonnull TemporaryModifierTracker<StatType> temporaryModifiers,
+                                    @Nullable Map<String, SideEffectHandler> sideEffectHandlers) {
         super(progressionAccess);
-        this.lineageService = lineageService;
-        this.nightHuntService = nightHuntService;
-        this.masqueradeHeatService = masqueradeHeatService;
-        this.temporaryModifiers = temporaryModifiers;
+        this.lineageService = Objects.requireNonNull(lineageService, "lineageService");
+        this.nightHuntService = Objects.requireNonNull(nightHuntService, "nightHuntService");
+        this.masqueradeHeatService = Objects.requireNonNull(masqueradeHeatService, "masqueradeHeatService");
+        this.temporaryModifiers = Objects.requireNonNull(temporaryModifiers, "temporaryModifiers");
+        this.sideEffectHandlers = sideEffectHandlers != null
+                ? normalizeSideEffectHandlers(sideEffectHandlers)
+                : createDefaultSideEffectHandlers();
     }
 
     @Override
@@ -145,25 +167,9 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
         if (uuid == null || sideEffectId == null || sideEffectId.isBlank()) {
             return;
         }
-        switch (sideEffectId.trim()) {
-            case VampiricRitualRegistry.SIDE_EFFECT_GRANT_PERMANENT_VAMPIRISM -> {
-                VampireStatusRegistry.get().addVampire(uuid, resolvePlayerName(uuid));
-                VampirismPlayerFeedback.showRitualAscension(
-                        uuid,
-                        "Crimson Awakening",
-                        "You have become a true vampire.");
-            }
-            case VampiricRitualRegistry.SIDE_EFFECT_CLEAR_INFECTION -> {
-                if (VampirePlayerStateStore.isInitialized()) {
-                    VampirePlayerStateStore.get().clearInfection(uuid);
-                }
-            }
-            case VampiricRitualRegistry.SIDE_EFFECT_MARK_PREY -> applyMarkedPrey(uuid);
-            case VampiricRitualRegistry.SIDE_EFFECT_VEIL_OF_NIGHT -> applyVeilOfNight(uuid);
-            case VampiricRitualRegistry.SIDE_EFFECT_SUMMON_FAMILIAR -> summonFamiliar(uuid);
-            case VampiricRitualRegistry.SIDE_EFFECT_SOUL_EXCHANGE -> applySoulExchange(uuid);
-            default -> {
-            }
+        SideEffectHandler handler = sideEffectHandlers.get(sideEffectId.trim());
+        if (handler != null) {
+            handler.apply(uuid, ritualId);
         }
     }
 
@@ -196,6 +202,44 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
                 "Ritual collapse: the circle caves in, stripping " + Math.max(0, bloodLoss)
                         + " blood and leaving " + Math.round(Math.max(0d, corruption)) + "% corruption.",
                 "red");
+    }
+
+    @Nonnull
+    private Map<String, SideEffectHandler> createDefaultSideEffectHandlers() {
+        LinkedHashMap<String, SideEffectHandler> handlers = new LinkedHashMap<>();
+        handlers.put(VampiricRitualRegistry.SIDE_EFFECT_GRANT_PERMANENT_VAMPIRISM, (uuid, ritualId) -> grantPermanentVampirism(uuid));
+        handlers.put(VampiricRitualRegistry.SIDE_EFFECT_CLEAR_INFECTION, (uuid, ritualId) -> clearInfection(uuid));
+        handlers.put(VampiricRitualRegistry.SIDE_EFFECT_MARK_PREY, (uuid, ritualId) -> applyMarkedPrey(uuid));
+        handlers.put(VampiricRitualRegistry.SIDE_EFFECT_VEIL_OF_NIGHT, (uuid, ritualId) -> applyVeilOfNight(uuid));
+        handlers.put(VampiricRitualRegistry.SIDE_EFFECT_SUMMON_FAMILIAR, (uuid, ritualId) -> summonFamiliar(uuid));
+        handlers.put(VampiricRitualRegistry.SIDE_EFFECT_SOUL_EXCHANGE, (uuid, ritualId) -> applySoulExchange(uuid));
+        return Collections.unmodifiableMap(handlers);
+    }
+
+    @Nonnull
+    private static Map<String, SideEffectHandler> normalizeSideEffectHandlers(@Nonnull Map<String, SideEffectHandler> handlers) {
+        LinkedHashMap<String, SideEffectHandler> normalized = new LinkedHashMap<>();
+        handlers.forEach((sideEffectId, handler) -> {
+            if (sideEffectId == null || sideEffectId.isBlank()) {
+                return;
+            }
+            normalized.put(sideEffectId.trim(), Objects.requireNonNull(handler, "handler"));
+        });
+        return Collections.unmodifiableMap(normalized);
+    }
+
+    private void grantPermanentVampirism(@Nonnull UUID uuid) {
+        VampireStatusRegistry.get().addVampire(uuid, resolvePlayerName(uuid));
+        VampirismPlayerFeedback.showRitualAscension(
+                uuid,
+                "Crimson Awakening",
+                "You have become a true vampire.");
+    }
+
+    private void clearInfection(@Nonnull UUID uuid) {
+        if (VampirePlayerStateStore.isInitialized()) {
+            VampirePlayerStateStore.get().clearInfection(uuid);
+        }
     }
 
     @Nonnull

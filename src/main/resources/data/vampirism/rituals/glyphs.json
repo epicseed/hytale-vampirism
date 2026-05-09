@@ -28,9 +28,9 @@
           "offsetZ": 0.217
         },
         {
-          "offsetX": -0.183,
+          "offsetX": -0.178,
           "offsetY": 0,
-          "offsetZ": 0.12
+          "offsetZ": 0.117
         }
       ],
       "traceTolerance": 0.48
@@ -150,27 +150,32 @@
       "glyphId": "fang_wake",
       "mistakeCorruptionPenalty": 5,
       "mistakeStabilityPenalty": 6,
-      "symbolId": "mirror_fang",
+      "symbolId": "fang_wake",
       "traceSteps": [
         {
-          "offsetX": -0.337,
+          "offsetX": -0.33,
           "offsetY": 0,
-          "offsetZ": -0.386
+          "offsetZ": 0.239
         },
         {
-          "offsetX": -0.069,
+          "offsetX": -0.138,
           "offsetY": 0,
-          "offsetZ": 0.348
+          "offsetZ": -0.227
         },
         {
-          "offsetX": 0.067,
+          "offsetX": 0.014,
           "offsetY": 0,
-          "offsetZ": -0.087
+          "offsetZ": 0.048
         },
         {
-          "offsetX": 0.366,
+          "offsetX": 0.138,
           "offsetY": 0,
-          "offsetZ": 0.322
+          "offsetZ": -0.203
+        },
+        {
+          "offsetX": 0.342,
+          "offsetY": 0,
+          "offsetZ": 0.239
         }
       ],
       "traceTolerance": 0.48
@@ -180,32 +185,27 @@
       "glyphId": "mirror_fang",
       "mistakeCorruptionPenalty": 5,
       "mistakeStabilityPenalty": 6,
-      "symbolId": "fang_wake",
+      "symbolId": "mirror_fang",
       "traceSteps": [
         {
-          "offsetX": -0.321,
+          "offsetX": -0.354,
           "offsetY": 0,
-          "offsetZ": 0.229
+          "offsetZ": -0.391
         },
         {
-          "offsetX": -0.14,
+          "offsetX": -0.074,
           "offsetY": 0,
-          "offsetZ": -0.225
+          "offsetZ": 0.383
         },
         {
-          "offsetX": 0.002,
+          "offsetX": 0.071,
           "offsetY": 0,
-          "offsetZ": 0.039
+          "offsetZ": -0.089
         },
         {
-          "offsetX": 0.145,
+          "offsetX": 0.368,
           "offsetY": 0,
-          "offsetZ": -0.213
-        },
-        {
-          "offsetX": 0.328,
-          "offsetY": 0,
-          "offsetZ": 0.234
+          "offsetZ": 0.338
         }
       ],
       "traceTolerance": 0.48

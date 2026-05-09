@@ -21,6 +21,15 @@ type skillDataSection struct {
 const ritualTemplatesDefaultJSON = `{"templates":[]}`
 const ritualGlyphDefinitionsDefaultJSON = `{"glyphs":[]}`
 
+var writeFileAtomically = atomicWriteFile
+
+type skillDataWritePlan struct {
+	sections         map[string][]byte
+	ritualTemplates  []byte
+	ritualGlyphs     []byte
+	removeLegacyJSON bool
+}
+
 var skillDataSections = []skillDataSection{
 	{Key: "abilities", FileName: "abilities.json", DefaultJSON: "[]"},
 	{Key: "passives", FileName: "passives.json", DefaultJSON: "[]"},
@@ -72,29 +81,30 @@ func postData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := backupSkillData(); err != nil {
+	current, err := readSkillDataDocument()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("read error: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	writePlan, err := buildSkillDataWritePlan(rawSections)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("invalid ritual data: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if err := backupSkillDataDocument(current); err != nil {
 		http.Error(w, fmt.Sprintf("backup error: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	if err := writeSplitSkillData(rawSections); err != nil {
-		http.Error(w, fmt.Sprintf("write error: %v", err), http.StatusInternalServerError)
-		return
-	}
-	if err := writeRitualTemplates(rawSections["ritualTemplates"]); err != nil {
-		http.Error(w, fmt.Sprintf("ritual template write error: %v", err), http.StatusInternalServerError)
-		return
-	}
-	if err := writeRitualGlyphDefinitions(rawSections["ritualGlyphs"]); err != nil {
-		http.Error(w, fmt.Sprintf("ritual glyph write error: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	if legacyJSONPath != "" {
-		if err := os.Remove(legacyJSONPath); err != nil && !os.IsNotExist(err) {
-			http.Error(w, fmt.Sprintf("cleanup error: %v", err), http.StatusInternalServerError)
+	if err := writePlan.write(); err != nil {
+		if restoreErr := restoreSkillDataDocument(current); restoreErr != nil {
+			http.Error(w, fmt.Sprintf("write error: %v (restore failed: %v)", err, restoreErr), http.StatusInternalServerError)
 			return
 		}
+		http.Error(w, fmt.Sprintf("write error: %v", err), http.StatusInternalServerError)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -198,6 +208,10 @@ func backupSkillData() error {
 		}
 		return err
 	}
+	return backupSkillDataDocument(current)
+}
+
+func backupSkillDataDocument(current []byte) error {
 	bakPath := filepath.Join(filepath.Dir(skillDataDir),
 		"SkillsData."+time.Now().Format("20060102-150405")+".bak.json")
 	return os.WriteFile(bakPath, current, 0644)
@@ -216,6 +230,98 @@ func writeSplitSkillData(rawSections map[string]json.RawMessage) error {
 		if err := os.WriteFile(path, append(normalized, '\n'), 0644); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func buildSkillDataWritePlan(rawSections map[string]json.RawMessage) (*skillDataWritePlan, error) {
+	sections := make(map[string][]byte, len(skillDataSections))
+	for _, section := range skillDataSections {
+		normalized, err := normalizeSection(rawSections[section.Key], section.DefaultJSON)
+		if err != nil {
+			return nil, fmt.Errorf("normalize %s: %w", section.Key, err)
+		}
+		sections[section.Key] = normalized
+	}
+
+	templateDoc, err := parseRitualDocument(rawSections["ritualTemplates"], ritualTemplatesDefaultJSON, "ritualTemplates", "templates")
+	if err != nil {
+		return nil, err
+	}
+	glyphBytes, glyphIDs, err := normalizeRitualGlyphDefinitions(rawSections["ritualGlyphs"], templateDoc)
+	if err != nil {
+		return nil, err
+	}
+	templateBytes, err := normalizeRitualTemplates(rawSections["ritualTemplates"], glyphIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &skillDataWritePlan{
+		sections:         sections,
+		ritualTemplates:  templateBytes,
+		ritualGlyphs:     glyphBytes,
+		removeLegacyJSON: legacyJSONPath != "",
+	}, nil
+}
+
+func (plan *skillDataWritePlan) write() error {
+	if err := os.MkdirAll(skillDataDir, 0755); err != nil {
+		return err
+	}
+	for _, section := range skillDataSections {
+		path := filepath.Join(skillDataDir, section.FileName)
+		if err := writeFileAtomically(path, append(plan.sections[section.Key], '\n')); err != nil {
+			return err
+		}
+	}
+	if err := os.MkdirAll(filepath.Dir(ritualTemplatesPath), 0755); err != nil {
+		return err
+	}
+	if err := writeFileAtomically(ritualTemplatesPath, append(plan.ritualTemplates, '\n')); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(ritualGlyphDefinitionsPath), 0755); err != nil {
+		return err
+	}
+	if err := writeFileAtomically(ritualGlyphDefinitionsPath, append(plan.ritualGlyphs, '\n')); err != nil {
+		return err
+	}
+	if plan.removeLegacyJSON {
+		if err := os.Remove(legacyJSONPath); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return nil
+}
+
+func restoreSkillDataDocument(current []byte) error {
+	rawSections := map[string]json.RawMessage{}
+	if err := json.Unmarshal(current, &rawSections); err != nil {
+		return err
+	}
+	plan, err := buildSkillDataWritePlan(rawSections)
+	if err != nil {
+		return err
+	}
+	return plan.write()
+}
+
+func atomicWriteFile(path string, data []byte) (err error) {
+	tempPath := filepath.Join(
+		filepath.Dir(path),
+		fmt.Sprintf(".%s.tmp-%d", filepath.Base(path), time.Now().UnixNano()),
+	)
+	defer func() {
+		if err != nil {
+			_ = os.Remove(tempPath)
+		}
+	}()
+	if err = os.WriteFile(tempPath, data, 0644); err != nil {
+		return err
+	}
+	if err = os.Rename(tempPath, path); err != nil {
+		return err
 	}
 	return nil
 }
@@ -240,7 +346,7 @@ func readRitualTemplatesValue() (any, error) {
 }
 
 func writeRitualTemplates(raw json.RawMessage) error {
-	normalized, err := normalizeRitualTemplates(raw)
+	normalized, err := normalizeRitualTemplates(raw, nil)
 	if err != nil {
 		return err
 	}
@@ -270,7 +376,7 @@ func readRitualGlyphDefinitionsValue() (any, error) {
 }
 
 func writeRitualGlyphDefinitions(raw json.RawMessage) error {
-	normalized, err := normalizeRitualGlyphDefinitions(raw)
+	normalized, _, err := normalizeRitualGlyphDefinitions(raw, nil)
 	if err != nil {
 		return err
 	}
@@ -280,28 +386,14 @@ func writeRitualGlyphDefinitions(raw json.RawMessage) error {
 	return os.WriteFile(ritualGlyphDefinitionsPath, append(normalized, '\n'), 0644)
 }
 
-func normalizeRitualTemplates(raw json.RawMessage) ([]byte, error) {
-	if len(raw) == 0 {
-		raw = json.RawMessage(ritualTemplatesDefaultJSON)
-	}
-
-	var value any
-	if err := json.Unmarshal(raw, &value); err != nil {
+func normalizeRitualTemplates(raw json.RawMessage, glyphIDs map[string]struct{}) ([]byte, error) {
+	obj, err := parseRitualDocument(raw, ritualTemplatesDefaultJSON, "ritualTemplates", "templates")
+	if err != nil {
 		return nil, err
 	}
-
-	obj, ok := value.(map[string]any)
-	if !ok {
-		return nil, fmt.Errorf("ritualTemplates must be a JSON object")
+	if err := validateRitualTemplatesDocument(obj, glyphIDs); err != nil {
+		return nil, err
 	}
-	if templates, ok := obj["templates"]; ok {
-		if _, ok := templates.([]any); !ok {
-			return nil, fmt.Errorf("ritualTemplates.templates must be an array")
-		}
-	} else {
-		obj["templates"] = []any{}
-	}
-
 	pretty, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		return nil, err
@@ -309,9 +401,30 @@ func normalizeRitualTemplates(raw json.RawMessage) ([]byte, error) {
 	return pretty, nil
 }
 
-func normalizeRitualGlyphDefinitions(raw json.RawMessage) ([]byte, error) {
+func normalizeRitualGlyphDefinitions(raw json.RawMessage, fallbackTemplates any) ([]byte, map[string]struct{}, error) {
+	obj, err := parseRitualDocument(raw, ritualGlyphDefinitionsDefaultJSON, "ritualGlyphs", "glyphs")
+	if err != nil {
+		return nil, nil, err
+	}
+	if glyphDocumentEmpty(obj) && fallbackTemplates != nil {
+		if derived, ok := deriveRitualGlyphDefinitions(fallbackTemplates).(map[string]any); ok {
+			obj = derived
+		}
+	}
+	glyphIDs, err := validateRitualGlyphDocument(obj)
+	if err != nil {
+		return nil, nil, err
+	}
+	pretty, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		return nil, nil, err
+	}
+	return pretty, glyphIDs, nil
+}
+
+func parseRitualDocument(raw json.RawMessage, defaultJSON string, documentName string, arrayKey string) (map[string]any, error) {
 	if len(raw) == 0 {
-		raw = json.RawMessage(ritualGlyphDefinitionsDefaultJSON)
+		raw = json.RawMessage(defaultJSON)
 	}
 
 	var value any
@@ -321,21 +434,142 @@ func normalizeRitualGlyphDefinitions(raw json.RawMessage) ([]byte, error) {
 
 	obj, ok := value.(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("ritualGlyphs must be a JSON object")
+		return nil, fmt.Errorf("%s must be a JSON object", documentName)
 	}
-	if glyphs, ok := obj["glyphs"]; ok {
-		if _, ok := glyphs.([]any); !ok {
-			return nil, fmt.Errorf("ritualGlyphs.glyphs must be an array")
+	if entries, ok := obj[arrayKey]; ok {
+		if _, ok := entries.([]any); !ok {
+			return nil, fmt.Errorf("%s.%s must be an array", documentName, arrayKey)
 		}
 	} else {
-		obj["glyphs"] = []any{}
+		obj[arrayKey] = []any{}
 	}
+	return obj, nil
+}
 
-	pretty, err := json.MarshalIndent(obj, "", "  ")
-	if err != nil {
-		return nil, err
+func validateRitualGlyphDocument(doc map[string]any) (map[string]struct{}, error) {
+	glyphEntries, _ := doc["glyphs"].([]any)
+	glyphIDs := make(map[string]struct{}, len(glyphEntries))
+	for index, entry := range glyphEntries {
+		glyph, ok := entry.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("ritualGlyphs.glyphs[%d] must be an object", index)
+		}
+		glyphID := strings.TrimSpace(firstString(glyph["glyphId"]))
+		if glyphID == "" {
+			return nil, fmt.Errorf("ritualGlyphs.glyphs[%d].glyphId is required", index)
+		}
+		if _, exists := glyphIDs[glyphID]; exists {
+			return nil, fmt.Errorf("ritualGlyphs.glyphs[%d].glyphId duplicates %q", index, glyphID)
+		}
+		glyphIDs[glyphID] = struct{}{}
+		glyph["glyphId"] = glyphID
+		if symbolID := strings.TrimSpace(firstString(glyph["symbolId"], glyphID)); symbolID != "" {
+			glyph["symbolId"] = symbolID
+		}
+		if displayName := strings.TrimSpace(firstString(glyph["displayName"], humanizeGlyphID(glyphID))); displayName != "" {
+			glyph["displayName"] = displayName
+		}
+		if traceSteps, ok := glyph["traceSteps"]; ok {
+			steps, ok := traceSteps.([]any)
+			if !ok {
+				return nil, fmt.Errorf("ritualGlyphs.glyphs[%d].traceSteps must be an array", index)
+			}
+			for stepIndex, stepEntry := range steps {
+				if _, ok := stepEntry.(map[string]any); !ok {
+					return nil, fmt.Errorf("ritualGlyphs.glyphs[%d].traceSteps[%d] must be an object", index, stepIndex)
+				}
+			}
+		} else {
+			glyph["traceSteps"] = []any{}
+		}
 	}
-	return pretty, nil
+	return glyphIDs, nil
+}
+
+func validateRitualTemplatesDocument(doc map[string]any, glyphIDs map[string]struct{}) error {
+	templateEntries, _ := doc["templates"].([]any)
+	ritualIDs := make(map[string]struct{}, len(templateEntries))
+	for templateIndex, entry := range templateEntries {
+		template, ok := entry.(map[string]any)
+		if !ok {
+			return fmt.Errorf("ritualTemplates.templates[%d] must be an object", templateIndex)
+		}
+		ritualID := strings.TrimSpace(firstString(template["ritualId"]))
+		if ritualID == "" {
+			return fmt.Errorf("ritualTemplates.templates[%d].ritualId is required", templateIndex)
+		}
+		if _, exists := ritualIDs[ritualID]; exists {
+			return fmt.Errorf("ritualTemplates.templates[%d].ritualId duplicates %q", templateIndex, ritualID)
+		}
+		ritualIDs[ritualID] = struct{}{}
+		template["ritualId"] = ritualID
+
+		points, ok := template["points"]
+		if !ok {
+			template["points"] = []any{}
+			points = template["points"]
+		}
+		pointEntries, ok := points.([]any)
+		if !ok {
+			return fmt.Errorf("ritualTemplates.templates[%d].points must be an array", templateIndex)
+		}
+		pointIDs := make(map[string]struct{}, len(pointEntries))
+		for pointIndex, pointEntry := range pointEntries {
+			point, ok := pointEntry.(map[string]any)
+			if !ok {
+				return fmt.Errorf("ritualTemplates.templates[%d].points[%d] must be an object", templateIndex, pointIndex)
+			}
+			pointID := strings.TrimSpace(firstString(point["id"]))
+			if pointID == "" {
+				return fmt.Errorf("ritualTemplates.templates[%d].points[%d].id is required", templateIndex, pointIndex)
+			}
+			if _, exists := pointIDs[pointID]; exists {
+				return fmt.Errorf("ritualTemplates.templates[%d].points[%d].id duplicates %q", templateIndex, pointIndex, pointID)
+			}
+			pointIDs[pointID] = struct{}{}
+			point["id"] = pointID
+			glyphID := strings.TrimSpace(firstString(point["glyphId"], point["symbolId"], pointID))
+			if glyphID == "" {
+				return fmt.Errorf("ritualTemplates.templates[%d].points[%d].glyphId is required", templateIndex, pointIndex)
+			}
+			point["glyphId"] = glyphID
+			if glyphIDs != nil {
+				if _, exists := glyphIDs[glyphID]; !exists {
+					return fmt.Errorf("ritualTemplates.templates[%d].points[%d].glyphId references missing glyph %q", templateIndex, pointIndex, glyphID)
+				}
+			}
+		}
+
+		activationLinks, ok := template["activationLinks"]
+		if !ok {
+			template["activationLinks"] = []any{}
+			activationLinks = template["activationLinks"]
+		}
+		linkEntries, ok := activationLinks.([]any)
+		if !ok {
+			return fmt.Errorf("ritualTemplates.templates[%d].activationLinks must be an array", templateIndex)
+		}
+		for linkIndex, linkEntry := range linkEntries {
+			link, ok := linkEntry.(map[string]any)
+			if !ok {
+				return fmt.Errorf("ritualTemplates.templates[%d].activationLinks[%d] must be an object", templateIndex, linkIndex)
+			}
+			fromPointID := strings.TrimSpace(firstString(link["fromPointId"]))
+			toPointID := strings.TrimSpace(firstString(link["toPointId"]))
+			if fromPointID == "" || toPointID == "" {
+				return fmt.Errorf("ritualTemplates.templates[%d].activationLinks[%d] requires fromPointId and toPointId", templateIndex, linkIndex)
+			}
+			if _, exists := pointIDs[fromPointID]; !exists {
+				return fmt.Errorf("ritualTemplates.templates[%d].activationLinks[%d].fromPointId references missing point %q", templateIndex, linkIndex, fromPointID)
+			}
+			if _, exists := pointIDs[toPointID]; !exists {
+				return fmt.Errorf("ritualTemplates.templates[%d].activationLinks[%d].toPointId references missing point %q", templateIndex, linkIndex, toPointID)
+			}
+			link["fromPointId"] = fromPointID
+			link["toPointId"] = toPointID
+		}
+	}
+	return nil
 }
 
 func glyphDocumentEmpty(doc map[string]any) bool {

@@ -1,0 +1,31 @@
+{
+  "Type": "Charging",
+  "Effects": {
+    "ItemAnimationId": "CastPushCharging",
+    "WorldSoundEventId": "SFX_Skeleton_Mage_Spellbook_Charge"
+  },
+  "AllowIndefiniteHold": false,
+  "HorizontalSpeedMultiplier": 0.8,
+  "CancelOnItemChange": true,
+  "RunTime": 0,
+  "Next": {
+    "0.167": {
+      "Type": "Simple",
+      "Effects": {
+        "ItemAnimationId": "CastPushCharged",
+        "WorldSoundEventId": "SFX_Skeleton_Mage_Spellbook_Impact"
+      },
+      "RunTime": 0.167,
+      "Next": {
+        "Type": "Command",
+        "Command": "vampirismritual ability1"
+      }
+    }
+  },
+  "Failed": {
+    "Type": "Simple",
+    "Effects": {
+      "ItemAnimationId": "Interact"
+    }
+  }
+}

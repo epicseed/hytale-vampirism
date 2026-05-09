@@ -1,0 +1,51 @@
+$C = "../../Common.ui";
+
+@PointButtonStyle = ButtonStyle(
+  Default: (Background: #000000(0.0)),
+  Hovered: (Background: #ffffff(0.06)),
+  Pressed: (Background: #ffffff(0.12)),
+  Disabled: (Background: #000000(0.0)),
+  Sounds: $C.@ButtonSounds,
+);
+
+Group #RitualBookPoint {
+  Anchor: (Width: 48, Height: 48);
+
+  Group #PointGlow {
+    Anchor: (Left: 0, Top: 0, Width: 48, Height: 48);
+    Background: #6c4f3f;
+    Visible: false;
+  }
+
+  Group {
+    Anchor: (Left: 4, Top: 4, Width: 40, Height: 40);
+    Background: #ddc8aa;
+  }
+
+  Group #PointPlate {
+    Anchor: (Left: 8, Top: 8, Width: 32, Height: 32);
+    Background: #5b4638;
+  }
+
+  Group #PointGlyph {
+    Anchor: (Left: 9, Top: 9, Width: 30, Height: 30);
+    Background: "../Assets/Rituals/Vampirism_RitualGlyph_Symbol_Generic.png";
+  }
+
+  Group #PointDormantShade {
+    Anchor: (Left: 8, Top: 8, Width: 32, Height: 32);
+    Background: #1f120b(0.38);
+    Visible: true;
+  }
+
+  Button #PointTooltip {
+    Anchor: (Left: 8, Top: 8, Width: 32, Height: 32);
+    Style: @PointButtonStyle;
+  }
+
+  Label #PointIndex {
+    Anchor: (Left: 23, Top: 25, Width: 14, Height: 14);
+    Text: "1";
+    Style: (FontSize: 8, RenderBold: true, TextColor: #f7e7c8, HorizontalAlignment: Center, VerticalAlignment: Center);
+  }
+}

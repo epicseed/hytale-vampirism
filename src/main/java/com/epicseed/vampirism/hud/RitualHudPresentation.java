@@ -52,13 +52,16 @@ final class RitualHudPresentation {
 
     @Nonnull
     private static String guidance(@Nonnull VampiricRitualRuntimeSnapshot snapshot, @Nullable TraceState traceState) {
+        if (traceState != null) {
+            return "Trace " + traceState.symbolName();
+        }
         return switch (snapshot.phase()) {
-            case PREPARING -> snapshot.complete() ? "The circle is ready" : "Prepare the remaining glyphs";
-            case BINDING -> traceState != null ? "Trace " + traceState.symbolName() : "Bind the circle";
-            case CHANNELING -> "Maintain the channel";
-            case UNSTABLE -> snapshot.interferenceCount() > 0 ? "Clear interference" : "Stabilize the ritual";
-            case SUCCESS -> "Ritual complete";
-            case COLLAPSE -> "Ritual collapsed";
+            case PREPARING -> snapshot.complete() ? "Commit the circle" : "Trace remaining sigils";
+            case BINDING -> "Circle committed";
+            case CHANNELING -> "Ritual resolving";
+            case UNSTABLE -> snapshot.interferenceCount() > 0 ? "Clear interference" : "Steady the circle";
+            case SUCCESS -> "Ritual settled";
+            case COLLAPSE -> "Circle collapsed";
         };
     }
 
@@ -76,14 +79,15 @@ final class RitualHudPresentation {
         if (snapshot.totalPoints() <= 0) {
             return "";
         }
-        return "Glyphs " + snapshot.activatedPoints() + " / " + snapshot.totalPoints();
+        return "Sigils " + snapshot.activatedPoints() + " / " + snapshot.totalPoints();
     }
 
     @Nonnull
     private static String context(@Nonnull VampiricRitualRuntimeSnapshot snapshot, @Nullable TraceState traceState) {
         if (traceState != null) {
-            return "Next glyph: " + traceState.symbolName()
-                    + " · " + traceState.traceProgress()
+            return "Primary traces " + traceState.symbolName()
+                    + " · release to stop · "
+                    + traceState.traceProgress()
                     + " / " + traceState.totalTraceSteps();
         }
         if (snapshot.interferenceCount() > 0) {
@@ -93,13 +97,13 @@ final class RitualHudPresentation {
         }
         return switch (snapshot.phase()) {
             case PREPARING -> snapshot.complete()
-                    ? "The circle is primed. Begin the binding when ready."
-                    : "Wake each ritual point before binding.";
-            case BINDING -> "Complete each glyph trace to seal the circle.";
-            case CHANNELING -> "Stay within the circle until channeling ends.";
-            case UNSTABLE -> "The circle is slipping. Steady it now.";
-            case SUCCESS -> "The circle holds. Resolve the outcome.";
-            case COLLAPSE -> "The seal broke. Rebuild the circle.";
+                    ? "Circle ready. Press Ability3 beside the coffin to commit it."
+                    : "Primary traces sigils. Secondary clears the circle.";
+            case BINDING -> "The committed circle is taking hold. Stay near the coffin.";
+            case CHANNELING -> "The ritual is resolving. Stay near the coffin until it settles.";
+            case UNSTABLE -> "The circle is slipping. Recover stability before it collapses.";
+            case SUCCESS -> "The ritual settled. Reveal it again if you need one more pulse.";
+            case COLLAPSE -> "The circle collapsed. Retrace the sigils to try again.";
         };
     }
 

@@ -62,6 +62,7 @@ import com.epicseed.vampirism.domain.ritual.VampiricRitualTemplateRegistry;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualCompanionTracker;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackService;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualSelectionService;
 import com.epicseed.vampirism.hud.BloodGaugeHud;
 import com.epicseed.vampirism.hud.RitualHudService;
 import com.epicseed.vampirism.hud.RitualStatusHud;
@@ -236,6 +237,7 @@ public final class VampirismRuntime {
                 new VampiricRitualRuntimeService(ritualService, ritualTemplateRegistry);
         VampiricRitualContextResolver ritualContextResolver = new VampiricRitualContextResolver(progressionAccess);
         VampiricRitualFeedbackService ritualFeedbackService = new VampiricRitualFeedbackService();
+        VampiricRitualSelectionService ritualSelectionService = new VampiricRitualSelectionService();
         SkillRequirementEvaluator skillRequirementEvaluator = new SkillRequirementEvaluator(
                 progressionDefinitionProvider,
                 skillConditionEvaluator,
@@ -329,7 +331,8 @@ public final class VampirismRuntime {
         VampiricRitualSystem ritualVisualSystem = new VampiricRitualSystem(
                 ritualRuntimeService,
                 ritualContextResolver,
-                ritualFeedbackService);
+                ritualFeedbackService,
+                ritualSelectionService);
 
         VampiricSystemsSupport.configure(
                 VampirismConfig.get(),
@@ -364,9 +367,10 @@ public final class VampirismRuntime {
                         (uuid, playerRef) -> BloodFeedSystem.clearPlayer(uuid),
                         (uuid, playerRef) -> {
                             BloodConversionSystem.clearPlayer(uuid);
-                            abortRuntimeRitual(uuid, playerRef, ritualRuntimeService, ritualContextResolver);
+                            ritualRuntimeService.capturePersistedState(uuid);
                             RitualHudService.cleanup(playerRef);
                             ritualVisualSystem.clearPlayer(uuid, playerRef);
+                            ritualSelectionService.clearPlayer(uuid);
                             var familiar = VampiricRitualCompanionTracker.clearPlayer(uuid);
                             if (familiar != null && familiar.companionRef().isValid()) {
                                 Store<EntityStore> store = familiar.companionRef().getStore();
@@ -415,7 +419,9 @@ public final class VampirismRuntime {
                 ritualContextResolver,
                 runtime,
                 ritualVisualSystem,
-                ritualFeedbackService);
+                ritualFeedbackService,
+                ritualSelectionService,
+                ritualTemplateRegistry);
         return runtime;
     }
 
@@ -487,7 +493,9 @@ public final class VampirismRuntime {
                                          @Nonnull VampiricRitualContextResolver ritualContextResolver,
                                          @Nonnull VampirismRuntime runtime,
                                          @Nonnull VampiricRitualSystem ritualVisualSystem,
-                                         @Nonnull VampiricRitualFeedbackService ritualFeedbackService) {
+                                         @Nonnull VampiricRitualFeedbackService ritualFeedbackService,
+                                         @Nonnull VampiricRitualSelectionService ritualSelectionService,
+                                         @Nonnull VampiricRitualTemplateRegistry ritualTemplateRegistry) {
         plugin.getCommandRegistry().registerCommand(
                 new VampirismCommand(
                         plugin,
@@ -505,10 +513,13 @@ public final class VampirismRuntime {
         plugin.getCommandRegistry().registerCommand(new VampirismRelicCommand(abilityService));
         plugin.getCommandRegistry().registerCommand(
                 new VampirismRitualCommand(
+                        ritualService,
                         ritualRuntimeService,
+                        ritualTemplateRegistry,
                         ritualContextResolver,
                         ritualVisualSystem,
-                        ritualFeedbackService));
+                        ritualFeedbackService,
+                        ritualSelectionService));
         plugin.getCommandRegistry().registerCommand(new VampirismRelicBindingsCommand(progressionPageFactory));
         plugin.getCommandRegistry().registerCommand(new VampirismRelicBindingCommand(progressionPageFactory));
     }
@@ -605,28 +616,32 @@ public final class VampirismRuntime {
         Optional<VampiricRitualRuntimeSnapshot> snapshot = ritualRuntimeService.snapshot(uuid);
         if (snapshot.isEmpty()) {
             ritualRuntimeService.clearPlayer(uuid);
+            ritualRuntimeService.clearPersistedState(uuid);
             return;
         }
         if (playerRef == null) {
             ritualRuntimeService.clearPlayer(uuid);
+            ritualRuntimeService.clearPersistedState(uuid);
             return;
         }
         Store<EntityStore> store = playerRef.getStore();
         if (store == null || store.isShutdown()) {
             ritualRuntimeService.clearPlayer(uuid);
+            ritualRuntimeService.clearPersistedState(uuid);
             return;
         }
         Runnable action = () -> {
             if (store.isShutdown()) {
                 ritualRuntimeService.clearPlayer(uuid);
+                ritualRuntimeService.clearPersistedState(uuid);
                 return;
             }
-            ritualRuntimeService.abort(
+            var ritualContext = ritualContextResolver.buildContext(
                     uuid,
-                    ritualContextResolver.buildContext(
-                            uuid,
-                            store,
-                            Set.of(VampiricRitualRegistry.TAG_ANCIENT_COFFIN)));
+                    store,
+                    Set.of(VampiricRitualRegistry.TAG_ANCIENT_COFFIN));
+            ritualRuntimeService.abort(uuid, ritualContext);
+            ritualRuntimeService.discardPersistedState(uuid, ritualContext);
             ritualRuntimeService.clearPlayer(uuid);
         };
         World world = WorldStoreAdapter.resolveWorld(store);
@@ -643,5 +658,6 @@ public final class VampirismRuntime {
             return;
         }
         ritualRuntimeService.clearPlayer(uuid);
+        ritualRuntimeService.clearPersistedState(uuid);
     }
 }

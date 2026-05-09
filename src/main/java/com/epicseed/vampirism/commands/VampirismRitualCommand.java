@@ -1,6 +1,7 @@
 package com.epicseed.vampirism.commands;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -16,15 +17,21 @@ import com.epicseed.vampirism.domain.ritual.VampiricRitualRegistry;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeService;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeSnapshot;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualTemplateRegistry;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualAnchorState;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOutcomeTracker;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualRevealService;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualSelectionResolver;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualSelectionService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTargeting;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTargeting.TargetedBlock;
 import com.epicseed.vampirism.systems.VampiricRitualSystem;
+import com.epicseed.vampirism.ui.VampiricRitualBookPage;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.protocol.packets.interface_.NotificationStyle;
 import com.hypixel.hytale.server.core.Message;
@@ -34,29 +41,42 @@ import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredAr
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgumentType;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class VampirismRitualCommand extends AbstractCommand {
 
+    private final VampiricRitualService ritualService;
     private final VampiricRitualRuntimeService runtimeService;
+    private final VampiricRitualTemplateRegistry templateRegistry;
     private final VampiricRitualContextResolver contextResolver;
     private final VampiricRitualSystem ritualVisualSystem;
     private final VampiricRitualFeedbackService feedbackService;
+    private final VampiricRitualSelectionService selectionService;
 
-    public VampirismRitualCommand(@Nonnull VampiricRitualRuntimeService runtimeService,
+    public VampirismRitualCommand(@Nonnull VampiricRitualService ritualService,
+                                  @Nonnull VampiricRitualRuntimeService runtimeService,
+                                  @Nonnull VampiricRitualTemplateRegistry templateRegistry,
                                   @Nonnull VampiricRitualContextResolver contextResolver,
                                   @Nonnull VampiricRitualSystem ritualVisualSystem,
-                                  @Nonnull VampiricRitualFeedbackService feedbackService) {
-        super("vampirismritual", "Trace and channel vampiric rituals");
+                                  @Nonnull VampiricRitualFeedbackService feedbackService,
+                                  @Nonnull VampiricRitualSelectionService selectionService) {
+        super("vampirismritual", "Trace and complete vampiric rituals");
+        this.ritualService = ritualService;
         this.runtimeService = runtimeService;
+        this.templateRegistry = templateRegistry;
         this.contextResolver = contextResolver;
         this.ritualVisualSystem = ritualVisualSystem;
         this.feedbackService = feedbackService;
+        this.selectionService = selectionService;
         this.setPermissionGroups(GameMode.Adventure.toString(), GameMode.Creative.toString());
         this.addSubCommand(new PrimarySubCommand());
         this.addSubCommand(new SecondarySubCommand());
+        this.addSubCommand(new Ability1SubCommand());
+        this.addSubCommand(new Ability2SubCommand());
+        this.addSubCommand(new Ability3SubCommand());
         this.addSubCommand(new UseSubCommand());
         this.addSubCommand(new ChannelSubCommand());
         this.addSubCommand(new DebugSubCommand());
@@ -66,17 +86,20 @@ public final class VampirismRitualCommand extends AbstractCommand {
     @Override
     public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
         ctx.sendMessage(Message.raw("=== Vampirism Ritual Tool ===").color("dark_red"));
-        ctx.sendMessage(Message.raw("/vampirismritual primary - trace or seal the sigil you are aiming at").color("yellow"));
-        ctx.sendMessage(Message.raw("/vampirismritual secondary - clear the prepared circle or break an active rite").color("yellow"));
-        ctx.sendMessage(Message.raw("/vampirismritual use - reveal the circle and your next ritual step").color("yellow"));
-        ctx.sendMessage(Message.raw("/vampirismritual channel - hold the rite together once the circle is complete").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirismritual primary - hold to trace a sigil, release to stop tracing").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirismritual secondary - cancel the current trace, clear the circle, or abort an active ritual").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirismritual ability1 - open the Sanguine Rite grimoire for the aimed anchor").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirismritual ability2 - reveal the active circle and pulse its next sigil").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirismritual ability3 - commit a completed circle and begin the ritual channel").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirismritual use - legacy alias for ability1/open grimoire").color("gray"));
+        ctx.sendMessage(Message.raw("/vampirismritual channel - legacy alias for ability3/commit circle").color("gray"));
         ctx.sendMessage(Message.raw("/vampirismritual debug <on|off|toggle|status> - switch between gameplay view and full debug guides").color("yellow"));
         return CompletableFuture.completedFuture(null);
     }
 
     private final class PrimarySubCommand extends AbstractPlayerCommand {
         private PrimarySubCommand() {
-            super("primary", "Trace or seal a ritual sigil around the current ancient coffin");
+            super("primary", "Hold to trace a ritual sigil, release to stop tracing");
         }
 
         @Override
@@ -85,42 +108,13 @@ public final class VampirismRitualCommand extends AbstractCommand {
                                @Nonnull Ref<EntityStore> ref,
                                @Nonnull PlayerRef playerRef,
                                @Nonnull World world) {
-            TargetedBlock target = VampiricRitualTargeting.resolveTargetedBlock(ref, store, world);
-            if (target == null) {
-                sendPlayerFeedback(ctx, playerRef, "Aim at the ground or coffin to place a ritual point.", "red");
-                return;
-            }
-
-            TargetedBlock anchor = resolveAnchor(playerRef.getUuid(), world, target);
-            if (anchor == null) {
-                sendPlayerFeedback(ctx, playerRef, "Look at an ancient coffin first to attune the circle.", "yellow");
-                return;
-            }
-
-            var pointTarget = VampiricRitualTargeting.resolvePointTarget(ref, store, anchor.topCenter(), target);
-            if (pointTarget == null) {
-                sendPlayerFeedback(ctx, playerRef, "Aim at the ritual plane around the coffin.", "red");
-                return;
-            }
-
-            VampiricRitualRuntimeService.PointToggleResult result = runtimeService.togglePoint(
-                    playerRef.getUuid(),
-                    VampiricRitualTargeting.AWAKENING_RITUAL_ID,
-                    anchor.blockId(),
-                    anchor.blockPosition(),
-                    anchor.topCenter(),
-                    pointTarget);
-            sendFeedback(ctx, playerRef, result.message(), result.updated() ? "green" : "yellow");
-            if (result.snapshot() != null) {
-                sendSnapshot(ctx, result.snapshot());
-                revealForPlayer(world, playerRef, result.snapshot());
-            }
+            drawSigil(ctx, store, ref, playerRef, world);
         }
     }
 
     private final class SecondarySubCommand extends AbstractPlayerCommand {
         private SecondarySubCommand() {
-            super("secondary", "Clear the prepared circle or break an active ritual");
+            super("secondary", "Cancel the current trace, clear the circle, or abort an active ritual");
         }
 
         @Override
@@ -137,14 +131,24 @@ public final class VampirismRitualCommand extends AbstractCommand {
                 sendFeedback(ctx, playerRef, result.message(), result.cleared() ? "green" : "yellow");
                 return;
             }
+            VampiricRitualPointState tracingPoint = tracingPoint(snapshot.orElse(null));
+            if (tracingPoint != null) {
+                VampiricRitualRuntimeService.TraceCancelResult result = runtimeService.cancelTrace(playerRef.getUuid());
+                sendFeedback(ctx, playerRef, result.message(), result.cancelled() ? "yellow" : "red");
+                if (result.snapshot() != null) {
+                    sendSnapshot(ctx, result.snapshot());
+                    revealForPlayer(world, playerRef, result.snapshot());
+                }
+                return;
+            }
             VampiricRitualRuntimeService.ClearResult result = runtimeService.clearAssembly(playerRef.getUuid());
             sendFeedback(ctx, playerRef, result.message(), result.cleared() ? "green" : "yellow");
         }
     }
 
-    private final class UseSubCommand extends AbstractPlayerCommand {
-        private UseSubCommand() {
-            super("use", "Reveal the current ritual circle and the next step");
+    private final class Ability1SubCommand extends AbstractPlayerCommand {
+        private Ability1SubCommand() {
+            super("ability1", "Open the Sanguine Rite grimoire for the current ritual anchor");
         }
 
         @Override
@@ -153,38 +157,65 @@ public final class VampirismRitualCommand extends AbstractCommand {
                                @Nonnull Ref<EntityStore> ref,
                                @Nonnull PlayerRef playerRef,
                                @Nonnull World world) {
-            Optional<VampiricRitualRuntimeSnapshot> current = runtimeService.snapshot(playerRef.getUuid());
-            if (current.isPresent()) {
-                sendSnapshot(ctx, current.get());
-                revealForPlayer(world, playerRef, current.get());
-                feedbackService.reveal(playerRef.getUuid(), store, world, current.get(), System.currentTimeMillis());
-                return;
-            }
+            openRitualBook(ctx, store, ref, playerRef, world);
+        }
+    }
 
-            TargetedBlock target = VampiricRitualTargeting.resolveTargetedBlock(ref, store, world);
-            if (!VampiricRitualTargeting.isAwakeningAnchor(target)) {
-                sendPlayerFeedback(ctx, playerRef, "Look at an ancient coffin to reveal the awakening circle.", "yellow");
-                return;
-            }
+    private final class Ability2SubCommand extends AbstractPlayerCommand {
+        private Ability2SubCommand() {
+            super("ability2", "Reveal the active circle and pulse its next sigil");
+        }
 
-            VampiricRitualRuntimeSnapshot preview = runtimeService.preview(
-                    VampiricRitualTargeting.AWAKENING_RITUAL_ID,
-                    target.blockId(),
-                    target.blockPosition(),
-                    target.topCenter()).orElse(null);
-            if (preview == null) {
-                sendPlayerFeedback(ctx, playerRef, "That anchor does not accept the awakening ritual.", "red");
+        @Override
+        protected void execute(@Nonnull CommandContext ctx,
+                               @Nonnull Store<EntityStore> store,
+                               @Nonnull Ref<EntityStore> ref,
+                               @Nonnull PlayerRef playerRef,
+                               @Nonnull World world) {
+            if (revealCurrentRite(ctx, store, playerRef, world)) {
                 return;
             }
-            sendSnapshot(ctx, preview);
-            revealForPlayer(world, playerRef, preview);
-            feedbackService.reveal(playerRef.getUuid(), store, world, preview, System.currentTimeMillis());
+            sendPlayerFeedback(
+                    ctx,
+                    playerRef,
+                    "No active ritual is bound to you. Aim at an anchor and use Ability1 to open the grimoire or attune one.",
+                    "yellow");
+        }
+    }
+
+    private final class UseSubCommand extends AbstractPlayerCommand {
+        private UseSubCommand() {
+            super("use", "Legacy alias for ability1/open grimoire");
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext ctx,
+                               @Nonnull Store<EntityStore> store,
+                               @Nonnull Ref<EntityStore> ref,
+                               @Nonnull PlayerRef playerRef,
+                               @Nonnull World world) {
+            openRitualBook(ctx, store, ref, playerRef, world);
+        }
+    }
+
+    private final class Ability3SubCommand extends AbstractPlayerCommand {
+        private Ability3SubCommand() {
+            super("ability3", "Commit a completed circle and begin the ritual channel");
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext ctx,
+                               @Nonnull Store<EntityStore> store,
+                               @Nonnull Ref<EntityStore> ref,
+                               @Nonnull PlayerRef playerRef,
+                               @Nonnull World world) {
+            channelRite(ctx, store, ref, playerRef, world);
         }
     }
 
     private final class ChannelSubCommand extends AbstractPlayerCommand {
         private ChannelSubCommand() {
-            super("channel", "Begin channeling a completed awakening ritual");
+            super("channel", "Legacy alias for ability3/commit circle");
         }
 
         @Override
@@ -193,23 +224,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
                                @Nonnull Ref<EntityStore> ref,
                                @Nonnull PlayerRef playerRef,
                                @Nonnull World world) {
-            Optional<VampiricRitualRuntimeSnapshot> snapshot = runtimeService.snapshot(playerRef.getUuid());
-            if (snapshot.isEmpty()) {
-                sendPlayerFeedback(ctx, playerRef, "Trace the awakening circle around an ancient coffin first.", "yellow");
-                return;
-            }
-
-            Set<String> extraTags = extraTagsForSnapshot(ref, store, world, snapshot.get());
-            VampiricRitualRuntimeService.BeginResult result = runtimeService.begin(
-                    playerRef.getUuid(),
-                    VampiricRitualRegistry.AWAKENING_RITUAL_ID,
-                    contextResolver.buildContext(playerRef, store, extraTags),
-                    System.currentTimeMillis());
-            sendFeedback(ctx, playerRef, result.message(), result.started() ? "green" : "yellow");
-            if (result.snapshot() != null) {
-                sendSnapshot(ctx, result.snapshot());
-                revealForPlayer(world, playerRef, result.snapshot());
-            }
+            channelRite(ctx, store, ref, playerRef, world);
         }
     }
 
@@ -258,10 +273,32 @@ public final class VampirismRitualCommand extends AbstractCommand {
             VampiricRitualRuntimeSnapshot value = snapshot.get();
             return new TargetedBlock(value.anchorBlockPosition(), value.anchorCenter(), value.anchorBlockId());
         }
-        if (VampiricRitualTargeting.isAwakeningAnchor(target)) {
+        if (VampiricRitualTargeting.isRitualAnchor(target, runtimeService::supportsAnchorBlock)) {
             return target;
         }
-        return target != null ? VampiricRitualTargeting.resolveAwakeningAnchorNear(world, target.blockPosition()) : null;
+        return target != null
+                ? VampiricRitualTargeting.resolveRitualAnchorNear(world, target.blockPosition(), runtimeService::supportsAnchorBlock)
+                : null;
+    }
+
+    @Nullable
+    private VampiricRitualRuntimeService.ResolvedAnchorRitual resolveTargetRitual(
+            @Nonnull UUID uuid,
+            @Nonnull TargetedBlock anchor,
+            @Nonnull List<VampiricRitualRuntimeService.ResolvedAnchorRitual> anchorRituals) {
+        Optional<VampiricRitualRuntimeSnapshot> snapshot = runtimeService.snapshot(uuid);
+        if (snapshot.isPresent()) {
+            VampiricRitualRuntimeSnapshot value = snapshot.get();
+            return new VampiricRitualRuntimeService.ResolvedAnchorRitual(
+                    value.ritualId(),
+                    value.displayName(),
+                    anchor.blockId());
+        }
+        return VampiricRitualSelectionResolver.resolveAttunedOrSingle(
+                uuid,
+                anchor.blockId(),
+                anchorRituals,
+                selectionService);
     }
 
     @Nonnull
@@ -269,12 +306,24 @@ public final class VampirismRitualCommand extends AbstractCommand {
                                                     @Nonnull Store<EntityStore> store,
                                                     @Nonnull World world,
                                                     @Nonnull VampiricRitualRuntimeSnapshot snapshot) {
+        return extraTagsForAnchor(
+                ref,
+                store,
+                world,
+                new TargetedBlock(snapshot.anchorBlockPosition(), snapshot.anchorCenter(), snapshot.anchorBlockId()));
+    }
+
+    @Nonnull
+    private static Set<String> extraTagsForAnchor(@Nonnull Ref<EntityStore> ref,
+                                                  @Nonnull Store<EntityStore> store,
+                                                  @Nonnull World world,
+                                                  @Nonnull TargetedBlock anchor) {
         LinkedHashSet<String> tags = new LinkedHashSet<>();
-        if (VampiricRitualTargeting.isAnchorBlock(world, snapshot.anchorBlockPosition(), snapshot.anchorBlockId())
+        if (VampiricRitualTargeting.isAnchorBlock(world, anchor.blockPosition(), anchor.blockId())
                 && VampiricRitualTargeting.isNearAnchor(
                 ref,
                 store,
-                snapshot.anchorCenter(),
+                anchor.topCenter(),
                 VampiricRitualTargeting.MAX_CHANNEL_DISTANCE)) {
             tags.add(VampiricRitualRegistry.TAG_ANCIENT_COFFIN);
         }
@@ -369,17 +418,195 @@ public final class VampirismRitualCommand extends AbstractCommand {
     private static String nextStepMessage(@Nonnull VampiricRitualRuntimeSnapshot snapshot,
                                           @Nullable VampiricRitualPointState tracingPoint) {
         if (tracingPoint != null) {
-            return "Next: finish tracing the " + tracingPoint.symbolName() + " sigil, then strike again to seal it.";
+            return "Next: hold Primary to trace the " + tracingPoint.symbolName()
+                    + " sigil, then release Primary to stop.";
         }
         return switch (snapshot.phase()) {
             case PREPARING -> snapshot.complete()
-                    ? "Next: stand by the coffin and use /vampirismritual channel to begin the rite."
-                    : "Next: seal the remaining sigils around the coffin.";
-            case BINDING -> "Next: keep channeling beside the coffin until the rite rises.";
-            case CHANNELING -> "Next: hold the channel steady and watch the links as the rite completes.";
-            case UNSTABLE -> "Next: keep channeling and regain control before the circle collapses.";
-            case SUCCESS -> "The rite has settled. Step away or prepare the next awakening.";
-            case COLLAPSE -> "The circle has collapsed. Rebuild the sigils before trying again.";
+                    ? "Next: stand by the coffin and press Ability3, or use /vampirismritual channel, to commit the completed circle and begin the ritual."
+                    : "Next: trace the remaining sigils with Primary, or press Secondary to clear the circle.";
+            case BINDING -> "Next: stay beside the coffin while the committed circle takes hold, or press Secondary to abort the ritual.";
+            case CHANNELING -> "Next: stay beside the coffin and watch the ritual settle.";
+            case UNSTABLE -> "Next: stay beside the coffin and recover stability before the circle collapses, or press Secondary to abort the ritual.";
+            case SUCCESS -> "The ritual has settled. Reveal it again if you need another pulse, or step away to reset.";
+            case COLLAPSE -> "The circle collapsed. Retrace the sigils before trying again.";
         };
+    }
+
+    private boolean revealCurrentRite(@Nonnull CommandContext ctx,
+                                      @Nonnull Store<EntityStore> store,
+                                      @Nonnull PlayerRef playerRef,
+                                      @Nonnull World world) {
+        Optional<VampiricRitualRuntimeSnapshot> current = runtimeService.snapshot(playerRef.getUuid());
+        if (current.isEmpty()) {
+            return false;
+        }
+        sendSnapshot(ctx, current.get());
+        revealForPlayer(world, playerRef, current.get());
+        feedbackService.reveal(playerRef.getUuid(), store, world, current.get(), System.currentTimeMillis());
+        return true;
+    }
+
+    private void openRitualBook(@Nonnull CommandContext ctx,
+                                @Nonnull Store<EntityStore> store,
+                                @Nonnull Ref<EntityStore> ref,
+                                @Nonnull PlayerRef playerRef,
+                                @Nonnull World world) {
+        TargetedBlock target = VampiricRitualTargeting.resolveTargetedBlock(ref, store, world);
+        TargetedBlock anchor = resolveAnchor(playerRef.getUuid(), world, target);
+        if (anchor == null) {
+            sendPlayerFeedback(ctx, playerRef, "Look at a ritual anchor to open the Sanguine Rite grimoire.", "yellow");
+            return;
+        }
+
+        List<VampiricRitualRuntimeService.ResolvedAnchorRitual> anchorRituals = runtimeService.listRitualsForAnchor(anchor.blockId());
+        if (anchorRituals.isEmpty()) {
+            sendPlayerFeedback(ctx, playerRef, "That anchor does not resolve to a known ritual.", "yellow");
+            return;
+        }
+
+        Player player = store.getComponent(ref, Player.getComponentType());
+        if (player == null) {
+            sendPlayerFeedback(ctx, playerRef, "The Sanguine Rite Tome cannot open from the current state.", "red");
+            return;
+        }
+
+        player.getPageManager().openCustomPage(
+                ref,
+                store,
+                new VampiricRitualBookPage(
+                        playerRef,
+                        ritualService,
+                        runtimeService,
+                        templateRegistry,
+                selectionService,
+                anchor,
+                contextResolver.buildContext(playerRef, store, extraTagsForAnchor(ref, store, world, anchor))));
+    }
+
+    private void drawSigil(@Nonnull CommandContext ctx,
+                           @Nonnull Store<EntityStore> store,
+                           @Nonnull Ref<EntityStore> ref,
+                           @Nonnull PlayerRef playerRef,
+                           @Nonnull World world) {
+        long now = System.currentTimeMillis();
+        ritualVisualSystem.pulsePrimaryHold(playerRef.getUuid(), now);
+        VampiricRitualPointState tracingPoint = tracingPoint(runtimeService.snapshot(playerRef.getUuid()).orElse(null));
+        if (tracingPoint != null) {
+            return;
+        }
+
+        TargetedBlock target = VampiricRitualTargeting.resolveTargetedBlock(ref, store, world);
+        if (target == null) {
+            sendPlayerFeedback(ctx, playerRef, "Aim at the ritual plane around an anchor to begin tracing.", "red");
+            return;
+        }
+
+        TargetedBlock anchor = resolveAnchor(playerRef.getUuid(), world, target);
+        if (anchor == null) {
+            sendPlayerFeedback(ctx, playerRef, "Look at a ritual anchor first.", "yellow");
+            return;
+        }
+
+        List<VampiricRitualRuntimeService.ResolvedAnchorRitual> anchorRituals = runtimeService.listRitualsForAnchor(anchor.blockId());
+        VampiricRitualRuntimeService.ResolvedAnchorRitual ritual = resolveTargetRitual(playerRef.getUuid(), anchor, anchorRituals);
+        if (ritual == null) {
+            sendPlayerFeedback(
+                    ctx,
+                    playerRef,
+                    anchorRituals.size() > 1
+                            ? "That anchor answers several rituals. Use /vampirismritual ability1 to open the Sanguine Rite grimoire and attune one for this session."
+                            : "That anchor does not resolve to a known ritual.",
+                    anchorRituals.size() > 1 ? "yellow" : "red");
+            return;
+        }
+
+        Vector3d pointTarget = VampiricRitualTargeting.resolvePointTarget(ref, store, anchor.topCenter(), target);
+        if (pointTarget == null) {
+            sendPlayerFeedback(ctx, playerRef, "Aim at the ritual plane around the anchor.", "red");
+            return;
+        }
+
+        VampiricRitualRuntimeService.PointToggleResult result = runtimeService.beginTrace(
+                playerRef.getUuid(),
+                ritual.ritualId(),
+                anchor.blockId(),
+                anchor.blockPosition(),
+                anchor.topCenter(),
+                pointTarget);
+        sendFeedback(ctx, playerRef, result.message(), result.updated() ? "green" : "yellow");
+        if (result.snapshot() != null) {
+            sendSnapshot(ctx, result.snapshot());
+            revealForPlayer(world, playerRef, result.snapshot());
+        }
+    }
+
+    private void channelRite(@Nonnull CommandContext ctx,
+                             @Nonnull Store<EntityStore> store,
+                             @Nonnull Ref<EntityStore> ref,
+                             @Nonnull PlayerRef playerRef,
+                             @Nonnull World world) {
+        TargetedBlock target = VampiricRitualTargeting.resolveTargetedBlock(ref, store, world);
+        TargetedBlock anchor = resolveAnchor(playerRef.getUuid(), world, target);
+        Optional<VampiricRitualRuntimeSnapshot> snapshot = runtimeService.snapshot(playerRef.getUuid());
+        Vector3d cueOrigin = cueOrigin(snapshot.orElse(null), anchor);
+        VampiricRitualPointState tracingPoint = tracingPoint(snapshot.orElse(null));
+        if (tracingPoint != null) {
+            sendPlayerFeedback(ctx, playerRef, "Release Primary to stop drawing before you commit the circle with Ability3.", "yellow");
+            feedbackService.emitChannelAttemptFailure(store, world, cueOrigin);
+            return;
+        }
+        if (snapshot.isEmpty()) {
+            sendPlayerFeedback(ctx, playerRef, "Trace a ritual circle around its anchor first.", "yellow");
+            feedbackService.emitChannelAttemptFailure(store, world, cueOrigin);
+            return;
+        }
+
+        Set<String> extraTags = extraTagsForSnapshot(ref, store, world, snapshot.get());
+        VampiricRitualRuntimeService.BeginResult result = runtimeService.begin(
+                playerRef.getUuid(),
+                snapshot.get().ritualId(),
+                contextResolver.buildContext(playerRef, store, extraTags),
+                System.currentTimeMillis());
+        sendFeedback(ctx, playerRef, result.message(), result.started() ? "green" : "yellow");
+        if (result.started()) {
+            feedbackService.emitChannelAttemptSuccess(store, world, cueOrigin(result.snapshot(), anchor, cueOrigin));
+        } else {
+            feedbackService.emitChannelAttemptFailure(store, world, cueOrigin(result.snapshot(), anchor, cueOrigin));
+        }
+        if (result.snapshot() != null) {
+            sendSnapshot(ctx, result.snapshot());
+            revealForPlayer(world, playerRef, result.snapshot());
+        }
+    }
+
+    @Nullable
+    private static VampiricRitualPointState tracingPoint(@Nullable VampiricRitualRuntimeSnapshot snapshot) {
+        if (snapshot == null) {
+            return null;
+        }
+        return snapshot.pointStates().stream()
+                .filter(VampiricRitualPointState::tracing)
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Nullable
+    private static Vector3d cueOrigin(@Nullable VampiricRitualRuntimeSnapshot snapshot,
+                                      @Nullable TargetedBlock anchor) {
+        return cueOrigin(snapshot, anchor, null);
+    }
+
+    @Nullable
+    private static Vector3d cueOrigin(@Nullable VampiricRitualRuntimeSnapshot snapshot,
+                                      @Nullable TargetedBlock anchor,
+                                      @Nullable Vector3d fallback) {
+        if (snapshot != null) {
+            return snapshot.anchorCenter();
+        }
+        if (anchor != null) {
+            return anchor.topCenter();
+        }
+        return fallback;
     }
 }

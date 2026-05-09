@@ -7,6 +7,6 @@
   "RunTime": 0.1,
   "Next": {
     "Type": "Command",
-    "Command": "vampirismritual secondary"
+    "Command": "vampirismritual ability2"
   }
 }

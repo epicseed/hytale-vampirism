@@ -37,6 +37,11 @@ public final class VampirismUiPaths {
     }
 
     @Nonnull
+    public static String ritualBookLayout() {
+        return ROOT + "/Screens/RitualBook.ui";
+    }
+
+    @Nonnull
     public static String settingsLayout() {
         return ROOT + "/Screens/ProgressionSettings.ui";
     }

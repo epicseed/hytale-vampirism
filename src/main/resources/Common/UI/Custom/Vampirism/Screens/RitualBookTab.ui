@@ -1,0 +1,49 @@
+$C = "../../Common.ui";
+
+@TabButtonStyle = ButtonStyle(
+  Default: (Background: #50372c),
+  Hovered: (Background: #684839),
+  Pressed: (Background: #422d24),
+  Disabled: (Background: #3a2821),
+  Sounds: $C.@ButtonSounds,
+);
+
+Group #RitualBookTab {
+  Anchor: (Width: 104, Height: 64);
+
+  Group #TabPlate {
+    Anchor: (Left: 0, Top: 0, Width: 104, Height: 64);
+    Background: #50372c;
+  }
+
+  Group {
+    Anchor: (Left: 6, Top: 6, Right: 6, Bottom: 6);
+    Background: #6a4f3d;
+  }
+
+  Button #TabButton {
+    Anchor: (Full: 0);
+    Style: @TabButtonStyle;
+  }
+
+  Group #TabIcon {
+    Anchor: (Left: 10, Top: 10, Width: 22, Height: 22);
+    Background: "../Assets/Rituals/Vampirism_RitualGlyph_Symbol_Generic.png";
+  }
+
+  Label #TabTitle {
+    Anchor: (Left: 38, Top: 8, Right: 10, Height: 30);
+    Text: "";
+    Style: (FontSize: 10, RenderBold: true, TextColor: #d2b59a, HorizontalAlignment: Center, VerticalAlignment: Center, Wrap: true);
+  }
+
+  Group #TabStatusBadge {
+    Anchor: (Left: 10, Right: 10, Bottom: 10, Height: 16);
+    Background: #5b4638;
+    Label #TabStatus {
+      Anchor: (Full: 0);
+      Text: "";
+      Style: (FontSize: 9, RenderBold: true, TextColor: #f6e7c6, HorizontalAlignment: Center, VerticalAlignment: Center);
+    }
+  }
+}

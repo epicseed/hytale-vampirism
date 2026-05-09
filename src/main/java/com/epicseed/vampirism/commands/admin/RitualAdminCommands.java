@@ -7,6 +7,7 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 
+import com.epicseed.epiccore.vampirism.domain.player.PersistedRitualRuntimeState;
 import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.epiccore.vampirism.skill.runtime.VampirismSkillProgressionAccess;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
@@ -365,18 +366,25 @@ public final class RitualAdminCommands extends AbstractCommand {
                                @Nonnull World world) {
             PlayerRef target = playerArg.get(ctx);
             String ritualId = ritualArg.get(ctx);
+            PersistedRitualRuntimeState persistedRuntime = VampirePlayerStateStore.get().getRitualRuntimeState(target.getUuid());
+            boolean clearedPersistedRuntime = persistedRuntime != null && ritualId.equals(persistedRuntime.ritualId);
             boolean changed = VampirePlayerStateStore.get().clearRitualProgress(target.getUuid(), ritualId);
             Optional<VampiricRitualRuntimeSnapshot> runtime = runtimeService.snapshot(target.getUuid());
             boolean clearedRuntime = runtime.isPresent() && ritualId.equals(runtime.get().ritualId());
+            if (clearedPersistedRuntime) {
+                runtimeService.clearPersistedState(target.getUuid());
+            }
             if (clearedRuntime) {
                 runtimeService.clearPlayer(target.getUuid());
+            }
+            if (clearedPersistedRuntime || clearedRuntime) {
                 VampiricRitualOutcomeTracker.clearPlayer(target.getUuid());
             }
             ctx.sendMessage(Message.raw(
-                    changed || clearedRuntime
+                    changed || clearedRuntime || clearedPersistedRuntime
                             ? "Cleared ritual '" + ritualId + "' for " + target.getUsername() + "."
                             : "No ritual state was found for '" + ritualId + "' on " + target.getUsername() + ".")
-                    .color(changed || clearedRuntime ? "green" : "yellow"));
+                    .color(changed || clearedRuntime || clearedPersistedRuntime ? "green" : "yellow"));
         }
     }
 
@@ -396,17 +404,23 @@ public final class RitualAdminCommands extends AbstractCommand {
                                @Nonnull PlayerRef playerRef,
                                @Nonnull World world) {
             PlayerRef target = playerArg.get(ctx);
+            boolean hadPersistedRuntime = VampirePlayerStateStore.get().getRitualRuntimeState(target.getUuid()) != null;
             boolean changed = VampirePlayerStateStore.get().clearAllRitualProgress(target.getUuid());
             boolean hadRuntime = runtimeService.snapshot(target.getUuid()).isPresent();
+            if (hadPersistedRuntime) {
+                runtimeService.clearPersistedState(target.getUuid());
+            }
             if (hadRuntime) {
                 runtimeService.clearPlayer(target.getUuid());
+            }
+            if (hadPersistedRuntime || hadRuntime) {
                 VampiricRitualOutcomeTracker.clearPlayer(target.getUuid());
             }
             ctx.sendMessage(Message.raw(
-                    changed || hadRuntime
+                    changed || hadRuntime || hadPersistedRuntime
                             ? "Cleared all ritual progress for " + target.getUsername() + "."
                             : target.getUsername() + " had no ritual progress to clear.")
-                    .color(changed || hadRuntime ? "green" : "yellow"));
+                    .color(changed || hadRuntime || hadPersistedRuntime ? "green" : "yellow"));
         }
     }
 

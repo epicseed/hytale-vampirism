@@ -1,16 +1,32 @@
 {
   "TranslationProperties": {
-    "Name": "Crimson Ritual Tool",
-    "Description": "Left Click: Start/Seal Sigil | Move Aim: Draw Stroke | Right Click: Clear/Break | Use: Reveal | Shift + Use: Channel Awakening"
+    "Name": "Sanguine Rite Tome",
+    "Description": "Primary: Hold to trace a sigil, release to stop | Secondary: Cancel trace or abort ritual | Ability1: Open grimoire | Ability2: Reveal circle / pulse next sigil | Ability3: Commit completed circle / begin channel"
   },
-  "Icon": "Icons/ItemsGenerated/Vampirism/VampireFang.png",
-  "Model": "Items/Vampirism/Relics/EmptyHands.blockymodel",
+  "Icon": "Icons/ItemsGenerated/Weapon_Spellbook_Demon.png",
+  "IconProperties": {
+    "Scale": 0.6,
+    "Translation": [
+      -10,
+      -10
+    ],
+    "Rotation": [
+      45,
+      90,
+      0
+    ]
+  },
+  "Model": "NPC/Void/Necromancer_Void/Models/Weapons/Spellbook/Demon.blockymodel",
+  "Texture": "NPC/Void/Necromancer_Void/Models/Weapons/Spellbook/Demon_Texture.png",
   "MaxStack": 1,
-  "PlayerAnimationsId": "Default",
+  "PlayerAnimationsId": "Spellbook",
+  "ItemSoundSetId": "ISS_Weapons_Books",
   "Interactions": {
     "Primary": "VampirismRitualTool_Primary",
     "Secondary": "VampirismRitualTool_Secondary",
-    "Use": "VampirismRitualTool_Use"
+    "Ability1": "VampirismRitualTool_Ability1",
+    "Ability2": "VampirismRitualTool_Ability2",
+    "Ability3": "VampirismRitualTool_Ability3"
   },
   "InteractionConfig": {
     "AllEntities": true

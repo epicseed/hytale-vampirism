@@ -30,8 +30,8 @@ class RitualHudPresentationTest {
 
         assertTrue(state.visible());
         assertFalse(state.expandedVisible());
-        assertEquals("Prepare the remaining glyphs", state.guidance());
-        assertEquals("Glyphs 1 / 4", state.progress());
+        assertEquals("Trace remaining sigils", state.guidance());
+        assertEquals("Sigils 1 / 4", state.progress());
     }
 
     @Test
@@ -40,7 +40,8 @@ class RitualHudPresentationTest {
 
         assertTrue(state.expandedVisible());
         assertEquals("Trace Blood Sigil", state.guidance());
-        assertTrue(state.context().contains("Next glyph: Blood Sigil"));
+        assertTrue(state.context().contains("Primary traces Blood Sigil"));
+        assertTrue(state.context().contains("release to stop"));
     }
 
     @Test
@@ -48,7 +49,7 @@ class RitualHudPresentationTest {
         RitualHudPresentation.DisplayState state = RitualHudPresentation.present(preparingSnapshot(), RitualHudDisplayMode.CONTEXTUAL);
 
         assertTrue(state.expandedVisible());
-        assertTrue(state.context().contains("Wake each ritual point"));
+        assertTrue(state.context().contains("Primary traces sigils. Secondary clears the circle."));
     }
 
     @Test
@@ -56,7 +57,7 @@ class RitualHudPresentationTest {
         RitualHudPresentation.DisplayState state = RitualHudPresentation.present(preparingSnapshot(), RitualHudDisplayMode.EXPANDED);
 
         assertTrue(state.expandedVisible());
-        assertTrue(state.context().contains("Wake each ritual point"));
+        assertTrue(state.context().contains("Primary traces sigils. Secondary clears the circle."));
     }
 
     private static VampiricRitualRuntimeSnapshot preparingSnapshot() {

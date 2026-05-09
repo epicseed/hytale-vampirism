@@ -1,1 +1,25 @@
-{ "Type": "Command", "Command": "vampirismritual primary" }
+{
+  "Type": "Command",
+  "Command": "vampirismritual primary",
+  "Next": {
+    "Type": "Charging",
+    "Effects": {
+      "ItemAnimationId": "CastHurlCharging",
+      "WorldSoundEventId": "SFX_Skeleton_Mage_Spellbook_Charge"
+    },
+    "AllowIndefiniteHold": true,
+    "HorizontalSpeedMultiplier": 0.8,
+    "CancelOnItemChange": true,
+    "RunTime": 0,
+    "Next": {
+      "0.01": {
+        "Type": "Command",
+        "Command": "vampirismritual primary"
+      }
+    },
+    "Failed": {
+      "Type": "Command",
+      "Command": "vampirismritual primary"
+    }
+  }
+}

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -51,9 +52,9 @@ func TestDataHandlerRoundTripIncludesRitualTemplates(t *testing.T) {
 		"ritualTemplates": map[string]interface{}{
 			"templates": []interface{}{
 				map[string]interface{}{
-					"ritualId":               "awakening",
-					"displayName":            "Crimson Awakening",
-					"requiredAnchorBlockId":  "Furniture_Ancient_Coffin",
+					"ritualId":              "awakening",
+					"displayName":           "Crimson Awakening",
+					"requiredAnchorBlockId": "Furniture_Ancient_Coffin",
 					"baseLayer": map[string]interface{}{
 						"offsetY": 0.04,
 					},
@@ -204,5 +205,192 @@ func TestRitualGlyphHandlersListAndServeFiles(t *testing.T) {
 	}
 	if !bytes.Equal(fileRes.Body.Bytes(), expectedContent) {
 		t.Fatalf("unexpected glyph content: %#v", fileRes.Body.Bytes())
+	}
+}
+
+func TestDataHandlerRejectsTemplatesWithMissingGlyphReferences(t *testing.T) {
+	restore := withTestEditorRoots(t)
+	defer restore()
+
+	payload := map[string]any{
+		"abilities": []any{},
+		"ritualTemplates": map[string]any{
+			"templates": []any{
+				map[string]any{
+					"ritualId":        "awakening",
+					"displayName":     "Crimson Awakening",
+					"activationLinks": []any{},
+					"points": []any{
+						map[string]any{
+							"id":      "north",
+							"glyphId": "fang_wake",
+							"offsetX": 0.0,
+							"offsetY": 0.15,
+							"offsetZ": -3.0,
+						},
+					},
+				},
+			},
+		},
+		"ritualGlyphs": map[string]any{
+			"glyphs": []any{
+				map[string]any{
+					"glyphId":                  "moon_scar",
+					"symbolId":                 "moon_scar",
+					"displayName":              "Moon Scar",
+					"traceTolerance":           0.48,
+					"mistakeStabilityPenalty":  6.0,
+					"mistakeCorruptionPenalty": 5.0,
+					"traceSteps":               []any{},
+				},
+			},
+		},
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/data", bytes.NewReader(body))
+	res := httptest.NewRecorder()
+	dataHandler(res, req)
+	if res.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, body = %s", res.Code, res.Body.String())
+	}
+	if _, err := os.Stat(ritualTemplatesPath); !os.IsNotExist(err) {
+		t.Fatalf("ritual templates should not be written on validation failure, stat err = %v", err)
+	}
+	if _, err := os.Stat(ritualGlyphDefinitionsPath); !os.IsNotExist(err) {
+		t.Fatalf("ritual glyphs should not be written on validation failure, stat err = %v", err)
+	}
+}
+
+func TestDataHandlerRestoresPreviousDataWhenRitualWriteFails(t *testing.T) {
+	restore := withTestEditorRoots(t)
+	defer restore()
+
+	initialPayload := map[string]any{
+		"abilities": []any{
+			map[string]any{"id": "blood_burst", "displayName": "Blood Burst"},
+		},
+		"ritualTemplates": map[string]any{
+			"templates": []any{
+				map[string]any{
+					"ritualId":        "awakening",
+					"displayName":     "Crimson Awakening",
+					"points":          []any{map[string]any{"id": "north", "glyphId": "fang_wake", "offsetX": 0.0, "offsetY": 0.15, "offsetZ": -3.0}},
+					"activationLinks": []any{},
+				},
+			},
+		},
+		"ritualGlyphs": map[string]any{
+			"glyphs": []any{
+				map[string]any{
+					"glyphId":                  "fang_wake",
+					"symbolId":                 "fang_wake",
+					"displayName":              "Fang Wake",
+					"traceTolerance":           0.48,
+					"mistakeStabilityPenalty":  6.0,
+					"mistakeCorruptionPenalty": 5.0,
+					"traceSteps":               []any{},
+				},
+			},
+		},
+	}
+	initialBody, err := json.Marshal(initialPayload)
+	if err != nil {
+		t.Fatalf("marshal initial payload: %v", err)
+	}
+	initialReq := httptest.NewRequest(http.MethodPost, "/api/data", bytes.NewReader(initialBody))
+	initialRes := httptest.NewRecorder()
+	dataHandler(initialRes, initialReq)
+	if initialRes.Code != http.StatusOK {
+		t.Fatalf("initial status = %d, body = %s", initialRes.Code, initialRes.Body.String())
+	}
+
+	originalAbilities, err := os.ReadFile(filepath.Join(skillDataDir, "abilities.json"))
+	if err != nil {
+		t.Fatalf("read original abilities: %v", err)
+	}
+	originalTemplates, err := os.ReadFile(ritualTemplatesPath)
+	if err != nil {
+		t.Fatalf("read original templates: %v", err)
+	}
+	originalGlyphs, err := os.ReadFile(ritualGlyphDefinitionsPath)
+	if err != nil {
+		t.Fatalf("read original glyphs: %v", err)
+	}
+
+	previousAtomicWrite := writeFileAtomically
+	writeFileAtomically = func(path string, data []byte) error {
+		if path == ritualGlyphDefinitionsPath {
+			return errors.New("boom")
+		}
+		return atomicWriteFile(path, data)
+	}
+	defer func() {
+		writeFileAtomically = previousAtomicWrite
+	}()
+
+	updatedPayload := map[string]any{
+		"abilities": []any{
+			map[string]any{"id": "blood_wave", "displayName": "Blood Wave"},
+		},
+		"ritualTemplates": map[string]any{
+			"templates": []any{
+				map[string]any{
+					"ritualId":        "mark_prey",
+					"displayName":     "Mark Prey",
+					"points":          []any{map[string]any{"id": "east", "glyphId": "mirror_fang", "offsetX": 2.9, "offsetY": 0.15, "offsetZ": -0.35}},
+					"activationLinks": []any{},
+				},
+			},
+		},
+		"ritualGlyphs": map[string]any{
+			"glyphs": []any{
+				map[string]any{
+					"glyphId":                  "mirror_fang",
+					"symbolId":                 "mirror_fang",
+					"displayName":              "Mirror Fang",
+					"traceTolerance":           0.48,
+					"mistakeStabilityPenalty":  6.0,
+					"mistakeCorruptionPenalty": 5.0,
+					"traceSteps":               []any{},
+				},
+			},
+		},
+	}
+	updatedBody, err := json.Marshal(updatedPayload)
+	if err != nil {
+		t.Fatalf("marshal updated payload: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/data", bytes.NewReader(updatedBody))
+	res := httptest.NewRecorder()
+	dataHandler(res, req)
+	if res.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, body = %s", res.Code, res.Body.String())
+	}
+
+	currentAbilities, err := os.ReadFile(filepath.Join(skillDataDir, "abilities.json"))
+	if err != nil {
+		t.Fatalf("read restored abilities: %v", err)
+	}
+	currentTemplates, err := os.ReadFile(ritualTemplatesPath)
+	if err != nil {
+		t.Fatalf("read restored templates: %v", err)
+	}
+	currentGlyphs, err := os.ReadFile(ritualGlyphDefinitionsPath)
+	if err != nil {
+		t.Fatalf("read restored glyphs: %v", err)
+	}
+	if !bytes.Equal(currentAbilities, originalAbilities) {
+		t.Fatalf("abilities were not restored: %s", string(currentAbilities))
+	}
+	if !bytes.Equal(currentTemplates, originalTemplates) {
+		t.Fatalf("templates were not restored: %s", string(currentTemplates))
+	}
+	if !bytes.Equal(currentGlyphs, originalGlyphs) {
+		t.Fatalf("glyphs were not restored: %s", string(currentGlyphs))
 	}
 }

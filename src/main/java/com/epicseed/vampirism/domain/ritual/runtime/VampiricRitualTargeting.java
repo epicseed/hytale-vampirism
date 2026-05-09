@@ -1,9 +1,11 @@
 package com.epicseed.vampirism.domain.ritual.runtime;
 
+import java.util.Objects;
+import java.util.function.Predicate;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.epicseed.vampirism.domain.ritual.VampiricRitualRegistry;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Transform;
@@ -19,8 +21,6 @@ import com.hypixel.hytale.server.core.util.TargetUtil;
 public final class VampiricRitualTargeting {
 
     public static final String RITUAL_TOOL_ITEM_ID = "VampirismRitualTool";
-    public static final String AWAKENING_RITUAL_ID = VampiricRitualRegistry.AWAKENING_RITUAL_ID;
-    public static final String AWAKENING_ANCHOR_BLOCK_ID = "Furniture_Ancient_Coffin";
     public static final double TARGET_RANGE = 7.0d;
     public static final double MAX_CHANNEL_DISTANCE = 6.0d;
     private static final int ANCHOR_SEARCH_RADIUS = 4;
@@ -57,13 +57,17 @@ public final class VampiricRitualTargeting {
                 blockId);
     }
 
-    public static boolean isAwakeningAnchor(@Nullable TargetedBlock targetedBlock) {
-        return targetedBlock != null && AWAKENING_ANCHOR_BLOCK_ID.equals(targetedBlock.blockId());
+    public static boolean isRitualAnchor(@Nullable TargetedBlock targetedBlock,
+                                         @Nonnull Predicate<String> supportedAnchorBlockIds) {
+        Objects.requireNonNull(supportedAnchorBlockIds, "supportedAnchorBlockIds");
+        return targetedBlock != null && supportedAnchorBlockIds.test(targetedBlock.blockId());
     }
 
     @Nullable
-    public static TargetedBlock resolveAwakeningAnchorNear(@Nonnull World world,
-                                                           @Nonnull Vector3i centerBlockPosition) {
+    public static TargetedBlock resolveRitualAnchorNear(@Nonnull World world,
+                                                        @Nonnull Vector3i centerBlockPosition,
+                                                        @Nonnull Predicate<String> supportedAnchorBlockIds) {
+        Objects.requireNonNull(supportedAnchorBlockIds, "supportedAnchorBlockIds");
         TargetedBlock nearest = null;
         double nearestDistanceSq = Double.MAX_VALUE;
         for (int dy = -1; dy <= 1; dy++) {
@@ -72,7 +76,7 @@ public final class VampiricRitualTargeting {
                 for (int dz = -ANCHOR_SEARCH_RADIUS; dz <= ANCHOR_SEARCH_RADIUS; dz++) {
                     Vector3i candidate = new Vector3i(centerBlockPosition.x + dx, y, centerBlockPosition.z + dz);
                     BlockType blockType = blockTypeAt(world, candidate);
-                    if (blockType == null || !AWAKENING_ANCHOR_BLOCK_ID.equals(blockType.getId())) {
+                    if (blockType == null || !supportedAnchorBlockIds.test(blockType.getId())) {
                         continue;
                     }
                     double distanceSq = dx * dx + dy * dy + dz * dz;

@@ -1,0 +1,248 @@
+// Hytale UI Definition: RitualBook
+$C = "../../Common.ui";
+
+@BookBackground = PatchStyle(TexturePath: "../Assets/RitualBook/BG.png");
+
+@BookButtonStyle = ButtonStyle(
+  Default: (Background: #50372c),
+  Hovered: (Background: #684839),
+  Pressed: (Background: #422d24),
+  Disabled: (Background: #3a2821),
+  Sounds: $C.@ButtonSounds,
+);
+
+Group #RitualBookRoot {
+  Anchor: (Width: 1240, Height: 888);
+
+  Group #BookFrame {
+    Anchor: (Left: 15, Top: 12, Width: 1210, Height: 864);
+    Background: @BookBackground;
+  }
+
+  Group #SpineShadow {
+    Anchor: (Left: 614, Top: 70, Width: 8, Height: 748);
+    Background: #5d4737;
+  }
+
+  Group #LeftTabGutter {
+    Anchor: (Left: 0, Top: 104, Width: 104, Height: 552);
+  }
+
+  Group #RightTabGutter {
+    Anchor: (Right: 0, Top: 104, Width: 104, Height: 552);
+  }
+
+  Group #HeaderControls {
+    Anchor: (Right: 72, Top: 28, Width: 96, Height: 34);
+    Button #CloseBtn {
+      Anchor: (Full: 0);
+      Style: @BookButtonStyle;
+    }
+    Label {
+      Anchor: (Full: 0);
+      Text: "Close";
+      Style: (FontSize: 11, RenderBold: true, TextColor: #f6e7c6, HorizontalAlignment: Center, VerticalAlignment: Center);
+    }
+  }
+
+  Group #LeftPage {
+    Anchor: (Left: 126, Top: 68, Width: 408, Height: 752);
+
+    Label {
+      Anchor: (Left: 0, Top: 0, Width: 140, Height: 16);
+      Text: "Ritual Record";
+      Style: (FontSize: 11, RenderBold: true, TextColor: #755a49, HorizontalAlignment: Start);
+    }
+
+    Label #BookTitle {
+      Anchor: (Left: 0, Top: 18, Right: 118, Height: 40);
+      Text: "";
+      Style: (FontSize: 28, RenderBold: true, TextColor: #3f2b20, Wrap: true);
+    }
+
+    Label #AnchorValue {
+      Anchor: (Left: 0, Top: 64, Width: 200, Height: 18);
+      Text: "";
+      Style: (FontSize: 12, TextColor: #6b4e3f, RenderBold: true);
+    }
+
+    Group #StatusBadge {
+      Anchor: (Right: 0, Top: 58, Width: 116, Height: 24);
+      Background: #5b4638;
+      Label #StatusValue {
+        Anchor: (Full: 0);
+        Text: "";
+        Style: (FontSize: 11, RenderBold: true, TextColor: #f7e7c8, HorizontalAlignment: Center, VerticalAlignment: Center);
+      }
+    }
+
+    Group #OverviewCard {
+      Anchor: (Left: 0, Top: 96, Right: 0, Height: 136);
+      Background: #e8d7bc;
+
+      Group #IconFrame {
+        Anchor: (Left: 14, Top: 14, Width: 88, Height: 88);
+        Background: #573f32;
+        Group #RitualIcon {
+          Anchor: (Left: 8, Top: 8, Width: 72, Height: 72);
+        }
+      }
+
+      Label #DescriptionText {
+        Anchor: (Left: 118, Top: 14, Right: 16, Height: 54);
+        Text: "";
+        Style: (FontSize: 12, TextColor: #48352a, Wrap: true);
+      }
+
+      Group {
+        Anchor: (Left: 118, Top: 84, Right: 16, Height: 1);
+        Background: #baa185;
+      }
+
+      Label #OverviewLine {
+        Anchor: (Left: 118, Top: 92, Right: 16, Height: 18);
+        Text: "";
+        Style: (FontSize: 11, TextColor: #715745, RenderBold: true, Wrap: true);
+      }
+    }
+
+    Group #ReadinessCard {
+      Anchor: (Left: 0, Top: 246, Right: 0, Height: 122);
+      Background: #efdfc7;
+      Label {
+        Anchor: (Left: 14, Top: 10, Width: 160, Height: 18);
+        Text: "Readiness";
+        Style: (FontSize: 13, RenderBold: true, TextColor: #3f2b20);
+      }
+      Label #ReadinessText {
+        Anchor: (Left: 14, Top: 32, Right: 14, Bottom: 12);
+        Text: "";
+        Style: (FontSize: 11, TextColor: #4e3b2f, Wrap: true);
+      }
+    }
+  }
+
+  Group #RightPage {
+    Anchor: (Left: 680, Top: 68, Width: 408, Height: 752);
+
+    Label {
+      Anchor: (Left: 0, Top: 0, Width: 160, Height: 16);
+      Text: "Circle Preview";
+      Style: (FontSize: 11, RenderBold: true, TextColor: #755a49, HorizontalAlignment: Start);
+    }
+
+    Group #PhaseBadge {
+      Anchor: (Left: 0, Top: 18, Width: 122, Height: 24);
+      Background: #6c4f3f;
+      Label #PhaseValue {
+        Anchor: (Full: 0);
+        Text: "";
+        Style: (FontSize: 11, RenderBold: true, TextColor: #f7e7c8, HorizontalAlignment: Center, VerticalAlignment: Center);
+      }
+    }
+
+    Group #PhaseControls {
+      Anchor: (Right: 0, Top: 10, Width: 162, Height: 34);
+
+      Button #PhasePrevBtn {
+        Anchor: (Left: 0, Top: 0, Width: 76, Height: 34);
+        Style: @BookButtonStyle;
+      }
+      Label {
+        Anchor: (Left: 0, Top: 0, Width: 76, Height: 34);
+        Text: "Prev";
+        Style: (FontSize: 11, RenderBold: true, TextColor: #f6e7c6, HorizontalAlignment: Center, VerticalAlignment: Center);
+      }
+
+      Button #PhaseNextBtn {
+        Anchor: (Right: 0, Top: 0, Width: 76, Height: 34);
+        Style: @BookButtonStyle;
+      }
+      Label {
+        Anchor: (Right: 0, Top: 0, Width: 76, Height: 34);
+        Text: "Next";
+        Style: (FontSize: 11, RenderBold: true, TextColor: #f6e7c6, HorizontalAlignment: Center, VerticalAlignment: Center);
+      }
+    }
+
+    Group #DiagramCard {
+      Anchor: (Left: 0, Top: 56, Right: 0, Height: 392);
+      Background: #efdfc7;
+
+      Label {
+        Anchor: (Left: 14, Top: 10, Width: 160, Height: 18);
+        Text: "Sigil Layout";
+        Style: (FontSize: 13, RenderBold: true, TextColor: #3f2b20);
+      }
+
+      Label {
+        Anchor: (Left: 14, Top: 30, Right: 14, Height: 16);
+        Text: "Cycle phases to study the sigil order and see how the circle settles.";
+        Style: (FontSize: 10, TextColor: #6f5545, Wrap: true);
+      }
+
+      Group #DiagramField {
+        Anchor: (Left: 48, Top: 60, Width: 312, Height: 304);
+        Background: #deceb3;
+
+        Group #DiagramCanvas {
+          Anchor: (Left: 12, Top: -6, Width: 288, Height: 288);
+        }
+
+        Group #DiagramAnchor {
+          Anchor: (Left: 130, Top: 100, Width: 52, Height: 52);
+          Background: #574132;
+          Group #DiagramAnchorCore {
+            Anchor: (Left: 10, Top: 10, Width: 32, Height: 32);
+            Background: #6c4f3f;
+          }
+        }
+      }
+
+      Label #DiagramPhaseText {
+        Anchor: (Left: 14, Bottom: 12, Right: 14, Height: 18);
+        Text: "";
+        Style: (FontSize: 11, RenderBold: true, TextColor: #503b2d, HorizontalAlignment: Center);
+      }
+    }
+
+    Group #PhaseSummaryCard {
+      Anchor: (Left: 0, Top: 462, Right: 0, Height: 110);
+      Background: #ead7bb;
+      Label {
+        Anchor: (Left: 14, Top: 10, Width: 180, Height: 18);
+        Text: "Phase Reading";
+        Style: (FontSize: 13, RenderBold: true, TextColor: #3f2b20);
+      }
+      Label #PhaseSummary {
+        Anchor: (Left: 14, Top: 32, Right: 14, Bottom: 12);
+        Text: "";
+        Style: (FontSize: 11, TextColor: #523d2f, Wrap: true);
+      }
+    }
+
+    Group #AttuneCard {
+      Anchor: (Left: 0, Top: 586, Right: 0, Height: 110);
+      Background: #ead7bb;
+      Button #AttuneBtn {
+        Anchor: (Left: 14, Top: 16, Width: 126, Height: 36);
+        Style: @BookButtonStyle;
+      }
+      Label #AttuneBtnLabel {
+        Anchor: (Left: 14, Top: 16, Width: 126, Height: 36);
+        Text: "Attune Ritual";
+        Style: (FontSize: 11, RenderBold: true, TextColor: #f6e7c6, HorizontalAlignment: Center, VerticalAlignment: Center);
+      }
+      Label #AttuneState {
+        Anchor: (Left: 154, Top: 14, Right: 14, Height: 30);
+        Text: "";
+        Style: (FontSize: 11, TextColor: #523d2f, Wrap: true);
+      }
+      Label #FooterHint {
+        Anchor: (Left: 154, Top: 48, Right: 14, Height: 42);
+        Text: "";
+        Style: (FontSize: 10, TextColor: #725848, Wrap: true);
+      }
+    }
+  }
+}

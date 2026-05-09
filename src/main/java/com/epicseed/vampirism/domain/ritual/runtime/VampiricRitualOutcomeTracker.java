@@ -94,13 +94,13 @@ public final class VampiricRitualOutcomeTracker {
     public static String anchorHint(@Nonnull VampiricRitualRuntimeSnapshot snapshot) {
         return switch (VampiricRitualAnchorState.fromSnapshot(snapshot)) {
             case PREPARED -> snapshot.complete()
-                    ? "Channel beside the coffin to begin the binding."
-                    : "Seal the remaining sigils around the coffin.";
-            case BINDING -> "Hold the channel steady while the coffin binds the circle.";
-            case ACTIVE -> "Keep channeling until the crimson lift crests.";
-            case UNSTABLE -> "Recover stability quickly or the coffin will tear the rite apart.";
-            case COLLAPSE -> "The circle has caved in; rebuild the anchor before trying again.";
-            case COMPLETE -> "The ritual has settled and the awakening is complete.";
+                    ? "Press Ability3 beside the coffin to commit the completed circle."
+                    : "Trace the remaining sigils around the coffin.";
+            case BINDING -> "Stay beside the coffin while the committed circle takes hold.";
+            case ACTIVE -> "Stay beside the coffin until the ritual settles.";
+            case UNSTABLE -> "Recover stability quickly or the circle will collapse.";
+            case COLLAPSE -> "The circle collapsed; retrace the sigils before trying again.";
+            case COMPLETE -> "The ritual has settled. Reveal it again or step away to reset.";
         };
     }
 

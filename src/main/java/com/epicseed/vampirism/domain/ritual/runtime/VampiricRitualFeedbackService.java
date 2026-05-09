@@ -34,20 +34,21 @@ public final class VampiricRitualFeedbackService {
     private static final String REVEAL_AMBIENCE_SOUND_ID = "SFX_Emit_Forgotten_Whispers";
     private static final String CLEAR_SOUND_ID = "SFX_Door_Temple_Dark_Close";
     private static final String TRACE_START_SOUND_ID = "SFX_Skeleton_Mage_Spellbook_Charge";
+    private static final String SPELLBOOK_IMPACT_SOUND_ID = "SFX_Skeleton_Mage_Spellbook_Impact";
     private static final String TRACE_CADENCE_SOUND_ID = "SFX_Staff_Charged_Loop";
     private static final String TRACE_REJECT_SOUND_ID = "SFX_Spirit_Root_Hurt";
     private static final String GLYPH_SEAL_SOUND_ID = "SFX_Crystal_Build";
     private static final String GLYPH_UNSEAL_SOUND_ID = "SFX_Crystal_Break";
     private static final String BINDING_SOUND_ID = "SFX_Stone_Coffin_Open_Close";
     private static final String BINDING_AMBIENCE_SOUND_ID = "SFX_Emit_Forgotten_Whispers";
-    private static final String CHANNEL_START_SOUND_ID = "SFX_Portal_Neutral_Open";
-    private static final String CHANNEL_AMBIENCE_SOUND_ID = "SFX_Emit_Temple_Wisps";
-    private static final String CHANNEL_CADENCE_SOUND_ID = "SFX_Portal_Neutral";
+    private static final String CHANNEL_START_SOUND_ID = "SFX_Skeleton_Mage_Spellbook_Impact";
+    private static final String CHANNEL_AMBIENCE_SOUND_ID = "SFX_Skeleton_Mage_Spellbook_Charge";
+    private static final String CHANNEL_CADENCE_SOUND_ID = "SFX_Skeleton_Mage_Spellbook_Charge";
     private static final String UNSTABLE_SOUND_ID = "SFX_Portal_Void";
     private static final String INTERFERENCE_SOUND_ID = "SFX_Spirit_Root_Alerted";
     private static final String STEADIED_SOUND_ID = "SFX_Crystal_Build";
     private static final String SUCCESS_SOUND_ID = "SFX_Emit_Forgotten_Whispers";
-    private static final String SUCCESS_ACCENT_SOUND_ID = "SFX_Spirit_Root_Death_01";
+    private static final String SUCCESS_ACCENT_SOUND_ID = "SFX_Skeleton_Mage_Spellbook_Impact";
     private static final String COLLAPSE_SOUND_ID = "SFX_Spirit_Root_Death_02";
 
     private final Map<UUID, RitualFeedbackState> playerStates = new ConcurrentHashMap<>();
@@ -90,6 +91,18 @@ public final class VampiricRitualFeedbackService {
         if (world != null) {
             drawAnchorFlash(world, anchor, DebugUtils.COLOR_MAGENTA, 3.45d, 0.05d, 0.12f, 0.32f);
         }
+    }
+
+    public void emitChannelAttemptSuccess(@Nonnull Store<EntityStore> store,
+                                          @Nullable World world,
+                                          @Nullable Vector3d origin) {
+        emitCommandCue(store, world, origin, SPELLBOOK_IMPACT_SOUND_ID, DebugUtils.COLOR_MAGENTA, 1.8d, 0.74f, 1.0f);
+    }
+
+    public void emitChannelAttemptFailure(@Nonnull Store<EntityStore> store,
+                                          @Nullable World world,
+                                          @Nullable Vector3d origin) {
+        emitCommandCue(store, world, origin, TRACE_REJECT_SOUND_ID, DebugUtils.COLOR_YELLOW, 1.6d, 0.82f, 0.92f);
     }
 
     public void clearPlayer(@Nonnull UUID uuid) {
@@ -227,7 +240,7 @@ public final class VampiricRitualFeedbackService {
         }
         Vector3d anchor = snapshot.anchorCenter();
         playSound(CHANNEL_START_SOUND_ID, elevated(anchor, 0.24d), 0.78f, 1.02f, store);
-        playSound(CHANNEL_AMBIENCE_SOUND_ID, elevated(anchor, 0.28d), 0.34f, 0.84f, store);
+        playSound(CHANNEL_AMBIENCE_SOUND_ID, elevated(anchor, 0.28d), 0.26f, 0.92f, store);
         if (world != null) {
             drawAnchorFlash(world, anchor, DebugUtils.COLOR_RED, 3.7d, 0.08d, 0.14f, 0.34f);
         }
@@ -242,6 +255,9 @@ public final class VampiricRitualFeedbackService {
             return;
         }
         playSound(soundId, elevated(snapshot.anchorCenter(), 0.28d), volume, pitch, store);
+        if (CHANNEL_CADENCE_SOUND_ID.equals(soundId)) {
+            playSound(SPELLBOOK_IMPACT_SOUND_ID, elevated(snapshot.anchorCenter(), 0.28d), 0.12f, 1.08f, store);
+        }
     }
 
     private void emitSuccessCue(@Nullable VampiricRitualRuntimeSnapshot snapshot,
@@ -275,6 +291,23 @@ public final class VampiricRitualFeedbackService {
         if (world != null) {
             drawAnchorFlash(world, anchor, color, radius, 0.10d, 0.18f, 0.42f);
             drawAnchorFlash(world, anchor, color, 1.15d, 0.72d, 0.16f, 0.38f);
+        }
+    }
+
+    private void emitCommandCue(@Nonnull Store<EntityStore> store,
+                                @Nullable World world,
+                                @Nullable Vector3d origin,
+                                @Nonnull String soundId,
+                                @Nonnull Vector3f color,
+                                double radius,
+                                float volume,
+                                float pitch) {
+        if (origin == null) {
+            return;
+        }
+        playSound(soundId, elevated(origin, 0.24d), volume, pitch, store);
+        if (world != null) {
+            drawAnchorFlash(world, origin, color, radius, 0.06d, 0.10f, 0.20f);
         }
     }
 
