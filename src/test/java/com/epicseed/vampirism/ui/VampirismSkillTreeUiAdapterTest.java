@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import com.epicseed.epiccore.skill.ui.ProgressionCardView;
 import com.epicseed.epiccore.vampirism.domain.player.MasqueradeHeatState;
+import com.epicseed.vampirism.domain.hunt.NightHuntContinuitySnapshot;
 import com.epicseed.vampirism.domain.lineage.VampiricClanDefinition;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageDefinition;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageEvaluation;
@@ -30,12 +31,28 @@ class VampirismSkillTreeUiAdapterTest {
         List<ProgressionCardView> cards = VampirismSkillTreeUiAdapter.buildHeatCards(
                 snapshot,
                 MasqueradeHeatPolicy.defaults(),
-                List.of(lineageEvaluation("voidspawn", "Voidspawn", 25.0d, false, List.of("Heat gated"))));
+                List.of(lineageEvaluation("voidspawn", "Voidspawn", 25.0d, false, List.of("Heat gated"))),
+                new NightHuntContinuitySnapshot(
+                        0,
+                        null,
+                        0,
+                        null,
+                        2,
+                        "Hunter crackdown",
+                        "Repeated siphon success drew notice",
+                        "Siphon Ledger",
+                        2,
+                        null,
+                        2,
+                        0,
+                        "drained"));
 
         assertEquals("Watched · 30.0 heat", card(cards, "Current Exposure").value());
         assertEquals("Hunted at 45.0", card(cards, "Next Threshold").value());
         assertTrue(card(cards, "Next Threshold").detail().contains("15.0 heat remaining"));
         assertEquals("Pressure 45", card(cards, "Current Risk").value());
+        assertEquals("Hunter crackdown · Siphon Ledger II", card(cards, "Pressure Outlook").value());
+        assertTrue(card(cards, "Pressure Outlook").detail().contains("Break this chain before the next hunt"));
         assertEquals("Voidspawn blocked", card(cards, "Current Opportunity").value());
         assertTrue(card(cards, "Current Opportunity").detail().contains("Cool 5.0 heat"));
     }
@@ -52,9 +69,12 @@ class VampirismSkillTreeUiAdapterTest {
         List<ProgressionCardView> cards = VampirismSkillTreeUiAdapter.buildHeatCards(
                 snapshot,
                 MasqueradeHeatPolicy.defaults(),
-                List.of(lineageEvaluation("voidspawn", "Voidspawn", 25.0d, true, List.of())));
+                List.of(lineageEvaluation("voidspawn", "Voidspawn", 25.0d, true, List.of())),
+                NightHuntContinuitySnapshot.empty());
 
         assertEquals("Routes clear", card(cards, "Current Risk").value());
+        assertEquals("Quiet routes", card(cards, "Pressure Outlook").value());
+        assertTrue(card(cards, "Pressure Outlook").detail().contains("No active world response"));
         assertEquals("Voidspawn ready", card(cards, "Current Opportunity").value());
         assertTrue(card(cards, "Current Opportunity").detail().contains("Stay at or below 25.0"));
     }

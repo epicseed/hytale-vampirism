@@ -23,6 +23,8 @@ import com.epicseed.epiccore.skill.ui.SkillTreeUnlockResultView;
 import com.epicseed.epiccore.vampirism.domain.player.NamedHuntProgress;
 import com.epicseed.epiccore.vampirism.domain.player.RitualProgressState;
 import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
+import com.epicseed.vampirism.domain.hunt.NightHuntContinuityService;
+import com.epicseed.vampirism.domain.hunt.NightHuntContinuitySnapshot;
 import com.epicseed.vampirism.domain.hunt.NightHuntPresentationText;
 import com.epicseed.vampirism.domain.hunt.NightHuntProgressionService;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageDefinition;
@@ -153,6 +155,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
         NamedHuntProgress nightHuntProgress = namedHuntProgress.getOrDefault("night-hunt", new NamedHuntProgress());
         var huntMastery = NightHuntProgressionService.snapshot(nightHuntProgress);
         var huntLoadout = NightHuntProgressionService.preparedLoadout(nightHuntProgress);
+        NightHuntContinuitySnapshot continuity = NightHuntContinuityService.snapshot(nightHuntProgress);
         MasqueradeHeatSnapshot masquerade = masqueradeHeatService.snapshot(uuid, System.currentTimeMillis());
         long availableLineages = lineageEvaluations.stream().filter(VampiricLineageEvaluation::available).count();
         VampiricLineageEvaluation selectedLineage = lineageEvaluations.stream()
@@ -236,7 +239,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                         "Heat",
                         "Masquerade Heat",
                         "No masquerade telemetry has been recorded yet.",
-                        buildHeatCards(masquerade, masqueradeHeatService.policy(), lineageEvaluations)));
+                        buildHeatCards(masquerade, masqueradeHeatService.policy(), lineageEvaluations, continuity)));
     }
 
     @Nonnull
@@ -343,10 +346,12 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
     @Nonnull
     static List<ProgressionCardView> buildHeatCards(@Nonnull MasqueradeHeatSnapshot masquerade,
                                                     @Nonnull MasqueradeHeatPolicy policy,
-                                                    @Nonnull List<VampiricLineageEvaluation> lineageEvaluations) {
+                                                    @Nonnull List<VampiricLineageEvaluation> lineageEvaluations,
+                                                    @Nonnull NightHuntContinuitySnapshot continuity) {
         MasqueradeHeatThresholdText.ThresholdView nextThreshold =
                 MasqueradeHeatThresholdText.nextThreshold(masquerade, policy);
         LineageWindowOpportunity.View opportunity = LineageWindowOpportunity.resolve(masquerade, lineageEvaluations);
+        PressureOutlookText.View pressureOutlook = PressureOutlookText.resolve(continuity);
         return List.of(
                 new ProgressionCardView(
                         "Current Exposure",
@@ -363,6 +368,11 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                         currentRiskValue(masquerade),
                         currentRiskDetail(masquerade),
                         masquerade.progressionLocked() ? "#ef4444" : heatAccent(masquerade.exposureLevel())),
+                new ProgressionCardView(
+                        "Pressure Outlook",
+                        pressureOutlook.value(),
+                        pressureOutlook.detail(),
+                        pressureOutlook.accentColor()),
                 new ProgressionCardView(
                         "Current Opportunity",
                         opportunity.value(),
