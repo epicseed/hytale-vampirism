@@ -21,6 +21,7 @@ import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeService;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeSnapshot;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOfferingRecoveryService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOutcomeTracker;
 import com.epicseed.vampirism.ui.VampiricRitualEditorPage;
 import com.hypixel.hytale.component.Ref;
@@ -319,6 +320,7 @@ public final class RitualAdminCommands extends AbstractCommand {
             VampiricRitualRuntimeService.ClearResult result = runtimeService.abort(
                     target.getUuid(),
                     contextResolver.buildContext(target, store, parseTags(tagsArg.get(ctx))));
+            VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(result.offeringRecovery(), store);
             ctx.sendMessage(Message.raw(result.message()).color(result.cleared() ? "green" : "yellow"));
         }
     }
@@ -366,16 +368,20 @@ public final class RitualAdminCommands extends AbstractCommand {
                                @Nonnull World world) {
             PlayerRef target = playerArg.get(ctx);
             String ritualId = ritualArg.get(ctx);
+            var offeringRecovery = runtimeService.captureOfferingRecovery(target.getUuid()).orElse(null);
             PersistedRitualRuntimeState persistedRuntime = VampirePlayerStateStore.get().getRitualRuntimeState(target.getUuid());
             boolean clearedPersistedRuntime = persistedRuntime != null && ritualId.equals(persistedRuntime.ritualId);
-            boolean changed = VampirePlayerStateStore.get().clearRitualProgress(target.getUuid(), ritualId);
             Optional<VampiricRitualRuntimeSnapshot> runtime = runtimeService.snapshot(target.getUuid());
             boolean clearedRuntime = runtime.isPresent() && ritualId.equals(runtime.get().ritualId());
+            boolean changed = VampirePlayerStateStore.get().clearRitualProgress(target.getUuid(), ritualId);
             if (clearedPersistedRuntime) {
                 runtimeService.clearPersistedState(target.getUuid());
             }
             if (clearedRuntime) {
                 runtimeService.clearPlayer(target.getUuid());
+            }
+            if ((clearedPersistedRuntime || clearedRuntime) && offeringRecovery != null) {
+                VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(offeringRecovery, store);
             }
             if (clearedPersistedRuntime || clearedRuntime) {
                 VampiricRitualOutcomeTracker.clearPlayer(target.getUuid());
@@ -404,14 +410,18 @@ public final class RitualAdminCommands extends AbstractCommand {
                                @Nonnull PlayerRef playerRef,
                                @Nonnull World world) {
             PlayerRef target = playerArg.get(ctx);
+            var offeringRecovery = runtimeService.captureOfferingRecovery(target.getUuid()).orElse(null);
             boolean hadPersistedRuntime = VampirePlayerStateStore.get().getRitualRuntimeState(target.getUuid()) != null;
-            boolean changed = VampirePlayerStateStore.get().clearAllRitualProgress(target.getUuid());
             boolean hadRuntime = runtimeService.snapshot(target.getUuid()).isPresent();
+            boolean changed = VampirePlayerStateStore.get().clearAllRitualProgress(target.getUuid());
             if (hadPersistedRuntime) {
                 runtimeService.clearPersistedState(target.getUuid());
             }
             if (hadRuntime) {
                 runtimeService.clearPlayer(target.getUuid());
+            }
+            if ((hadPersistedRuntime || hadRuntime) && offeringRecovery != null) {
+                VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(offeringRecovery, store);
             }
             if (hadPersistedRuntime || hadRuntime) {
                 VampiricRitualOutcomeTracker.clearPlayer(target.getUuid());

@@ -13,20 +13,37 @@ import javax.annotation.Nullable;
 import com.epicseed.epiccore.hytale.WorldStoreAdapter;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualGeometry;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualPointState;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualRegistry;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeSnapshot;
+import com.epicseed.vampirism.hytale.ritual.RitualOfferingSurfaceComponent;
 import com.hypixel.hytale.component.AddReason;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.math.shape.Box;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.protocol.InteractionType;
+import com.hypixel.hytale.server.core.asset.type.model.config.Model;
+import com.hypixel.hytale.server.core.asset.type.model.config.ModelAsset;
+import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.entities.ProjectileComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.BoundingBox;
+import com.hypixel.hytale.server.core.modules.entity.component.HeadRotation;
+import com.hypixel.hytale.server.core.modules.entity.component.Interactable;
 import com.hypixel.hytale.server.core.modules.entity.component.Intangible;
+import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent;
+import com.hypixel.hytale.server.core.modules.entity.component.PersistentModel;
+import com.hypixel.hytale.server.core.modules.entity.component.PropComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.modules.entity.item.PreventItemMerging;
+import com.hypixel.hytale.server.core.modules.entity.item.PreventPickup;
+import com.hypixel.hytale.server.core.modules.entity.tracker.NetworkId;
+import com.hypixel.hytale.server.core.modules.interaction.Interactions;
 import com.hypixel.hytale.server.core.modules.physics.SimplePhysicsProvider;
+import com.hypixel.hytale.server.core.prefab.PrefabCopyableComponent;
 import com.hypixel.hytale.server.core.modules.time.TimeResource;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -40,18 +57,26 @@ public final class VampiricRitualGlyphPresentationService {
     static final String NODE_ACTIVE_PROJECTILE_ID = "Vampirism_RitualGlyph_Node_Active";
     static final String NODE_INACTIVE_PROJECTILE_ID = "Vampirism_RitualGlyph_Node_Inactive";
     static final String GENERIC_SYMBOL_PROJECTILE_ID = "Vampirism_RitualGlyph_Symbol_Generic";
+    static final String VOID_HEART_PROJECTILE_ID = "Vampirism_RitualOffering_VoidHeart";
 
     private static final double NODE_Y_OFFSET = 0.045d;
     private static final double SYMBOL_Y_OFFSET = 0.095d;
+    private static final double POINT_OFFERING_Y_OFFSET = 0.28d;
+    private static final double CENTER_OFFERING_Y_OFFSET = 0.32d;
     private static final double DISPLAY_TERMINAL_VELOCITY = 0.001d;
     private static final double CORE_BOB_AMPLITUDE = 0.020d;
     private static final double ACTIVE_NODE_BOB_AMPLITUDE = 0.012d;
     private static final double TRACING_NODE_BOB_AMPLITUDE = 0.018d;
     private static final double ACTIVE_SYMBOL_BOB_AMPLITUDE = 0.020d;
     private static final double TRACING_SYMBOL_BOB_AMPLITUDE = 0.028d;
+    private static final double OFFERING_BOB_AMPLITUDE = 0.024d;
     private static final float ACTIVE_SYMBOL_SPIN_DEGREES_PER_SECOND = 68f;
     private static final float TRACING_SYMBOL_SPIN_DEGREES_PER_SECOND = 104f;
     private static final float CORE_SPIN_DEGREES_PER_SECOND = 52f;
+    private static final float OFFERING_SPIN_DEGREES_PER_SECOND = 24f;
+    static final double OFFERING_SURFACE_HALF_WIDTH = 1.8d;
+    static final double OFFERING_SURFACE_HEIGHT = 1.6d;
+    static final String OFFERING_SURFACE_INTERACTION_HINT = "server.interactionHints.place";
 
     private VampiricRitualGlyphPresentationService() {
     }
@@ -63,6 +88,13 @@ public final class VampiricRitualGlyphPresentationService {
 
     @Nonnull
     public static RitualGlyphPresentationLayout describe(@Nonnull VampiricRitualRuntimeSnapshot snapshot,
+                                                         double animationSeconds) {
+        return describe(snapshot, Map.of(), animationSeconds);
+    }
+
+    @Nonnull
+    public static RitualGlyphPresentationLayout describe(@Nonnull VampiricRitualRuntimeSnapshot snapshot,
+                                                         @Nonnull Map<String, String> offeredSurfaceItems,
                                                          double animationSeconds) {
         List<GlyphVisualSpec> visuals = new ArrayList<>();
         Vector3d anchor = snapshot.anchorCenter();
@@ -96,26 +128,32 @@ public final class VampiricRitualGlyphPresentationService {
                     rotated(outwardRotation, symbolRotationOffset(point, animationSeconds, phaseOffset))));
         }
 
+        appendOfferingVisuals(snapshot, visuals, offeredSurfaceItems, animationSeconds);
+
         return new RitualGlyphPresentationLayout(snapshot.ritualId(), visuals);
     }
 
     @Nonnull
     public static RitualGlyphPresentationHandle spawn(@Nonnull UUID ownerUuid,
                                                       @Nonnull VampiricRitualRuntimeSnapshot snapshot,
+                                                      @Nonnull Map<String, String> offeredSurfaceItems,
+                                                      boolean offeringSurfacesEnabled,
                                                       @Nonnull Store<EntityStore> store,
                                                       @Nonnull CommandBuffer<EntityStore> commandBuffer) {
         RitualGlyphPresentationHandle handle = new RitualGlyphPresentationHandle(snapshot.ritualId());
-        sync(ownerUuid, handle, snapshot, store, commandBuffer);
+        sync(ownerUuid, handle, snapshot, offeredSurfaceItems, offeringSurfacesEnabled, store, commandBuffer);
         return handle;
     }
 
     public static void sync(@Nonnull UUID ownerUuid,
                             @Nonnull RitualGlyphPresentationHandle handle,
                             @Nonnull VampiricRitualRuntimeSnapshot snapshot,
+                            @Nonnull Map<String, String> offeredSurfaceItems,
+                            boolean offeringSurfacesEnabled,
                             @Nonnull Store<EntityStore> store,
                             @Nonnull CommandBuffer<EntityStore> commandBuffer) {
         handle.ritualId = snapshot.ritualId();
-        RitualGlyphPresentationLayout layout = describe(snapshot);
+        RitualGlyphPresentationLayout layout = describe(snapshot, offeredSurfaceItems, System.currentTimeMillis() / 1000d);
         Map<String, GlyphVisualSpec> desired = new LinkedHashMap<>();
         for (GlyphVisualSpec visual : layout.visuals()) {
             desired.put(visual.key(), visual);
@@ -124,7 +162,11 @@ public final class VampiricRitualGlyphPresentationService {
         List<String> staleKeys = new ArrayList<>();
         for (Map.Entry<String, SpawnedGlyph> entry : handle.spawnedGlyphs.entrySet()) {
             GlyphVisualSpec spec = desired.get(entry.getKey());
-            if (spec == null || !entry.getValue().projectileId().equals(spec.projectileId()) || !isValid(entry.getValue().ref())) {
+            String desiredSurfaceId = spec != null ? offeringSurfaceIdForVisualKey(spec.key(), snapshot.ritualId(), offeringSurfacesEnabled) : null;
+            if (spec == null
+                    || !entry.getValue().projectileId().equals(spec.projectileId())
+                    || !Objects.equals(entry.getValue().surfaceId(), desiredSurfaceId)
+                    || !isValid(entry.getValue().ref())) {
                 removeSpawnedGlyph(entry.getValue(), commandBuffer);
                 staleKeys.add(entry.getKey());
             }
@@ -133,10 +175,13 @@ public final class VampiricRitualGlyphPresentationService {
 
         for (GlyphVisualSpec visual : layout.visuals()) {
             SpawnedGlyph existing = handle.spawnedGlyphs.get(visual.key());
+            String surfaceId = offeringSurfaceIdForVisualKey(visual.key(), snapshot.ritualId(), offeringSurfacesEnabled);
             if (existing == null) {
-                Ref<EntityStore> ref = spawnGlyph(ownerUuid, visual, store, commandBuffer);
+                Ref<EntityStore> ref = surfaceId != null
+                        ? spawnOfferingSurface(ownerUuid, snapshot.ritualId(), visual, surfaceId, store, commandBuffer)
+                        : spawnGlyph(ownerUuid, visual, store, commandBuffer);
                 if (ref != null) {
-                    handle.spawnedGlyphs.put(visual.key(), new SpawnedGlyph(visual.projectileId(), ref));
+                    handle.spawnedGlyphs.put(visual.key(), new SpawnedGlyph(visual.projectileId(), ref, surfaceId));
                 }
                 continue;
             }
@@ -190,6 +235,30 @@ public final class VampiricRitualGlyphPresentationService {
             case "mirror_fang" -> "Vampirism_RitualGlyph_Symbol_MirrorFang";
             default -> GENERIC_SYMBOL_PROJECTILE_ID;
         };
+    }
+
+    private static void appendOfferingVisuals(@Nonnull VampiricRitualRuntimeSnapshot snapshot,
+                                              @Nonnull List<GlyphVisualSpec> visuals,
+                                              @Nonnull Map<String, String> offeredSurfaceItems,
+                                              double animationSeconds) {
+        if (offeredSurfaceItems.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, String> entry : offeredSurfaceItems.entrySet()) {
+            String projectileId = offeringProjectileId(entry.getValue());
+            if (projectileId == null) {
+                continue;
+            }
+            Vector3d position = offeringPosition(snapshot, entry.getKey(), animationSeconds);
+            if (position == null) {
+                continue;
+            }
+            visuals.add(new GlyphVisualSpec(
+                    "offering/" + entry.getKey(),
+                    projectileId,
+                    position,
+                    offeringRotation(snapshot, entry.getKey(), animationSeconds)));
+        }
     }
 
     @Nonnull
@@ -298,6 +367,90 @@ public final class VampiricRitualGlyphPresentationService {
     }
 
     @Nullable
+    private static String offeringProjectileId(@Nullable String itemId) {
+        if (itemId == null || itemId.isBlank()) {
+            return null;
+        }
+        return switch (itemId.trim()) {
+            case VampiricRitualRegistry.VOID_HEART_ITEM_ID -> VOID_HEART_PROJECTILE_ID;
+            default -> null;
+        };
+    }
+
+    @Nullable
+    private static Vector3d offeringPosition(@Nonnull VampiricRitualRuntimeSnapshot snapshot,
+                                             @Nullable String surfaceId,
+                                             double animationSeconds) {
+        Vector3d basePosition = offeringDropPosition(snapshot, surfaceId);
+        if (basePosition == null) {
+            return null;
+        }
+        double phaseOffset = phaseOffset("offering/" + surfaceId);
+        return offset(basePosition, offeringLift(animationSeconds, phaseOffset));
+    }
+
+    @Nullable
+    static Vector3d offeringDropPosition(@Nonnull VampiricRitualRuntimeSnapshot snapshot,
+                                         @Nullable String surfaceId) {
+        if (surfaceId == null || surfaceId.isBlank()) {
+            return null;
+        }
+        if ("center".equals(surfaceId)) {
+            return offset(snapshot.anchorCenter(), CENTER_OFFERING_Y_OFFSET);
+        }
+        if (!surfaceId.startsWith("point:")) {
+            return null;
+        }
+        String pointId = surfaceId.substring("point:".length());
+        return snapshot.pointStates().stream()
+                .filter(point -> point.pointId().equals(pointId))
+                .findFirst()
+                .map(point -> offset(point.position(), POINT_OFFERING_Y_OFFSET))
+                .orElse(null);
+    }
+
+    @Nonnull
+    private static Vector3f offeringRotation(@Nonnull VampiricRitualRuntimeSnapshot snapshot,
+                                             @Nonnull String surfaceId,
+                                             double animationSeconds) {
+        float spinOffset = normalizeYaw((float) (Math.toDegrees(phaseOffset("offering/" + surfaceId))
+                + animationSeconds * OFFERING_SPIN_DEGREES_PER_SECOND));
+        if ("center".equals(surfaceId)) {
+            return new Vector3f(0.0f, spinOffset, 0.0f);
+        }
+        if (!surfaceId.startsWith("point:")) {
+            return new Vector3f(0.0f, spinOffset, 0.0f);
+        }
+        String pointId = surfaceId.substring("point:".length());
+        return snapshot.pointStates().stream()
+                .filter(point -> point.pointId().equals(pointId))
+                .findFirst()
+                .map(point -> rotated(outwardRotation(snapshot.anchorCenter(), point.position()), spinOffset))
+                .orElseGet(() -> new Vector3f(0.0f, spinOffset, 0.0f));
+    }
+
+    private static double offeringLift(double animationSeconds, double phaseOffset) {
+        return Math.sin(animationSeconds * 2.2d + phaseOffset) * OFFERING_BOB_AMPLITUDE;
+    }
+
+    @Nullable
+    private static String offeringSurfaceIdForVisualKey(@Nonnull String key,
+                                                        @Nonnull String ritualId,
+                                                        boolean offeringSurfacesEnabled) {
+        if (!offeringSurfacesEnabled) {
+            return null;
+        }
+        if ("anchor/core".equals(key)) {
+            return "center";
+        }
+        if (!key.startsWith("point/") || !key.endsWith("/node")) {
+            return null;
+        }
+        String pointId = key.substring("point/".length(), key.length() - "/node".length());
+        return pointId.isBlank() ? null : "point:" + pointId;
+    }
+
+    @Nullable
     private static Ref<EntityStore> spawnGlyph(@Nonnull UUID ownerUuid,
                                                @Nonnull GlyphVisualSpec visual,
                                                @Nonnull Store<EntityStore> store,
@@ -340,6 +493,59 @@ public final class VampiricRitualGlyphPresentationService {
         return glyphRef;
     }
 
+    @Nullable
+    private static Ref<EntityStore> spawnOfferingSurface(@Nonnull UUID ownerUuid,
+                                                         @Nonnull String ritualId,
+                                                         @Nonnull GlyphVisualSpec visual,
+                                                         @Nonnull String surfaceId,
+                                                         @Nonnull Store<EntityStore> store,
+                                                         @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+        ModelAsset modelAsset = (ModelAsset) ModelAsset.getAssetMap().getAsset(visual.projectileId());
+        if (modelAsset == null) {
+            return null;
+        }
+
+        Holder<EntityStore> holder = EntityStore.REGISTRY.newHolder();
+        holder.addComponent(NetworkId.getComponentType(), new NetworkId(((EntityStore) store.getExternalData()).takeNextNetworkId()));
+        holder.addComponent(TransformComponent.getComponentType(), new TransformComponent(visual.position(), visual.rotation()));
+        holder.addComponent(PreventPickup.getComponentType(), PreventPickup.INSTANCE);
+        holder.addComponent(PreventItemMerging.getComponentType(), PreventItemMerging.INSTANCE);
+        holder.addComponent(HeadRotation.getComponentType(), new HeadRotation(visual.rotation()));
+        holder.addComponent(PropComponent.getComponentType(), PropComponent.get());
+        holder.ensureComponent(UUIDComponent.getComponentType());
+        holder.ensureComponent(Interactable.getComponentType());
+        holder.ensureComponent(PrefabCopyableComponent.getComponentType());
+        holder.putComponent(BoundingBox.getComponentType(), new BoundingBox(offeringSurfaceHitbox()));
+        holder.addComponent(ModelComponent.getComponentType(), new ModelComponent(Model.createStaticScaledModel(modelAsset, 1.0f)));
+        holder.addComponent(
+                PersistentModel.getComponentType(),
+                new PersistentModel(new Model.ModelReference(visual.projectileId(), 1.0f, null, true)));
+
+        Interactions interactions = new Interactions();
+        interactions.setInteractionId(InteractionType.Use, "Vampirism_RitualOfferSurface");
+        interactions.setInteractionHint(OFFERING_SURFACE_INTERACTION_HINT);
+        holder.addComponent(Interactions.getComponentType(), interactions);
+        holder.addComponent(
+                RitualOfferingSurfaceComponent.getComponentType(),
+                new RitualOfferingSurfaceComponent(ownerUuid, ritualId, surfaceId));
+        holder.putComponent(UUIDComponent.getComponentType(), new UUIDComponent(UUID.randomUUID()));
+
+        Ref<EntityStore> glyphRef = new Ref<>(store);
+        commandBuffer.addEntity(holder, glyphRef, AddReason.SPAWN);
+        return glyphRef;
+    }
+
+    @Nonnull
+    static Box offeringSurfaceHitbox() {
+        return new Box(
+                -OFFERING_SURFACE_HALF_WIDTH,
+                0d,
+                -OFFERING_SURFACE_HALF_WIDTH,
+                OFFERING_SURFACE_HALF_WIDTH,
+                OFFERING_SURFACE_HEIGHT,
+                OFFERING_SURFACE_HALF_WIDTH);
+    }
+
     private static void syncGlyph(@Nonnull Ref<EntityStore> ref,
                                   @Nonnull GlyphVisualSpec visual,
                                   @Nonnull Store<EntityStore> store) {
@@ -347,6 +553,10 @@ public final class VampiricRitualGlyphPresentationService {
         if (transform != null) {
             transform.teleportPosition(visual.position());
             transform.setRotation(new Vector3f(visual.rotation()));
+        }
+        HeadRotation headRotation = store.getComponent(ref, HeadRotation.getComponentType());
+        if (headRotation != null) {
+            headRotation.setRotation(new Vector3f(visual.rotation()));
         }
         ProjectileComponent projectile = store.getComponent(ref, ProjectileComponent.getComponentType());
         if (projectile != null) {
@@ -460,7 +670,8 @@ public final class VampiricRitualGlyphPresentationService {
 
     private record SpawnedGlyph(
             @Nonnull String projectileId,
-            @Nonnull Ref<EntityStore> ref) {
+            @Nonnull Ref<EntityStore> ref,
+            @Nullable String surfaceId) {
 
         private SpawnedGlyph {
             Objects.requireNonNull(projectileId, "projectileId");

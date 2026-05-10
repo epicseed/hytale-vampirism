@@ -18,6 +18,7 @@ func withTestEditorRoots(t *testing.T) func() {
 	previousSkillDataDir := skillDataDir
 	previousLegacyJSONPath := legacyJSONPath
 	previousRitualTemplatesPath := ritualTemplatesPath
+	previousRitualDefinitionsPath := ritualDefinitionsPath
 	previousRitualGlyphDefinitionsPath := ritualGlyphDefinitionsPath
 	previousRitualGlyphsDir := ritualGlyphsDir
 	previousIconsPath := iconsPath
@@ -27,6 +28,7 @@ func withTestEditorRoots(t *testing.T) func() {
 	legacyJSONPath = filepath.Join(tempDir, "SkillsData.json")
 	iconsPath = filepath.Join(tempDir, "Icons")
 	ritualTemplatesPath = filepath.Join(resourcesRoot, "data", "vampirism", "rituals", "templates.json")
+	ritualDefinitionsPath = filepath.Join(resourcesRoot, "data", "vampirism", "rituals", "definitions.json")
 	ritualGlyphDefinitionsPath = filepath.Join(resourcesRoot, "data", "vampirism", "rituals", "glyphs.json")
 	ritualGlyphsDir = filepath.Join(resourcesRoot, "Common", "UI", "Custom", "Vampirism", "Assets", "Rituals")
 
@@ -34,6 +36,7 @@ func withTestEditorRoots(t *testing.T) func() {
 		skillDataDir = previousSkillDataDir
 		legacyJSONPath = previousLegacyJSONPath
 		ritualTemplatesPath = previousRitualTemplatesPath
+		ritualDefinitionsPath = previousRitualDefinitionsPath
 		ritualGlyphDefinitionsPath = previousRitualGlyphDefinitionsPath
 		ritualGlyphsDir = previousRitualGlyphsDir
 		iconsPath = previousIconsPath
@@ -94,6 +97,22 @@ func TestDataHandlerRoundTripIncludesRitualTemplates(t *testing.T) {
 				},
 			},
 		},
+		"ritualDefinitions": map[string]interface{}{
+			"definitions": []interface{}{
+				map[string]interface{}{
+					"id":                     "awakening",
+					"displayName":            "Crimson Awakening",
+					"description":            "Seal the infection in blood beneath an ancient coffin.",
+					"minBlood":               40.0,
+					"minCompletedNightHunts": 0.0,
+					"requiredContextTags":    []interface{}{"night", "infected", "ancient_coffin"},
+					"objectives":             []interface{}{},
+					"presentation": map[string]interface{}{
+						"requiredItemId": "Furniture_Ancient_Coffin",
+					},
+				},
+			},
+		},
 		"ritualGlyphs": map[string]interface{}{
 			"glyphs": []interface{}{
 				map[string]interface{}{
@@ -137,6 +156,17 @@ func TestDataHandlerRoundTripIncludesRitualTemplates(t *testing.T) {
 	}
 	if bytes.Contains(ritualFile, []byte(`"traceSteps"`)) {
 		t.Fatalf("ritual templates should no longer inline glyph traces: %s", string(ritualFile))
+	}
+
+	definitionFile, err := os.ReadFile(ritualDefinitionsPath)
+	if err != nil {
+		t.Fatalf("read ritual definitions: %v", err)
+	}
+	if !bytes.Contains(definitionFile, []byte(`"id": "awakening"`)) {
+		t.Fatalf("ritual definitions were not written: %s", string(definitionFile))
+	}
+	if !bytes.Contains(definitionFile, []byte(`"requiredItemId": "Furniture_Ancient_Coffin"`)) {
+		t.Fatalf("ritual definition presentation was not written: %s", string(definitionFile))
 	}
 
 	glyphFile, err := os.ReadFile(ritualGlyphDefinitionsPath)
@@ -188,6 +218,25 @@ func TestDataHandlerRoundTripIncludesRitualTemplates(t *testing.T) {
 	glyphs, ok := ritualGlyphs["glyphs"].([]interface{})
 	if !ok || len(glyphs) != 1 {
 		t.Fatalf("unexpected ritual glyph payload: %#v", ritualGlyphs["glyphs"])
+	}
+	ritualDefinitions, ok := doc["ritualDefinitions"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("ritualDefinitions missing or invalid: %#v", doc["ritualDefinitions"])
+	}
+	definitions, ok := ritualDefinitions["definitions"].([]interface{})
+	if !ok || len(definitions) != 1 {
+		t.Fatalf("unexpected ritual definitions payload: %#v", ritualDefinitions["definitions"])
+	}
+	definition, ok := definitions[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("unexpected ritual definition entry: %#v", definitions[0])
+	}
+	if minBlood, ok := definition["minBlood"].(float64); !ok || minBlood != 40.0 {
+		t.Fatalf("unexpected ritual definition minBlood: %#v", definition["minBlood"])
+	}
+	presentation, ok := definition["presentation"].(map[string]interface{})
+	if !ok || presentation["requiredItemId"] != "Furniture_Ancient_Coffin" {
+		t.Fatalf("unexpected ritual definition presentation: %#v", definition["presentation"])
 	}
 }
 
@@ -270,6 +319,14 @@ func TestDataHandlerRejectsTemplatesWithMissingGlyphReferences(t *testing.T) {
 				},
 			},
 		},
+		"ritualDefinitions": map[string]any{
+			"definitions": []any{
+				map[string]any{
+					"id":          "moon_scar",
+					"displayName": "Moon Scar",
+				},
+			},
+		},
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
@@ -287,6 +344,9 @@ func TestDataHandlerRejectsTemplatesWithMissingGlyphReferences(t *testing.T) {
 	}
 	if _, err := os.Stat(ritualGlyphDefinitionsPath); !os.IsNotExist(err) {
 		t.Fatalf("ritual glyphs should not be written on validation failure, stat err = %v", err)
+	}
+	if _, err := os.Stat(ritualDefinitionsPath); !os.IsNotExist(err) {
+		t.Fatalf("ritual definitions should not be written on validation failure, stat err = %v", err)
 	}
 }
 
@@ -324,6 +384,16 @@ func TestDataHandlerAppliesDefaultCancelPolicyWhenMissing(t *testing.T) {
 					"mistakeStabilityPenalty":  6.0,
 					"mistakeCorruptionPenalty": 5.0,
 					"traceSteps":               []any{},
+				},
+			},
+		},
+		"ritualDefinitions": map[string]any{
+			"definitions": []any{
+				map[string]any{
+					"id":                     "awakening",
+					"displayName":            "Crimson Awakening",
+					"minBlood":               40.0,
+					"minCompletedNightHunts": 0.0,
 				},
 			},
 		},

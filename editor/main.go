@@ -25,6 +25,7 @@ var iconsPath string
 var resourcesRoot string
 var repoRoot string
 var ritualTemplatesPath string
+var ritualDefinitionsPath string
 var ritualGlyphDefinitionsPath string
 var ritualGlyphsDir string
 
@@ -61,6 +62,7 @@ func main() {
 	}
 	iconsPath = resolveIconsPath()
 	ritualTemplatesPath = filepath.Join(resourcesRoot, "data", "vampirism", "rituals", "templates.json")
+	ritualDefinitionsPath = filepath.Join(resourcesRoot, "data", "vampirism", "rituals", "definitions.json")
 	ritualGlyphDefinitionsPath = filepath.Join(resourcesRoot, "data", "vampirism", "rituals", "glyphs.json")
 	ritualGlyphsDir = filepath.Join(resourcesRoot, "Common", "UI", "Custom", "Vampirism", "Assets", "Rituals")
 

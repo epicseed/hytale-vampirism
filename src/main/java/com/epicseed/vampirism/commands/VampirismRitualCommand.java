@@ -21,6 +21,7 @@ import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualTemplateRegistry;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualAnchorState;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackService;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOfferingRecoveryService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOutcomeTracker;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualRevealService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualSelectionResolver;
@@ -144,6 +145,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
                 VampiricRitualRuntimeService.ClearResult result = runtimeService.abort(
                         playerRef.getUuid(),
                         contextResolver.buildContext(playerRef, store, extraTagsForSnapshot(ref, store, world, snapshot.get())));
+                VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(result.offeringRecovery(), store);
                 sendFeedback(ctx, playerRef, result.message(), result.cleared() ? "green" : "yellow");
                 return;
             }
@@ -158,6 +160,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
                 return;
             }
             VampiricRitualRuntimeService.ClearResult result = runtimeService.clearAssembly(playerRef.getUuid());
+            VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(result.offeringRecovery(), store);
             sendFeedback(ctx, playerRef, result.message(), result.cleared() ? "green" : "yellow");
         }
     }

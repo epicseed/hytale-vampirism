@@ -21,6 +21,7 @@ import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeSnapshot;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualGlyphPresentationService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualGlyphPresentationService.RitualGlyphPresentationHandle;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackService;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOfferingRecoveryService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOutcomeTracker;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualRevealService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualSelectionResolver;
@@ -135,6 +136,9 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
             if (result.completionResult() != null) {
                 VampiricRitualOutcomeTracker.clearPlayer(uuid);
             }
+            if (result.offeringRecovery() != null) {
+                VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(result.offeringRecovery(), commandBuffer);
+            }
             snapshot = Optional.ofNullable(result.snapshot());
             statePulse = result.phaseChanged() || result.collapsed() || result.aborted() || result.completionResult() != null;
             runtimeOwnedSnapshot = snapshot.isPresent()
@@ -158,6 +162,9 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
                         result.message(),
                         result.aborted() ? NotificationStyle.Warning : NotificationStyle.Default,
                         result.aborted() ? "yellow" : "aqua");
+            }
+            if (result.offeringRecovery() != null) {
+                VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(result.offeringRecovery(), commandBuffer);
             }
             snapshot = Optional.ofNullable(result.snapshot());
             statePulse = result.aborted();
@@ -236,12 +243,18 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
     }
 
     public void clearPlayer(@Nonnull UUID uuid, @Nullable Ref<EntityStore> playerRef) {
-        runtimeService.clearPlayer(uuid);
+        var offeringRecovery = runtimeService.clearPlayer(uuid);
         terminalVisuals.remove(uuid);
         primaryHeldPlayers.remove(uuid);
         fullGuidePlayers.remove(uuid);
         feedbackService.clearPlayer(uuid);
         VampiricRitualOutcomeTracker.clearPlayer(uuid);
+        if (offeringRecovery != null && playerRef != null) {
+            Store<EntityStore> store = playerRef.getStore();
+            if (store != null && !store.isShutdown()) {
+                VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(offeringRecovery, store);
+            }
+        }
         RitualGlyphPresentationHandle handle = glyphHandles.remove(uuid);
         if (handle != null) {
             VampiricRitualGlyphPresentationService.clearImmediately(handle);
@@ -369,11 +382,15 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
         Set<String> extraTags = nearAnchor ? Set.of(VampiricRitualRegistry.TAG_ANCIENT_COFFIN) : Set.of();
         var ritualContext = contextResolver.buildContext(playerRef, store, extraTags);
         if (!anchorPresent || !nearAnchor) {
-            runtimeService.discardPersistedState(uuid, ritualContext);
+            VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(
+                    runtimeService.discardPersistedState(uuid, ritualContext),
+                    store);
             return;
         }
         if (runtimeService.restorePersistedState(uuid, persisted, ritualContext).isEmpty()) {
-            runtimeService.discardPersistedState(uuid, ritualContext);
+            VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(
+                    runtimeService.discardPersistedState(uuid, ritualContext),
+                    store);
         }
     }
 
@@ -394,13 +411,31 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
                                        @Nonnull VampiricRitualRuntimeSnapshot snapshot,
                                        @Nonnull Store<EntityStore> store,
                                        @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+        boolean offeringSurfacesEnabled =
+                runtimeService.snapshot(uuid).isPresent() && runtimeService.supportsSurfaceOfferings(snapshot.ritualId());
+        Map<String, String> offeredSurfaceItems = offeringSurfacesEnabled
+                ? runtimeService.offeredSurfaceItems(uuid, snapshot.ritualId())
+                : Map.of();
         RitualGlyphPresentationHandle handle = glyphHandles.get(uuid);
         if (handle == null) {
-            handle = VampiricRitualGlyphPresentationService.spawn(uuid, snapshot, store, commandBuffer);
+            handle = VampiricRitualGlyphPresentationService.spawn(
+                    uuid,
+                    snapshot,
+                    offeredSurfaceItems,
+                    offeringSurfacesEnabled,
+                    store,
+                    commandBuffer);
             glyphHandles.put(uuid, handle);
             return;
         }
-        VampiricRitualGlyphPresentationService.sync(uuid, handle, snapshot, store, commandBuffer);
+        VampiricRitualGlyphPresentationService.sync(
+                uuid,
+                handle,
+                snapshot,
+                offeredSurfaceItems,
+                offeringSurfacesEnabled,
+                store,
+                commandBuffer);
     }
 
     private void clearGlyphPresentation(@Nonnull UUID uuid,

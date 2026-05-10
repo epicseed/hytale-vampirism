@@ -19,6 +19,7 @@ const App = (() => {
     stateRegistry: [],
     relicBindings: {},
     ritualGlyphs: { glyphs: [] },
+    ritualDefinitions: { definitions: [] },
     ritualTemplates: { templates: [] },
   };
 
@@ -185,6 +186,14 @@ const App = (() => {
     return doc;
   }
 
+  function normalizeRitualDefinitions(value) {
+    const doc = cloneObject(value);
+    if (!Array.isArray(doc.definitions)) {
+      doc.definitions = [];
+    }
+    return doc;
+  }
+
   function normalizeRitualGlyphs(value) {
     const doc = cloneObject(value);
     if (!Array.isArray(doc.glyphs)) {
@@ -209,6 +218,7 @@ const App = (() => {
     window.AppData.stateRegistry = normalizeStateRegistry(data.stateRegistry);
     window.AppData.relicBindings = normalizeRelicBindings(data.relicBindings);
     window.AppData.ritualGlyphs = normalizeRitualGlyphs(data.ritualGlyphs);
+    window.AppData.ritualDefinitions = normalizeRitualDefinitions(data.ritualDefinitions);
     window.AppData.ritualTemplates = normalizeRitualTemplates(data.ritualTemplates);
   }
 

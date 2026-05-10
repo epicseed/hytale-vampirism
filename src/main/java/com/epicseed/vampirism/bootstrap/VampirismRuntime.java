@@ -62,11 +62,13 @@ import com.epicseed.vampirism.domain.ritual.VampiricRitualTemplateRegistry;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualCompanionTracker;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackService;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOfferingRecoveryService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualSelectionService;
 import com.epicseed.vampirism.hud.BloodGaugeHud;
 import com.epicseed.vampirism.hud.RitualHudService;
 import com.epicseed.vampirism.hud.RitualStatusHud;
 import com.epicseed.vampirism.hytale.VampirismPlayerFeedback;
+import com.epicseed.vampirism.hytale.ritual.RitualOfferingSurfaceInteraction;
 import com.epicseed.vampirism.domain.skill.SkillTreePresenter;
 import com.epicseed.epiccore.vampirism.interop.VampirismClassifications;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
@@ -225,7 +227,7 @@ public final class VampirismRuntime {
                 new VampiricLineageRegistry(),
                 progressionAccess);
         VampiricRitualService ritualService = new VampiricRitualService(
-                VampiricRitualRegistry.defaultAscensionRegistry(),
+                new VampiricRitualRegistry(),
                 new RuntimeVampiricRitualRewardPort(
                         progressionAccess,
                         lineageService,
@@ -235,6 +237,7 @@ public final class VampirismRuntime {
         VampiricRitualTemplateRegistry ritualTemplateRegistry = new VampiricRitualTemplateRegistry();
         VampiricRitualRuntimeService ritualRuntimeService =
                 new VampiricRitualRuntimeService(ritualService, ritualTemplateRegistry);
+        RitualOfferingSurfaceInteraction.installRuntime(ritualRuntimeService);
         VampiricRitualContextResolver ritualContextResolver = new VampiricRitualContextResolver(progressionAccess);
         VampiricRitualFeedbackService ritualFeedbackService = new VampiricRitualFeedbackService();
         VampiricRitualSelectionService ritualSelectionService = new VampiricRitualSelectionService();
@@ -428,6 +431,7 @@ public final class VampirismRuntime {
     public void shutdown() {
         VampirismClassifications.unregisterProvider();
         relicPresetSelectionAdapter.shutdown();
+        RitualOfferingSurfaceInteraction.clearRuntime();
     }
 
     private void registerPlayerLifecycle(@Nonnull Vampirism plugin) {
@@ -615,6 +619,20 @@ public final class VampirismRuntime {
                                            @Nonnull VampiricRitualContextResolver ritualContextResolver) {
         Optional<VampiricRitualRuntimeSnapshot> snapshot = ritualRuntimeService.snapshot(uuid);
         if (snapshot.isEmpty()) {
+            if (playerRef != null) {
+                Store<EntityStore> store = playerRef.getStore();
+                if (store != null && !store.isShutdown()) {
+                    var ritualContext = ritualContextResolver.buildContext(
+                            uuid,
+                            store,
+                            Set.of(VampiricRitualRegistry.TAG_ANCIENT_COFFIN));
+                    VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(
+                            ritualRuntimeService.discardPersistedState(uuid, ritualContext),
+                            store);
+                    ritualRuntimeService.clearPlayer(uuid);
+                    return;
+                }
+            }
             ritualRuntimeService.clearPlayer(uuid);
             ritualRuntimeService.clearPersistedState(uuid);
             return;
@@ -640,8 +658,12 @@ public final class VampirismRuntime {
                     uuid,
                     store,
                     Set.of(VampiricRitualRegistry.TAG_ANCIENT_COFFIN));
-            ritualRuntimeService.abort(uuid, ritualContext);
-            ritualRuntimeService.discardPersistedState(uuid, ritualContext);
+            VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(
+                    ritualRuntimeService.abort(uuid, ritualContext).offeringRecovery(),
+                    store);
+            VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(
+                    ritualRuntimeService.discardPersistedState(uuid, ritualContext),
+                    store);
             ritualRuntimeService.clearPlayer(uuid);
         };
         World world = WorldStoreAdapter.resolveWorld(store);

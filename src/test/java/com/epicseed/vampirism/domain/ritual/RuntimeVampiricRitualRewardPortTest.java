@@ -43,6 +43,7 @@ class RuntimeVampiricRitualRewardPortTest {
                 new com.epicseed.vampirism.domain.hunt.NightHuntService(progressionAccess),
                 new MasqueradeHeatService(MasqueradeHeatPolicy.defaults()),
                 new TemporaryModifierTracker<StatType>(),
+                null,
                 handlers);
 
         rewardPort.applySideEffect(uuid, "ritual.mark_prey", "  mark_prey  ");
@@ -62,11 +63,34 @@ class RuntimeVampiricRitualRewardPortTest {
                 new com.epicseed.vampirism.domain.hunt.NightHuntService(progressionAccess),
                 new MasqueradeHeatService(MasqueradeHeatPolicy.defaults()),
                 new TemporaryModifierTracker<StatType>(),
+                null,
                 handlers);
 
         rewardPort.applySideEffect(UUID.randomUUID(), "ritual.unknown", "unknown_side_effect");
 
         assertEquals(List.of(), invocations);
+    }
+
+    @Test
+    void summonFamiliarSideEffectDispatchesThroughDeferredDispatcher() {
+        UUID uuid = UUID.randomUUID();
+        List<String> invocations = new ArrayList<>();
+
+        RuntimeVampiricRitualRewardPort rewardPort = new RuntimeVampiricRitualRewardPort(
+                progressionAccess,
+                new VampiricLineageService(new VampiricLineageRegistry(), progressionAccess),
+                new com.epicseed.vampirism.domain.hunt.NightHuntService(progressionAccess),
+                new MasqueradeHeatService(MasqueradeHeatPolicy.defaults()),
+                new TemporaryModifierTracker<StatType>(),
+                (playerId, action) -> {
+                    invocations.add(playerId + ":scheduled");
+                    return true;
+                },
+                null);
+
+        rewardPort.applySideEffect(uuid, "ritual.summon_familiar", VampiricRitualRegistry.SIDE_EFFECT_SUMMON_FAMILIAR);
+
+        assertEquals(List.of(uuid + ":scheduled"), invocations);
     }
 
     private static final class TestProgressionAccess implements VampirismSkillProgressionAccess {

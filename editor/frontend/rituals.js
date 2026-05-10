@@ -19,6 +19,10 @@
     assetGlyphsLoaded: false,
     assetGlyphError: '',
     loadingAssetGlyphs: false,
+    itemRefs: [],
+    itemRefsLoaded: false,
+    itemRefError: '',
+    loadingItemRefs: false,
     templateIndex: 0,
     pointIndex: 0,
     glyphIndex: 0,
@@ -349,6 +353,35 @@
         font-size:12px;
         font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       }
+      .ritual-objective-list {
+        display:flex;
+        flex-direction:column;
+        gap:12px;
+      }
+      .ritual-objective-card {
+        background:#102038;
+        border:1px solid #1c3456;
+        border-radius:8px;
+        padding:12px;
+      }
+      .ritual-objective-header {
+        display:flex;
+        justify-content:space-between;
+        gap:8px;
+        align-items:center;
+        margin-bottom:10px;
+      }
+      .ritual-textarea {
+        width:100%;
+        min-height:88px;
+        resize:vertical;
+        background:var(--input-bg);
+        border:1px solid var(--border);
+        color:var(--text);
+        padding:8px 10px;
+        border-radius:5px;
+        font-size:12px;
+      }
       .ritual-empty {
         display:flex;
         flex-direction:column;
@@ -388,8 +421,22 @@
     return window.AppData.ritualTemplates;
   }
 
+  function getDefinitionDoc() {
+    if (!window.AppData.ritualDefinitions || typeof window.AppData.ritualDefinitions !== 'object' || Array.isArray(window.AppData.ritualDefinitions)) {
+      window.AppData.ritualDefinitions = { definitions: [] };
+    }
+    if (!Array.isArray(window.AppData.ritualDefinitions.definitions)) {
+      window.AppData.ritualDefinitions.definitions = [];
+    }
+    return window.AppData.ritualDefinitions;
+  }
+
   function glyphs() {
     return getGlyphDoc().glyphs;
+  }
+
+  function definitions() {
+    return getDefinitionDoc().definitions;
   }
 
   function templates() {
@@ -404,6 +451,23 @@
 
     const normalizedTemplates = templates().map((template, index) => normalizeTemplate(template, index, glyphMap)).filter(Boolean);
     getTemplateDoc().templates = normalizedTemplates;
+    const templateMap = new Map(normalizedTemplates.map((template) => [template.ritualId, template]));
+    const normalizedDefinitions = definitions()
+      .map((definition) => normalizeDefinition(definition, templateMap))
+      .filter(Boolean);
+    const definitionMap = new Map();
+    normalizedDefinitions.forEach((definition) => definitionMap.set(definition.id, definition));
+    normalizedTemplates.forEach((template) => {
+      const definition = definitionMap.get(template.ritualId) || makeDefinition(template);
+      definition.id = template.ritualId;
+      if (!definition.displayName) {
+        definition.displayName = template.displayName;
+      }
+      definitionMap.set(template.ritualId, normalizeDefinition(definition, templateMap));
+    });
+    getDefinitionDoc().definitions = normalizedTemplates
+      .map((template) => definitionMap.get(template.ritualId))
+      .filter(Boolean);
     getGlyphDoc().glyphs = sortGlyphs([...glyphMap.values()]);
   }
 
@@ -444,6 +508,86 @@
     normalizedTemplate.coreLayer = normalizeAnchorLayer(template?.coreLayer, 0.09);
     normalizedTemplate.activationLinks = normalizeActivationLinks(template?.activationLinks, normalizedTemplate.points);
     return normalizedTemplate;
+  }
+
+  function normalizeDefinition(definition, templateMap) {
+    const template = templateMap instanceof Map ? templateMap.get(String(definition?.id || '').trim()) : null;
+    const fallbackId = String(definition?.id || template?.ritualId || '').trim();
+    if (!fallbackId) return null;
+    return {
+      id: fallbackId,
+      displayName: String(definition?.displayName || template?.displayName || humanizeId(fallbackId)).trim() || humanizeId(fallbackId),
+      description: String(definition?.description || '').trim(),
+      minBlood: Math.max(0, parseNumericInput(definition?.minBlood, 0)),
+      minCompletedNightHunts: Math.max(0, parseNumericInput(definition?.minCompletedNightHunts, 0)),
+      requiredAgeTierId: String(definition?.requiredAgeTierId || '').trim(),
+      requiredSkills: normalizeStringList(definition?.requiredSkills),
+      requiredContextTags: normalizeStringList(definition?.requiredContextTags),
+      blockedContextTags: normalizeStringList(definition?.blockedContextTags),
+      objectives: normalizeObjectives(definition?.objectives),
+      rewards: normalizeRewards(definition?.rewards),
+      presentation: normalizePresentation(definition?.presentation),
+    };
+  }
+
+  function normalizeObjectives(objectives) {
+    return Array.isArray(objectives)
+      ? objectives.map((objective, index) => normalizeObjective(objective, index)).filter(Boolean)
+      : [];
+  }
+
+  function normalizeObjective(objective, index) {
+    const fallbackId = String(objective?.id || `objective_${index + 1}`).trim();
+    if (!fallbackId) return null;
+    const normalizedOffering = normalizeObjectiveOffering(objective?.offering);
+    return {
+      id: fallbackId,
+      displayName: String(objective?.displayName || humanizeId(fallbackId)).trim() || humanizeId(fallbackId),
+      description: String(objective?.description || '').trim(),
+      targetCount: Math.max(1, parseNumericInput(objective?.targetCount, 1)),
+      offering: normalizedOffering,
+    };
+  }
+
+  function normalizeObjectiveOffering(offering) {
+    if (!offering || typeof offering !== 'object' || Array.isArray(offering)) {
+      return null;
+    }
+    const itemId = String(offering.itemId || '').trim();
+    const surfacePolicy = normalizeSurfacePolicy(offering.surfacePolicy);
+    if (!itemId) {
+      return null;
+    }
+    return {
+      itemId,
+      surfacePolicy,
+    };
+  }
+
+  function normalizeRewards(rewards) {
+    if (!rewards || typeof rewards !== 'object' || Array.isArray(rewards)) {
+      return null;
+    }
+    return {
+      skillPoints: Math.max(0, parseNumericInput(rewards.skillPoints, 0)),
+      bloodDelta: parseNumericInput(rewards.bloodDelta, 0),
+      ageTierId: String(rewards.ageTierId || '').trim(),
+      lineageId: String(rewards.lineageId || '').trim(),
+      grantedSkills: normalizeStringList(rewards.grantedSkills),
+      sideEffectIds: normalizeStringList(rewards.sideEffectIds),
+    };
+  }
+
+  function normalizePresentation(presentation) {
+    if (!presentation || typeof presentation !== 'object' || Array.isArray(presentation)) {
+      return null;
+    }
+    return {
+      iconAsset: String(presentation.iconAsset || '').trim(),
+      guidanceEffectId: String(presentation.guidanceEffectId || '').trim(),
+      ritualSiteTag: String(presentation.ritualSiteTag || '').trim(),
+      requiredItemId: String(presentation.requiredItemId || '').trim(),
+    };
   }
 
   function normalizePoint(point, index, glyphMap, fallbackGlyphId) {
@@ -588,6 +732,23 @@
     return templates()[state.templateIndex] || null;
   }
 
+  function definitionForTemplate(template) {
+    if (!template) return null;
+    return definitions().find((definition) => definition.id === template.ritualId) || null;
+  }
+
+  function selectedDefinition() {
+    const template = selectedTemplate();
+    if (!template) return null;
+    let definition = definitionForTemplate(template);
+    if (definition) {
+      return definition;
+    }
+    definition = makeDefinition(template);
+    definitions().push(definition);
+    return definition;
+  }
+
   function selectedPoint() {
     const template = selectedTemplate();
     if (!template || !template.points?.length) return null;
@@ -641,6 +802,27 @@
     return [...dedup.values()].sort((a, b) => a.displayName.localeCompare(b.displayName));
   }
 
+  function availableItemRefs(currentValue = '') {
+    const values = [...new Set([...(state.itemRefs || []), ...(currentValue ? [currentValue] : [])])];
+    return values.sort((a, b) => a.localeCompare(b));
+  }
+
+  async function ensureItemRefsLoaded() {
+    if (state.itemRefsLoaded || state.loadingItemRefs || typeof HytaleAssetStore === 'undefined') return;
+    state.loadingItemRefs = true;
+    try {
+      state.itemRefs = await HytaleAssetStore.getResolvableRefs('items');
+      state.itemRefError = '';
+      state.itemRefsLoaded = true;
+    } catch (error) {
+      state.itemRefError = error.message;
+      state.itemRefs = [];
+    } finally {
+      state.loadingItemRefs = false;
+      render();
+    }
+  }
+
   function makeGlyph(index = glyphs().length + 1) {
     const asset = unusedAssetGlyph() || bestAssetGlyph();
     const glyphId = uniqueGlyphId(asset?.id || `glyph_${index}`);
@@ -691,6 +873,34 @@
       cancelPolicy: normalizeCancelPolicy(),
       activationLinks: [],
       points: [makePoint(1, glyph.glyphId)],
+    };
+  }
+
+  function makeDefinition(template = null) {
+    const ritualId = String(template?.ritualId || `ritual_${definitions().length + 1}`).trim();
+    return {
+      id: ritualId,
+      displayName: String(template?.displayName || humanizeId(ritualId)).trim() || humanizeId(ritualId),
+      description: '',
+      minBlood: 0,
+      minCompletedNightHunts: 0,
+      requiredAgeTierId: '',
+      requiredSkills: [],
+      requiredContextTags: [],
+      blockedContextTags: [],
+      objectives: [],
+      rewards: null,
+      presentation: null,
+    };
+  }
+
+  function makeObjective(index = 1) {
+    return {
+      id: `objective_${index}`,
+      displayName: `Objective ${index}`,
+      description: '',
+      targetCount: 1,
+      offering: null,
     };
   }
 
@@ -769,6 +979,7 @@
     clampSelection();
     const scrollState = captureScrollState();
     const template = selectedTemplate();
+    const definition = selectedDefinition();
     const point = selectedPoint();
     const glyph = selectedGlyph();
 
@@ -783,7 +994,7 @@
         </aside>
         <main class="ritual-main">
           <div class="ritual-main-inner">
-            ${state.mode === 'builder' ? renderBuilderEditor(template, point) : renderGlyphEditor(glyph)}
+            ${state.mode === 'builder' ? renderBuilderEditor(template, definition, point) : renderGlyphEditor(glyph)}
           </div>
         </main>
       </div>
@@ -926,7 +1137,7 @@
     `).join('') || `<div class="ritual-empty">No reusable glyphs yet.<button class="btn-primary" type="button" data-action="add-glyph">Create first glyph</button></div>`;
   }
 
-  function renderBuilderEditor(template, point) {
+  function renderBuilderEditor(template, definition, point) {
     if (!template) {
       return `
         <section class="ritual-card">
@@ -943,7 +1154,7 @@
       <section class="ritual-card">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px">
           <h3 style="margin:0">Template Settings</h3>
-          <div class="editor-help">The editor writes <code>rituals/templates.json</code> and <code>rituals/glyphs.json</code> on Save.</div>
+          <div class="editor-help">The editor writes <code>rituals/templates.json</code>, <code>rituals/definitions.json</code>, and <code>rituals/glyphs.json</code> on Save.</div>
         </div>
         <div class="ritual-form-grid">
           ${inputGroup('Ritual ID', 'text', template.ritualId, { 'data-template-field': 'ritualId', placeholder: 'awakening' })}
@@ -958,6 +1169,10 @@
         ${renderCancelPolicyEditor(template)}
         ${renderAnchorGlyphEditor(template)}
         ${renderPointHeightTools(template)}
+      </section>
+      <section class="ritual-card">
+        <h3>Runtime Requirements & Objectives</h3>
+        ${renderDefinitionEditor(template, definition)}
       </section>
       <section class="ritual-card">
         <h3>Point Settings</h3>
@@ -1122,6 +1337,67 @@
     `;
   }
 
+  function renderDefinitionEditor(template, definition) {
+    if (!template || !definition) {
+      return `<div class="ritual-empty">Select a ritual template to author runtime requirements.</div>`;
+    }
+    const objectives = Array.isArray(definition.objectives) ? definition.objectives : [];
+    const presentation = definition.presentation || {};
+    return `
+      <div class="ritual-form-grid">
+        ${inputGroup('Min Blood', 'number', definition.minBlood, { 'data-definition-field': 'minBlood', step: '1', min: '0' })}
+        ${inputGroup('Min Completed Night Hunts', 'number', definition.minCompletedNightHunts, { 'data-definition-field': 'minCompletedNightHunts', step: '1', min: '0' })}
+        ${inputGroup('Required Age Tier ID', 'text', definition.requiredAgeTierId, { 'data-definition-field': 'requiredAgeTierId', placeholder: 'fledgling' })}
+        ${inputGroup('Required Skills', 'text', definition.requiredSkills.join(', '), { 'data-definition-list-field': 'requiredSkills', placeholder: 'BloodSucker, BloodThirst' })}
+        ${inputGroup('Required Context Tags', 'text', definition.requiredContextTags.join(', '), { 'data-definition-list-field': 'requiredContextTags', placeholder: 'night, ancient_coffin' })}
+        ${inputGroup('Blocked Context Tags', 'text', definition.blockedContextTags.join(', '), { 'data-definition-list-field': 'blockedContextTags', placeholder: 'sunlight' })}
+      </div>
+      ${textareaGroup('Description', definition.description, { 'data-definition-field': 'description', placeholder: 'What the ritual is for.' })}
+      <div style="margin-top:16px">
+        <h3 style="margin:0 0 12px 0">Required Ritual Item</h3>
+        <div class="ritual-form-grid">
+          ${renderItemSelect('Ritual Site Item ID', presentation.requiredItemId || '', { 'data-definition-presentation-field': 'requiredItemId' }, true)}
+          ${inputGroup('Ritual Site Tag', 'text', presentation.ritualSiteTag || '', { 'data-definition-presentation-field': 'ritualSiteTag', placeholder: 'ancient_coffin' })}
+          ${inputGroup('Guidance Effect ID', 'text', presentation.guidanceEffectId || '', { 'data-definition-presentation-field': 'guidanceEffectId', placeholder: 'Vampirism_Infected' })}
+          ${inputGroup('Icon Asset', 'text', presentation.iconAsset || '', { 'data-definition-presentation-field': 'iconAsset', placeholder: 'Icon_BecomeAVampire.png' })}
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="ritual-objective-header">
+          <div class="editor-help">Objectives track repeated offerings before the ritual can complete.</div>
+          <button class="btn-primary" type="button" data-action="add-objective">+ Objective</button>
+        </div>
+        <div class="ritual-objective-list">
+          ${objectives.map((objective, index) => renderObjectiveEditor(objective, index)).join('') || '<div class="ritual-empty">No ritual objectives configured yet.</div>'}
+        </div>
+      </div>
+      ${state.itemRefError ? `<div class="ritual-warning">⚠ Item list fell back to manual entry: ${escapeHtml(state.itemRefError)}</div>` : ''}
+    `;
+  }
+
+  function renderObjectiveEditor(objective, index) {
+    const offering = objective.offering || {};
+    return `
+      <div class="ritual-objective-card">
+        <div class="ritual-objective-header">
+          <strong>${escapeHtml(objective.displayName || objective.id || `Objective ${index + 1}`)}</strong>
+          <button class="btn-delete" type="button" data-objective-delete="${index}">✕</button>
+        </div>
+        <div class="ritual-form-grid">
+          ${inputGroup('Objective ID', 'text', objective.id, { 'data-objective-field': 'id', 'data-objective-index': index, placeholder: 'bind_familiar' })}
+          ${inputGroup('Display Name', 'text', objective.displayName, { 'data-objective-field': 'displayName', 'data-objective-index': index, placeholder: 'Bind Familiar' })}
+          ${inputGroup('Target Count', 'number', objective.targetCount, { 'data-objective-field': 'targetCount', 'data-objective-index': index, step: '1', min: '1' })}
+          ${renderItemSelect('Offering Item ID', offering.itemId || '', { 'data-objective-offering-field': 'itemId', 'data-objective-index': index }, true)}
+          ${selectGroup('Offering Surface', normalizeSurfacePolicy(offering.surfacePolicy), surfacePolicyOptions(), { 'data-objective-offering-field': 'surfacePolicy', 'data-objective-index': index })}
+        </div>
+        <div class="form-group" style="margin-top:12px">
+          <label>Description</label>
+          <textarea class="ritual-textarea" data-objective-field="description" data-objective-index="${index}" placeholder="Describe the repeated offering or ritual goal.">${escapeTextarea(objective.description || '')}</textarea>
+        </div>
+      </div>
+    `;
+  }
+
   function renderLayoutSection(template, point) {
     const previewTime = clampPreviewTime(template.channelDurationSeconds, state.layoutPreviewSeconds);
     state.layoutPreviewSeconds = previewTime;
@@ -1226,13 +1502,14 @@
   }
 
   function renderJsonSection(template, point, glyph) {
+    const definition = selectedDefinition();
     return `
       <section class="ritual-card">
         <h3>JSON Preview</h3>
         <div class="ritual-json-preview">
           <div class="form-group">
-            <label>Selected Template</label>
-            <textarea readonly>${escapeTextarea(JSON.stringify(template, null, 2))}</textarea>
+            <label>Selected Template + Definition</label>
+            <textarea readonly>${escapeTextarea(JSON.stringify({ template, definition }, null, 2))}</textarea>
           </div>
           <div class="form-group">
             <label>${point ? 'Selected Point + Glyph' : 'Glyph Library'}</label>
@@ -1253,7 +1530,9 @@
 
     pane.querySelectorAll('[data-action="add-template"]').forEach((button) => {
       button.addEventListener('click', () => {
-        templates().push(makeTemplate(templates().length + 1));
+        const template = makeTemplate(templates().length + 1);
+        templates().push(template);
+        definitions().push(makeDefinition(template));
         state.templateIndex = templates().length - 1;
         state.pointIndex = 0;
         state.linkIndex = 0;
@@ -1278,6 +1557,10 @@
         if (!template) return;
         if (!confirm(`Delete ritual template "${template.displayName || template.ritualId}"?`)) return;
         templates().splice(index, 1);
+        const definitionIndex = definitions().findIndex((definition) => definition.id === template.ritualId);
+        if (definitionIndex >= 0) {
+          definitions().splice(definitionIndex, 1);
+        }
         state.templateIndex = clampIndex(state.templateIndex, templates().length);
         state.pointIndex = 0;
         state.linkIndex = 0;
@@ -1359,7 +1642,27 @@
     });
 
     pane.querySelectorAll('[data-template-field]').forEach((input) => {
-      input.addEventListener('change', () => updateField(selectedTemplate(), input.dataset.templateField, input.value, true));
+      input.addEventListener('change', () => {
+        const template = selectedTemplate();
+        const definition = selectedDefinition();
+        if (!template) return;
+        const field = input.dataset.templateField;
+        const previousRitualId = template.ritualId;
+        const previousDisplayName = template.displayName;
+        updateField(template, field, input.value, false);
+        if (field === 'ritualId') {
+          const nextId = normalizeId(template.ritualId) || previousRitualId;
+          template.ritualId = nextId;
+          if (definition) {
+            definition.id = nextId;
+          }
+        }
+        if (field === 'displayName' && definition && (!definition.displayName || definition.displayName === previousDisplayName)) {
+          definition.displayName = template.displayName;
+        }
+        App.markDirty();
+        render();
+      });
     });
 
     pane.querySelectorAll('[data-template-cancel-policy-field]').forEach((input) => {
@@ -1385,6 +1688,104 @@
         if (!template || !layer) return;
         const field = input.dataset.templateAnchorField;
         layer[field] = parseNumericInput(input.value, layer[field]);
+        App.markDirty();
+        render();
+      });
+    });
+
+    pane.querySelectorAll('[data-definition-field]').forEach((input) => {
+      input.addEventListener('change', () => {
+        const definition = selectedDefinition();
+        if (!definition) return;
+        const field = input.dataset.definitionField;
+        if (field === 'minBlood' || field === 'minCompletedNightHunts') {
+          definition[field] = Math.max(0, parseNumericInput(input.value, definition[field]));
+        } else {
+          definition[field] = String(input.value || '').trim();
+        }
+        App.markDirty();
+        render();
+      });
+    });
+
+    pane.querySelectorAll('[data-definition-list-field]').forEach((input) => {
+      input.addEventListener('change', () => {
+        const definition = selectedDefinition();
+        if (!definition) return;
+        definition[input.dataset.definitionListField] = normalizeStringList(input.value);
+        App.markDirty();
+        render();
+      });
+    });
+
+    pane.querySelectorAll('[data-definition-presentation-field]').forEach((input) => {
+      input.addEventListener('change', () => {
+        const definition = selectedDefinition();
+        if (!definition) return;
+        const presentation = normalizePresentation(definition.presentation || {}) || {
+          iconAsset: '',
+          guidanceEffectId: '',
+          ritualSiteTag: '',
+          requiredItemId: '',
+        };
+        presentation[input.dataset.definitionPresentationField] = String(input.value || '').trim();
+        definition.presentation = Object.values(presentation).some(Boolean) ? presentation : null;
+        App.markDirty();
+        render();
+      });
+    });
+
+    pane.querySelectorAll('[data-action="add-objective"]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const definition = selectedDefinition();
+        if (!definition) return;
+        definition.objectives.push(makeObjective(definition.objectives.length + 1));
+        App.markDirty();
+        render();
+      });
+    });
+
+    pane.querySelectorAll('[data-objective-field]').forEach((input) => {
+      input.addEventListener('change', () => {
+        const definition = selectedDefinition();
+        const objective = definition?.objectives?.[Number(input.dataset.objectiveIndex)];
+        if (!objective) return;
+        const field = input.dataset.objectiveField;
+        if (field === 'targetCount') {
+          objective[field] = Math.max(1, parseNumericInput(input.value, objective[field]));
+        } else {
+          objective[field] = String(input.value || '').trim();
+        }
+        App.markDirty();
+        render();
+      });
+    });
+
+    pane.querySelectorAll('[data-objective-offering-field]').forEach((input) => {
+      input.addEventListener('change', () => {
+        const definition = selectedDefinition();
+        const objective = definition?.objectives?.[Number(input.dataset.objectiveIndex)];
+        if (!objective) return;
+        const field = input.dataset.objectiveOfferingField;
+        const offering = objective.offering || { itemId: '', surfacePolicy: 'ANY_POINT_OR_CENTER' };
+        if (field === 'itemId') {
+          const itemId = String(input.value || '').trim();
+          objective.offering = itemId
+            ? { itemId, surfacePolicy: normalizeSurfacePolicy(offering.surfacePolicy) }
+            : null;
+        } else if (objective.offering) {
+          objective.offering.surfacePolicy = normalizeSurfacePolicy(input.value);
+        }
+        App.markDirty();
+        render();
+      });
+    });
+
+    pane.querySelectorAll('[data-objective-delete]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const definition = selectedDefinition();
+        if (!definition) return;
+        definition.objectives.splice(Number(button.dataset.objectiveDelete), 1);
         App.markDirty();
         render();
       });
@@ -1975,6 +2376,31 @@
     if (rerender) render();
   }
 
+  function selectGroup(label, value, options, attrs = {}) {
+    const attributes = Object.entries(attrs)
+      .map(([key, attrValue]) => `${key}="${escapeAttr(attrValue)}"`)
+      .join(' ');
+    return `
+      <div class="form-group">
+        <label>${label}</label>
+        <select ${attributes}>
+          ${options.map(([optionValue, optionLabel]) => `<option value="${escapeAttr(optionValue)}"${optionValue === value ? ' selected' : ''}>${escapeHtml(optionLabel)}</option>`).join('')}
+        </select>
+      </div>
+    `;
+  }
+
+  function renderItemSelect(label, value, attrs = {}, nullable = false) {
+    const options = [];
+    if (nullable) {
+      options.push(['', '— none —']);
+    }
+    availableItemRefs(value).forEach((itemId) => {
+      options.push([itemId, itemId]);
+    });
+    return selectGroup(label, value, options, attrs);
+  }
+
   function inputGroup(label, type, value, attrs = {}) {
     const attributes = Object.entries(attrs)
       .map(([key, attrValue]) => `${key}="${escapeAttr(attrValue)}"`)
@@ -1983,6 +2409,18 @@
       <div class="form-group">
         <label>${label}</label>
         <input type="${type}" value="${escapeAttr(type === 'number' ? numberForInput(value) : value ?? '')}" ${attributes} />
+      </div>
+    `;
+  }
+
+  function textareaGroup(label, value, attrs = {}) {
+    const attributes = Object.entries(attrs)
+      .map(([key, attrValue]) => `${key}="${escapeAttr(attrValue)}"`)
+      .join(' ');
+    return `
+      <div class="form-group">
+        <label>${label}</label>
+        <textarea class="ritual-textarea" ${attributes}>${escapeTextarea(value ?? '')}</textarea>
       </div>
     `;
   }
@@ -2019,6 +2457,33 @@
       if (normalized === 'false' || normalized === '0' || normalized === 'no') return false;
     }
     return fallback;
+  }
+
+  function normalizeStringList(value) {
+    const raw = Array.isArray(value) ? value : String(value || '').split(',');
+    const seen = new Set();
+    return raw
+      .map((entry) => String(entry || '').trim())
+      .filter((entry) => {
+        if (!entry || seen.has(entry)) return false;
+        seen.add(entry);
+        return true;
+      });
+  }
+
+  function normalizeSurfacePolicy(value) {
+    const normalized = String(value || 'ANY_POINT_OR_CENTER').trim();
+    return ['CENTER_ONLY', 'POINT_ONLY', 'ANY_POINT_OR_CENTER'].includes(normalized)
+      ? normalized
+      : 'ANY_POINT_OR_CENTER';
+  }
+
+  function surfacePolicyOptions() {
+    return [
+      ['ANY_POINT_OR_CENTER', 'Any glyph or center'],
+      ['POINT_ONLY', 'Any glyph only'],
+      ['CENTER_ONLY', 'Center only'],
+    ];
   }
 
   function roundValue(value, precision = 3) {
@@ -2067,6 +2532,7 @@
 
   App.onTabActivated('rituals', () => {
     ensureAssetGlyphsLoaded();
+    ensureItemRefsLoaded();
     render();
   });
 

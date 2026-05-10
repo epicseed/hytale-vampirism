@@ -12,6 +12,7 @@ import com.epicseed.vampirism.commands.admin.AgeAdminCommands;
 import com.epicseed.vampirism.commands.admin.AnimationAdminCommand;
 import com.epicseed.vampirism.commands.admin.BloodAdminCommands;
 import com.epicseed.vampirism.commands.admin.DebugShapeAdminCommands;
+import com.epicseed.vampirism.commands.admin.EntityAdminCommands;
 import com.epicseed.vampirism.commands.admin.HuntAdminCommands;
 import com.epicseed.vampirism.commands.admin.LineageAdminCommands;
 import com.epicseed.vampirism.commands.admin.MasqueradeAdminCommands;
@@ -69,6 +70,7 @@ public class VampirismCommand extends AbstractCommand {
         this.addSubCommand(new MasqueradeAdminCommands(masqueradeHeatService));
         this.addSubCommand(new AbilityAdminCommands(progressionAccess, abilityService));
         this.addSubCommand(new VampireAdminCommands());
+        this.addSubCommand(new EntityAdminCommands());
         this.addSubCommand(SkillAdminCommands.skillPoints(progressionAccess));
         this.addSubCommand(SkillAdminCommands.skillReset());
         this.addSubCommand(new MorphAdminCommands());
@@ -95,6 +97,7 @@ public class VampirismCommand extends AbstractCommand {
         ctx.sendMessage(Message.raw("/vampirism ability trigger-all <player> - trigger all unlocked abilities").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ability reset-cooldowns <player> - clear tracked cooldowns").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism vampire add|remove|toggle|list").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirism entity clear-nearby [--radius <blocks>] - remove nearby non-player entities").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism skillpoints add|set|get <player> [amount]").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism skillreset <player> - reset skill tree and refund points").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism morph bat|off <player> - apply/remove bat morph").color("yellow"));

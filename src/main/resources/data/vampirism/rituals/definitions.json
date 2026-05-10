@@ -1,0 +1,158 @@
+{
+  "definitions": [
+    {
+      "blockedContextTags": [],
+      "description": "Seal the infection in blood beneath an ancient coffin and complete the first true ascension.",
+      "displayName": "Crimson Awakening",
+      "id": "awakening",
+      "minBlood": 40,
+      "minCompletedNightHunts": 0,
+      "objectives": [],
+      "presentation": {
+        "guidanceEffectId": "Vampirism_Infected",
+        "iconAsset": "Icon_BecomeAVampire.png",
+        "requiredItemId": "Furniture_Ancient_Coffin",
+        "ritualSiteTag": "ancient_coffin"
+      },
+      "requiredContextTags": [
+        "night",
+        "infected",
+        "ancient_coffin"
+      ],
+      "requiredSkills": [],
+      "rewards": {
+        "ageTierId": "fledgling",
+        "bloodDelta": 0,
+        "grantedSkills": [
+          "BecomeAVampire",
+          "BloodSucker"
+        ],
+        "sideEffectIds": [
+          "grantPermanentVampirism",
+          "clearInfection"
+        ],
+        "skillPoints": 0
+      }
+    },
+    {
+      "blockedContextTags": [],
+      "description": "Consecrate a hunted name in blood so the next feed sharpens into a true night hunt.",
+      "displayName": "Mark Prey",
+      "id": "mark_prey",
+      "minBlood": 24,
+      "minCompletedNightHunts": 1,
+      "objectives": [],
+      "presentation": null,
+      "requiredAgeTierId": "fledgling",
+      "requiredContextTags": [
+        "night"
+      ],
+      "requiredSkills": [
+        "BloodSucker"
+      ],
+      "rewards": {
+        "bloodDelta": 0,
+        "grantedSkills": [
+          "BloodThirst"
+        ],
+        "sideEffectIds": [
+          "mark_prey"
+        ],
+        "skillPoints": 1
+      }
+    },
+    {
+      "blockedContextTags": [],
+      "description": "Pull shadow close around the body and learn to cast blood through the dark with intent.",
+      "displayName": "Veil of Night",
+      "id": "veil_of_night",
+      "minBlood": 30,
+      "minCompletedNightHunts": 2,
+      "objectives": [],
+      "presentation": null,
+      "requiredAgeTierId": "fledgling",
+      "requiredContextTags": [
+        "night"
+      ],
+      "requiredSkills": [
+        "BloodThirst"
+      ],
+      "rewards": {
+        "bloodDelta": 0,
+        "grantedSkills": [
+          "BloodThrow"
+        ],
+        "sideEffectIds": [
+          "veil_of_night"
+        ],
+        "skillPoints": 1
+      }
+    },
+    {
+      "blockedContextTags": [],
+      "description": "Bind a lesser creature of the night through repeated offerings until it answers your scent.",
+      "displayName": "Summon Familiar",
+      "id": "summon_familiar",
+      "minBlood": 36,
+      "minCompletedNightHunts": 2,
+      "objectives": [
+        {
+          "description": "Offer three Void Hearts into any glyph or the center before the final call.",
+          "displayName": "Bind Familiar",
+          "id": "bind_familiar",
+          "offering": {
+            "itemId": "Ingredient_Voidheart",
+            "surfacePolicy": "ANY_POINT_OR_CENTER"
+          },
+          "targetCount": 3
+        }
+      ],
+      "presentation": null,
+      "requiredAgeTierId": "fledgling",
+      "requiredContextTags": [
+        "night"
+      ],
+      "requiredSkills": [
+        "BloodThirst"
+      ],
+      "rewards": {
+        "bloodDelta": 0,
+        "grantedSkills": [],
+        "sideEffectIds": [
+          "summon_familiar"
+        ],
+        "skillPoints": 2
+      }
+    },
+    {
+      "blockedContextTags": [],
+      "description": "Trade away the last mortal anchor and emerge with elder blood and an ancient form.",
+      "displayName": "Soul Exchange",
+      "id": "soul_exchange",
+      "minBlood": 50,
+      "minCompletedNightHunts": 3,
+      "objectives": [],
+      "presentation": {
+        "requiredItemId": "Debug_Armor_D_Chest_Of_Damage_Reduction"
+      },
+      "requiredAgeTierId": "fledgling",
+      "requiredContextTags": [
+        "night"
+      ],
+      "requiredSkills": [
+        "BloodThrow"
+      ],
+      "rewards": {
+        "ageTierId": "elder",
+        "bloodDelta": 0,
+        "grantedSkills": [
+          "AncientForm"
+        ],
+        "sideEffectIds": [
+          "soul_exchange"
+        ],
+        "skillPoints": 2
+      }
+    }
+  ]
+}

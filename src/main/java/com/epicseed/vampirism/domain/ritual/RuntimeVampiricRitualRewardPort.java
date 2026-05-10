@@ -10,6 +10,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.hytale.EffectAdapter;
+import com.epicseed.epiccore.hytale.WorldStoreAdapter;
 import com.epicseed.epiccore.hytale.runtime.PlayerRuntimeIndex;
 import com.epicseed.epiccore.modifier.StatType;
 import com.epicseed.epiccore.vampirism.skill.runtime.VampirismSkillProgressionAccess;
@@ -40,6 +41,7 @@ import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.npc.INonPlayerCharacter;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.NPCPlugin;
@@ -51,6 +53,11 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
     @FunctionalInterface
     interface SideEffectHandler {
         void apply(@Nonnull UUID uuid, @Nullable String ritualId);
+    }
+
+    @FunctionalInterface
+    interface FamiliarSummonDispatcher {
+        boolean dispatch(@Nonnull UUID uuid, @Nonnull Runnable action);
     }
 
     private static final String VEIL_EFFECT_ID = "Potion_NightVision";
@@ -74,6 +81,7 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
     private final NightHuntService nightHuntService;
     private final MasqueradeHeatService masqueradeHeatService;
     private final TemporaryModifierTracker<StatType> temporaryModifiers;
+    private final FamiliarSummonDispatcher familiarSummonDispatcher;
     private final Map<String, SideEffectHandler> sideEffectHandlers;
 
     public RuntimeVampiricRitualRewardPort(@Nonnull VampirismSkillProgressionAccess progressionAccess,
@@ -81,7 +89,7 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
                                            @Nonnull NightHuntService nightHuntService,
                                            @Nonnull MasqueradeHeatService masqueradeHeatService,
                                            @Nonnull TemporaryModifierTracker<StatType> temporaryModifiers) {
-        this(progressionAccess, lineageService, nightHuntService, masqueradeHeatService, temporaryModifiers, null);
+        this(progressionAccess, lineageService, nightHuntService, masqueradeHeatService, temporaryModifiers, null, null);
     }
 
     RuntimeVampiricRitualRewardPort(@Nonnull VampirismSkillProgressionAccess progressionAccess,
@@ -89,12 +97,16 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
                                     @Nonnull NightHuntService nightHuntService,
                                     @Nonnull MasqueradeHeatService masqueradeHeatService,
                                     @Nonnull TemporaryModifierTracker<StatType> temporaryModifiers,
+                                    @Nullable FamiliarSummonDispatcher familiarSummonDispatcher,
                                     @Nullable Map<String, SideEffectHandler> sideEffectHandlers) {
         super(progressionAccess);
         this.lineageService = Objects.requireNonNull(lineageService, "lineageService");
         this.nightHuntService = Objects.requireNonNull(nightHuntService, "nightHuntService");
         this.masqueradeHeatService = Objects.requireNonNull(masqueradeHeatService, "masqueradeHeatService");
         this.temporaryModifiers = Objects.requireNonNull(temporaryModifiers, "temporaryModifiers");
+        this.familiarSummonDispatcher = familiarSummonDispatcher != null
+                ? familiarSummonDispatcher
+                : this::dispatchFamiliarSummon;
         this.sideEffectHandlers = sideEffectHandlers != null
                 ? normalizeSideEffectHandlers(sideEffectHandlers)
                 : createDefaultSideEffectHandlers();
@@ -294,9 +306,29 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
     }
 
     private void summonFamiliar(@Nonnull UUID uuid) {
+        if (!familiarSummonDispatcher.dispatch(uuid, () -> summonFamiliarInWorld(uuid))) {
+            sendRuntimeFeedback(uuid, "Summon Familiar: the call goes unanswered.", "yellow");
+        }
+    }
+
+    private boolean dispatchFamiliarSummon(@Nonnull UUID uuid, @Nonnull Runnable action) {
         Ref<EntityStore> playerRef = PlayerRuntimeIndex.get(uuid);
         Store<EntityStore> store = playerRef != null ? playerRef.getStore() : null;
-        if (playerRef == null || store == null) {
+        if (playerRef == null || store == null || store.isShutdown()) {
+            return false;
+        }
+        World world = WorldStoreAdapter.resolveWorld(store);
+        if (world == null) {
+            return false;
+        }
+        world.execute(action);
+        return true;
+    }
+
+    private void summonFamiliarInWorld(@Nonnull UUID uuid) {
+        Ref<EntityStore> playerRef = PlayerRuntimeIndex.get(uuid);
+        Store<EntityStore> store = playerRef != null ? playerRef.getStore() : null;
+        if (playerRef == null || store == null || store.isShutdown()) {
             return;
         }
         TransformComponent transform = (TransformComponent) store.getComponent(playerRef, TransformComponent.getComponentType());

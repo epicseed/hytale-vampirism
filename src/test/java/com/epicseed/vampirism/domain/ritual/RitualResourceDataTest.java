@@ -1,6 +1,7 @@
 package com.epicseed.vampirism.domain.ritual;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,20 @@ class RitualResourceDataTest {
             assertTrue(template.cancelPolicy().cancelOnUnequipTool(), template.ritualId());
             assertTrue(template.cancelPolicy().cancelOnOwnerDeath(), template.ritualId());
         });
+    }
+
+    @Test
+    void shippedDefinitionsExposeSummonFamiliarOfferingRequirements() {
+        VampiricRitualRegistry registry = new VampiricRitualRegistry();
+
+        VampiricRitualDefinition summonFamiliar = registry.definition("summon_familiar").orElseThrow();
+
+        assertEquals(36, summonFamiliar.minBlood());
+        assertFalse(summonFamiliar.objectives().isEmpty());
+        VampiricRitualDefinition.Objective objective = summonFamiliar.objectives().get(0);
+        assertEquals("bind_familiar", objective.id());
+        assertEquals("Ingredient_Voidheart", objective.offering().itemId());
+        assertEquals(VampiricRitualOfferingSurfacePolicy.ANY_POINT_OR_CENTER, objective.offering().surfacePolicy());
     }
 
     private static VampiricRitualTemplatePoint point(VampiricRitualTemplate template, String pointId) {

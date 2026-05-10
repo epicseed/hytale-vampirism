@@ -71,10 +71,10 @@
       "cancelPolicy": {
         "cancelIfAnchorInvalid": true,
         "cancelOnOwnerDeath": true,
-        "cancelOnUnequipTool": true,
+        "cancelOnUnequipTool": false,
         "distanceGraceSeconds": 1,
         "maxDistanceFromAnchor": 8,
-        "timeoutSeconds": 45
+        "timeoutSeconds": 180
       },
       "channelDurationSeconds": 11,
       "coreLayer": {
@@ -182,10 +182,10 @@
       "cancelPolicy": {
         "cancelIfAnchorInvalid": true,
         "cancelOnOwnerDeath": true,
-        "cancelOnUnequipTool": true,
+        "cancelOnUnequipTool": false,
         "distanceGraceSeconds": 1,
         "maxDistanceFromAnchor": 8,
-        "timeoutSeconds": 45
+        "timeoutSeconds": 180
       },
       "channelDurationSeconds": 9.5,
       "coreLayer": {
@@ -293,10 +293,10 @@
       "cancelPolicy": {
         "cancelIfAnchorInvalid": true,
         "cancelOnOwnerDeath": true,
-        "cancelOnUnequipTool": true,
+        "cancelOnUnequipTool": false,
         "distanceGraceSeconds": 1,
         "maxDistanceFromAnchor": 8,
-        "timeoutSeconds": 45
+        "timeoutSeconds": 180
       },
       "channelDurationSeconds": 13,
       "coreLayer": {
@@ -411,20 +411,20 @@
       ],
       "baseCorruption": 13,
       "baseLayer": {
-        "offsetY": 0.035
+        "offsetY": 0.9
       },
       "baseStability": 64,
       "cancelPolicy": {
         "cancelIfAnchorInvalid": true,
         "cancelOnOwnerDeath": true,
-        "cancelOnUnequipTool": true,
+        "cancelOnUnequipTool": false,
         "distanceGraceSeconds": 1,
         "maxDistanceFromAnchor": 8,
-        "timeoutSeconds": 45
+        "timeoutSeconds": 180
       },
       "channelDurationSeconds": 10.5,
       "coreLayer": {
-        "offsetY": 0.09
+        "offsetY": 1
       },
       "displayName": "Summon Familiar",
       "instabilityThreshold": 28,
@@ -541,10 +541,10 @@
       "cancelPolicy": {
         "cancelIfAnchorInvalid": true,
         "cancelOnOwnerDeath": true,
-        "cancelOnUnequipTool": true,
+        "cancelOnUnequipTool": false,
         "distanceGraceSeconds": 1,
         "maxDistanceFromAnchor": 8,
-        "timeoutSeconds": 45
+        "timeoutSeconds": 180
       },
       "channelDurationSeconds": 13.5,
       "coreLayer": {

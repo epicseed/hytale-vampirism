@@ -8,11 +8,14 @@ import com.epicseed.epiccore.skill.runtime.CatalogBackedSkillRuntimeBootstrap;
 import com.epicseed.epiccore.skill.runtime.SkillDefinitionCatalog;
 import com.epicseed.vampirism.bootstrap.VampirismRuntime;
 import com.epicseed.vampirism.config.VampirismConfig;
+import com.epicseed.vampirism.hytale.ritual.RitualOfferingSurfaceComponent;
+import com.epicseed.vampirism.hytale.ritual.RitualOfferingSurfaceInteraction;
 import com.epicseed.vampirism.skill.data.SkillDataPaths;
 import com.epicseed.vampirism.skill.data.SkillLoader;
 import com.hypixel.hytale.common.plugin.PluginIdentifier;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector2d;
+import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.util.Config;
@@ -51,6 +54,14 @@ public class Vampirism extends JavaPlugin {
     @Override
     protected void setup() {
         LOGGER.atInfo().log("[Vampirism] Registering systems and commands...");
+        this.getCodecRegistry(Interaction.CODEC).register(
+                RitualOfferingSurfaceInteraction.INTERACTION_ID,
+                RitualOfferingSurfaceInteraction.class,
+                RitualOfferingSurfaceInteraction.CODEC);
+        RitualOfferingSurfaceComponent.TYPE = this.getEntityStoreRegistry().registerComponent(
+                RitualOfferingSurfaceComponent.class,
+                "Vampirism_RitualOfferingSurface",
+                RitualOfferingSurfaceComponent.CODEC);
         runtime = VampirismRuntime.bootstrap(this, skillRuntimeBootstrap, skillTreeBounds::get);
         LOGGER.atInfo().log("[Vampirism] All systems registered.");
     }
@@ -125,6 +136,7 @@ public class Vampirism extends JavaPlugin {
         if (runtime != null) {
             runtime.shutdown();
         }
+        RitualOfferingSurfaceInteraction.clearRuntime();
         LOGGER.atInfo().log("[Vampirism] Plugin disabled.");
     }
 

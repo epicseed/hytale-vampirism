@@ -19,6 +19,7 @@ type skillDataSection struct {
 }
 
 const ritualTemplatesDefaultJSON = `{"templates":[]}`
+const ritualDefinitionsDefaultJSON = `{"definitions":[]}`
 const ritualGlyphDefinitionsDefaultJSON = `{"glyphs":[]}`
 
 var writeFileAtomically = atomicWriteFile
@@ -33,10 +34,11 @@ const (
 )
 
 type skillDataWritePlan struct {
-	sections         map[string][]byte
-	ritualTemplates  []byte
-	ritualGlyphs     []byte
-	removeLegacyJSON bool
+	sections          map[string][]byte
+	ritualTemplates   []byte
+	ritualDefinitions []byte
+	ritualGlyphs      []byte
+	removeLegacyJSON  bool
 }
 
 var skillDataSections = []skillDataSection{
@@ -142,13 +144,21 @@ func readSkillDataDocument() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	ritualDefinitions, err := readRitualDefinitionsValue()
+	if err != nil {
+		return nil, err
+	}
 	ritualGlyphs, err := readRitualGlyphDefinitionsValue()
 	if err != nil {
 		return nil, err
 	}
+	if definitionObject, ok := ritualDefinitions.(map[string]any); ok && ritualDefinitionsDocumentEmpty(definitionObject) {
+		ritualDefinitions = deriveRitualDefinitions(ritualTemplates)
+	}
 	if glyphsObject, ok := ritualGlyphs.(map[string]any); ok && glyphDocumentEmpty(glyphsObject) {
 		ritualGlyphs = deriveRitualGlyphDefinitions(ritualTemplates)
 	}
+	doc["ritualDefinitions"] = ritualDefinitions
 	doc["ritualGlyphs"] = ritualGlyphs
 	doc["ritualTemplates"] = ritualTemplates
 	return json.MarshalIndent(doc, "", "  ")
@@ -257,6 +267,10 @@ func buildSkillDataWritePlan(rawSections map[string]json.RawMessage) (*skillData
 	if err != nil {
 		return nil, err
 	}
+	definitionBytes, err := normalizeRitualDefinitions(rawSections["ritualDefinitions"], templateDoc)
+	if err != nil {
+		return nil, err
+	}
 	glyphBytes, glyphIDs, err := normalizeRitualGlyphDefinitions(rawSections["ritualGlyphs"], templateDoc)
 	if err != nil {
 		return nil, err
@@ -267,10 +281,11 @@ func buildSkillDataWritePlan(rawSections map[string]json.RawMessage) (*skillData
 	}
 
 	return &skillDataWritePlan{
-		sections:         sections,
-		ritualTemplates:  templateBytes,
-		ritualGlyphs:     glyphBytes,
-		removeLegacyJSON: legacyJSONPath != "",
+		sections:          sections,
+		ritualTemplates:   templateBytes,
+		ritualDefinitions: definitionBytes,
+		ritualGlyphs:      glyphBytes,
+		removeLegacyJSON:  legacyJSONPath != "",
 	}, nil
 }
 
@@ -288,6 +303,12 @@ func (plan *skillDataWritePlan) write() error {
 		return err
 	}
 	if err := writeFileAtomically(ritualTemplatesPath, append(plan.ritualTemplates, '\n')); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(ritualDefinitionsPath), 0755); err != nil {
+		return err
+	}
+	if err := writeFileAtomically(ritualDefinitionsPath, append(plan.ritualDefinitions, '\n')); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(filepath.Dir(ritualGlyphDefinitionsPath), 0755); err != nil {
@@ -365,6 +386,36 @@ func writeRitualTemplates(raw json.RawMessage) error {
 	return os.WriteFile(ritualTemplatesPath, append(normalized, '\n'), 0644)
 }
 
+func readRitualDefinitionsValue() (any, error) {
+	raw, err := os.ReadFile(ritualDefinitionsPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			raw = []byte(ritualDefinitionsDefaultJSON)
+		} else {
+			return nil, err
+		}
+	}
+	var value any
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return nil, fmt.Errorf("parse ritual definitions: %w", err)
+	}
+	if value == nil {
+		value = map[string]any{"definitions": []any{}}
+	}
+	return value, nil
+}
+
+func writeRitualDefinitions(raw json.RawMessage) error {
+	normalized, err := normalizeRitualDefinitions(raw, nil)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(ritualDefinitionsPath), 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(ritualDefinitionsPath, append(normalized, '\n'), 0644)
+}
+
 func readRitualGlyphDefinitionsValue() (any, error) {
 	raw, err := os.ReadFile(ritualGlyphDefinitionsPath)
 	if err != nil {
@@ -401,6 +452,26 @@ func normalizeRitualTemplates(raw json.RawMessage, glyphIDs map[string]struct{})
 		return nil, err
 	}
 	if err := validateRitualTemplatesDocument(obj, glyphIDs); err != nil {
+		return nil, err
+	}
+	pretty, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return pretty, nil
+}
+
+func normalizeRitualDefinitions(raw json.RawMessage, fallbackTemplates any) ([]byte, error) {
+	obj, err := parseRitualDocument(raw, ritualDefinitionsDefaultJSON, "ritualDefinitions", "definitions")
+	if err != nil {
+		return nil, err
+	}
+	if ritualDefinitionsDocumentEmpty(obj) && fallbackTemplates != nil {
+		if derived, ok := deriveRitualDefinitions(fallbackTemplates).(map[string]any); ok {
+			obj = derived
+		}
+	}
+	if err := validateRitualDefinitionsDocument(obj, fallbackTemplates); err != nil {
 		return nil, err
 	}
 	pretty, err := json.MarshalIndent(obj, "", "  ")
@@ -493,6 +564,172 @@ func validateRitualGlyphDocument(doc map[string]any) (map[string]struct{}, error
 		}
 	}
 	return glyphIDs, nil
+}
+
+func validateRitualDefinitionsDocument(doc map[string]any, templates any) error {
+	definitionEntries, _ := doc["definitions"].([]any)
+	templateIDs, templateNames := collectRitualTemplateMetadata(templates)
+	seenDefinitionIDs := make(map[string]struct{}, len(definitionEntries))
+	for definitionIndex, entry := range definitionEntries {
+		definition, ok := entry.(map[string]any)
+		if !ok {
+			return fmt.Errorf("ritualDefinitions.definitions[%d] must be an object", definitionIndex)
+		}
+		definitionID := strings.TrimSpace(firstString(definition["id"]))
+		if definitionID == "" {
+			return fmt.Errorf("ritualDefinitions.definitions[%d].id is required", definitionIndex)
+		}
+		if _, exists := seenDefinitionIDs[definitionID]; exists {
+			return fmt.Errorf("ritualDefinitions.definitions[%d].id duplicates %q", definitionIndex, definitionID)
+		}
+		if len(templateIDs) > 0 {
+			if _, exists := templateIDs[definitionID]; !exists {
+				return fmt.Errorf("ritualDefinitions.definitions[%d].id references missing ritual template %q", definitionIndex, definitionID)
+			}
+		}
+		seenDefinitionIDs[definitionID] = struct{}{}
+		definition["id"] = definitionID
+		definition["displayName"] = strings.TrimSpace(firstString(definition["displayName"], templateNames[definitionID], definitionID))
+		normalizeOptionalStringField(definition, "description")
+		normalizeOptionalStringField(definition, "requiredAgeTierId")
+		if err := normalizeNonNegativeNumberField(definition, "minBlood", 0, fmt.Sprintf("ritualDefinitions.definitions[%d]", definitionIndex)); err != nil {
+			return err
+		}
+		if err := normalizeNonNegativeNumberField(definition, "minCompletedNightHunts", 0, fmt.Sprintf("ritualDefinitions.definitions[%d]", definitionIndex)); err != nil {
+			return err
+		}
+		normalizeStringListField(definition, "requiredSkills")
+		normalizeStringListField(definition, "requiredContextTags")
+		normalizeStringListField(definition, "blockedContextTags")
+		if err := validateRitualObjectives(definition, definitionIndex); err != nil {
+			return err
+		}
+		if err := validateRitualRewards(definition, definitionIndex); err != nil {
+			return err
+		}
+		if err := validateRitualPresentation(definition, definitionIndex); err != nil {
+			return err
+		}
+	}
+	if len(templateIDs) == 0 {
+		return nil
+	}
+	orderedTemplateIDs := collectOrderedTemplateIDs(templates)
+	for _, templateID := range orderedTemplateIDs {
+		if _, exists := seenDefinitionIDs[templateID]; exists {
+			continue
+		}
+		definitionEntries = append(definitionEntries, map[string]any{
+			"id":                     templateID,
+			"displayName":            strings.TrimSpace(firstString(templateNames[templateID], templateID)),
+			"minBlood":               0,
+			"minCompletedNightHunts": 0,
+			"requiredSkills":         []any{},
+			"requiredContextTags":    []any{},
+			"blockedContextTags":     []any{},
+			"objectives":             []any{},
+		})
+	}
+	doc["definitions"] = definitionEntries
+	return nil
+}
+
+func validateRitualObjectives(definition map[string]any, definitionIndex int) error {
+	objectiveEntries, ok := definition["objectives"]
+	if !ok || objectiveEntries == nil {
+		definition["objectives"] = []any{}
+		return nil
+	}
+	objectives, ok := objectiveEntries.([]any)
+	if !ok {
+		return fmt.Errorf("ritualDefinitions.definitions[%d].objectives must be an array", definitionIndex)
+	}
+	seenObjectiveIDs := make(map[string]struct{}, len(objectives))
+	for objectiveIndex, entry := range objectives {
+		objective, ok := entry.(map[string]any)
+		if !ok {
+			return fmt.Errorf("ritualDefinitions.definitions[%d].objectives[%d] must be an object", definitionIndex, objectiveIndex)
+		}
+		objectiveID := strings.TrimSpace(firstString(objective["id"]))
+		if objectiveID == "" {
+			return fmt.Errorf("ritualDefinitions.definitions[%d].objectives[%d].id is required", definitionIndex, objectiveIndex)
+		}
+		if _, exists := seenObjectiveIDs[objectiveID]; exists {
+			return fmt.Errorf("ritualDefinitions.definitions[%d].objectives[%d].id duplicates %q", definitionIndex, objectiveIndex, objectiveID)
+		}
+		seenObjectiveIDs[objectiveID] = struct{}{}
+		objective["id"] = objectiveID
+		objective["displayName"] = strings.TrimSpace(firstString(objective["displayName"], objectiveID))
+		normalizeOptionalStringField(objective, "description")
+		if err := normalizePositiveIntegerField(objective, "targetCount", 1, fmt.Sprintf("ritualDefinitions.definitions[%d].objectives[%d]", definitionIndex, objectiveIndex)); err != nil {
+			return err
+		}
+		offeringEntry, hasOffering := objective["offering"]
+		if !hasOffering || offeringEntry == nil {
+			continue
+		}
+		offering, ok := offeringEntry.(map[string]any)
+		if !ok {
+			return fmt.Errorf("ritualDefinitions.definitions[%d].objectives[%d].offering must be an object", definitionIndex, objectiveIndex)
+		}
+		itemID := strings.TrimSpace(firstString(offering["itemId"]))
+		surfacePolicy := strings.TrimSpace(firstString(offering["surfacePolicy"], "ANY_POINT_OR_CENTER"))
+		if itemID == "" {
+			return fmt.Errorf("ritualDefinitions.definitions[%d].objectives[%d].offering.itemId is required", definitionIndex, objectiveIndex)
+		}
+		if _, valid := validRitualOfferingSurfacePolicies()[surfacePolicy]; !valid {
+			return fmt.Errorf("ritualDefinitions.definitions[%d].objectives[%d].offering.surfacePolicy must be one of CENTER_ONLY, POINT_ONLY, ANY_POINT_OR_CENTER", definitionIndex, objectiveIndex)
+		}
+		offering["itemId"] = itemID
+		offering["surfacePolicy"] = surfacePolicy
+		objective["offering"] = offering
+	}
+	definition["objectives"] = objectives
+	return nil
+}
+
+func validateRitualRewards(definition map[string]any, definitionIndex int) error {
+	rewardsEntry, ok := definition["rewards"]
+	if !ok || rewardsEntry == nil {
+		return nil
+	}
+	rewards, ok := rewardsEntry.(map[string]any)
+	if !ok {
+		return fmt.Errorf("ritualDefinitions.definitions[%d].rewards must be an object", definitionIndex)
+	}
+	if err := normalizeNonNegativeNumberField(rewards, "skillPoints", 0, fmt.Sprintf("ritualDefinitions.definitions[%d].rewards", definitionIndex)); err != nil {
+		return err
+	}
+	if value, ok := rewards["bloodDelta"]; ok && value != nil {
+		numberValue, valid := asNumber(value)
+		if !valid {
+			return fmt.Errorf("ritualDefinitions.definitions[%d].rewards.bloodDelta must be a number", definitionIndex)
+		}
+		rewards["bloodDelta"] = numberValue
+	}
+	normalizeOptionalStringField(rewards, "ageTierId")
+	normalizeOptionalStringField(rewards, "lineageId")
+	normalizeStringListField(rewards, "grantedSkills")
+	normalizeStringListField(rewards, "sideEffectIds")
+	definition["rewards"] = rewards
+	return nil
+}
+
+func validateRitualPresentation(definition map[string]any, definitionIndex int) error {
+	presentationEntry, ok := definition["presentation"]
+	if !ok || presentationEntry == nil {
+		return nil
+	}
+	presentation, ok := presentationEntry.(map[string]any)
+	if !ok {
+		return fmt.Errorf("ritualDefinitions.definitions[%d].presentation must be an object", definitionIndex)
+	}
+	normalizeOptionalStringField(presentation, "iconAsset")
+	normalizeOptionalStringField(presentation, "guidanceEffectId")
+	normalizeOptionalStringField(presentation, "ritualSiteTag")
+	normalizeOptionalStringField(presentation, "requiredItemId")
+	definition["presentation"] = presentation
+	return nil
 }
 
 func validateRitualTemplatesDocument(doc map[string]any, glyphIDs map[string]struct{}) error {
@@ -652,6 +889,59 @@ func normalizeBoolField(obj map[string]any, field string, defaultValue bool, pat
 	return nil
 }
 
+func normalizePositiveIntegerField(obj map[string]any, field string, defaultValue int, pathPrefix string) error {
+	value, ok := obj[field]
+	if !ok || value == nil {
+		obj[field] = defaultValue
+		return nil
+	}
+	numberValue, ok := asNumber(value)
+	if !ok {
+		return fmt.Errorf("%s.%s must be a number", pathPrefix, field)
+	}
+	if numberValue < 1 {
+		return fmt.Errorf("%s.%s must be >= 1", pathPrefix, field)
+	}
+	obj[field] = int(numberValue)
+	return nil
+}
+
+func normalizeOptionalStringField(obj map[string]any, field string) {
+	value := strings.TrimSpace(firstString(obj[field]))
+	if value == "" {
+		delete(obj, field)
+		return
+	}
+	obj[field] = value
+}
+
+func normalizeStringListField(obj map[string]any, field string) {
+	raw, ok := obj[field]
+	if !ok || raw == nil {
+		obj[field] = []any{}
+		return
+	}
+	entries, ok := raw.([]any)
+	if !ok {
+		obj[field] = []any{}
+		return
+	}
+	normalized := make([]any, 0, len(entries))
+	seen := make(map[string]struct{}, len(entries))
+	for _, entry := range entries {
+		text := strings.TrimSpace(firstString(entry))
+		if text == "" {
+			continue
+		}
+		if _, exists := seen[text]; exists {
+			continue
+		}
+		seen[text] = struct{}{}
+		normalized = append(normalized, text)
+	}
+	obj[field] = normalized
+}
+
 func asNumber(value any) (float64, bool) {
 	switch typed := value.(type) {
 	case float64:
@@ -689,12 +979,105 @@ func asNumber(value any) (float64, bool) {
 	}
 }
 
+func ritualDefinitionsDocumentEmpty(doc map[string]any) bool {
+	if doc == nil {
+		return true
+	}
+	definitions, ok := doc["definitions"].([]any)
+	return !ok || len(definitions) == 0
+}
+
 func glyphDocumentEmpty(doc map[string]any) bool {
 	if doc == nil {
 		return true
 	}
 	glyphs, ok := doc["glyphs"].([]any)
 	return !ok || len(glyphs) == 0
+}
+
+func collectRitualTemplateMetadata(ritualTemplates any) (map[string]struct{}, map[string]string) {
+	templateIDs := map[string]struct{}{}
+	templateNames := map[string]string{}
+	doc, ok := ritualTemplates.(map[string]any)
+	if !ok {
+		return templateIDs, templateNames
+	}
+	templates, ok := doc["templates"].([]any)
+	if !ok {
+		return templateIDs, templateNames
+	}
+	for _, entry := range templates {
+		template, ok := entry.(map[string]any)
+		if !ok {
+			continue
+		}
+		templateID := strings.TrimSpace(firstString(template["ritualId"]))
+		if templateID == "" {
+			continue
+		}
+		templateIDs[templateID] = struct{}{}
+		templateNames[templateID] = strings.TrimSpace(firstString(template["displayName"], templateID))
+	}
+	return templateIDs, templateNames
+}
+
+func collectOrderedTemplateIDs(ritualTemplates any) []string {
+	doc, ok := ritualTemplates.(map[string]any)
+	if !ok {
+		return nil
+	}
+	templates, ok := doc["templates"].([]any)
+	if !ok {
+		return nil
+	}
+	ordered := make([]string, 0, len(templates))
+	seen := make(map[string]struct{}, len(templates))
+	for _, entry := range templates {
+		template, ok := entry.(map[string]any)
+		if !ok {
+			continue
+		}
+		templateID := strings.TrimSpace(firstString(template["ritualId"]))
+		if templateID == "" {
+			continue
+		}
+		if _, exists := seen[templateID]; exists {
+			continue
+		}
+		seen[templateID] = struct{}{}
+		ordered = append(ordered, templateID)
+	}
+	return ordered
+}
+
+func validRitualOfferingSurfacePolicies() map[string]struct{} {
+	return map[string]struct{}{
+		"CENTER_ONLY":         {},
+		"POINT_ONLY":          {},
+		"ANY_POINT_OR_CENTER": {},
+	}
+}
+
+func deriveRitualDefinitions(ritualTemplates any) any {
+	templateIDs, templateNames := collectRitualTemplateMetadata(ritualTemplates)
+	if len(templateIDs) == 0 {
+		return map[string]any{"definitions": []any{}}
+	}
+	orderedTemplateIDs := collectOrderedTemplateIDs(ritualTemplates)
+	definitions := make([]any, 0, len(orderedTemplateIDs))
+	for _, templateID := range orderedTemplateIDs {
+		definitions = append(definitions, map[string]any{
+			"id":                     templateID,
+			"displayName":            strings.TrimSpace(firstString(templateNames[templateID], templateID)),
+			"minBlood":               0,
+			"minCompletedNightHunts": 0,
+			"requiredSkills":         []any{},
+			"requiredContextTags":    []any{},
+			"blockedContextTags":     []any{},
+			"objectives":             []any{},
+		})
+	}
+	return map[string]any{"definitions": definitions}
 }
 
 func deriveRitualGlyphDefinitions(ritualTemplates any) any {

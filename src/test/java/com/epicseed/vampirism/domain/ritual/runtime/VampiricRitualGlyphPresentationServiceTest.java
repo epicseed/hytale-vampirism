@@ -1,12 +1,15 @@
 package com.epicseed.vampirism.domain.ritual.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import com.epicseed.vampirism.domain.ritual.VampiricRitualRegistry;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualAnchorLayer;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualPointState;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase;
@@ -110,6 +113,58 @@ class VampiricRitualGlyphPresentationServiceTest {
 
         assertEquals(0.03d, visual(layout, "anchor/base").position().getY(), 0.0001d);
         assertEquals(0.12d, visual(layout, "anchor/core").position().getY(), 0.0001d);
+    }
+
+    @Test
+    void rendersOfferingOverlaysOnCenterAndPoints() {
+        VampiricRitualGlyphPresentationService.RitualGlyphPresentationLayout layout =
+                VampiricRitualGlyphPresentationService.describe(
+                        snapshot(
+                                VampiricRitualRuntimePhase.PREPARING,
+                                List.of(point("north", false, "fang_wake", new Vector3d(0d, 0.15d, -3d)))),
+                        Map.of(
+                                "center", VampiricRitualRegistry.VOID_HEART_ITEM_ID,
+                                "point:north", VampiricRitualRegistry.VOID_HEART_ITEM_ID),
+                        0.0d);
+
+        VampiricRitualGlyphPresentationService.GlyphVisualSpec center = visual(layout, "offering/center");
+        VampiricRitualGlyphPresentationService.GlyphVisualSpec north = visual(layout, "offering/point:north");
+
+        assertEquals(VampiricRitualGlyphPresentationService.VOID_HEART_PROJECTILE_ID, center.projectileId());
+        assertEquals(VampiricRitualGlyphPresentationService.VOID_HEART_PROJECTILE_ID, north.projectileId());
+        assertTrue(center.position().getY() - visual(layout, "anchor/core").position().getY() >= 0.2d);
+        assertTrue(north.position().getY() - visual(layout, "point/north/node").position().getY() >= 0.2d);
+    }
+
+    @Test
+    void animatesOfferingOverlaysWithLiftAndSpin() {
+        VampiricRitualGlyphPresentationService.RitualGlyphPresentationLayout start =
+                VampiricRitualGlyphPresentationService.describe(
+                        snapshot(
+                                VampiricRitualRuntimePhase.CHANNELING,
+                                List.of(point("north", true, "fang_wake", new Vector3d(0d, 0.15d, -3d)))),
+                        Map.of("point:north", VampiricRitualRegistry.VOID_HEART_ITEM_ID),
+                        0.0d);
+        VampiricRitualGlyphPresentationService.RitualGlyphPresentationLayout animated =
+                VampiricRitualGlyphPresentationService.describe(
+                        snapshot(
+                                VampiricRitualRuntimePhase.CHANNELING,
+                                List.of(point("north", true, "fang_wake", new Vector3d(0d, 0.15d, -3d)))),
+                        Map.of("point:north", VampiricRitualRegistry.VOID_HEART_ITEM_ID),
+                        1.0d);
+
+        VampiricRitualGlyphPresentationService.GlyphVisualSpec startOffering = visual(start, "offering/point:north");
+        VampiricRitualGlyphPresentationService.GlyphVisualSpec animatedOffering = visual(animated, "offering/point:north");
+
+        assertNotEquals(startOffering.position().getY(), animatedOffering.position().getY());
+        assertNotEquals(startOffering.rotation().getYaw(), animatedOffering.rotation().getYaw());
+    }
+
+    @Test
+    void exposesOfferingSurfaceInteractionUxDefaults() {
+        assertEquals("server.interactionHints.place", VampiricRitualGlyphPresentationService.OFFERING_SURFACE_INTERACTION_HINT);
+        assertTrue(VampiricRitualGlyphPresentationService.OFFERING_SURFACE_HALF_WIDTH >= 1.8d);
+        assertTrue(VampiricRitualGlyphPresentationService.OFFERING_SURFACE_HEIGHT >= 1.6d);
     }
 
     private static VampiricRitualGlyphPresentationService.GlyphVisualSpec visual(

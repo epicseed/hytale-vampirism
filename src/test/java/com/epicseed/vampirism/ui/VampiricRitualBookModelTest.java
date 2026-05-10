@@ -12,6 +12,9 @@ import org.junit.jupiter.api.Test;
 import com.epicseed.epiccore.vampirism.domain.player.RitualProgressState;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualDefinition;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualEvaluation;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualObjectiveOffering;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualOfferingSurfacePolicy;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualRegistry;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeService;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualTemplate;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualTemplatePoint;
@@ -58,6 +61,52 @@ class VampiricRitualBookModelTest {
         assertEquals("Attune Ritual", model.attuneButtonText());
         assertTrue(model.readinessText().contains("Close the tome, trace the shown sigils, and press Ability3 when the circle is complete."));
         assertTrue(model.footerHint().contains("This anchor only answers one ritual. Attunement is optional"));
+    }
+
+    @Test
+    void objectiveTextExplainsOfferingItemAndSurfacePolicy() {
+        RitualProgressState progress = new RitualProgressState();
+        progress.status = RitualProgressState.STATUS_AVAILABLE;
+        VampiricRitualDefinition definition = new VampiricRitualDefinition(
+                "summon_familiar",
+                "Summon Familiar",
+                "Test description",
+                0,
+                0,
+                null,
+                Set.of(),
+                Set.of(),
+                Set.of(),
+                List.of(new VampiricRitualDefinition.Objective(
+                        "bind_familiar",
+                        "Bind Familiar",
+                        "Offer three hearts to the circle.",
+                        3,
+                        new VampiricRitualObjectiveOffering(
+                                VampiricRitualRegistry.VOID_HEART_ITEM_ID,
+                                VampiricRitualOfferingSurfacePolicy.ANY_POINT_OR_CENTER))),
+                VampiricRitualDefinition.Rewards.none(),
+                VampiricRitualDefinition.Presentation.none());
+        VampiricRitualEvaluation evaluation =
+                new VampiricRitualEvaluation(
+                        definition,
+                        progress,
+                        progress.status,
+                        Map.of("bind_familiar", new VampiricRitualEvaluation.ObjectiveProgress("bind_familiar", 1, 3)),
+                        List.of());
+        VampiricRitualBookModel model = VampiricRitualBookModel.create(
+                "Furniture_Ancient_Coffin",
+                List.of(new VampiricRitualRuntimeService.ResolvedAnchorRitual(
+                        "summon_familiar",
+                        "Summon Familiar",
+                        "Furniture_Ancient_Coffin")),
+                Map.of("summon_familiar", definition),
+                Map.of("summon_familiar", template("summon_familiar", "Summon Familiar", "Furniture_Ancient_Coffin")),
+                Map.of("summon_familiar", evaluation),
+                null);
+
+        assertTrue(model.objectivesText().contains("Bind Familiar 1/3"));
+        assertTrue(model.objectivesText().contains("Offer Void Heart to any glyph or the center."));
     }
 
     private static VampiricRitualDefinition definition(String id, String name) {

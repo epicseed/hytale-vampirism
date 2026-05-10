@@ -231,6 +231,10 @@ final class VampiricRitualBookModel {
             if (objective.description() != null && !objective.description().isBlank()) {
                 lines.add("  " + objective.description());
             }
+            if (objective.offering() != null) {
+                lines.add("  Offer " + humanizeId(objective.offering().itemId())
+                        + " to " + objective.offering().surfacePolicy().description() + ".");
+            }
         }
         return String.join("\n", lines);
     }
@@ -533,6 +537,9 @@ final class VampiricRitualBookModel {
     private static String humanizeId(@Nullable String value) {
         if (value == null || value.isBlank()) {
             return "";
+        }
+        if (VampiricRitualRegistry.VOID_HEART_ITEM_ID.equals(value)) {
+            return "Void Heart";
         }
         String normalized = value.replace(':', ' ').replace('_', ' ').replace('-', ' ').trim();
         StringBuilder out = new StringBuilder(normalized.length() + 8);

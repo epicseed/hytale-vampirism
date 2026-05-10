@@ -1,0 +1,18 @@
+{
+  "Model": "Items/Vampirism/Ingredients/Voidheart.blockymodel",
+  "Texture": "Items/Vampirism/Ingredients/Voidheart_Texture.png",
+  "HitBox": {
+    "Max": {
+      "X": 0.05,
+      "Y": 0.05,
+      "Z": 0.05
+    },
+    "Min": {
+      "X": -0.05,
+      "Y": -0.05,
+      "Z": -0.05
+    }
+  },
+  "MinScale": 0.18,
+  "MaxScale": 0.18
+}
