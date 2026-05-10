@@ -61,8 +61,27 @@ Group #SettingsPanel {
   Anchor: (Left: 40, Right: 40, Top: 72, Bottom: 40);
 }
 
-Group #BloodHudCard {
+Group #NightHuntCompendiumCard {
   Anchor: (Left: 0, Right: 0, Top: 0, Height: 82);
+  Background: #14202c;
+  Label {
+    Anchor: (Left: 18, Top: 12, Width: 240, Height: 18);
+    Text: "Night Hunt Briefing";
+    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+  }
+  Label {
+    Anchor: (Left: 18, Top: 34, Right: 170, Height: 16);
+    Text: "Review prey discoveries, prepare your next contract, and inspect hunt mastery.";
+    Style: (FontSize: 11, TextColor: #9bb0c2);
+  }
+  $C.@SecondaryTextButton #NightHuntCompendiumBtn {
+    @Text = "Open";
+    @Anchor = (Right: 16, Top: 24, Width: 120, Height: 32);
+  }
+}
+
+Group #BloodHudCard {
+  Anchor: (Left: 0, Right: 0, Top: 96, Height: 82);
   Background: #14202c;
   Label {
     Anchor: (Left: 18, Top: 12, Width: 240, Height: 18);
@@ -86,7 +105,7 @@ Group #BloodHudCard {
 }
 
 Group #RitualHudCard {
-  Anchor: (Left: 0, Right: 0, Top: 96, Height: 82);
+  Anchor: (Left: 0, Right: 0, Top: 192, Height: 82);
   Background: #14202c;
   Label {
     Anchor: (Left: 18, Top: 12, Width: 240, Height: 18);
@@ -110,7 +129,7 @@ Group #RitualHudCard {
 }
 
 Group #RitualModeCard {
-  Anchor: (Left: 0, Right: 0, Top: 192, Height: 108);
+  Anchor: (Left: 0, Right: 0, Top: 288, Height: 108);
   Background: #14202c;
   Label {
     Anchor: (Left: 18, Top: 12, Width: 280, Height: 18);
@@ -142,7 +161,7 @@ Group #RitualModeCard {
 }
 
 Group #GameplayNotificationsCard {
-  Anchor: (Left: 0, Right: 0, Top: 314, Height: 82);
+  Anchor: (Left: 0, Right: 0, Top: 410, Height: 82);
   Background: #14202c;
   Label {
     Anchor: (Left: 18, Top: 12, Width: 320, Height: 18);
@@ -166,7 +185,7 @@ Group #GameplayNotificationsCard {
 }
 
 Group #RitualRuntimeNotificationsCard {
-  Anchor: (Left: 0, Right: 0, Top: 410, Height: 82);
+  Anchor: (Left: 0, Right: 0, Top: 506, Height: 82);
   Background: #14202c;
   Label {
     Anchor: (Left: 18, Top: 12, Width: 320, Height: 18);

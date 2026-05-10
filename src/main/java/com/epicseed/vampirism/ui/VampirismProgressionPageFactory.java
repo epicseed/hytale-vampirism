@@ -39,4 +39,8 @@ public final class VampirismProgressionPageFactory implements ProgressionPageFac
     public InteractiveCustomUIPage<?> createSettingsPage(PlayerRef playerRef) {
         return new VampirismSettingsPage(playerRef, this, settingsUiAdapter);
     }
+
+    public InteractiveCustomUIPage<?> createHuntCompendiumPage(PlayerRef playerRef) {
+        return new HuntCompendiumPage(playerRef);
+    }
 }

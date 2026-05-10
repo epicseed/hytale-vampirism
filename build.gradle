@@ -400,6 +400,12 @@ tasks.register('validateSkillData', JavaExec) {
     mainClass = 'com.epicseed.vampirism.skill.data.SkillDataValidationCli'
 }
 
+tasks.register('validateHuntData', JavaExec) {
+    dependsOn 'classes'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.epicseed.vampirism.domain.hunt.HuntDataValidationCli'
+}
+
 tasks.register('validateResourceLayout') {
     doLast {
         def backupFiles = fileTree('src/main/resources') {
@@ -542,6 +548,7 @@ tasks.named('test') {
 
 tasks.named('check') {
     dependsOn 'validateSkillData'
+    dependsOn 'validateHuntData'
     dependsOn 'validateResourceLayout'
 }
 

@@ -1,0 +1,210 @@
+{
+  "rewards": {
+    "baseMasteryPoints": 100,
+    "firstContractBonus": 40,
+    "repeatContractBonus": 15,
+    "repeatContractDecay": 5,
+    "firstPreyFamilyAffinityAmount": 1
+  },
+  "contractModes": [
+    {
+      "id": "pursuit",
+      "displayName": "Blood Pursuit",
+      "resolutionId": "kill",
+      "objectiveText": "Bring the prey down before the scent fades.",
+      "routeWaypointAdjustment": 0,
+      "visualTierDelta": 0,
+      "preyLifetimeMultiplier": 1.0,
+      "requiredOwnerHits": 0,
+      "pressureSeconds": 0.0,
+      "pressureRadius": 0.0
+    },
+    {
+      "id": "siphon",
+      "displayName": "Siphon Contract",
+      "resolutionId": "drain",
+      "objectiveText": "Wound the prey, then stay close until the rite drains it dry.",
+      "routeWaypointAdjustment": -1,
+      "visualTierDelta": 0,
+      "preyLifetimeMultiplier": 0.9,
+      "requiredOwnerHits": 2,
+      "pressureSeconds": 6.0,
+      "pressureRadius": 7.0
+    },
+    {
+      "id": "dread",
+      "displayName": "Dread Contract",
+      "resolutionId": "scare-off",
+      "objectiveText": "Break the prey's nerve and keep pressure on it until it flees.",
+      "routeWaypointAdjustment": 1,
+      "visualTierDelta": 1,
+      "preyLifetimeMultiplier": 1.05,
+      "requiredOwnerHits": 1,
+      "pressureSeconds": 8.0,
+      "pressureRadius": 9.0
+    }
+  ],
+  "preparations": [
+    {
+      "id": "bloodhound-rite",
+      "displayName": "Bloodhound Rite",
+      "description": "Sharpen the scent and commit to a direct blood pursuit.",
+      "preferredModeId": "pursuit",
+      "routeWaypointAdjustment": 1,
+      "visualTierDelta": 0
+    },
+    {
+      "id": "siphon-rite",
+      "displayName": "Siphon Rite",
+      "description": "Shorten the route and prepare to finish the prey through draining pressure.",
+      "preferredModeId": "siphon",
+      "routeWaypointAdjustment": 0,
+      "visualTierDelta": 0
+    },
+    {
+      "id": "dread-mantle",
+      "displayName": "Dread Mantle",
+      "description": "Thicken the omen and force the prey to break before it dies.",
+      "preferredModeId": "dread",
+      "routeWaypointAdjustment": 0,
+      "visualTierDelta": 1
+    }
+  ],
+  "ranks": [
+    {
+      "id": "blooded",
+      "displayName": "Blooded",
+      "masteryRequired": 0,
+      "baseVisualTier": 1,
+      "accentColor": "#b91c1c"
+    },
+    {
+      "id": "stalker",
+      "displayName": "Stalker",
+      "masteryRequired": 300,
+      "baseVisualTier": 2,
+      "accentColor": "#dc2626"
+    },
+    {
+      "id": "apex",
+      "displayName": "Apex",
+      "masteryRequired": 750,
+      "baseVisualTier": 3,
+      "accentColor": "#f59e0b"
+    }
+  ],
+  "archetypes": [
+    {
+      "id": "stalker",
+      "displayName": "Stalker",
+      "accentColor": "#0ea5e9",
+      "milestones": [
+        {
+          "id": "stalker-initiate",
+          "displayName": "Stalker Initiate",
+          "killsRequired": 1,
+          "bloodReward": 3,
+          "ageProgressReward": 15
+        },
+        {
+          "id": "stalker-shadow",
+          "displayName": "Stalker Shadow",
+          "killsRequired": 3,
+          "bloodReward": 5,
+          "ageProgressReward": 25
+        },
+        {
+          "id": "stalker-apex",
+          "displayName": "Stalker Apex",
+          "killsRequired": 6,
+          "bloodReward": 7,
+          "ageProgressReward": 40
+        }
+      ]
+    },
+    {
+      "id": "pack",
+      "displayName": "Pack",
+      "accentColor": "#7c3aed",
+      "milestones": [
+        {
+          "id": "pack-initiate",
+          "displayName": "Pack Initiate",
+          "killsRequired": 1,
+          "bloodReward": 3,
+          "ageProgressReward": 15
+        },
+        {
+          "id": "pack-howler",
+          "displayName": "Pack Howler",
+          "killsRequired": 3,
+          "bloodReward": 5,
+          "ageProgressReward": 25
+        },
+        {
+          "id": "pack-sovereign",
+          "displayName": "Pack Sovereign",
+          "killsRequired": 6,
+          "bloodReward": 7,
+          "ageProgressReward": 40
+        }
+      ]
+    },
+    {
+      "id": "brute",
+      "displayName": "Brute",
+      "accentColor": "#b91c1c",
+      "milestones": [
+        {
+          "id": "brute-initiate",
+          "displayName": "Brute Initiate",
+          "killsRequired": 1,
+          "bloodReward": 4,
+          "ageProgressReward": 20
+        },
+        {
+          "id": "brute-breaker",
+          "displayName": "Brute Breaker",
+          "killsRequired": 3,
+          "bloodReward": 6,
+          "ageProgressReward": 30
+        },
+        {
+          "id": "brute-colossus",
+          "displayName": "Brute Colossus",
+          "killsRequired": 6,
+          "bloodReward": 8,
+          "ageProgressReward": 45
+        }
+      ]
+    },
+    {
+      "id": "ambusher",
+      "displayName": "Ambusher",
+      "accentColor": "#f97316",
+      "milestones": [
+        {
+          "id": "ambusher-initiate",
+          "displayName": "Ambusher Initiate",
+          "killsRequired": 1,
+          "bloodReward": 3,
+          "ageProgressReward": 15
+        },
+        {
+          "id": "ambusher-stalker",
+          "displayName": "Ambusher Stalker",
+          "killsRequired": 3,
+          "bloodReward": 5,
+          "ageProgressReward": 25
+        },
+        {
+          "id": "ambusher-dread",
+          "displayName": "Ambusher Dread",
+          "killsRequired": 6,
+          "bloodReward": 7,
+          "ageProgressReward": 40
+        }
+      ]
+    }
+  ]
+}

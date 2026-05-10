@@ -6,7 +6,6 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 
 import com.epicseed.epiccore.hytale.PlayerFeedbackAdapter;
-import com.epicseed.epiccore.skill.ui.ProgressionPageFactory;
 import com.epicseed.vampirism.hud.RitualHudDisplayMode;
 import com.epicseed.vampirism.hud.RitualHudService;
 import com.hypixel.hytale.component.Ref;
@@ -26,11 +25,11 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class VampirismSettingsPage extends InteractiveCustomUIPage<VampirismSettingsEventData> {
 
-    private final ProgressionPageFactory pageFactory;
+    private final VampirismProgressionPageFactory pageFactory;
     private final VampirismSettingsUiAdapter settingsUiAdapter;
 
     public VampirismSettingsPage(@Nonnull PlayerRef playerRef,
-                                 @Nonnull ProgressionPageFactory pageFactory,
+                                 @Nonnull VampirismProgressionPageFactory pageFactory,
                                  @Nonnull VampirismSettingsUiAdapter settingsUiAdapter) {
         super(playerRef, CustomPageLifetime.CanDismiss, VampirismSettingsEventData.CODEC);
         this.pageFactory = pageFactory;
@@ -51,6 +50,8 @@ public final class VampirismSettingsPage extends InteractiveCustomUIPage<Vampiri
                 new EventData().append("Action", "openBindings"), false);
         events.addEventBinding(CustomUIEventBindingType.Activating, "#CloseBtn",
                 new EventData().append("Action", "close"), false);
+        events.addEventBinding(CustomUIEventBindingType.Activating, "#NightHuntCompendiumBtn",
+                new EventData().append("Action", "openHuntCompendium"), false);
         events.addEventBinding(CustomUIEventBindingType.Activating, "#BloodHudToggleBtn",
                 new EventData().append("Action", "toggleBloodHud"), false);
         events.addEventBinding(CustomUIEventBindingType.Activating, "#RitualHudToggleBtn",
@@ -91,6 +92,13 @@ public final class VampirismSettingsPage extends InteractiveCustomUIPage<Vampiri
             case "openBindings" -> {
                 if (player != null) {
                     player.getPageManager().openCustomPage(ref, store, pageFactory.createRelicBindingsPage(playerRef));
+                }
+                sendUpdate();
+                return;
+            }
+            case "openHuntCompendium" -> {
+                if (player != null) {
+                    player.getPageManager().openCustomPage(ref, store, pageFactory.createHuntCompendiumPage(playerRef));
                 }
                 sendUpdate();
                 return;

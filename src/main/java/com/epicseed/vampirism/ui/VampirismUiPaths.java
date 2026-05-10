@@ -32,6 +32,11 @@ public final class VampirismUiPaths {
     }
 
     @Nonnull
+    public static String nightHuntHudLayout() {
+        return ROOT + "/Huds/NightHuntStatusHud.ui";
+    }
+
+    @Nonnull
     public static String ritualEditorLayout() {
         return ROOT + "/Screens/RitualEditor.ui";
     }
@@ -39,6 +44,16 @@ public final class VampirismUiPaths {
     @Nonnull
     public static String ritualBookLayout() {
         return ROOT + "/Screens/RitualBook.ui";
+    }
+
+    @Nonnull
+    public static String huntCompendiumLayout() {
+        return ROOT + "/Screens/HuntCompendium.ui";
+    }
+
+    @Nonnull
+    public static String huntCompendiumPreparationCardLayout() {
+        return ROOT + "/Screens/HuntCompendiumPreparationCard.ui";
     }
 
     @Nonnull

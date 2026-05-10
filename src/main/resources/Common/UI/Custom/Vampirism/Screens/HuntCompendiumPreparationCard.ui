@@ -1,0 +1,29 @@
+$C = "../../Common.ui";
+
+Group #PreparationCard {
+  Anchor: (Width: 220, Height: 84);
+  Background: #14202c;
+
+  Label #PrepName {
+    Anchor: (Left: 14, Top: 12, Right: 14, Height: 18);
+    Text: "";
+    Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true);
+  }
+
+  Label #PrepMode {
+    Anchor: (Left: 14, Top: 34, Right: 14, Height: 16);
+    Text: "";
+    Style: (FontSize: 11, TextColor: #d5e2ef);
+  }
+
+  Label #PrepStatus {
+    Anchor: (Left: 14, Bottom: 12, Right: 14, Height: 16);
+    Text: "";
+    Style: (FontSize: 11, TextColor: #9bb0c2, RenderBold: true);
+  }
+
+  Button #PrepButton {
+    Anchor: (Full: 0);
+    Style: $C.@TertiaryButtonStyle;
+  }
+}

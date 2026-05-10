@@ -36,6 +36,7 @@ import com.epicseed.epiccore.skill.ui.ProgressionRelicCooldownHud;
 import com.epicseed.epiccore.vampirism.runtime.VampiricPlayerRuntimeCleanupService;
 import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.commands.VampirismCommand;
+import com.epicseed.vampirism.commands.VampirismHuntCompendiumCommand;
 import com.epicseed.vampirism.commands.VampirismPotionCommand;
 import com.epicseed.vampirism.commands.VampirismRelicBindingCommand;
 import com.epicseed.vampirism.commands.VampirismRelicBindingsCommand;
@@ -46,6 +47,7 @@ import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.blood.BloodHudService;
 import com.epicseed.vampirism.domain.blood.FeedCompletionService;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
+import com.epicseed.vampirism.domain.hunt.NightHuntProgressionRegistry;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageRegistry;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatPolicy;
@@ -65,6 +67,8 @@ import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackServic
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOfferingRecoveryService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualSelectionService;
 import com.epicseed.vampirism.hud.BloodGaugeHud;
+import com.epicseed.vampirism.hud.NightHuntHudService;
+import com.epicseed.vampirism.hud.NightHuntStatusHud;
 import com.epicseed.vampirism.hud.RitualHudService;
 import com.epicseed.vampirism.hud.RitualStatusHud;
 import com.epicseed.vampirism.hytale.PlayerWorldLifecycleEventAdapter;
@@ -94,6 +98,7 @@ import com.epicseed.vampirism.systems.CrimsonUmbrellaVisualSystem;
 import com.epicseed.vampirism.systems.EffectModifierSystem;
 import com.epicseed.vampirism.systems.FormHealthSystem;
 import com.epicseed.vampirism.systems.MorphFlySystem;
+import com.epicseed.vampirism.systems.NightHuntHudSystem;
 import com.epicseed.vampirism.systems.NightMarkedVictimSystem;
 import com.epicseed.vampirism.systems.PassiveEffectSystem;
 import com.epicseed.vampirism.systems.RelicChestLockSystem;
@@ -291,11 +296,12 @@ public final class VampirismRuntime {
                 () -> VampirismConfig.get().getCooldownHudUpdateIntervalMs(),
                 RelicInventoryService.itemId());
         VampirismSettingsUiAdapter settingsUiAdapter = new VampirismSettingsUiAdapter();
-        ProgressionPageFactory progressionPageFactory = new VampirismProgressionPageFactory(
+        VampirismProgressionPageFactory vampirismProgressionPageFactory = new VampirismProgressionPageFactory(
                 VampirismUiPaths.theme(),
                 skillTreeUiAdapter,
                 relicUiAdapter,
                 settingsUiAdapter);
+        ProgressionPageFactory progressionPageFactory = vampirismProgressionPageFactory;
 
         PassiveRuntimeServices<SkillRuntimeContext, PassiveService> passiveRuntimeServices =
                 PassiveRuntimeServices.create(
@@ -322,6 +328,7 @@ public final class VampirismRuntime {
                 singleSlotHudCoordinator,
                 BloodGaugeHud::new,
                 playerRef -> new ProgressionRelicCooldownHud(playerRef, VampirismUiPaths.theme(), relicUiAdapter));
+        NightHuntHudService.init(hudBackendResolver, singleSlotHudCoordinator, NightHuntStatusHud::new);
         RitualHudService.init(hudBackendResolver, singleSlotHudCoordinator, RitualStatusHud::new);
         AbilityService abilityService = new AbilityService(skillRequirementEvaluator, skillActionExecutor);
         abilityService.init(
@@ -341,6 +348,7 @@ public final class VampirismRuntime {
                 VampirismConfig.get(),
                 page -> page instanceof SkillTreeUI);
 
+        NightHuntProgressionRegistry.init();
         NightHuntSpawnRegistry.init();
         SunburnSystem.registerModifiers();
         VampireVitalitySystem.registerModifiers();
@@ -371,6 +379,7 @@ public final class VampirismRuntime {
                         (uuid, playerRef) -> {
                             BloodConversionSystem.clearPlayer(uuid);
                             ritualRuntimeService.capturePersistedState(uuid);
+                            NightHuntHudService.cleanup(playerRef);
                             RitualHudService.cleanup(playerRef);
                             ritualVisualSystem.suspendPlayer(uuid);
                             ritualSelectionService.clearPlayer(uuid);
@@ -415,6 +424,7 @@ public final class VampirismRuntime {
                 nightHuntService,
                 abilityService,
                 progressionPageFactory,
+                vampirismProgressionPageFactory,
                 lineageService,
                 masqueradeHeatService,
                 ritualService,
@@ -489,6 +499,7 @@ public final class VampirismRuntime {
                                          @Nonnull NightHuntService nightHuntService,
                                          @Nonnull AbilityService abilityService,
                                          @Nonnull ProgressionPageFactory progressionPageFactory,
+                                         @Nonnull VampirismProgressionPageFactory vampirismProgressionPageFactory,
                                          @Nonnull VampiricLineageService lineageService,
                                          @Nonnull MasqueradeHeatService masqueradeHeatService,
                                          @Nonnull VampiricRitualService ritualService,
@@ -512,6 +523,7 @@ public final class VampirismRuntime {
                         ritualContextResolver,
                         runtime));
         plugin.getCommandRegistry().registerCommand(new VampirismSkillTreeCommand(progressionPageFactory));
+        plugin.getCommandRegistry().registerCommand(new VampirismHuntCompendiumCommand(vampirismProgressionPageFactory));
         plugin.getCommandRegistry().registerCommand(new VampirismPotionCommand());
         plugin.getCommandRegistry().registerCommand(new VampirismRelicCommand(abilityService));
         plugin.getCommandRegistry().registerCommand(
@@ -576,6 +588,7 @@ public final class VampirismRuntime {
         plugin.getEntityStoreRegistry().registerSystem(new MorphFlySystem());
         plugin.getEntityStoreRegistry().registerSystem(new CrimsonUmbrellaVisualSystem());
         plugin.getEntityStoreRegistry().registerSystem(new NightMarkedVictimSystem(progressionAccess));
+        plugin.getEntityStoreRegistry().registerSystem(new NightHuntHudSystem(nightHuntService));
         plugin.getEntityStoreRegistry().registerSystem(new PassiveEffectSystem(
                 passiveService,
                 passiveTriggerRuntimeService,

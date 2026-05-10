@@ -19,6 +19,7 @@ import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.epiccore.vampirism.registry.VampireStatusRegistry;
 import com.epicseed.vampirism.domain.age.VampiricAgeTierService;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
+import com.epicseed.epiccore.vampirism.domain.hunt.NightHuntStartResult;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase;
@@ -275,13 +276,15 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
             return;
         }
         nightHuntService.resetCooldown(uuid);
-        boolean started = nightHuntService.forceStart(uuid, playerRef, store);
+        NightHuntStartResult started = nightHuntService.forceStart(uuid, playerRef, store);
         sendRuntimeFeedback(
                 uuid,
-                started
-                        ? "Mark Prey: the hunt answers immediately and fresh prey is loosed into the night."
-                        : "Mark Prey: your current hunt is already circling nearby.",
-                started ? "green" : "yellow");
+                switch (started) {
+                    case STARTED -> "Mark Prey: the hunt answers immediately and fresh prey is loosed into the night.";
+                    case ALREADY_ACTIVE -> "Mark Prey: your current hunt is already circling nearby.";
+                    case UNAVAILABLE -> "Mark Prey: the blood omen cannot form a stable trail from here.";
+                },
+                started == NightHuntStartResult.STARTED ? "green" : "yellow");
     }
 
     private void applyVeilOfNight(@Nonnull UUID uuid) {

@@ -23,6 +23,8 @@ import com.epicseed.epiccore.skill.ui.SkillTreeUnlockResultView;
 import com.epicseed.epiccore.vampirism.domain.player.NamedHuntProgress;
 import com.epicseed.epiccore.vampirism.domain.player.RitualProgressState;
 import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
+import com.epicseed.vampirism.domain.hunt.NightHuntPresentationText;
+import com.epicseed.vampirism.domain.hunt.NightHuntProgressionService;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageDefinition;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageEvaluation;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
@@ -147,6 +149,9 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
         int completedHunts = namedHuntProgress.values().stream()
                 .mapToInt(progress -> progress.completionCount)
                 .sum();
+        NamedHuntProgress nightHuntProgress = namedHuntProgress.getOrDefault("night-hunt", new NamedHuntProgress());
+        var huntMastery = NightHuntProgressionService.snapshot(nightHuntProgress);
+        var huntLoadout = NightHuntProgressionService.preparedLoadout(nightHuntProgress);
         MasqueradeHeatSnapshot masquerade = masqueradeHeatService.snapshot(uuid, System.currentTimeMillis());
         long availableLineages = lineageEvaluations.stream().filter(VampiricLineageEvaluation::available).count();
         VampiricLineageEvaluation selectedLineage = lineageEvaluations.stream()
@@ -185,6 +190,46 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                                         namedHuntProgress.size() + " tracked",
                                         activeHunts + " active hunts · " + completedHunts + " completions",
                                         "#06b6d4"))),
+                new ProgressionSectionView(
+                        "hunt",
+                        "Hunt",
+                        "Night Hunt Mastery",
+                        "No hunt mastery has been recorded yet.",
+                        List.of(
+                                new ProgressionCardView(
+                                        "Hunt Rank",
+                                        huntMastery.currentRank().displayName(),
+                                        huntMastery.masteryPoints() + " mastery · tier " + huntMastery.baseVisualTier(),
+                                        huntMastery.currentRank().accentColor()),
+                                new ProgressionCardView(
+                                        "Compendium",
+                                        huntMastery.discoveredPreyRoleIds().size() + " prey",
+                                        huntMastery.uniqueContractsCompleted() + " contracts · " + huntMastery.eliteCompletionCount() + " elite claims",
+                                        "#ef4444"),
+                                new ProgressionCardView(
+                                        "Archetype Mastery",
+                                        huntMastery.archetypeCompletionCounts().size() + " tracked",
+                                        summarizeTopArchetype(huntMastery),
+                                        "#dc2626"),
+                                new ProgressionCardView(
+                                        "Next Rank",
+                                        huntMastery.nextRank() != null ? huntMastery.nextRank().displayName() : "Max rank",
+                                        huntMastery.nextRank() != null
+                                                ? huntMastery.masteryToNextRank() + " mastery remaining"
+                                                : "All hunt mastery milestones claimed",
+                                        "#f59e0b"),
+                                new ProgressionCardView(
+                                        "Preparation",
+                                        huntLoadout.preparationDisplayName(),
+                                        huntLoadout.modeDisplayName() + " · Open the Hunt Briefing to preview and change.",
+                                        "#f59e0b"),
+                                new ProgressionCardView(
+                                        "Recent Reward",
+                                        huntMastery.lastRewardedPreyRoleId() != null
+                                                ? NightHuntPresentationText.preyName(huntMastery.lastRewardedPreyRoleId())
+                                                : "No recent hunt",
+                                        summarizeRecentHuntReward(huntMastery),
+                                        "#f59e0b"))),
                 new ProgressionSectionView(
                         "heat",
                         "Heat",
@@ -258,21 +303,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
         if (value == null || value.isBlank()) {
             return fallback;
         }
-        String[] tokens = value.trim().split("[-_\\s]+");
-        StringBuilder out = new StringBuilder();
-        for (String token : tokens) {
-            if (token.isBlank()) {
-                continue;
-            }
-            if (out.length() > 0) {
-                out.append(' ');
-            }
-            out.append(Character.toUpperCase(token.charAt(0)));
-            if (token.length() > 1) {
-                out.append(token.substring(1).toLowerCase());
-            }
-        }
-        return out.length() == 0 ? fallback : out.toString();
+        return NightHuntPresentationText.humanize(value);
     }
 
     @Nonnull
@@ -286,6 +317,34 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
     @Nonnull
     private static String formatHeat(double heat) {
         return String.format(java.util.Locale.ROOT, "%.1f", Math.max(0.0d, heat));
+    }
+
+    @Nonnull
+    private static String summarizeTopArchetype(@Nonnull com.epicseed.vampirism.domain.hunt.NightHuntMasterySnapshot mastery) {
+        return mastery.archetypeCompletionCounts().entrySet().stream()
+                .max(java.util.Map.Entry.<String, Integer>comparingByValue()
+                        .thenComparing(java.util.Map.Entry::getKey))
+                .map(entry -> NightHuntPresentationText.archetypeName(entry.getKey()) + " · " + entry.getValue() + " kills")
+                .orElse("No archetype kills recorded yet.");
+    }
+
+    @Nonnull
+    private static String summarizeRecentHuntReward(@Nonnull com.epicseed.vampirism.domain.hunt.NightHuntMasterySnapshot mastery) {
+        if (mastery.lastRewardedAtMs() <= 0L) {
+            return "No hunt reward has been recorded yet.";
+        }
+        ArrayList<String> parts = new ArrayList<>();
+        if (mastery.lastRewardSkillPoints() > 0) parts.add("+" + mastery.lastRewardSkillPoints() + " skill");
+        if (mastery.lastRewardMasteryPoints() > 0) parts.add("+" + mastery.lastRewardMasteryPoints() + " mastery");
+        if (mastery.lastRewardBlood() > 0) parts.add("+" + mastery.lastRewardBlood() + " blood");
+        if (mastery.lastRewardAgeProgress() > 0) parts.add("+" + mastery.lastRewardAgeProgress() + " age");
+        if (mastery.lastRewardAffinityAmount() > 0 && mastery.lastRewardAffinityId() != null) {
+            parts.add(formatIdentifier(mastery.lastRewardAffinityId(), "Affinity") + " +" + mastery.lastRewardAffinityAmount());
+        }
+        if (mastery.lastRewardedArchetypeMilestoneId() != null) {
+            parts.add(formatIdentifier(mastery.lastRewardedArchetypeMilestoneId(), "Milestone"));
+        }
+        return parts.isEmpty() ? "No tangible bonus recorded." : String.join(" · ", parts);
     }
 
     @Nonnull

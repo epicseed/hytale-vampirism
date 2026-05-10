@@ -9,9 +9,11 @@
       "minCompletedWaypoints": 3,
       "minVisualTier": 3,
       "archetype": "brute",
+      "preyFamily": "monstrous",
       "visualTier": 3,
       "elite": true,
       "healthMultiplier": 1.55,
+      "secondWindSeconds": 18.0,
       "onSpawnMessage": "The scent freezes and a frostbound colossus answers the hunt.",
       "preyLifetimeSeconds": 120.0
     },
@@ -24,12 +26,16 @@
       "minCompletedWaypoints": 2,
       "minVisualTier": 3,
       "archetype": "pack",
+      "preyFamily": "monstrous",
       "visualTier": 3,
       "elite": true,
       "healthMultiplier": 1.6,
       "helperRoleId": "Wolf_Black",
       "helperCount": 2,
       "helperSpreadRadius": 4.0,
+      "reinforcementDelaySeconds": 10.0,
+      "reinforcementCount": 2,
+      "reinforcementSpreadRadius": 4.5,
       "onSpawnMessage": "The blood trail ignites into an alpha Emberwulf leading a blackfang hunting ring.",
       "preyLifetimeSeconds": 114.0
     },
@@ -43,11 +49,13 @@
       "minCompletedWaypoints": 2,
       "minVisualTier": 2,
       "archetype": "brute",
+      "preyFamily": "humanoid",
       "visualTier": 2,
       "healthMultiplier": 1.65,
       "helperRoleId": "Goblin_Scrapper",
       "helperCount": 2,
       "helperSpreadRadius": 3.5,
+      "secondWindSeconds": 14.0,
       "onSpawnMessage": "Heavy footsteps crush the blood trail as a goblin ogre barges into the kill.",
       "preyLifetimeSeconds": 106.0
     },
@@ -61,8 +69,10 @@
       "minCompletedWaypoints": 2,
       "minVisualTier": 2,
       "archetype": "brute",
+      "preyFamily": "beast",
       "visualTier": 2,
       "healthMultiplier": 1.22,
+      "secondWindSeconds": 10.0,
       "onSpawnMessage": "The blood grows heavy before a grizzly answers the challenge head-on.",
       "preyLifetimeSeconds": 104.0
     },
@@ -76,8 +86,10 @@
       "minCompletedWaypoints": 1,
       "minVisualTier": 2,
       "archetype": "stalker",
+      "preyFamily": "beast",
       "visualTier": 2,
       "healthMultiplier": 1.2,
+      "escapeWithoutHitSeconds": 12.0,
       "onSpawnMessage": "The trail narrows into claw marks before a sabertooth lunges from the dark.",
       "preyLifetimeSeconds": 102.0
     },
@@ -91,8 +103,10 @@
       "minCompletedWaypoints": 1,
       "maxCompletedWaypoints": 3,
       "archetype": "stalker",
+      "preyFamily": "monstrous",
       "visualTier": 2,
       "healthMultiplier": 1.18,
+      "escapeWithoutHitSeconds": 14.0,
       "onSpawnMessage": "The trail sinks into marsh-dark mist before a Fen Stalker slips into reach.",
       "preyLifetimeSeconds": 100.0
     },
@@ -106,8 +120,10 @@
       "minCompletedWaypoints": 1,
       "maxCompletedWaypoints": 2,
       "archetype": "stalker",
+      "preyFamily": "beast",
       "visualTier": 2,
       "healthMultiplier": 1.1,
+      "escapeWithoutHitSeconds": 11.0,
       "onSpawnMessage": "The trail sharpens into a circling pattern before a nightprowling hyena breaks cover.",
       "preyLifetimeSeconds": 98.0
     },
@@ -121,11 +137,15 @@
       "minCompletedWaypoints": 2,
       "maxCompletedWaypoints": 2,
       "archetype": "ambusher",
+      "preyFamily": "vermin",
       "visualTier": 1,
       "healthMultiplier": 1.0,
       "helperRoleId": "Spider",
       "helperCount": 2,
       "helperSpreadRadius": 2.8,
+      "reinforcementDelaySeconds": 8.0,
+      "reinforcementCount": 2,
+      "reinforcementSpreadRadius": 2.8,
       "onSpawnMessage": "The trail clings low to stone as a cave spider and its brood descend on the scent.",
       "preyLifetimeSeconds": 98.0
     },
@@ -139,8 +159,10 @@
       "minCompletedWaypoints": 1,
       "maxCompletedWaypoints": 2,
       "archetype": "stalker",
+      "preyFamily": "beast",
       "visualTier": 2,
       "healthMultiplier": 1.0,
+      "escapeWithoutHitSeconds": 13.0,
       "onSpawnMessage": "A black wolf slips into view and begins testing the edge of the blood trail.",
       "preyLifetimeSeconds": 95.0
     },
@@ -153,8 +175,12 @@
       "maxAcquiredPoints": 5,
       "maxCompletedWaypoints": 2,
       "archetype": "ambusher",
+      "preyFamily": "vermin",
       "visualTier": 1,
       "healthMultiplier": 1.0,
+      "reinforcementDelaySeconds": 6.0,
+      "reinforcementCount": 1,
+      "reinforcementSpreadRadius": 2.0,
       "onSpawnMessage": "The trail buckles in the dirt before a marked molerat bursts out beneath it.",
       "preyLifetimeSeconds": 93.0
     },
@@ -167,8 +193,10 @@
       "maxAcquiredPoints": 3,
       "maxCompletedWaypoints": 1,
       "archetype": "stalker",
+      "preyFamily": "beast",
       "visualTier": 1,
       "healthMultiplier": 1.0,
+      "escapeWithoutHitSeconds": 10.0,
       "onSpawnMessage": "A fox darts along the trail, quick enough to tempt a reckless chase.",
       "preyLifetimeSeconds": 91.0
     },
@@ -181,11 +209,15 @@
       "maxAcquiredPoints": 1,
       "maxCompletedWaypoints": 1,
       "archetype": "pack",
+      "preyFamily": "vermin",
       "visualTier": 1,
       "healthMultiplier": 1.0,
       "helperRoleId": "Rat",
       "helperCount": 2,
       "helperSpreadRadius": 2.0,
+      "reinforcementDelaySeconds": 7.0,
+      "reinforcementCount": 2,
+      "reinforcementSpreadRadius": 2.0,
       "onSpawnMessage": "The scent gathers low to the ground and a marked rat brood spills from the dark.",
       "preyLifetimeSeconds": 88.0
     }
@@ -306,6 +338,115 @@
       "ambushHelperRoleId": "Wolf_Black",
       "ambushHelperCount": 2,
       "ambushHelperSpreadRadius": 3.8
+    }
+  ],
+  "environments": [
+    {
+      "id": "frostbound-heights",
+      "displayName": "Frostbound Heights",
+      "text": "The trail climbs into thin, frostbitten air where every delay feels exposed.",
+      "textColor": "red",
+      "riskDisplayName": "Exposed ground",
+      "chance": 0.28,
+      "requiredAcquiredPoints": 4,
+      "minHour": 22,
+      "minDestinationY": 100.0,
+      "extraWaypoints": 1,
+      "visualTierDelta": 1,
+      "preyLifetimeMultiplier": 0.9,
+      "failCooldownDeltaSeconds": 10.0
+    },
+    {
+      "id": "lowland-mire",
+      "displayName": "Lowland Mire",
+      "text": "Black water and hanging mist let the scent pool longer than it should.",
+      "textColor": "dark_red",
+      "riskDisplayName": "Bog hazards",
+      "chance": 0.32,
+      "maxDestinationY": 70.0,
+      "preyLifetimeMultiplier": 1.12,
+      "pressureSecondsDelta": -1.0
+    },
+    {
+      "id": "consecrated-threshold",
+      "displayName": "Consecrated Threshold",
+      "text": "The route cuts across hostile sacred ground that pushes back against the rite.",
+      "textColor": "red",
+      "riskDisplayName": "Sacred ground",
+      "chance": 0.2,
+      "requiredAcquiredPoints": 6,
+      "requiredModeId": "dread",
+      "minVisualTier": 2,
+      "visualTierDelta": 1,
+      "pressureSecondsDelta": 1.0,
+      "failCooldownDeltaSeconds": 6.0
+    }
+  ],
+  "encounterBeats": [
+    {
+      "id": "hunter-patrol",
+      "displayName": "Lantern Patrol",
+      "text": "Lantern beams sweep the trail as hunters close in on the same scent.",
+      "textColor": "red",
+      "riskDisplayName": "Hunter patrol",
+      "setpieceDisplayName": "Lantern crossfire",
+      "chance": 0.22,
+      "requiredAcquiredPoints": 4,
+      "minVisualTier": 2,
+      "allowedPreyFamilies": [
+        "beast",
+        "humanoid"
+      ],
+      "visualTierDelta": 1,
+      "preyLifetimeDeltaSeconds": -8.0,
+      "pressureSecondsDelta": 1.0,
+      "rivalRoleId": "Goblin_Thief",
+      "rivalDisplayName": "Lantern Hunter",
+      "rivalCount": 1,
+      "rivalSpreadRadius": 4.0
+    },
+    {
+      "id": "grave-witnesses",
+      "displayName": "Witness Flares",
+      "text": "Shouts and flares erupt around the kill, forcing the contract into a more public finish.",
+      "textColor": "yellow",
+      "riskDisplayName": "Witnesses",
+      "setpieceDisplayName": "Witness flare line",
+      "chance": 0.18,
+      "requiredAcquiredPoints": 5,
+      "allowedPreyFamilies": [
+        "humanoid"
+      ],
+      "preyLifetimeDeltaSeconds": -6.0,
+      "pressureSecondsDelta": 2.0
+    },
+    {
+      "id": "sacred-ground",
+      "displayName": "Consecrated Threshold",
+      "text": "Sacred wards bite at the blood trail and force the hunt to finish under pressure.",
+      "textColor": "red",
+      "riskDisplayName": "Sacred ground",
+      "setpieceDisplayName": "Consecrated threshold",
+      "chance": 0.24,
+      "requiredEnvironmentId": "consecrated-threshold",
+      "pressureSecondsDelta": 2.0,
+      "visualTierDelta": 1
+    },
+    {
+      "id": "mire-sink",
+      "displayName": "Fen Sink",
+      "text": "The prey splashes through a mire pocket that twists the chase into a closer, messier brawl.",
+      "textColor": "dark_red",
+      "riskDisplayName": "Hazardous footing",
+      "setpieceDisplayName": "Fen sink",
+      "chance": 0.24,
+      "requiredEnvironmentId": "lowland-mire",
+      "allowedPreyArchetypes": [
+        "stalker",
+        "ambusher"
+      ],
+      "preyLifetimeDeltaSeconds": 8.0,
+      "pressureSecondsDelta": -1.0
     }
   ]
 }

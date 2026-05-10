@@ -1,0 +1,295 @@
+// Hytale UI Definition: HuntCompendium
+$C = "../../Common.ui";
+
+Group #HuntCompendiumRoot {
+  Anchor: (Full: 0);
+  Background: #091118;
+
+  Label #Title {
+    Anchor: (Left: 32, Top: 20, Width: 420, Height: 28);
+    Text: "";
+    Style: (FontSize: 24, RenderBold: true, TextColor: #ffffff);
+  }
+
+  Label #Subtitle {
+    Anchor: (Left: 32, Top: 50, Width: 540, Height: 18);
+    Text: "";
+    Style: (FontSize: 11, TextColor: #9bb0c2);
+  }
+
+  $C.@CancelTextButton #CloseBtn {
+    @Text = "Close";
+    @Anchor = (Right: 24, Top: 18, Width: 100, Height: 32);
+  }
+
+  Group #SnapshotStrip {
+    Anchor: (Left: 24, Right: 24, Top: 82, Height: 78);
+    Background: #14202c;
+
+    Label {
+      Anchor: (Left: 18, Top: 12, Width: 120, Height: 16);
+      Text: "Prepared loadout";
+      Style: (FontSize: 11, TextColor: #8ea2b5);
+    }
+
+    Label #PreparedLoadoutValue {
+      Anchor: (Left: 18, Top: 30, Width: 340, Height: 20);
+      Text: "";
+      Style: (FontSize: 14, RenderBold: true, TextColor: #ffffff);
+    }
+
+    Label {
+      Anchor: (Right: 220, Top: 12, Width: 120, Height: 16);
+      Text: "Next rank";
+      Style: (FontSize: 11, TextColor: #8ea2b5);
+    }
+
+    Label #NextRankValue {
+      Anchor: (Right: 18, Top: 30, Width: 220, Height: 20);
+      Text: "";
+      Style: (FontSize: 14, RenderBold: true, TextColor: #facc15, HorizontalAlignment: End);
+    }
+  }
+
+  Group #Tabs {
+    Anchor: (Left: 24, Top: 174, Width: 648, Height: 44);
+
+    Group #OverviewTab {
+      Anchor: (Left: 0, Top: 0, Width: 156, Height: 44);
+      Group #TabBackground { Anchor: (Full: 0); Background: #1e3048; }
+      Label #TabLabel {
+        Anchor: (Full: 0);
+        Text: "Overview";
+        Style: (FontSize: 12, RenderBold: true, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center);
+      }
+      Button #TabButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+    }
+
+    Group #PreparationsTab {
+      Anchor: (Left: 164, Top: 0, Width: 156, Height: 44);
+      Group #TabBackground { Anchor: (Full: 0); Background: #0d1820; }
+      Label #TabLabel {
+        Anchor: (Full: 0);
+        Text: "Preparations";
+        Style: (FontSize: 12, TextColor: #9bb0c2, HorizontalAlignment: Center, VerticalAlignment: Center);
+      }
+      Button #TabButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+    }
+
+    Group #RecordsTab {
+      Anchor: (Left: 328, Top: 0, Width: 156, Height: 44);
+      Group #TabBackground { Anchor: (Full: 0); Background: #0d1820; }
+      Label #TabLabel {
+        Anchor: (Full: 0);
+        Text: "Records";
+        Style: (FontSize: 12, TextColor: #9bb0c2, HorizontalAlignment: Center, VerticalAlignment: Center);
+      }
+      Button #TabButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+    }
+
+    Group #QuarryTab {
+      Anchor: (Left: 492, Top: 0, Width: 156, Height: 44);
+      Group #TabBackground { Anchor: (Full: 0); Background: #0d1820; }
+      Label #TabLabel {
+        Anchor: (Full: 0);
+        Text: "Quarry";
+        Style: (FontSize: 12, TextColor: #9bb0c2, HorizontalAlignment: Center, VerticalAlignment: Center);
+      }
+      Button #TabButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+    }
+  }
+
+  Group #ContentPanel {
+    Anchor: (Left: 24, Right: 24, Top: 234, Bottom: 54);
+    Background: #14202c;
+  }
+
+  Group #OverviewPanel {
+    Anchor: (Left: 24, Right: 24, Top: 246, Bottom: 66);
+
+    Group #OverviewSummaryCard {
+      Anchor: (Left: 0, Right: 0, Top: 0, Height: 118);
+      Background: #101922;
+      Label {
+        Anchor: (Left: 16, Top: 12, Width: 180, Height: 18);
+        Text: "Summary";
+        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+      }
+      Label #OverviewSummaryText {
+        Anchor: (Left: 16, Top: 38, Right: 16, Bottom: 16);
+        Text: "";
+        Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
+      }
+    }
+
+    Group #OverviewContinuityCard {
+      Anchor: (Left: 0, Top: 132, Width: 440, Bottom: 0);
+      Background: #101922;
+      Label {
+        Anchor: (Left: 16, Top: 12, Width: 220, Height: 18);
+        Text: "Continuity";
+        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+      }
+      Label #OverviewContinuityText {
+        Anchor: (Left: 16, Top: 38, Right: 16, Bottom: 16);
+        Text: "";
+        Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
+      }
+    }
+
+    Group #OverviewRewardCard {
+      Anchor: (Right: 0, Top: 132, Width: 440, Bottom: 0);
+      Background: #101922;
+      Label {
+        Anchor: (Left: 16, Top: 12, Width: 220, Height: 18);
+        Text: "Recent reward";
+        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+      }
+      Label #OverviewRewardText {
+        Anchor: (Left: 16, Top: 38, Right: 16, Bottom: 16);
+        Text: "";
+        Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
+      }
+    }
+  }
+
+  Group #PreparationsPanel {
+    Anchor: (Left: 24, Right: 24, Top: 246, Bottom: 66);
+    Visible: false;
+
+    Group #PreparationChoicesCard {
+      Anchor: (Left: 0, Right: 316, Top: 0, Height: 204);
+      Background: #101922;
+      Label {
+        Anchor: (Left: 16, Top: 12, Width: 220, Height: 18);
+        Text: "Preparation chooser";
+        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+      }
+      Label {
+        Anchor: (Left: 16, Top: 34, Right: 16, Height: 16);
+        Text: "Preview a preparation, then commit it for your next Night Hunt.";
+        Style: (FontSize: 11, TextColor: #9bb0c2);
+      }
+      Group #PreparationOptions {
+        Anchor: (Left: 16, Right: 16, Top: 60, Bottom: 16);
+      }
+    }
+
+    Group #PreparationPreviewCard {
+      Anchor: (Right: 0, Top: 0, Width: 300, Height: 204);
+      Background: #101922;
+      Label {
+        Anchor: (Left: 16, Top: 12, Width: 220, Height: 18);
+        Text: "Preview";
+        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+      }
+      Label #PreparationPreviewTitle {
+        Anchor: (Left: 16, Top: 36, Right: 16, Height: 18);
+        Text: "";
+        Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true, Wrap: true);
+      }
+      Label #PreparationPreviewStatus {
+        Anchor: (Left: 16, Top: 58, Right: 16, Height: 16);
+        Text: "";
+        Style: (FontSize: 11, TextColor: #7dd3fc, RenderBold: true);
+      }
+      Label #PreparationPreviewDescription {
+        Anchor: (Left: 16, Top: 82, Right: 16, Height: 32);
+        Text: "";
+        Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
+      }
+      Label #PreparationPreviewObjective {
+        Anchor: (Left: 16, Top: 118, Right: 16, Height: 34);
+        Text: "";
+        Style: (FontSize: 11, TextColor: #facc15, Wrap: true);
+      }
+      $C.@SecondaryTextButton #PrepareConfirmBtn {
+        @Text = "";
+        @Anchor = (Left: 16, Right: 16, Bottom: 16, Height: 32);
+      }
+      Label #PrepareConfirmLabel {
+        Anchor: (Left: 16, Right: 16, Bottom: 16, Height: 32);
+        Text: "";
+        Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+        HitTestVisible: false;
+      }
+    }
+
+    Group #PreparationEffectsCard {
+      Anchor: (Left: 0, Right: 0, Top: 220, Bottom: 0);
+      Background: #101922;
+      Label {
+        Anchor: (Left: 16, Top: 12, Width: 220, Height: 18);
+        Text: "Route and contract effects";
+        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+      }
+      Label #PreparationPreviewEffects {
+        Anchor: (Left: 16, Top: 38, Right: 16, Bottom: 16);
+        Text: "";
+        Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
+      }
+    }
+  }
+
+  Group #RecordsPanel {
+    Anchor: (Left: 24, Right: 24, Top: 246, Bottom: 66);
+    Visible: false;
+
+    Group #RecordsArchetypesCard {
+      Anchor: (Left: 0, Top: 0, Width: 440, Bottom: 0);
+      Background: #101922;
+      Label {
+        Anchor: (Left: 16, Top: 12, Width: 220, Height: 18);
+        Text: "Archetype mastery";
+        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+      }
+      Label #RecordsArchetypesText {
+        Anchor: (Left: 16, Top: 38, Right: 16, Bottom: 16);
+        Text: "";
+        Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
+      }
+    }
+
+    Group #RecordsContractsCard {
+      Anchor: (Right: 0, Top: 0, Width: 544, Bottom: 0);
+      Background: #101922;
+      Label {
+        Anchor: (Left: 16, Top: 12, Width: 220, Height: 18);
+        Text: "Contract ledger";
+        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+      }
+      Label #RecordsContractsText {
+        Anchor: (Left: 16, Top: 38, Right: 16, Bottom: 16);
+        Text: "";
+        Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
+      }
+    }
+  }
+
+  Group #QuarryPanel {
+    Anchor: (Left: 24, Right: 24, Top: 246, Bottom: 66);
+    Visible: false;
+    Background: #101922;
+    Label {
+      Anchor: (Left: 16, Top: 12, Width: 220, Height: 18);
+      Text: "Quarry log";
+      Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+    }
+    Label {
+      Anchor: (Left: 16, Top: 34, Right: 16, Height: 16);
+      Text: "Discovered prey are pinned first so familiar targets stay easy to scan.";
+      Style: (FontSize: 11, TextColor: #9bb0c2);
+    }
+    Label #QuarryText {
+      Anchor: (Left: 16, Top: 60, Right: 16, Bottom: 16);
+      Text: "";
+      Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
+    }
+  }
+
+  Label #FooterHint {
+    Anchor: (Left: 40, Right: 40, Bottom: 20, Height: 16);
+    Text: "";
+    Style: (FontSize: 11, TextColor: #8ea2b5, HorizontalAlignment: Center);
+  }
+}
