@@ -83,11 +83,12 @@ class HuntCompendiumNextRiteResolverTest {
                         "fledgling",
                         Set.of("BloodThirst", "BloodThrow"),
                         Set.of(VampiricProgressionProofs.FIRST_NIGHT_HUNT_COMPLETION),
+                        Map.of("vermin", 0),
                         Set.of(VampiricRitualRegistry.TAG_NIGHT)));
 
         assertNotNull(nextRite);
         assertEquals("Summon Familiar", nextRite.ritualName());
-        assertTrue(nextRite.guidance().contains("Earn Vermin 1+ affinity from night hunt rewards."));
+        assertEquals("Earn Vermin 1+ affinity from night hunt rewards (currently 0/1).", nextRite.guidance());
     }
 
     private static final class NoOpRewardPort implements VampiricRitualRewardPort {

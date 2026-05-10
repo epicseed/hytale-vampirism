@@ -45,7 +45,7 @@ final class HuntCompendiumNextRiteResolver {
             if (evaluation.completed()) {
                 continue;
             }
-            return new NextRite(definition.displayName(), guidance(evaluation));
+            return new NextRite(definition.displayName(), guidance(evaluation, context));
         }
         return null;
     }
@@ -62,7 +62,7 @@ final class HuntCompendiumNextRiteResolver {
     }
 
     @Nonnull
-    private static String guidance(@Nonnull VampiricRitualEvaluation evaluation) {
+    private static String guidance(@Nonnull VampiricRitualEvaluation evaluation, @Nonnull VampiricRitualContext context) {
         if (evaluation.active()) {
             return "Already active on your circle.";
         }
@@ -76,7 +76,9 @@ final class HuntCompendiumNextRiteResolver {
         VampiricRitualDefinition.AffinityRequirement affinityRequirement =
                 VampiricRitualDefinition.AffinityRequirement.fromBlockingReason(reason);
         if (affinityRequirement != null) {
-            return "Earn " + affinityRequirement.requirementLabel() + " affinity from night hunt rewards.";
+            int currentAffinity = context.bloodAffinity(affinityRequirement.affinityId());
+            return "Earn " + affinityRequirement.requirementLabel() + " affinity from night hunt rewards (currently "
+                    + currentAffinity + "/" + affinityRequirement.minAmount() + ").";
         }
         if (reason.startsWith("missing_skill:")) {
             return "Unlock " + NightHuntPresentationText.humanize(reason.substring("missing_skill:".length())) + " first.";
