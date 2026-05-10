@@ -13,6 +13,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.vampirism.domain.player.RitualProgressState;
+import com.epicseed.vampirism.domain.progression.VampiricProgressionProofs;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualActivationLink;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContext;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualDefinition;
@@ -188,6 +189,9 @@ final class VampiricRitualBookModel {
         }
         if (!entry.definition().requiredSkills().isEmpty()) {
             lines.add("Skills: " + joinHumanized(entry.definition().requiredSkills()));
+        }
+        if (!entry.definition().requiredProofIds().isEmpty()) {
+            lines.add("Proof: " + joinProofLabels(entry.definition().requiredProofIds()));
         }
         if (!entry.definition().requiredContextTags().isEmpty()) {
             lines.add("Omens: " + joinHumanized(entry.definition().requiredContextTags()));
@@ -506,6 +510,9 @@ final class VampiricRitualBookModel {
         if (reason.startsWith("missing_skill:")) {
             return "Missing skill " + humanizeId(reason.substring("missing_skill:".length())) + ".";
         }
+        if (reason.startsWith("missing_proof:")) {
+            return VampiricProgressionProofs.blockingLabel(reason.substring("missing_proof:".length())) + ".";
+        }
         if (reason.startsWith("missing_tag:")) {
             return switch (reason.substring("missing_tag:".length())) {
                 case VampiricRitualRegistry.TAG_NIGHT -> "Only responds at night.";
@@ -523,6 +530,13 @@ final class VampiricRitualBookModel {
     @Nonnull
     private static String joinHumanized(@Nonnull Set<String> values) {
         return values.stream().map(VampiricRitualBookModel::humanizeId).toList().toString()
+                .replace("[", "")
+                .replace("]", "");
+    }
+
+    @Nonnull
+    private static String joinProofLabels(@Nonnull Set<String> values) {
+        return values.stream().map(VampiricProgressionProofs::requirementLabel).toList().toString()
                 .replace("[", "")
                 .replace("]", "");
     }

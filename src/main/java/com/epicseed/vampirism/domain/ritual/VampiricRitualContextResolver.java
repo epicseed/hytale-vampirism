@@ -53,6 +53,7 @@ public final class VampiricRitualContextResolver {
                 VampirePlayerStateStore.get().getCompletedNightHunts(uuid),
                 VampirePlayerStateStore.get().getAgeTierId(uuid),
                 progressionAccess.getUnlockedSkillIds(uuid),
+                VampirePlayerStateStore.get().getMilestoneProofIds(uuid),
                 Set.copyOf(tags));
     }
 

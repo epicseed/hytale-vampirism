@@ -4,7 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.epicseed.vampirism.domain.progression.VampiricProgressionProofs;
+
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -39,6 +42,7 @@ class RitualResourceDataTest {
         VampiricRitualRegistry registry = new VampiricRitualRegistry();
 
         VampiricRitualDefinition summonFamiliar = registry.definition("summon_familiar").orElseThrow();
+        VampiricRitualDefinition veilOfNight = registry.definition("veil_of_night").orElseThrow();
 
         assertEquals(36, summonFamiliar.minBlood());
         assertFalse(summonFamiliar.objectives().isEmpty());
@@ -46,6 +50,7 @@ class RitualResourceDataTest {
         assertEquals("bind_familiar", objective.id());
         assertEquals("Ingredient_Voidheart", objective.offering().itemId());
         assertEquals(VampiricRitualOfferingSurfacePolicy.ANY_POINT_OR_CENTER, objective.offering().surfacePolicy());
+        assertEquals(Set.of(VampiricProgressionProofs.FIRST_NIGHT_HUNT_COMPLETION), veilOfNight.requiredProofIds());
     }
 
     @Test

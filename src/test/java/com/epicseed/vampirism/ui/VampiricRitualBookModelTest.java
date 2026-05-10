@@ -3,6 +3,8 @@ package com.epicseed.vampirism.ui;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.epicseed.vampirism.domain.progression.VampiricProgressionProofs;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -131,6 +133,40 @@ class VampiricRitualBookModelTest {
 
         assertEquals("veil", model.selectedRitualId());
         assertEquals("Veil", model.bookTitle());
+    }
+
+    @Test
+    void proofRequirementsAppearInRequirementsAndBlockingCopy() {
+        String anchorBlockId = "Furniture_Ancient_Coffin";
+        VampiricRitualDefinition definition = new VampiricRitualDefinition(
+                "veil",
+                "Veil",
+                "Test description",
+                0,
+                0,
+                null,
+                Set.of(),
+                Set.of(VampiricProgressionProofs.FIRST_NIGHT_HUNT_COMPLETION),
+                Set.of(),
+                Set.of(),
+                List.of(),
+                VampiricRitualDefinition.Rewards.none(),
+                VampiricRitualDefinition.Presentation.none());
+        VampiricRitualBookModel model = VampiricRitualBookModel.create(
+                anchorBlockId,
+                List.of(new VampiricRitualRuntimeService.ResolvedAnchorRitual("veil", "Veil", anchorBlockId)),
+                Map.of("veil", definition),
+                Map.of("veil", template("veil", "Veil", anchorBlockId)),
+                Map.of("veil", new VampiricRitualEvaluation(
+                        definition,
+                        new RitualProgressState(),
+                        RitualProgressState.STATUS_LOCKED,
+                        Map.of(),
+                        List.of("missing_proof:" + VampiricProgressionProofs.FIRST_NIGHT_HUNT_COMPLETION))),
+                null);
+
+        assertTrue(model.requirementsText().contains("Proof: First night hunt completed"));
+        assertTrue(model.blockingText().contains("Complete a night hunt first."));
     }
 
     private static VampiricRitualDefinition definition(String id, String name) {

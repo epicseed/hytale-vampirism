@@ -67,12 +67,15 @@
       "displayName": "Veil of Night",
       "id": "veil_of_night",
       "minBlood": 30,
-      "minCompletedNightHunts": 2,
+      "minCompletedNightHunts": 0,
       "objectives": [],
       "presentation": null,
       "requiredAgeTierId": "fledgling",
       "requiredContextTags": [
         "night"
+      ],
+      "requiredProofIds": [
+        "night_hunt:first_completion"
       ],
       "requiredSkills": [
         "BloodThirst"
