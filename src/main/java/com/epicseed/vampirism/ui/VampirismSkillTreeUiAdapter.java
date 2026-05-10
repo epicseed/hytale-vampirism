@@ -164,7 +164,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                 new ProgressionSectionView(
                         "lineage",
                         "Lineage",
-                        "Lineage",
+                        "Lineage Legacy",
                         "No lineage details are available.",
                         buildLineageCards(uuid, store, lineageEvaluations, selectedLineage, availableLineages)),
                 new ProgressionSectionView(
@@ -370,10 +370,24 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                 "Current Lineage",
                 selectedLineage != null
                         ? selectedLineage.definition().displayName()
-                        : formatIdentifier(store.getLineageId(uuid), "Unbound"),
+                        : "Unbound",
                 (selectedLineage != null ? selectedLineage.clan().displayName() : "No clan selected")
                         + " · Unlocked at: " + formatInstant(store.getLineageUnlockedAtMs(uuid), "Not yet unlocked"),
                 selectedLineage != null ? selectedLineage.clan().accentColor() : "#ef4444"));
+        cards.add(new ProgressionCardView(
+                "Lineage Milestone",
+                selectedLineage != null
+                        ? selectedLineage.definition().perks().size() + " perk"
+                                + (selectedLineage.definition().perks().size() == 1 ? "" : "s")
+                        : availableLineages > 0
+                        ? availableLineages + " ready"
+                        : "Await rites",
+                selectedLineage != null
+                        ? lineagePerkSummary(selectedLineage.definition())
+                        : nextLineageLead(lineageEvaluations, availableLineages),
+                selectedLineage != null
+                        ? selectedLineage.clan().accentColor()
+                        : availableLineages > 0 ? "#22c55e" : "#f97316"));
         cards.add(new ProgressionCardView(
                 "Respec Count",
                 Integer.toString(store.getLineageRespecCount(uuid)),
@@ -403,5 +417,26 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                 .map(perk -> perk.displayName() + ": " + perk.description())
                 .reduce((left, right) -> left + " · " + right)
                 .orElse(definition.description());
+    }
+
+    @Nonnull
+    private static String nextLineageLead(@Nonnull List<VampiricLineageEvaluation> lineageEvaluations,
+                                          long availableLineages) {
+        if (availableLineages > 0) {
+            return lineageEvaluations.stream()
+                    .filter(VampiricLineageEvaluation::available)
+                    .findFirst()
+                    .map(evaluation -> evaluation.definition().displayName() + " is ready to claim.")
+                    .orElse("A lineage is ready to claim.");
+        }
+        return lineageEvaluations.stream()
+                .findFirst()
+                .map(evaluation -> {
+                    if (evaluation.blockingReasons().isEmpty()) {
+                        return "Complete more rites and hunts to reveal your first lineage.";
+                    }
+                    return evaluation.definition().displayName() + " waits on " + evaluation.blockingReasons().get(0);
+                })
+                .orElse("Complete more rites and hunts to reveal your first lineage.");
     }
 }

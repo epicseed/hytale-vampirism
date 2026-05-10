@@ -143,7 +143,9 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
         lineageService.syncModifiers(uuid);
         String nextLineageId = VampirePlayerStateStore.get().getLineageId(uuid);
         if (nextLineageId != null && !nextLineageId.equals(currentLineageId)) {
-            lineageService.currentLineage(uuid).ifPresent(definition -> VampirismPlayerFeedback.notifyLineageChosen(uuid, definition));
+            boolean firstSelection = currentLineageId == null || currentLineageId.isBlank();
+            lineageService.currentLineage(uuid).ifPresent(definition ->
+                    VampirismPlayerFeedback.notifyLineageChosen(uuid, definition, firstSelection));
         }
     }
 

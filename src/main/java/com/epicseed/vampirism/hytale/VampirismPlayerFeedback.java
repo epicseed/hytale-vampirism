@@ -2,6 +2,7 @@ package com.epicseed.vampirism.hytale;
 
 import java.util.Locale;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -72,15 +73,24 @@ public final class VampirismPlayerFeedback {
     }
 
     public static void notifyLineageChosen(@Nullable UUID uuid,
-                                           @Nullable VampiricLineageDefinition definition) {
+                                           @Nullable VampiricLineageDefinition definition,
+                                           boolean firstSelection) {
         if (uuid == null
                 || definition == null
                 || !notificationEnabled(uuid, VampirismUxPreferenceKeys.GAMEPLAY_NOTIFICATIONS)) {
             return;
         }
-        notify(uuid,
-                labeledMessage("Lineage Awakened", "aqua", definition.displayName(), "white"),
-                NotificationStyle.Success);
+        showTitle(
+                uuid,
+                Message.raw(firstSelection ? "Lineage Awakened" : "Lineage Reforged").color("aqua"),
+                Message.raw(definition.displayName()).color("white"),
+                true);
+        String recap = lineageRecap(definition);
+        if (!recap.isBlank()) {
+            notify(uuid,
+                    labeledMessage("Lineage", "aqua", recap, "white"),
+                    NotificationStyle.Success);
+        }
     }
 
     public static void showVampiricAscension(@Nullable PlayerRef playerRef) {
@@ -255,6 +265,21 @@ public final class VampirismPlayerFeedback {
     @Nonnull
     private static Message titleFallback(@Nonnull Message primary, @Nonnull Message secondary) {
         return Message.join(primary, Message.raw(" - ").color("gray"), secondary);
+    }
+
+    @Nonnull
+    private static String lineageRecap(@Nonnull VampiricLineageDefinition definition) {
+        if (!definition.perks().isEmpty()) {
+            String summary = definition.perks().stream()
+                    .limit(2)
+                    .map(VampiricLineageDefinition.Perk::displayName)
+                    .collect(Collectors.joining(" · "));
+            if (definition.perks().size() > 2) {
+                summary = summary + " · +" + (definition.perks().size() - 2) + " more";
+            }
+            return summary;
+        }
+        return definition.description() == null ? "" : definition.description();
     }
 
     @Nonnull

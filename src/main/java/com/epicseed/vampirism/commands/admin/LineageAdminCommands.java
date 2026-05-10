@@ -4,6 +4,7 @@ import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageEvaluation;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageSelectionResult;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
+import com.epicseed.vampirism.hytale.VampirismPlayerFeedback;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
@@ -122,9 +123,16 @@ public final class LineageAdminCommands extends AbstractCommand {
         public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
             PlayerRef target = playerArg.get(ctx);
             String lineageId = lineageArg.get(ctx);
+            String previousLineageId = VampirePlayerStateStore.get().getLineageId(target.getUuid());
             VampiricLineageSelectionResult result = lineageService.select(target.getUuid(), lineageId, System.currentTimeMillis());
             Message message = Message.raw(result.message()).color(result.successful() ? "green" : "yellow");
             ctx.sendMessage(message);
+            if (result.status() == VampiricLineageSelectionResult.Status.SELECTED && result.evaluation() != null) {
+                VampirismPlayerFeedback.notifyLineageChosen(
+                        target.getUuid(),
+                        result.evaluation().definition(),
+                        previousLineageId == null || previousLineageId.isBlank());
+            }
             if (result.evaluation() != null && !result.evaluation().blockingReasons().isEmpty()) {
                 ctx.sendMessage(Message.raw(String.join(" ", result.evaluation().blockingReasons())).color("yellow"));
             }
