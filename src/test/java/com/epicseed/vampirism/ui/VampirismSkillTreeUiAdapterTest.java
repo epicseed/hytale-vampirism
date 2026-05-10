@@ -53,6 +53,8 @@ class VampirismSkillTreeUiAdapterTest {
         assertEquals("Pressure 45", card(cards, "Current Risk").value());
         assertEquals("Hunter crackdown · Siphon Ledger II", card(cards, "Pressure Outlook").value());
         assertTrue(card(cards, "Pressure Outlook").detail().contains("Break this chain before the next hunt"));
+        assertEquals("Siphon Ledger II", card(cards, "Pressure Drivers").value());
+        assertTrue(card(cards, "Pressure Drivers").detail().contains("keeping Hunter crackdown live"));
         assertEquals("Voidspawn blocked", card(cards, "Current Opportunity").value());
         assertTrue(card(cards, "Current Opportunity").detail().contains("Cool 5.0 heat"));
     }
@@ -75,6 +77,8 @@ class VampirismSkillTreeUiAdapterTest {
         assertEquals("Routes clear", card(cards, "Current Risk").value());
         assertEquals("Quiet routes", card(cards, "Pressure Outlook").value());
         assertTrue(card(cards, "Pressure Outlook").detail().contains("No active world response"));
+        assertEquals("No active driver", card(cards, "Pressure Drivers").value());
+        assertTrue(card(cards, "Pressure Drivers").detail().contains("No chain, threat, or memory"));
         assertEquals("Voidspawn ready", card(cards, "Current Opportunity").value());
         assertTrue(card(cards, "Current Opportunity").detail().contains("Stay at or below 25.0"));
     }

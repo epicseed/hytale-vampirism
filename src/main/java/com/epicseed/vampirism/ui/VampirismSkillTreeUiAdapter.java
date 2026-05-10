@@ -352,6 +352,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                 MasqueradeHeatThresholdText.nextThreshold(masquerade, policy);
         LineageWindowOpportunity.View opportunity = LineageWindowOpportunity.resolve(masquerade, lineageEvaluations);
         PressureOutlookText.View pressureOutlook = PressureOutlookText.resolve(continuity);
+        PressureDriversText.View pressureDrivers = PressureDriversText.resolve(continuity);
         return List.of(
                 new ProgressionCardView(
                         "Current Exposure",
@@ -373,6 +374,11 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                         pressureOutlook.value(),
                         pressureOutlook.detail(),
                         pressureOutlook.accentColor()),
+                new ProgressionCardView(
+                        "Pressure Drivers",
+                        pressureDrivers.value(),
+                        pressureDrivers.detail(),
+                        pressureDrivers.accentColor()),
                 new ProgressionCardView(
                         "Current Opportunity",
                         opportunity.value(),
