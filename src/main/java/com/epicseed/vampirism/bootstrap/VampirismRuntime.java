@@ -67,6 +67,7 @@ import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualSelectionServi
 import com.epicseed.vampirism.hud.BloodGaugeHud;
 import com.epicseed.vampirism.hud.RitualHudService;
 import com.epicseed.vampirism.hud.RitualStatusHud;
+import com.epicseed.vampirism.hytale.PlayerWorldLifecycleEventAdapter;
 import com.epicseed.vampirism.hytale.VampirismPlayerFeedback;
 import com.epicseed.vampirism.hytale.ritual.RitualOfferingSurfaceInteraction;
 import com.epicseed.vampirism.domain.skill.SkillTreePresenter;
@@ -122,7 +123,6 @@ import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.event.events.player.RemovedPlayerFromWorldEvent;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
@@ -372,7 +372,7 @@ public final class VampirismRuntime {
                             BloodConversionSystem.clearPlayer(uuid);
                             ritualRuntimeService.capturePersistedState(uuid);
                             RitualHudService.cleanup(playerRef);
-                            ritualVisualSystem.clearPlayer(uuid, playerRef);
+                            ritualVisualSystem.suspendPlayer(uuid);
                             ritualSelectionService.clearPlayer(uuid);
                             var familiar = VampiricRitualCompanionTracker.clearPlayer(uuid);
                             if (familiar != null && familiar.companionRef().isValid()) {
@@ -439,8 +439,7 @@ public final class VampirismRuntime {
         plugin.getEventRegistry().registerGlobal(PlayerReadyEvent.class, e -> MorphFlySystem.onPlayerReady(e.getPlayerRef()));
         plugin.getEventRegistry().registerGlobal(AddPlayerToWorldEvent.class, e ->
                 WorldMapTrackerAdapter.syncTransform(e.getHolder(), e.getWorld(), false));
-        plugin.getEventRegistry().registerGlobal(RemovedPlayerFromWorldEvent.class, e ->
-                WorldMapTrackerAdapter.syncTransform(e.getHolder(), e.getWorld(), true));
+        PlayerWorldLifecycleEventAdapter.registerWorldRemovalEvents(plugin.getEventRegistry(), plugin.getClassLoader());
         plugin.getEventRegistry().register(PlayerDisconnectEvent.class, e ->
                 onPlayerDisconnect(e.getPlayerRef().getUuid(), e.getPlayerRef().getReference()));
     }

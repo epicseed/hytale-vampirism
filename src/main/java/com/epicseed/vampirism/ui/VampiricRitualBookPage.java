@@ -13,6 +13,7 @@ import com.epicseed.epiccore.hytale.PlayerFeedbackAdapter;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContext;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualDefinition;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualEvaluation;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeSnapshot;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeService;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualTemplate;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualTemplateRegistry;
@@ -42,6 +43,8 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
     private final TargetedBlock anchor;
     private final VampiricRitualBookModel model;
     private final int pointSlotCount;
+    @Nullable
+    private final String activeRitualId;
     private String attunedRitualId;
 
     public VampiricRitualBookPage(@Nonnull PlayerRef playerRef,
@@ -50,7 +53,8 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
                                   @Nonnull VampiricRitualTemplateRegistry templateRegistry,
                                   @Nonnull VampiricRitualSelectionService selectionService,
                                   @Nonnull TargetedBlock anchor,
-                                  @Nonnull VampiricRitualContext ritualContext) {
+                                  @Nonnull VampiricRitualContext ritualContext,
+                                  @Nullable String activeRitualId) {
         super(playerRef, CustomPageLifetime.CanDismiss, RitualBookEventData.CODEC);
         this.selectionService = Objects.requireNonNull(selectionService, "selectionService");
         this.anchor = Objects.requireNonNull(anchor, "anchor");
@@ -67,7 +71,9 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
             }
         }
         this.attunedRitualId = selectionService.selectedRitual(playerRef.getUuid(), anchor.blockId()).orElse(null);
-        this.model = VampiricRitualBookModel.create(anchor.blockId(), resolved, definitions, templates, evaluations, attunedRitualId);
+        this.activeRitualId = activeRitualId;
+        String initiallySelectedRitualId = activeRitualId != null ? activeRitualId : attunedRitualId;
+        this.model = VampiricRitualBookModel.create(anchor.blockId(), resolved, definitions, templates, evaluations, initiallySelectedRitualId);
         this.pointSlotCount = Math.max(1, model.rituals().stream()
                 .mapToInt(entry -> entry.template().points().size())
                 .max()
@@ -171,7 +177,12 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
             cmd.set("#RitualIcon.Background", VampirismUiPaths.theme().wipIcon());
             cmd.set("#DescriptionText.Text", "This anchor has no loaded rituals.");
             cmd.set("#OverviewLine.Text", "");
+            cmd.set("#OverviewCueText.Text", "");
             cmd.set("#ReadinessText.Text", "Reload the ritual data or aim at a valid anchor.");
+            cmd.set("#RequirementsText.Text", "");
+            cmd.set("#BlockersText.Text", "");
+            cmd.set("#ObjectivesText.Text", "");
+            cmd.set("#RewardsText.Text", "");
             cmd.set("#PhaseValue.Text", "Dormant");
             cmd.set("#PhaseSummary.Text", "No loaded ritual is bound to this anchor.");
             cmd.set("#AttuneBtnLabel.Text", "Attune Ritual");
@@ -191,7 +202,12 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
         cmd.set("#RitualIcon.Background", model.iconPath());
         cmd.set("#DescriptionText.Text", model.descriptionText());
         cmd.set("#OverviewLine.Text", model.overviewLine());
+        cmd.set("#OverviewCueText.Text", selectionHintText());
         cmd.set("#ReadinessText.Text", model.readinessText());
+        cmd.set("#RequirementsText.Text", model.requirementsText());
+        cmd.set("#BlockersText.Text", model.blockingText());
+        cmd.set("#ObjectivesText.Text", model.objectivesText());
+        cmd.set("#RewardsText.Text", model.rewardsText());
         cmd.set("#PhaseValue.Text", model.phaseLabel());
         cmd.set("#PhaseBadge.Background", model.phaseColor());
         cmd.set("#PhaseSummary.Text", model.phaseSummary());
@@ -210,15 +226,22 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
             String selector = (left ? "#LeftTabGutter" : "#RightTabGutter") + "[" + indexOnSide + "]";
             VampiricRitualBookModel.RitualEntry entry = model.rituals().get(i);
             boolean selected = entry.ritualId().equals(model.selectedRitualId());
+            boolean active = entry.ritualId().equals(activeRitualId);
+            boolean attuned = entry.ritualId().equals(attunedRitualId);
             cmd.set(selector + " #TabIcon.Background", entry.iconPath());
             cmd.set(selector + " #TabTitle.Text", entry.definition().displayName());
-            cmd.set(selector + " #TabStatus.Text", entry.statusLabel());
-            cmd.set(selector + " #TabStatusBadge.Background", entry.statusColor());
-            cmd.set(selector + " #TabPlate.Background", selected ? "#6b4133" : "#50372c");
+            cmd.set(selector + " #TabStatus.Text", tabStatusLabel(entry, active, attuned));
+            cmd.set(selector + " #TabStatusBadge.Background", tabStatusColor(entry, active, attuned));
+            cmd.set(selector + " #TabPlate.Background", tabPlateColor(selected, active, attuned));
             cmd.set(selector + " #TabTitle.Style.TextColor", selected ? "#f6e7c6" : "#d2b59a");
             cmd.set(selector + " #TabStatus.Style.TextColor", selected ? "#fff3dc" : "#f6e7c6");
             cmd.set(selector + " #TabButton.TooltipText",
-                    entry.definition().displayName() + "\n" + entry.statusLabel() + "\n\n" + entry.definition().description());
+                    entry.definition().displayName()
+                            + "\n"
+                            + entry.statusLabel()
+                            + tabTooltipSuffix(active, attuned)
+                            + "\n\n"
+                            + entry.definition().description());
         }
     }
 
@@ -294,5 +317,72 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
     @Nonnull
     private static String humanizeAnchor(@Nonnull String anchorBlockId) {
         return "Furniture_Ancient_Coffin".equals(anchorBlockId) ? "Ancient Coffin" : anchorBlockId;
+    }
+
+    @Nonnull
+    private String selectionHintText() {
+        if (!model.requiresAttunement()) {
+            return "This anchor answers one rite.";
+        }
+        int total = model.rituals().size();
+        String prefix = total == 2 ? "Two rites answer this anchor." : total + " rites answer this anchor.";
+        if (Objects.equals(model.selectedRitualId(), activeRitualId)) {
+            return prefix + " This page is focused on the rite already active here.";
+        }
+        if (Objects.equals(model.selectedRitualId(), attunedRitualId)) {
+            return prefix + " This page is focused on your attuned rite for this session.";
+        }
+        return prefix + " Use the side tabs to compare and attune one.";
+    }
+
+    @Nonnull
+    private static String tabStatusLabel(@Nonnull VampiricRitualBookModel.RitualEntry entry,
+                                         boolean active,
+                                         boolean attuned) {
+        if (active) {
+            return "Active";
+        }
+        if (attuned) {
+            return "Attuned";
+        }
+        return entry.statusLabel();
+    }
+
+    @Nonnull
+    private static String tabStatusColor(@Nonnull VampiricRitualBookModel.RitualEntry entry,
+                                         boolean active,
+                                         boolean attuned) {
+        if (active) {
+            return "#7a1f2b";
+        }
+        if (attuned) {
+            return "#8f6a2a";
+        }
+        return entry.statusColor();
+    }
+
+    @Nonnull
+    private static String tabPlateColor(boolean selected, boolean active, boolean attuned) {
+        if (selected) {
+            return "#6b4133";
+        }
+        if (active) {
+            return "#5a2a31";
+        }
+        if (attuned) {
+            return "#5f4835";
+        }
+        return "#50372c";
+    }
+
+    @Nonnull
+    private static String tabTooltipSuffix(boolean active, boolean attuned) {
+        if (active) {
+            return "\nCurrently active on this anchor.";
+        }
+        if (attuned) {
+            return "\nAttuned for this session.";
+        }
+        return "";
     }
 }

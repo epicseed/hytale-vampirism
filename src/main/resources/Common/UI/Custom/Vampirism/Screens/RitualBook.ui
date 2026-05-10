@@ -77,7 +77,7 @@ Group #RitualBookRoot {
     }
 
     Group #OverviewCard {
-      Anchor: (Left: 0, Top: 96, Right: 0, Height: 136);
+      Anchor: (Left: 0, Top: 96, Right: 0, Height: 152);
       Background: #e8d7bc;
 
       Group #IconFrame {
@@ -104,10 +104,16 @@ Group #RitualBookRoot {
         Text: "";
         Style: (FontSize: 11, TextColor: #715745, RenderBold: true, Wrap: true);
       }
+
+      Label #OverviewCueText {
+        Anchor: (Left: 14, Top: 114, Right: 16, Height: 24);
+        Text: "";
+        Style: (FontSize: 10, TextColor: #715745, Wrap: true);
+      }
     }
 
     Group #ReadinessCard {
-      Anchor: (Left: 0, Top: 246, Right: 0, Height: 122);
+      Anchor: (Left: 0, Top: 262, Right: 0, Height: 110);
       Background: #efdfc7;
       Label {
         Anchor: (Left: 14, Top: 10, Width: 160, Height: 18);
@@ -118,6 +124,74 @@ Group #RitualBookRoot {
         Anchor: (Left: 14, Top: 32, Right: 14, Bottom: 12);
         Text: "";
         Style: (FontSize: 11, TextColor: #4e3b2f, Wrap: true);
+      }
+    }
+
+    Group #RequirementsCard {
+      Anchor: (Left: 0, Top: 386, Right: 0, Height: 176);
+      Background: #efdfc7;
+      Label {
+        Anchor: (Left: 14, Top: 10, Width: 230, Height: 18);
+        Text: "Requirements & blockers";
+        Style: (FontSize: 13, RenderBold: true, TextColor: #3f2b20);
+      }
+      Label {
+        Anchor: (Left: 14, Top: 36, Width: 150, Height: 16);
+        Text: "Requirements";
+        Style: (FontSize: 10, RenderBold: true, TextColor: #6f5545);
+      }
+      Label #RequirementsText {
+        Anchor: (Left: 14, Top: 54, Right: 14, Height: 48);
+        Text: "";
+        Style: (FontSize: 10, TextColor: #4e3b2f, Wrap: true);
+      }
+      Group {
+        Anchor: (Left: 14, Top: 108, Right: 14, Height: 1);
+        Background: #baa185;
+      }
+      Label {
+        Anchor: (Left: 14, Top: 116, Width: 150, Height: 16);
+        Text: "Blockers";
+        Style: (FontSize: 10, RenderBold: true, TextColor: #6f5545);
+      }
+      Label #BlockersText {
+        Anchor: (Left: 14, Top: 134, Right: 14, Height: 30);
+        Text: "";
+        Style: (FontSize: 10, TextColor: #4e3b2f, Wrap: true);
+      }
+    }
+
+    Group #ObjectivesCard {
+      Anchor: (Left: 0, Top: 576, Right: 0, Height: 176);
+      Background: #ead7bb;
+      Label {
+        Anchor: (Left: 14, Top: 10, Width: 230, Height: 18);
+        Text: "Objectives & rewards";
+        Style: (FontSize: 13, RenderBold: true, TextColor: #3f2b20);
+      }
+      Label {
+        Anchor: (Left: 14, Top: 36, Width: 150, Height: 16);
+        Text: "Objectives";
+        Style: (FontSize: 10, RenderBold: true, TextColor: #6f5545);
+      }
+      Label #ObjectivesText {
+        Anchor: (Left: 14, Top: 54, Right: 14, Height: 56);
+        Text: "";
+        Style: (FontSize: 10, TextColor: #523d2f, Wrap: true);
+      }
+      Group {
+        Anchor: (Left: 14, Top: 116, Right: 14, Height: 1);
+        Background: #baa185;
+      }
+      Label {
+        Anchor: (Left: 14, Top: 124, Width: 150, Height: 16);
+        Text: "Rewards";
+        Style: (FontSize: 10, RenderBold: true, TextColor: #6f5545);
+      }
+      Label #RewardsText {
+        Anchor: (Left: 14, Top: 142, Right: 14, Height: 22);
+        Text: "";
+        Style: (FontSize: 10, TextColor: #523d2f, Wrap: true);
       }
     }
   }

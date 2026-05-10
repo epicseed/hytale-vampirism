@@ -44,6 +44,7 @@ class VampiricRitualBookModelTest {
         assertEquals("Ancient Coffin anchors in this session", model.attunementScope());
         assertTrue(model.readinessText().contains("Attune this ritual for Ancient Coffin anchors in this session"));
         assertTrue(model.footerHint().contains("Attune one ritual for Ancient Coffin anchors in this session"));
+        assertTrue(model.overviewLine().contains("2 rites"));
     }
 
     @Test
@@ -107,6 +108,29 @@ class VampiricRitualBookModelTest {
 
         assertTrue(model.objectivesText().contains("Bind Familiar 1/3"));
         assertTrue(model.objectivesText().contains("Offer Void Heart to any glyph or the center."));
+    }
+
+    @Test
+    void explicitSelectionWinsOverAvailabilitySorting() {
+        String anchorBlockId = "Furniture_Ancient_Coffin";
+        VampiricRitualBookModel model = VampiricRitualBookModel.create(
+                anchorBlockId,
+                List.of(
+                        new VampiricRitualRuntimeService.ResolvedAnchorRitual("awakening", "Awakening", anchorBlockId),
+                        new VampiricRitualRuntimeService.ResolvedAnchorRitual("veil", "Veil", anchorBlockId)),
+                Map.of(
+                        "awakening", definition("awakening", "Awakening"),
+                        "veil", definition("veil", "Veil")),
+                Map.of(
+                        "awakening", template("awakening", "Awakening", anchorBlockId),
+                        "veil", template("veil", "Veil", anchorBlockId)),
+                Map.of(
+                        "awakening", evaluation("awakening", RitualProgressState.STATUS_AVAILABLE),
+                        "veil", evaluation("veil", RitualProgressState.STATUS_ACTIVE)),
+                "veil");
+
+        assertEquals("veil", model.selectedRitualId());
+        assertEquals("Veil", model.bookTitle());
     }
 
     private static VampiricRitualDefinition definition(String id, String name) {

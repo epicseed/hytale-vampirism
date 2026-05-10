@@ -40,8 +40,10 @@ class RitualHudPresentationTest {
 
         assertTrue(state.expandedVisible());
         assertEquals("Trace Blood Sigil", state.guidance());
+        assertEquals("Trace 3/5", state.progress());
         assertTrue(state.context().contains("Primary traces Blood Sigil"));
         assertTrue(state.context().contains("release to stop"));
+        assertTrue(state.context().contains("3/5"));
     }
 
     @Test
@@ -58,6 +60,14 @@ class RitualHudPresentationTest {
 
         assertTrue(state.expandedVisible());
         assertTrue(state.context().contains("Primary traces sigils. Secondary clears the circle."));
+    }
+
+    @Test
+    void successCopyMatchesLingeringAfterimageBehavior() {
+        RitualHudPresentation.DisplayState state = RitualHudPresentation.present(successSnapshot(), RitualHudDisplayMode.CONTEXTUAL);
+
+        assertEquals("Ritual settled", state.guidance());
+        assertEquals("The ritual settled. Its afterimage lingers briefly, then fades on its own.", state.context());
     }
 
     private static VampiricRitualRuntimeSnapshot preparingSnapshot() {
@@ -115,5 +125,26 @@ class RitualHudPresentationTest {
                 tracing,
                 List.of(),
                 List.of());
+    }
+
+    private static VampiricRitualRuntimeSnapshot successSnapshot() {
+        return new VampiricRitualRuntimeSnapshot(
+                "awakening",
+                "Awakening Ritual",
+                "Vampirism:ritual_anchor",
+                new Vector3i(0, 64, 0),
+                new Vector3d(0.5, 64.5, 0.5),
+                VampiricRitualRuntimePhase.SUCCESS,
+                false,
+                4,
+                4,
+                0,
+                100,
+                10,
+                0,
+                0,
+                0,
+                0,
+                List.of(pointState(false, 0, 0)));
     }
 }

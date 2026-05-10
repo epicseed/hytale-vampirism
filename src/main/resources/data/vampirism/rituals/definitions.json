@@ -132,9 +132,7 @@
       "minBlood": 50,
       "minCompletedNightHunts": 3,
       "objectives": [],
-      "presentation": {
-        "requiredItemId": "Debug_Armor_D_Chest_Of_Damage_Reduction"
-      },
+      "presentation": null,
       "requiredAgeTierId": "fledgling",
       "requiredContextTags": [
         "night"

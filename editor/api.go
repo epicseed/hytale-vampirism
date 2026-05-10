@@ -25,12 +25,14 @@ const ritualGlyphDefinitionsDefaultJSON = `{"glyphs":[]}`
 var writeFileAtomically = atomicWriteFile
 
 const (
-	defaultRitualCancelPolicyTimeoutSeconds        = 0.0
-	defaultRitualCancelPolicyMaxDistanceFromAnchor = 0.0
-	defaultRitualCancelPolicyDistanceGraceSeconds  = 0.0
-	defaultRitualCancelPolicyCancelIfAnchorInvalid = false
+	defaultRitualBaseLayerOffsetY                  = 0.035
+	defaultRitualCoreLayerOffsetY                  = 0.09
+	defaultRitualCancelPolicyTimeoutSeconds        = 180.0
+	defaultRitualCancelPolicyMaxDistanceFromAnchor = 8.0
+	defaultRitualCancelPolicyDistanceGraceSeconds  = 1.0
+	defaultRitualCancelPolicyCancelIfAnchorInvalid = true
 	defaultRitualCancelPolicyCancelOnUnequipTool   = false
-	defaultRitualCancelPolicyCancelOnOwnerDeath    = false
+	defaultRitualCancelPolicyCancelOnOwnerDeath    = true
 )
 
 type skillDataWritePlan struct {
@@ -151,12 +153,6 @@ func readSkillDataDocument() ([]byte, error) {
 	ritualGlyphs, err := readRitualGlyphDefinitionsValue()
 	if err != nil {
 		return nil, err
-	}
-	if definitionObject, ok := ritualDefinitions.(map[string]any); ok && ritualDefinitionsDocumentEmpty(definitionObject) {
-		ritualDefinitions = deriveRitualDefinitions(ritualTemplates)
-	}
-	if glyphsObject, ok := ritualGlyphs.(map[string]any); ok && glyphDocumentEmpty(glyphsObject) {
-		ritualGlyphs = deriveRitualGlyphDefinitions(ritualTemplates)
 	}
 	doc["ritualDefinitions"] = ritualDefinitions
 	doc["ritualGlyphs"] = ritualGlyphs
@@ -466,11 +462,6 @@ func normalizeRitualDefinitions(raw json.RawMessage, fallbackTemplates any) ([]b
 	if err != nil {
 		return nil, err
 	}
-	if ritualDefinitionsDocumentEmpty(obj) && fallbackTemplates != nil {
-		if derived, ok := deriveRitualDefinitions(fallbackTemplates).(map[string]any); ok {
-			obj = derived
-		}
-	}
 	if err := validateRitualDefinitionsDocument(obj, fallbackTemplates); err != nil {
 		return nil, err
 	}
@@ -485,11 +476,6 @@ func normalizeRitualGlyphDefinitions(raw json.RawMessage, fallbackTemplates any)
 	obj, err := parseRitualDocument(raw, ritualGlyphDefinitionsDefaultJSON, "ritualGlyphs", "glyphs")
 	if err != nil {
 		return nil, nil, err
-	}
-	if glyphDocumentEmpty(obj) && fallbackTemplates != nil {
-		if derived, ok := deriveRitualGlyphDefinitions(fallbackTemplates).(map[string]any); ok {
-			obj = derived
-		}
 	}
 	glyphIDs, err := validateRitualGlyphDocument(obj)
 	if err != nil {
@@ -582,10 +568,8 @@ func validateRitualDefinitionsDocument(doc map[string]any, templates any) error 
 		if _, exists := seenDefinitionIDs[definitionID]; exists {
 			return fmt.Errorf("ritualDefinitions.definitions[%d].id duplicates %q", definitionIndex, definitionID)
 		}
-		if len(templateIDs) > 0 {
-			if _, exists := templateIDs[definitionID]; !exists {
-				return fmt.Errorf("ritualDefinitions.definitions[%d].id references missing ritual template %q", definitionIndex, definitionID)
-			}
+		if _, exists := templateIDs[definitionID]; !exists {
+			return fmt.Errorf("ritualDefinitions.definitions[%d].id references missing ritual template %q", definitionIndex, definitionID)
 		}
 		seenDefinitionIDs[definitionID] = struct{}{}
 		definition["id"] = definitionID
@@ -611,26 +595,18 @@ func validateRitualDefinitionsDocument(doc map[string]any, templates any) error 
 			return err
 		}
 	}
-	if len(templateIDs) == 0 {
-		return nil
-	}
+	doc["definitions"] = definitionEntries
 	orderedTemplateIDs := collectOrderedTemplateIDs(templates)
+	missingDefinitionIDs := make([]string, 0, len(orderedTemplateIDs))
 	for _, templateID := range orderedTemplateIDs {
 		if _, exists := seenDefinitionIDs[templateID]; exists {
 			continue
 		}
-		definitionEntries = append(definitionEntries, map[string]any{
-			"id":                     templateID,
-			"displayName":            strings.TrimSpace(firstString(templateNames[templateID], templateID)),
-			"minBlood":               0,
-			"minCompletedNightHunts": 0,
-			"requiredSkills":         []any{},
-			"requiredContextTags":    []any{},
-			"blockedContextTags":     []any{},
-			"objectives":             []any{},
-		})
+		missingDefinitionIDs = append(missingDefinitionIDs, strings.TrimSpace(firstString(templateNames[templateID], templateID)))
 	}
-	doc["definitions"] = definitionEntries
+	if len(missingDefinitionIDs) > 0 {
+		return fmt.Errorf("ritualDefinitions.definitions is missing entries for ritual templates: %s", strings.Join(missingDefinitionIDs, ", "))
+	}
 	return nil
 }
 
@@ -749,6 +725,12 @@ func validateRitualTemplatesDocument(doc map[string]any, glyphIDs map[string]str
 		}
 		ritualIDs[ritualID] = struct{}{}
 		template["ritualId"] = ritualID
+		if err := normalizeRitualAnchorLayer(template, "baseLayer", "centerGlyph", defaultRitualBaseLayerOffsetY, templateIndex); err != nil {
+			return err
+		}
+		if err := normalizeRitualAnchorLayer(template, "coreLayer", "apexGlyph", defaultRitualCoreLayerOffsetY, templateIndex); err != nil {
+			return err
+		}
 		if err := validateRitualCancelPolicy(template, templateIndex); err != nil {
 			return err
 		}
@@ -821,6 +803,33 @@ func validateRitualTemplatesDocument(doc map[string]any, glyphIDs map[string]str
 	return nil
 }
 
+func normalizeRitualAnchorLayer(template map[string]any, field string, legacyField string, defaultOffsetY float64, templateIndex int) error {
+	pathPrefix := fmt.Sprintf("ritualTemplates.templates[%d].%s", templateIndex, field)
+	layerEntry, ok := template[field]
+	if !ok || layerEntry == nil {
+		layerEntry = template[legacyField]
+	}
+
+	var layer map[string]any
+	switch typed := layerEntry.(type) {
+	case nil:
+		layer = map[string]any{}
+	case map[string]any:
+		layer = typed
+	default:
+		return fmt.Errorf("%s must be an object", pathPrefix)
+	}
+
+	if err := normalizeNumberField(layer, "offsetY", defaultOffsetY, pathPrefix); err != nil {
+		return err
+	}
+	template[field] = map[string]any{
+		"offsetY": layer["offsetY"],
+	}
+	delete(template, legacyField)
+	return nil
+}
+
 func validateRitualCancelPolicy(template map[string]any, templateIndex int) error {
 	pathPrefix := fmt.Sprintf("ritualTemplates.templates[%d].cancelPolicy", templateIndex)
 	cancelPolicyEntry, ok := template["cancelPolicy"]
@@ -853,6 +862,21 @@ func validateRitualCancelPolicy(template map[string]any, templateIndex int) erro
 		return err
 	}
 	template["cancelPolicy"] = cancelPolicy
+	return nil
+}
+
+func normalizeNumberField(obj map[string]any, field string, defaultValue float64, pathPrefix string) error {
+	value, ok := obj[field]
+	if !ok || value == nil {
+		obj[field] = defaultValue
+		return nil
+	}
+
+	numberValue, ok := asNumber(value)
+	if !ok {
+		return fmt.Errorf("%s.%s must be a number", pathPrefix, field)
+	}
+	obj[field] = numberValue
 	return nil
 }
 

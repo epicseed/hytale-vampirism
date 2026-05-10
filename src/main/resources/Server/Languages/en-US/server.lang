@@ -1,3 +1,5 @@
 # === interactionHints ===
 
 interactionHints.place = Press [{key}] to place
+interactionHints.placeOffering = Press [{key}] to place offering
+interactionHints.reclaimOffering = Press [{key}] to reclaim offering

@@ -74,9 +74,10 @@ public final class VampiricRitualGlyphPresentationService {
     private static final float TRACING_SYMBOL_SPIN_DEGREES_PER_SECOND = 104f;
     private static final float CORE_SPIN_DEGREES_PER_SECOND = 52f;
     private static final float OFFERING_SPIN_DEGREES_PER_SECOND = 24f;
-    static final double OFFERING_SURFACE_HALF_WIDTH = 1.8d;
-    static final double OFFERING_SURFACE_HEIGHT = 1.6d;
-    static final String OFFERING_SURFACE_INTERACTION_HINT = "server.interactionHints.place";
+    static final double OFFERING_SURFACE_HALF_WIDTH = 1.15d;
+    static final double OFFERING_SURFACE_HEIGHT = 1.05d;
+    static final String OFFERING_SURFACE_PLACE_INTERACTION_HINT = "server.interactionHints.placeOffering";
+    static final String OFFERING_SURFACE_RECLAIM_INTERACTION_HINT = "server.interactionHints.reclaimOffering";
 
     private VampiricRitualGlyphPresentationService() {
     }
@@ -176,16 +177,19 @@ public final class VampiricRitualGlyphPresentationService {
         for (GlyphVisualSpec visual : layout.visuals()) {
             SpawnedGlyph existing = handle.spawnedGlyphs.get(visual.key());
             String surfaceId = offeringSurfaceIdForVisualKey(visual.key(), snapshot.ritualId(), offeringSurfacesEnabled);
+            String interactionHint = surfaceId != null
+                    ? offeringSurfaceInteractionHint(offeredSurfaceItems.containsKey(surfaceId))
+                    : null;
             if (existing == null) {
                 Ref<EntityStore> ref = surfaceId != null
-                        ? spawnOfferingSurface(ownerUuid, snapshot.ritualId(), visual, surfaceId, store, commandBuffer)
+                        ? spawnOfferingSurface(ownerUuid, snapshot.ritualId(), visual, surfaceId, interactionHint, store, commandBuffer)
                         : spawnGlyph(ownerUuid, visual, store, commandBuffer);
                 if (ref != null) {
                     handle.spawnedGlyphs.put(visual.key(), new SpawnedGlyph(visual.projectileId(), ref, surfaceId));
                 }
                 continue;
             }
-            syncGlyph(existing.ref(), visual, store);
+            syncGlyph(existing.ref(), visual, interactionHint, store);
         }
     }
 
@@ -498,6 +502,7 @@ public final class VampiricRitualGlyphPresentationService {
                                                          @Nonnull String ritualId,
                                                          @Nonnull GlyphVisualSpec visual,
                                                          @Nonnull String surfaceId,
+                                                         @Nonnull String interactionHint,
                                                          @Nonnull Store<EntityStore> store,
                                                          @Nonnull CommandBuffer<EntityStore> commandBuffer) {
         ModelAsset modelAsset = (ModelAsset) ModelAsset.getAssetMap().getAsset(visual.projectileId());
@@ -523,7 +528,7 @@ public final class VampiricRitualGlyphPresentationService {
 
         Interactions interactions = new Interactions();
         interactions.setInteractionId(InteractionType.Use, "Vampirism_RitualOfferSurface");
-        interactions.setInteractionHint(OFFERING_SURFACE_INTERACTION_HINT);
+        interactions.setInteractionHint(interactionHint);
         holder.addComponent(Interactions.getComponentType(), interactions);
         holder.addComponent(
                 RitualOfferingSurfaceComponent.getComponentType(),
@@ -548,6 +553,7 @@ public final class VampiricRitualGlyphPresentationService {
 
     private static void syncGlyph(@Nonnull Ref<EntityStore> ref,
                                   @Nonnull GlyphVisualSpec visual,
+                                  @Nullable String interactionHint,
                                   @Nonnull Store<EntityStore> store) {
         TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
         if (transform != null) {
@@ -558,10 +564,19 @@ public final class VampiricRitualGlyphPresentationService {
         if (headRotation != null) {
             headRotation.setRotation(new Vector3f(visual.rotation()));
         }
+        Interactions interactions = store.getComponent(ref, Interactions.getComponentType());
+        if (interactions != null && interactionHint != null) {
+            interactions.setInteractionHint(interactionHint);
+        }
         ProjectileComponent projectile = store.getComponent(ref, ProjectileComponent.getComponentType());
         if (projectile != null) {
             zeroVelocity(projectile);
         }
+    }
+
+    @Nonnull
+    static String offeringSurfaceInteractionHint(boolean occupied) {
+        return occupied ? OFFERING_SURFACE_RECLAIM_INTERACTION_HINT : OFFERING_SURFACE_PLACE_INTERACTION_HINT;
     }
 
     private static void zeroPhysics(@Nonnull ProjectileComponent projectile, @Nonnull Holder<EntityStore> holder) {

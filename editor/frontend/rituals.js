@@ -5,6 +5,14 @@
   const GLYPH_TEXTURE_PADDING_PX = 6;
   const GLYPH_PREVIEW_FIXED_EXTENT = 0.4;
   const GLYPH_PREVIEW_LIMIT = 0.4;
+  const DEFAULT_CANCEL_POLICY = {
+    timeoutSeconds: 180,
+    maxDistanceFromAnchor: 8,
+    distanceGraceSeconds: 1,
+    cancelIfAnchorInvalid: true,
+    cancelOnUnequipTool: false,
+    cancelOnOwnerDeath: true,
+  };
   const FALLBACK_GLYPH_ASSETS = [
     { id: 'fang_wake', displayName: 'Fang Wake', url: '/api/ritual-glyphs/fang_wake' },
     { id: 'moon_scar', displayName: 'Moon Scar', url: '/api/ritual-glyphs/moon_scar' },
@@ -219,6 +227,54 @@
       .ritual-warning {
         margin-top:8px;
         color:#f0c040;
+        font-size:11px;
+      }
+      .ritual-audit-summary {
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+        margin-bottom:12px;
+      }
+      .ritual-audit-pill {
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        border-radius:999px;
+        padding:6px 10px;
+        font-size:11px;
+        font-weight:700;
+      }
+      .ritual-audit-pill.error {
+        background:rgba(233,69,96,0.16);
+        color:#ff98a8;
+      }
+      .ritual-audit-pill.warning {
+        background:rgba(240,192,64,0.14);
+        color:#f0c040;
+      }
+      .ritual-audit-pill.ok {
+        background:rgba(46,204,113,0.16);
+        color:#7ee2a8;
+      }
+      .ritual-audit-list {
+        display:grid;
+        gap:8px;
+      }
+      .ritual-audit-item {
+        border-radius:8px;
+        padding:10px 12px;
+        border:1px solid #20375a;
+        background:#102038;
+      }
+      .ritual-audit-item.error {
+        border-color:rgba(233,69,96,0.45);
+      }
+      .ritual-audit-item.warning {
+        border-color:rgba(240,192,64,0.35);
+      }
+      .ritual-audit-item-meta {
+        margin-top:4px;
+        color:var(--text-dim);
         font-size:11px;
       }
       .ritual-step-header,
@@ -455,19 +511,7 @@
     const normalizedDefinitions = definitions()
       .map((definition) => normalizeDefinition(definition, templateMap))
       .filter(Boolean);
-    const definitionMap = new Map();
-    normalizedDefinitions.forEach((definition) => definitionMap.set(definition.id, definition));
-    normalizedTemplates.forEach((template) => {
-      const definition = definitionMap.get(template.ritualId) || makeDefinition(template);
-      definition.id = template.ritualId;
-      if (!definition.displayName) {
-        definition.displayName = template.displayName;
-      }
-      definitionMap.set(template.ritualId, normalizeDefinition(definition, templateMap));
-    });
-    getDefinitionDoc().definitions = normalizedTemplates
-      .map((template) => definitionMap.get(template.ritualId))
-      .filter(Boolean);
+    getDefinitionDoc().definitions = normalizedDefinitions;
     getGlyphDoc().glyphs = sortGlyphs([...glyphMap.values()]);
   }
 
@@ -485,7 +529,7 @@
   }
 
   function normalizeTemplate(template, index, glyphMap) {
-    const fallbackGlyph = ensureUsableGlyph(glyphMap);
+    const fallbackGlyphId = [...glyphMap.keys()][0] || '';
     const normalizedTemplate = {
       ritualId: String(template?.ritualId || `ritual_${index + 1}`).trim() || `ritual_${index + 1}`,
       displayName: String(template?.displayName || `New Ritual ${index + 1}`).trim() || `New Ritual ${index + 1}`,
@@ -503,9 +547,9 @@
     };
 
     const pointEntries = Array.isArray(template?.points) ? template.points : [];
-    normalizedTemplate.points = pointEntries.map((point, pointIndex) => normalizePoint(point, pointIndex, glyphMap, fallbackGlyph?.glyphId)).filter(Boolean);
+    normalizedTemplate.points = pointEntries.map((point, pointIndex) => normalizePoint(point, pointIndex, glyphMap, fallbackGlyphId)).filter(Boolean);
     normalizedTemplate.baseLayer = normalizeAnchorLayer(template?.baseLayer || template?.centerGlyph, 0.035);
-    normalizedTemplate.coreLayer = normalizeAnchorLayer(template?.coreLayer, 0.09);
+    normalizedTemplate.coreLayer = normalizeAnchorLayer(template?.coreLayer || template?.apexGlyph, 0.09);
     normalizedTemplate.activationLinks = normalizeActivationLinks(template?.activationLinks, normalizedTemplate.points);
     return normalizedTemplate;
   }
@@ -595,11 +639,8 @@
     if (inlineGlyph) {
       glyphMap.set(inlineGlyph.glyphId, inlineGlyph);
     }
-    const resolvedFallbackId = fallbackGlyphId || inlineGlyph?.glyphId || ensureUsableGlyph(glyphMap)?.glyphId || 'generic';
-    const glyphId = normalizeId(point?.glyphId || inlineGlyph?.glyphId || point?.symbolId || resolvedFallbackId) || resolvedFallbackId;
-    if (!glyphMap.has(glyphId)) {
-      glyphMap.set(glyphId, makeGlyphFromAsset(glyphId));
-    }
+    const resolvedFallbackId = fallbackGlyphId || inlineGlyph?.glyphId || [...glyphMap.keys()][0] || '';
+    const glyphId = normalizeId(point?.glyphId || inlineGlyph?.glyphId || point?.symbolId || resolvedFallbackId) || '';
     return {
       id: String(point?.id || `point_${index + 1}`).trim() || `point_${index + 1}`,
       offsetX: parseNumericInput(point?.offsetX, 0),
@@ -617,12 +658,12 @@
 
   function normalizeCancelPolicy(cancelPolicy) {
     return {
-      timeoutSeconds: Math.max(0, parseNumericInput(cancelPolicy?.timeoutSeconds, 0)),
-      maxDistanceFromAnchor: Math.max(0, parseNumericInput(cancelPolicy?.maxDistanceFromAnchor, 0)),
-      distanceGraceSeconds: Math.max(0, parseNumericInput(cancelPolicy?.distanceGraceSeconds, 0)),
-      cancelIfAnchorInvalid: parseBooleanInput(cancelPolicy?.cancelIfAnchorInvalid, false),
-      cancelOnUnequipTool: parseBooleanInput(cancelPolicy?.cancelOnUnequipTool, false),
-      cancelOnOwnerDeath: parseBooleanInput(cancelPolicy?.cancelOnOwnerDeath, false),
+      timeoutSeconds: Math.max(0, parseNumericInput(cancelPolicy?.timeoutSeconds, DEFAULT_CANCEL_POLICY.timeoutSeconds)),
+      maxDistanceFromAnchor: Math.max(0, parseNumericInput(cancelPolicy?.maxDistanceFromAnchor, DEFAULT_CANCEL_POLICY.maxDistanceFromAnchor)),
+      distanceGraceSeconds: Math.max(0, parseNumericInput(cancelPolicy?.distanceGraceSeconds, DEFAULT_CANCEL_POLICY.distanceGraceSeconds)),
+      cancelIfAnchorInvalid: parseBooleanInput(cancelPolicy?.cancelIfAnchorInvalid, DEFAULT_CANCEL_POLICY.cancelIfAnchorInvalid),
+      cancelOnUnequipTool: parseBooleanInput(cancelPolicy?.cancelOnUnequipTool, DEFAULT_CANCEL_POLICY.cancelOnUnequipTool),
+      cancelOnOwnerDeath: parseBooleanInput(cancelPolicy?.cancelOnOwnerDeath, DEFAULT_CANCEL_POLICY.cancelOnOwnerDeath),
     };
   }
 
@@ -652,13 +693,7 @@
   function normalizeActivationLink(link, index, pointIds, points) {
     let fromPointId = String(link?.fromPointId || '').trim();
     let toPointId = String(link?.toPointId || '').trim();
-    if ((!fromPointId || !pointIds.has(fromPointId)) && points?.length) {
-      fromPointId = points[0].id;
-    }
-    if ((!toPointId || !pointIds.has(toPointId)) && points?.length > 1) {
-      toPointId = points[Math.min(index + 1, points.length - 1)].id;
-    }
-    if (!fromPointId || !toPointId) return null;
+    if (!fromPointId && !toPointId && !points?.length) return null;
     return {
       fromPointId,
       toPointId,
@@ -740,13 +775,222 @@
   function selectedDefinition() {
     const template = selectedTemplate();
     if (!template) return null;
-    let definition = definitionForTemplate(template);
-    if (definition) {
-      return definition;
+    return definitionForTemplate(template);
+  }
+
+  function buildAuditReport() {
+    const issues = [];
+    const pushIssue = (severity, message, meta = {}) => {
+      issues.push({ severity, message, ...meta });
+    };
+
+    const allGlyphs = glyphs();
+    const allTemplates = templates();
+    const allDefinitions = definitions();
+
+    const glyphIdCounts = new Map();
+    allGlyphs.forEach((glyph) => {
+      const glyphId = normalizeId(glyph?.glyphId);
+      if (glyphId) {
+        glyphIdCounts.set(glyphId, (glyphIdCounts.get(glyphId) || 0) + 1);
+      }
+    });
+
+    allGlyphs.forEach((glyph, index) => {
+      const glyphId = normalizeId(glyph?.glyphId);
+      const label = glyphId || `glyph #${index + 1}`;
+      if (!glyphId) {
+        pushIssue('error', `Glyph entry ${index + 1} is missing glyphId.`, { glyphId: '', scope: 'glyph' });
+        return;
+      }
+      if ((glyphIdCounts.get(glyphId) || 0) > 1) {
+        pushIssue('error', `Glyph "${glyphId}" is duplicated in the glyph library.`, { glyphId, scope: 'glyph' });
+      }
+      if (!normalizeId(glyph?.symbolId)) {
+        pushIssue('warning', `Glyph "${label}" is missing a glyph asset reference.`, { glyphId, scope: 'glyph' });
+      }
+      if (!Array.isArray(glyph?.traceSteps) || !glyph.traceSteps.length) {
+        pushIssue('warning', `Glyph "${label}" has no authored trace steps yet.`, { glyphId, scope: 'glyph' });
+      }
+    });
+
+    const templateCounts = new Map();
+    const templateMap = new Map();
+    allTemplates.forEach((template) => {
+      const ritualId = String(template?.ritualId || '').trim();
+      if (ritualId) {
+        templateCounts.set(ritualId, (templateCounts.get(ritualId) || 0) + 1);
+        if (!templateMap.has(ritualId)) templateMap.set(ritualId, template);
+      }
+    });
+
+    const definitionCounts = new Map();
+    const definitionMap = new Map();
+    allDefinitions.forEach((definition) => {
+      const definitionId = String(definition?.id || '').trim();
+      if (definitionId) {
+        definitionCounts.set(definitionId, (definitionCounts.get(definitionId) || 0) + 1);
+        if (!definitionMap.has(definitionId)) definitionMap.set(definitionId, definition);
+      }
+    });
+
+    allTemplates.forEach((template, templateIndex) => {
+      const ritualId = String(template?.ritualId || '').trim();
+      const displayName = String(template?.displayName || ritualId || `ritual ${templateIndex + 1}`).trim();
+      if (!ritualId) {
+        pushIssue('error', `Template "${displayName}" is missing ritualId.`, { ritualId: '', scope: 'template' });
+        return;
+      }
+      if ((templateCounts.get(ritualId) || 0) > 1) {
+        pushIssue('error', `Template "${displayName}" duplicates ritualId "${ritualId}".`, { ritualId, scope: 'template' });
+      }
+      const matchingDefinition = definitionMap.get(ritualId);
+      if (!matchingDefinition) {
+        pushIssue('error', `Template "${displayName}" is missing a matching ritual definition.`, { ritualId, scope: 'template' });
+      }
+
+      const pointCounts = new Map();
+      (template.points || []).forEach((point) => {
+        const pointId = String(point?.id || '').trim();
+        if (pointId) pointCounts.set(pointId, (pointCounts.get(pointId) || 0) + 1);
+      });
+
+      (template.points || []).forEach((point, pointIndex) => {
+        const pointId = String(point?.id || '').trim() || `point ${pointIndex + 1}`;
+        const glyphId = normalizeId(point?.glyphId);
+        if (!glyphId) {
+          pushIssue('error', `Point "${pointId}" in ritual "${displayName}" is missing a glyph reference.`, { ritualId, pointId, scope: 'point' });
+        } else if (!glyphById(glyphId)) {
+          pushIssue('error', `Point "${pointId}" in ritual "${displayName}" references missing glyph "${glyphId}".`, { ritualId, pointId, glyphId, scope: 'point' });
+        }
+        if ((pointCounts.get(pointId) || 0) > 1) {
+          pushIssue('error', `Ritual "${displayName}" has duplicate point id "${pointId}".`, { ritualId, pointId, scope: 'point' });
+        }
+      });
+
+      const pointIds = new Set((template.points || []).map((point) => String(point?.id || '').trim()).filter(Boolean));
+      (template.activationLinks || []).forEach((link, linkIndex) => {
+        const fromPointId = String(link?.fromPointId || '').trim();
+        const toPointId = String(link?.toPointId || '').trim();
+        if (!fromPointId || !toPointId) {
+          pushIssue('error', `Link ${linkIndex + 1} in ritual "${displayName}" is missing fromPointId or toPointId.`, { ritualId, linkIndex, scope: 'link' });
+          return;
+        }
+        if (!pointIds.has(fromPointId)) {
+          pushIssue('error', `Link ${linkIndex + 1} in ritual "${displayName}" references missing fromPointId "${fromPointId}".`, { ritualId, pointId: fromPointId, linkIndex, scope: 'link' });
+        }
+        if (!pointIds.has(toPointId)) {
+          pushIssue('error', `Link ${linkIndex + 1} in ritual "${displayName}" references missing toPointId "${toPointId}".`, { ritualId, pointId: toPointId, linkIndex, scope: 'link' });
+        }
+        const start = Number(link?.startTimeSeconds) || 0;
+        const duration = Number(link?.activeDurationSeconds) || 0;
+        const channelDuration = Number(template?.channelDurationSeconds) || 0;
+        if (channelDuration > 0 && start > channelDuration) {
+          pushIssue('warning', `Link ${linkIndex + 1} in ritual "${displayName}" starts after the ritual channel ends.`, { ritualId, linkIndex, scope: 'link' });
+        }
+        if (channelDuration > 0 && duration > 0 && start + duration > channelDuration) {
+          pushIssue('warning', `Link ${linkIndex + 1} in ritual "${displayName}" extends past channelDurationSeconds.`, { ritualId, linkIndex, scope: 'link' });
+        }
+      });
+
+      const requiredItemId = String(matchingDefinition?.presentation?.requiredItemId || '').trim();
+      const anchorItemId = String(template?.requiredAnchorBlockId || '').trim();
+      if (matchingDefinition && requiredItemId && anchorItemId && requiredItemId !== anchorItemId) {
+        pushIssue('warning', `Ritual "${displayName}" uses anchor block "${anchorItemId}" but definition presentation requires "${requiredItemId}".`, { ritualId, definitionId: ritualId, scope: 'definition' });
+      }
+    });
+
+    allDefinitions.forEach((definition, definitionIndex) => {
+      const definitionId = String(definition?.id || '').trim();
+      const displayName = String(definition?.displayName || definitionId || `definition ${definitionIndex + 1}`).trim();
+      if (!definitionId) {
+        pushIssue('error', `Definition "${displayName}" is missing id.`, { definitionId: '', scope: 'definition' });
+        return;
+      }
+      if ((definitionCounts.get(definitionId) || 0) > 1) {
+        pushIssue('error', `Definition "${displayName}" duplicates id "${definitionId}".`, { definitionId, ritualId: definitionId, scope: 'definition' });
+      }
+      if (!templateMap.has(definitionId)) {
+        pushIssue('error', `Definition "${displayName}" has no matching ritual template.`, { definitionId, ritualId: definitionId, scope: 'definition' });
+      }
+
+      const objectiveCounts = new Map();
+      (definition.objectives || []).forEach((objective) => {
+        const objectiveId = String(objective?.id || '').trim();
+        if (objectiveId) objectiveCounts.set(objectiveId, (objectiveCounts.get(objectiveId) || 0) + 1);
+      });
+      (definition.objectives || []).forEach((objective, objectiveIndex) => {
+        const objectiveId = String(objective?.id || '').trim() || `objective ${objectiveIndex + 1}`;
+        if ((objectiveCounts.get(objectiveId) || 0) > 1) {
+          pushIssue('error', `Definition "${displayName}" duplicates objective id "${objectiveId}".`, { definitionId, ritualId: definitionId, objectiveId, scope: 'objective' });
+        }
+      });
+    });
+
+    return {
+      issues,
+      errors: issues.filter((issue) => issue.severity === 'error'),
+      warnings: issues.filter((issue) => issue.severity === 'warning'),
+    };
+  }
+
+  function issueMatchesSelection(issue, template, definition, point, glyph) {
+    if (!issue) return false;
+    const ritualId = String(template?.ritualId || definition?.id || '').trim();
+    const pointId = String(point?.id || '').trim();
+    const glyphId = normalizeId(glyph?.glyphId || point?.glyphId);
+    return Boolean(
+      (ritualId && (issue.ritualId === ritualId || issue.definitionId === ritualId))
+      || (pointId && issue.pointId === pointId)
+      || (glyphId && issue.glyphId === glyphId),
+    );
+  }
+
+  function issueMetaLabel(issue) {
+    const labels = [];
+    if (issue.ritualId) labels.push(`ritual ${issue.ritualId}`);
+    if (issue.pointId) labels.push(`point ${issue.pointId}`);
+    if (issue.glyphId) labels.push(`glyph ${issue.glyphId}`);
+    if (issue.definitionId && issue.definitionId !== issue.ritualId) labels.push(`definition ${issue.definitionId}`);
+    if (Number.isInteger(issue.linkIndex)) labels.push(`link ${issue.linkIndex + 1}`);
+    return labels.join(' · ');
+  }
+
+  function renderAuditSection(template, definition, point, glyph) {
+    const report = buildAuditReport();
+    const focusedIssues = report.issues.filter((issue) => issueMatchesSelection(issue, template, definition, point, glyph));
+    const visibleIssues = (focusedIssues.length ? focusedIssues : report.issues).slice(0, 12);
+    if (!report.issues.length) {
+      return `
+        <section class="ritual-card">
+          <h3>Validation & Audit</h3>
+          <div class="ritual-audit-summary">
+            <span class="ritual-audit-pill ok">✓ No ritual validation issues detected.</span>
+          </div>
+        </section>
+      `;
     }
-    definition = makeDefinition(template);
-    definitions().push(definition);
-    return definition;
+    return `
+      <section class="ritual-card">
+        <h3>Validation & Audit</h3>
+        <div class="ritual-audit-summary">
+          <span class="ritual-audit-pill error">${report.errors.length} error(s)</span>
+          <span class="ritual-audit-pill warning">${report.warnings.length} warning(s)</span>
+        </div>
+        <div class="ritual-help">
+          Save is blocked while ritual validation errors exist. Warnings highlight contradictory or suspicious authoring data that should be reviewed before export.
+        </div>
+        <div class="ritual-audit-list" style="margin-top:12px">
+          ${visibleIssues.map((issue) => `
+            <div class="ritual-audit-item ${issue.severity}">
+              <div>${escapeHtml(issue.message)}</div>
+              ${issueMetaLabel(issue) ? `<div class="ritual-audit-item-meta">${escapeHtml(issueMetaLabel(issue))}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+        ${report.issues.length > visibleIssues.length ? `<div class="ritual-help">Showing ${visibleIssues.length} of ${report.issues.length} audit entries. Select a ritual, point, or glyph to focus the list.</div>` : ''}
+      </section>
+    `;
   }
 
   function selectedPoint() {
@@ -1151,6 +1395,7 @@
 
     const glyph = point ? glyphById(point.glyphId) : null;
     return `
+      ${renderAuditSection(template, definition, point, glyph)}
       <section class="ritual-card">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px">
           <h3 style="margin:0">Template Settings</h3>
@@ -1200,6 +1445,7 @@
     const asset = glyphAssetById(glyph.symbolId);
     const referencingPoints = glyphUsage(glyph.glyphId);
     return `
+      ${renderAuditSection(null, null, null, glyph)}
       <section class="ritual-card">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px">
           <h3 style="margin:0">Glyph Definition</h3>
@@ -1338,8 +1584,17 @@
   }
 
   function renderDefinitionEditor(template, definition) {
-    if (!template || !definition) {
+    if (!template) {
       return `<div class="ritual-empty">Select a ritual template to author runtime requirements.</div>`;
+    }
+    if (!definition) {
+      return `
+        <div class="ritual-empty">
+          <div>No ritual definition matches <code>${escapeHtml(template.ritualId)}</code> yet.</div>
+          <div>Create the matching definition here so the runtime requirements, rewards, and presentation data live beside the template instead of being inferred later.</div>
+          <button class="btn-primary" type="button" data-action="add-definition">Create definition</button>
+        </div>
+      `;
     }
     const objectives = Array.isArray(definition.objectives) ? definition.objectives : [];
     const presentation = definition.presentation || {};
@@ -1444,8 +1699,8 @@
   }
 
   function renderLayoutLinkEditorRow(link, index, template, previewSeconds) {
-    const pointOptions = (template.points || []).map((point) => `<option value="${escapeAttr(point.id)}"${point.id === link.fromPointId ? ' selected' : ''}>${escapeHtml(point.id)}</option>`).join('');
-    const toOptions = (template.points || []).map((point) => `<option value="${escapeAttr(point.id)}"${point.id === link.toPointId ? ' selected' : ''}>${escapeHtml(point.id)}</option>`).join('');
+    const pointOptions = renderPointRefOptions(template.points || [], link.fromPointId);
+    const toOptions = renderPointRefOptions(template.points || [], link.toPointId);
     const stateAtPreview = linkStateAt(link, previewSeconds);
     return `
       <div class="ritual-point-summary-row ritual-layout-link-time-row ${index === state.linkIndex ? 'active' : ''}">
@@ -1478,25 +1733,48 @@
   }
 
   function renderPointGlyphSelect(currentGlyphId) {
-    const options = glyphs()
-      .map((glyph) => `<option value="${escapeAttr(glyph.glyphId)}"${glyph.glyphId === normalizeId(currentGlyphId) ? ' selected' : ''}>${escapeHtml(glyph.displayName)} (${escapeHtml(glyph.glyphId)})</option>`)
+    const normalizedCurrent = normalizeId(currentGlyphId);
+    const glyphOptions = glyphs();
+    const options = glyphOptions
+      .map((glyph) => `<option value="${escapeAttr(glyph.glyphId)}"${glyph.glyphId === normalizedCurrent ? ' selected' : ''}>${escapeHtml(glyph.displayName)} (${escapeHtml(glyph.glyphId)})</option>`)
       .join('');
+    const missingOption = normalizedCurrent && !glyphOptions.some((glyph) => glyph.glyphId === normalizedCurrent)
+      ? `<option value="${escapeAttr(normalizedCurrent)}" selected>⚠ Missing glyph (${escapeHtml(normalizedCurrent)})</option>`
+      : '';
     return `
       <div class="form-group">
         <label>Reusable Glyph</label>
-        <select data-point-field="glyphId"${glyphs().length ? '' : ' disabled'}>${options}</select>
+        <select data-point-field="glyphId"${glyphs().length || missingOption ? '' : ' disabled'}>${missingOption}${options}</select>
       </div>
     `;
   }
 
+  function renderPointRefOptions(points, currentValue) {
+    const options = (points || [])
+      .map((point) => `<option value="${escapeAttr(point.id)}"${point.id === currentValue ? ' selected' : ''}>${escapeHtml(point.id)}</option>`)
+      .join('');
+    if (currentValue && !(points || []).some((point) => point.id === currentValue)) {
+      return `<option value="${escapeAttr(currentValue)}" selected>⚠ Missing point (${escapeHtml(currentValue)})</option>${options}`;
+    }
+    if (!currentValue) {
+      return `<option value="" selected>⚠ Select point</option>${options}`;
+    }
+    return options;
+  }
+
   function renderGlyphAssetSelect(currentSymbolId) {
-    const options = availableAssetGlyphs()
+    const normalizedCurrent = normalizeId(currentSymbolId);
+    const assetGlyphs = availableAssetGlyphs();
+    const options = assetGlyphs
       .map((glyph) => `<option value="${escapeAttr(glyph.id)}"${glyph.id === normalizeId(currentSymbolId) ? ' selected' : ''}>${escapeHtml(glyph.displayName)} (${escapeHtml(glyph.id)})</option>`)
       .join('');
+    const missingOption = normalizedCurrent && !assetGlyphs.some((glyph) => glyph.id === normalizedCurrent)
+      ? `<option value="${escapeAttr(normalizedCurrent)}" selected>⚠ Missing asset (${escapeHtml(normalizedCurrent)})</option>`
+      : '';
     return `
       <div class="form-group">
         <label>Glyph Asset</label>
-        <select data-glyph-field="symbolId">${options}</select>
+        <select data-glyph-field="symbolId">${missingOption}${options}</select>
       </div>
     `;
   }
@@ -1536,6 +1814,16 @@
         state.templateIndex = templates().length - 1;
         state.pointIndex = 0;
         state.linkIndex = 0;
+        App.markDirty();
+        render();
+      });
+    });
+
+    pane.querySelectorAll('[data-action="add-definition"]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const template = selectedTemplate();
+        if (!template || definitionForTemplate(template)) return;
+        definitions().push(makeDefinition(template));
         App.markDirty();
         render();
       });
@@ -2529,6 +2817,14 @@
   function escapeSvgText(value) {
     return escapeHtml(value).slice(0, 18);
   }
+
+  App.registerSaveValidator('rituals', () => {
+    const report = buildAuditReport();
+    return {
+      errors: report.errors.map((issue) => issue.message),
+      warnings: report.warnings.map((issue) => issue.message),
+    };
+  });
 
   App.onTabActivated('rituals', () => {
     ensureAssetGlyphsLoaded();

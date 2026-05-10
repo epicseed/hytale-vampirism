@@ -40,6 +40,11 @@ public final class RitualOfferingSurfaceInteraction extends SimpleInstantInterac
     };
 
     public static final String INTERACTION_ID = "Vampirism_RitualOfferSurface";
+    static final String EMPTY_SURFACE_MESSAGE = "Offering: Hold a ritual offering to place it here.";
+    static final String WRONG_OWNER_MESSAGE = "Offering: Only the ritual owner can use this offering surface.";
+    static final String RUNTIME_UNAVAILABLE_MESSAGE = "Offering: Ritual offering surfaces are unavailable right now.";
+    static final String PLACE_COMMIT_FAILED_MESSAGE = "Offering: The ritual could not take the held item, so nothing was placed.";
+    static final String RECLAIM_COMMIT_FAILED_MESSAGE = "Offering: The offering could not be returned right now.";
     public static final BuilderCodec<RitualOfferingSurfaceInteraction> CODEC =
             BuilderCodec.builder(
                             RitualOfferingSurfaceInteraction.class,
@@ -91,12 +96,22 @@ public final class RitualOfferingSurfaceInteraction extends SimpleInstantInterac
             return;
         }
         if (!playerRef.getUuid().equals(surface.ownerUuid())) {
+            VampirismPlayerFeedback.notifyOfferingInteraction(
+                    playerRef.getUuid(),
+                    WRONG_OWNER_MESSAGE,
+                    NotificationStyle.Warning,
+                    "yellow");
             context.getState().state = InteractionState.Failed;
             return;
         }
 
         VampiricRitualRuntimeService runtimeService = RUNTIME.get();
         if (runtimeService == null) {
+            VampirismPlayerFeedback.notifyOfferingInteraction(
+                    playerRef.getUuid(),
+                    RUNTIME_UNAVAILABLE_MESSAGE,
+                    NotificationStyle.Warning,
+                    "yellow");
             context.getState().state = InteractionState.Failed;
             return;
         }
@@ -105,7 +120,11 @@ public final class RitualOfferingSurfaceInteraction extends SimpleInstantInterac
             VampiricRitualRuntimeService.TakeSurfaceResult result =
                     runtimeService.takeSurfaceItem(playerRef.getUuid(), surface.surfaceId());
             if (!result.removed()) {
-                VampirismPlayerFeedback.notifyRuntime(playerRef.getUuid(), result.message(), NotificationStyle.Warning, "yellow");
+                VampirismPlayerFeedback.notifyOfferingInteraction(
+                        playerRef.getUuid(),
+                        result.message(),
+                        NotificationStyle.Warning,
+                        "yellow");
                 context.getState().state = InteractionState.Failed;
                 return;
             }
@@ -116,10 +135,10 @@ public final class RitualOfferingSurfaceInteraction extends SimpleInstantInterac
                 droppedNearby = VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(result.offeringRecovery(), store) > 0;
             }
             if (!returnedToInventory && !droppedNearby) {
-                runtimeService.offerSurfaceItem(playerRef.getUuid(), surface.surfaceId(), result.itemId());
-                VampirismPlayerFeedback.notifyRuntime(
+                runtimeService.restoreSurfaceItem(playerRef.getUuid(), surface.surfaceId(), result.itemId());
+                VampirismPlayerFeedback.notifyOfferingInteraction(
                         playerRef.getUuid(),
-                        "The offering cannot be returned right now.",
+                        RECLAIM_COMMIT_FAILED_MESSAGE,
                         NotificationStyle.Warning,
                         "yellow");
                 context.getState().state = InteractionState.Failed;
@@ -129,7 +148,7 @@ public final class RitualOfferingSurfaceInteraction extends SimpleInstantInterac
             String message = droppedNearby
                     ? result.message() + " Your inventory is full, so it drops beside the ritual."
                     : result.message();
-            VampirismPlayerFeedback.notifyRuntime(
+            VampirismPlayerFeedback.notifyOfferingInteraction(
                     playerRef.getUuid(),
                     message,
                     NotificationStyle.Default,
@@ -139,6 +158,11 @@ public final class RitualOfferingSurfaceInteraction extends SimpleInstantInterac
 
         ItemStack heldItem = context.getHeldItem();
         if (heldItem == null || heldItem.isEmpty() || context.getHeldItemContainer() == null) {
+            VampirismPlayerFeedback.notifyOfferingInteraction(
+                    playerRef.getUuid(),
+                    EMPTY_SURFACE_MESSAGE,
+                    NotificationStyle.Warning,
+                    "yellow");
             context.getState().state = InteractionState.Failed;
             return;
         }
@@ -146,7 +170,11 @@ public final class RitualOfferingSurfaceInteraction extends SimpleInstantInterac
         VampiricRitualRuntimeService.OfferSurfaceResult result =
                 runtimeService.offerSurfaceItem(playerRef.getUuid(), surface.surfaceId(), heldItem.getItemId());
         if (!result.accepted()) {
-            VampirismPlayerFeedback.notifyRuntime(playerRef.getUuid(), result.message(), NotificationStyle.Warning, "yellow");
+            VampirismPlayerFeedback.notifyOfferingInteraction(
+                    playerRef.getUuid(),
+                    result.message(),
+                    NotificationStyle.Warning,
+                    "yellow");
             context.getState().state = InteractionState.Failed;
             return;
         }
@@ -154,11 +182,17 @@ public final class RitualOfferingSurfaceInteraction extends SimpleInstantInterac
         ItemStackSlotTransaction transaction =
                 context.getHeldItemContainer().removeItemStackFromSlot((short) context.getHeldItemSlot(), heldItem, 1);
         if (!transaction.succeeded()) {
+            runtimeService.rollbackSurfaceItemOffer(playerRef.getUuid(), surface.surfaceId());
+            VampirismPlayerFeedback.notifyOfferingInteraction(
+                    playerRef.getUuid(),
+                    PLACE_COMMIT_FAILED_MESSAGE,
+                    NotificationStyle.Warning,
+                    "yellow");
             context.getState().state = InteractionState.Failed;
             return;
         }
 
-        VampirismPlayerFeedback.notifyRuntime(
+        VampirismPlayerFeedback.notifyOfferingInteraction(
                 playerRef.getUuid(),
                 result.message(),
                 result.objectiveSatisfied() ? NotificationStyle.Success : NotificationStyle.Default,

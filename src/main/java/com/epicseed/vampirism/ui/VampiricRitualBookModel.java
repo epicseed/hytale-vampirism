@@ -146,7 +146,8 @@ final class VampiricRitualBookModel {
     public String overviewLine() {
         RitualEntry entry = selected();
         return humanizeAnchor(entry.template().requiredAnchorBlockId())
-                + " · " + entry.template().points().size() + " sigils";
+                + " · " + entry.template().points().size() + " sigils"
+                + (rituals.size() > 1 ? " · " + rituals.size() + " rites" : "");
     }
 
     @Nonnull

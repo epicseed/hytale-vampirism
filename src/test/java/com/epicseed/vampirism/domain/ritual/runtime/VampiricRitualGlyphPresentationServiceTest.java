@@ -162,9 +162,20 @@ class VampiricRitualGlyphPresentationServiceTest {
 
     @Test
     void exposesOfferingSurfaceInteractionUxDefaults() {
-        assertEquals("server.interactionHints.place", VampiricRitualGlyphPresentationService.OFFERING_SURFACE_INTERACTION_HINT);
-        assertTrue(VampiricRitualGlyphPresentationService.OFFERING_SURFACE_HALF_WIDTH >= 1.8d);
-        assertTrue(VampiricRitualGlyphPresentationService.OFFERING_SURFACE_HEIGHT >= 1.6d);
+        assertEquals(
+                "server.interactionHints.placeOffering",
+                VampiricRitualGlyphPresentationService.OFFERING_SURFACE_PLACE_INTERACTION_HINT);
+        assertEquals(
+                "server.interactionHints.reclaimOffering",
+                VampiricRitualGlyphPresentationService.OFFERING_SURFACE_RECLAIM_INTERACTION_HINT);
+        assertEquals(
+                VampiricRitualGlyphPresentationService.OFFERING_SURFACE_PLACE_INTERACTION_HINT,
+                VampiricRitualGlyphPresentationService.offeringSurfaceInteractionHint(false));
+        assertEquals(
+                VampiricRitualGlyphPresentationService.OFFERING_SURFACE_RECLAIM_INTERACTION_HINT,
+                VampiricRitualGlyphPresentationService.offeringSurfaceInteractionHint(true));
+        assertTrue(VampiricRitualGlyphPresentationService.OFFERING_SURFACE_HALF_WIDTH <= 1.2d);
+        assertTrue(VampiricRitualGlyphPresentationService.OFFERING_SURFACE_HEIGHT <= 1.1d);
     }
 
     private static VampiricRitualGlyphPresentationService.GlyphVisualSpec visual(

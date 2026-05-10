@@ -23,6 +23,7 @@ import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeSnapshot;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOfferingRecoveryService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOutcomeTracker;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTraceProgress;
 import com.epicseed.vampirism.ui.VampiricRitualEditorPage;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -458,7 +459,7 @@ public final class RitualAdminCommands extends AbstractCommand {
         String tracingSummary = tracingPoint == null
                 ? ""
                 : " | tracing=" + tracingPoint.symbolName()
-                + " " + tracingPoint.traceProgress() + "/" + tracingPoint.totalTraceSteps();
+                + " " + VampiricRitualTraceProgress.displayProgressText(tracingPoint);
         ctx.sendMessage(Message.raw("=== Ritual Runtime: " + target.getUsername() + " ===").color("dark_red"));
         ctx.sendMessage(Message.raw(snapshot.displayName()
                 + " | phase=" + snapshot.phase()

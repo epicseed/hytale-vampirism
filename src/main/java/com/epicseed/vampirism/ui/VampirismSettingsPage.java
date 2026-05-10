@@ -123,7 +123,7 @@ public final class VampirismSettingsPage extends InteractiveCustomUIPage<Vampiri
             case "toggleRitualRuntimeNotifications" -> {
                 boolean enabled = !settingsUiAdapter.isRitualRuntimeNotificationsEnabled(uuid);
                 settingsUiAdapter.setRitualRuntimeNotificationsEnabled(uuid, enabled);
-                notifySaved("Ritual runtime alerts", enabled ? "Enabled" : "Muted");
+                notifySaved("Ritual runtime warnings", enabled ? "Enabled" : "Muted");
             }
             case "setRitualMode" -> {
                 RitualHudDisplayMode displayMode = parseDisplayMode(data.value);

@@ -100,7 +100,7 @@ public final class VampiricRitualOutcomeTracker {
             case ACTIVE -> "Stay beside the coffin until the ritual settles.";
             case UNSTABLE -> "Recover stability quickly or the circle will collapse.";
             case COLLAPSE -> "The circle collapsed; retrace the sigils before trying again.";
-            case COMPLETE -> "The ritual has settled. Reveal it again or step away to reset.";
+            case COMPLETE -> "The ritual has settled. Its afterimage will fade on its own shortly.";
         };
     }
 

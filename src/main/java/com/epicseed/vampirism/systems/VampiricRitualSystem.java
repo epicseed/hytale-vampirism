@@ -265,6 +265,19 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
         clearPlayer(uuid, null);
     }
 
+    public void suspendPlayer(@Nonnull UUID uuid) {
+        runtimeService.suspendPlayer(uuid);
+        terminalVisuals.remove(uuid);
+        primaryHeldPlayers.remove(uuid);
+        fullGuidePlayers.remove(uuid);
+        feedbackService.clearPlayer(uuid);
+        VampiricRitualOutcomeTracker.clearPlayer(uuid);
+        RitualGlyphPresentationHandle handle = glyphHandles.remove(uuid);
+        if (handle != null) {
+            VampiricRitualGlyphPresentationService.clearImmediately(handle);
+        }
+    }
+
     public boolean debugGuidesEnabled(@Nonnull UUID uuid) {
         return fullGuidePlayers.contains(uuid);
     }

@@ -350,6 +350,102 @@ func TestDataHandlerRejectsTemplatesWithMissingGlyphReferences(t *testing.T) {
 	}
 }
 
+func TestDataHandlerRejectsTemplatesMissingDefinitionEntries(t *testing.T) {
+	restore := withTestEditorRoots(t)
+	defer restore()
+
+	payload := map[string]any{
+		"abilities": []any{},
+		"ritualTemplates": map[string]any{
+			"templates": []any{
+				map[string]any{
+					"ritualId":        "awakening",
+					"displayName":     "Crimson Awakening",
+					"activationLinks": []any{},
+					"points": []any{
+						map[string]any{
+							"id":      "north",
+							"glyphId": "fang_wake",
+							"offsetX": 0.0,
+							"offsetY": 0.15,
+							"offsetZ": -3.0,
+						},
+					},
+				},
+			},
+		},
+		"ritualGlyphs": map[string]any{
+			"glyphs": []any{
+				map[string]any{
+					"glyphId":                  "fang_wake",
+					"symbolId":                 "fang_wake",
+					"displayName":              "Fang Wake",
+					"traceTolerance":           0.48,
+					"mistakeStabilityPenalty":  6.0,
+					"mistakeCorruptionPenalty": 5.0,
+					"traceSteps":               []any{},
+				},
+			},
+		},
+		"ritualDefinitions": map[string]any{
+			"definitions": []any{},
+		},
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/data", bytes.NewReader(body))
+	res := httptest.NewRecorder()
+	dataHandler(res, req)
+	if res.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, body = %s", res.Code, res.Body.String())
+	}
+	if !bytes.Contains(res.Body.Bytes(), []byte("missing entries for ritual templates")) {
+		t.Fatalf("unexpected error body: %s", res.Body.String())
+	}
+}
+
+func TestGetDataDoesNotDeriveMissingRitualDefinitionsOrGlyphs(t *testing.T) {
+	restore := withTestEditorRoots(t)
+	defer restore()
+
+	if err := os.MkdirAll(filepath.Dir(ritualTemplatesPath), 0755); err != nil {
+		t.Fatalf("mkdir ritual dir: %v", err)
+	}
+	templateDoc := []byte(`{"templates":[{"ritualId":"awakening","displayName":"Crimson Awakening","activationLinks":[],"points":[{"id":"north","glyphId":"fang_wake","offsetX":0,"offsetY":0.15,"offsetZ":-3}]}]}`)
+	if err := os.WriteFile(ritualTemplatesPath, templateDoc, 0644); err != nil {
+		t.Fatalf("write ritual templates: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/data", nil)
+	res := httptest.NewRecorder()
+	dataHandler(res, req)
+	if res.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", res.Code, res.Body.String())
+	}
+
+	var doc map[string]any
+	if err := json.Unmarshal(res.Body.Bytes(), &doc); err != nil {
+		t.Fatalf("unmarshal get payload: %v", err)
+	}
+	ritualDefinitions, ok := doc["ritualDefinitions"].(map[string]any)
+	if !ok {
+		t.Fatalf("ritualDefinitions missing or invalid: %#v", doc["ritualDefinitions"])
+	}
+	if definitions, ok := ritualDefinitions["definitions"].([]any); !ok || len(definitions) != 0 {
+		t.Fatalf("expected empty ritual definitions payload, got %#v", ritualDefinitions["definitions"])
+	}
+	ritualGlyphs, ok := doc["ritualGlyphs"].(map[string]any)
+	if !ok {
+		t.Fatalf("ritualGlyphs missing or invalid: %#v", doc["ritualGlyphs"])
+	}
+	if glyphs, ok := ritualGlyphs["glyphs"].([]any); !ok || len(glyphs) != 0 {
+		t.Fatalf("expected empty ritual glyph payload, got %#v", ritualGlyphs["glyphs"])
+	}
+}
+
 func TestDataHandlerAppliesDefaultCancelPolicyWhenMissing(t *testing.T) {
 	restore := withTestEditorRoots(t)
 	defer restore()
@@ -416,16 +512,92 @@ func TestDataHandlerAppliesDefaultCancelPolicyWhenMissing(t *testing.T) {
 	}
 	for _, snippet := range []string{
 		`"cancelPolicy"`,
-		`"timeoutSeconds": 0`,
-		`"maxDistanceFromAnchor": 0`,
-		`"distanceGraceSeconds": 0`,
-		`"cancelIfAnchorInvalid": false`,
+		`"timeoutSeconds": 180`,
+		`"maxDistanceFromAnchor": 8`,
+		`"distanceGraceSeconds": 1`,
+		`"cancelIfAnchorInvalid": true`,
 		`"cancelOnUnequipTool": false`,
-		`"cancelOnOwnerDeath": false`,
+		`"cancelOnOwnerDeath": true`,
 	} {
 		if !bytes.Contains(ritualFile, []byte(snippet)) {
 			t.Fatalf("expected default cancel policy snippet %q in %s", snippet, string(ritualFile))
 		}
+	}
+}
+
+func TestDataHandlerMigratesLegacyAnchorGlyphsToBaseAndCoreLayers(t *testing.T) {
+	restore := withTestEditorRoots(t)
+	defer restore()
+
+	payload := map[string]any{
+		"abilities": []any{},
+		"ritualTemplates": map[string]any{
+			"templates": []any{
+				map[string]any{
+					"ritualId":    "awakening",
+					"displayName": "Crimson Awakening",
+					"centerGlyph": map[string]any{
+						"offsetY": 0.04,
+					},
+					"apexGlyph": map[string]any{
+						"offsetY": 0.11,
+					},
+					"activationLinks": []any{},
+					"points": []any{
+						map[string]any{
+							"id":      "north",
+							"glyphId": "fang_wake",
+						},
+					},
+				},
+			},
+		},
+		"ritualGlyphs": map[string]any{
+			"glyphs": []any{
+				map[string]any{
+					"glyphId":                  "fang_wake",
+					"symbolId":                 "fang_wake",
+					"displayName":              "Fang Wake",
+					"traceTolerance":           0.48,
+					"mistakeStabilityPenalty":  6.0,
+					"mistakeCorruptionPenalty": 5.0,
+					"traceSteps":               []any{},
+				},
+			},
+		},
+		"ritualDefinitions": map[string]any{
+			"definitions": []any{
+				map[string]any{
+					"id":          "awakening",
+					"displayName": "Crimson Awakening",
+				},
+			},
+		},
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/data", bytes.NewReader(body))
+	res := httptest.NewRecorder()
+	dataHandler(res, req)
+	if res.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", res.Code, res.Body.String())
+	}
+
+	ritualFile, err := os.ReadFile(ritualTemplatesPath)
+	if err != nil {
+		t.Fatalf("read ritual templates: %v", err)
+	}
+	if !bytes.Contains(ritualFile, []byte(`"baseLayer"`)) || !bytes.Contains(ritualFile, []byte(`"offsetY": 0.04`)) {
+		t.Fatalf("legacy center glyph was not migrated to baseLayer: %s", string(ritualFile))
+	}
+	if !bytes.Contains(ritualFile, []byte(`"coreLayer"`)) || !bytes.Contains(ritualFile, []byte(`"offsetY": 0.11`)) {
+		t.Fatalf("legacy apex glyph was not migrated to coreLayer: %s", string(ritualFile))
+	}
+	if bytes.Contains(ritualFile, []byte(`"centerGlyph"`)) || bytes.Contains(ritualFile, []byte(`"apexGlyph"`)) {
+		t.Fatalf("legacy anchor glyph fields should not be persisted: %s", string(ritualFile))
 	}
 }
 
@@ -468,6 +640,14 @@ func TestDataHandlerRejectsInvalidCancelPolicy(t *testing.T) {
 					"mistakeStabilityPenalty":  6.0,
 					"mistakeCorruptionPenalty": 5.0,
 					"traceSteps":               []any{},
+				},
+			},
+		},
+		"ritualDefinitions": map[string]any{
+			"definitions": []any{
+				map[string]any{
+					"id":          "awakening",
+					"displayName": "Crimson Awakening",
 				},
 			},
 		},
@@ -519,6 +699,14 @@ func TestDataHandlerRestoresPreviousDataWhenRitualWriteFails(t *testing.T) {
 					"mistakeStabilityPenalty":  6.0,
 					"mistakeCorruptionPenalty": 5.0,
 					"traceSteps":               []any{},
+				},
+			},
+		},
+		"ritualDefinitions": map[string]any{
+			"definitions": []any{
+				map[string]any{
+					"id":          "awakening",
+					"displayName": "Crimson Awakening",
 				},
 			},
 		},
@@ -582,6 +770,14 @@ func TestDataHandlerRestoresPreviousDataWhenRitualWriteFails(t *testing.T) {
 					"mistakeStabilityPenalty":  6.0,
 					"mistakeCorruptionPenalty": 5.0,
 					"traceSteps":               []any{},
+				},
+			},
+		},
+		"ritualDefinitions": map[string]any{
+			"definitions": []any{
+				map[string]any{
+					"id":          "mark_prey",
+					"displayName": "Mark Prey",
 				},
 			},
 		},

@@ -27,6 +27,7 @@ import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualRevealService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualSelectionResolver;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualSelectionService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTargeting;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTraceProgress;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTargeting.TargetedBlock;
 import com.epicseed.vampirism.systems.VampiricRitualSystem;
 import com.epicseed.vampirism.ui.VampiricRitualBookPage;
@@ -418,8 +419,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
             return "";
         }
         return " | tracing " + tracingPoint.symbolName()
-                + " " + Math.min(tracingPoint.totalTraceSteps(), tracingPoint.traceProgress() + 1)
-                + "/" + tracingPoint.totalTraceSteps();
+                + " " + VampiricRitualTraceProgress.displayProgressText(tracingPoint);
     }
 
     @Nonnull
@@ -447,7 +447,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
             case BINDING -> "Next: stay beside the coffin while the committed circle takes hold, or press Secondary to abort the ritual.";
             case CHANNELING -> "Next: stay beside the coffin and watch the ritual settle.";
             case UNSTABLE -> "Next: stay beside the coffin and recover stability before the circle collapses, or press Secondary to abort the ritual.";
-            case SUCCESS -> "The ritual has settled. Reveal it again if you need another pulse, or step away to reset.";
+            case SUCCESS -> "The ritual has settled. The afterimage will fade on its own shortly.";
             case COLLAPSE -> "The circle collapsed. Retrace the sigils before trying again.";
         };
     }
@@ -490,6 +490,12 @@ public final class VampirismRitualCommand extends AbstractCommand {
             return;
         }
 
+        String activeRitualId = runtimeService.snapshot(playerRef.getUuid())
+                .filter(snapshot -> anchor.blockId().equals(snapshot.anchorBlockId())
+                        && anchor.blockPosition().equals(snapshot.anchorBlockPosition()))
+                .map(VampiricRitualRuntimeSnapshot::ritualId)
+                .orElse(null);
+
         player.getPageManager().openCustomPage(
                 ref,
                 store,
@@ -498,9 +504,10 @@ public final class VampirismRitualCommand extends AbstractCommand {
                         ritualService,
                         runtimeService,
                         templateRegistry,
-                selectionService,
-                anchor,
-                contextResolver.buildContext(playerRef, store, extraTagsForAnchor(ref, store, world, anchor))));
+                        selectionService,
+                        anchor,
+                        contextResolver.buildContext(playerRef, store, extraTagsForAnchor(ref, store, world, anchor)),
+                        activeRitualId));
     }
 
     private void drawSigil(@Nonnull CommandContext ctx,

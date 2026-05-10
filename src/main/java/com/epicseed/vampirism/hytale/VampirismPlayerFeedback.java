@@ -138,6 +138,19 @@ public final class VampirismPlayerFeedback {
         notify(uuid, splitLabeledMessage(message, color, bodyColor(style, color)), style);
     }
 
+    public static void notifyOfferingInteraction(@Nullable UUID uuid,
+                                                 @Nonnull String message,
+                                                 @Nullable NotificationStyle style,
+                                                 @Nonnull String color) {
+        if (uuid == null
+                || message == null
+                || message.isBlank()
+                || !notificationEnabled(uuid, VampirismUxPreferenceKeys.GAMEPLAY_NOTIFICATIONS)) {
+            return;
+        }
+        notify(uuid, splitLabeledMessage(message, color, bodyColor(style, color)), style);
+    }
+
     private static void showTitle(@Nullable UUID uuid,
                                   @Nonnull Message primary,
                                   @Nonnull Message secondary,

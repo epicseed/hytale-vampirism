@@ -24,6 +24,7 @@ const App = (() => {
   };
 
   let dirty = false;
+  const saveValidators = {};
 
   function isPlainObject(value) {
     return value != null && typeof value === 'object' && !Array.isArray(value);
@@ -311,6 +312,29 @@ const App = (() => {
     el.className = cls;
   }
 
+  function registerSaveValidator(key, cb) {
+    if (!key || typeof cb !== 'function') return;
+    saveValidators[key] = cb;
+  }
+
+  function collectSaveValidation() {
+    const errors = [];
+    const warnings = [];
+    Object.values(saveValidators).forEach((validator) => {
+      try {
+        const result = validator?.() || {};
+        if (Array.isArray(result.errors)) errors.push(...result.errors.map((entry) => String(entry || '').trim()).filter(Boolean));
+        if (Array.isArray(result.warnings)) warnings.push(...result.warnings.map((entry) => String(entry || '').trim()).filter(Boolean));
+      } catch (error) {
+        errors.push(error instanceof Error ? error.message : String(error || 'Save validation failed.'));
+      }
+    });
+    return {
+      errors: [...new Set(errors)],
+      warnings: [...new Set(warnings)],
+    };
+  }
+
   function markDirty() {
     dirty = true;
     setStatus('● Unsaved changes', 'dirty');
@@ -334,17 +358,39 @@ const App = (() => {
 
   async function save() {
     try {
+      const validation = collectSaveValidation();
+      if (validation.errors.length) {
+        setStatus(`⚠ Save blocked: ${validation.errors[0]}`, 'warn');
+        return { ok: false, validation };
+      }
       const res = await fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(buildSavePayload(), null, 2),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const raw = await res.text();
+      let payload = null;
+      if (raw) {
+        try {
+          payload = JSON.parse(raw);
+        } catch (_) {
+          payload = null;
+        }
+      }
+      if (!res.ok) {
+        throw new Error(payload?.error || payload?.message || raw || `HTTP ${res.status}`);
+      }
       dirty = false;
-      setStatus('✓ Saved', 'saved');
+      if (validation.warnings.length) {
+        setStatus(`⚠ Saved with ${validation.warnings.length} warning(s)`, 'warn');
+      } else {
+        setStatus('✓ Saved', 'saved');
+      }
+      return { ok: true, validation, payload };
     } catch (e) {
       setStatus(`⚠ Save failed: ${e.message}`, 'dirty');
       console.error(e);
+      return { ok: false, error: e };
     }
   }
 
@@ -391,5 +437,5 @@ const App = (() => {
 
   window.addEventListener('DOMContentLoaded', load);
 
-  return { load, save, reload, markDirty, onTabActivated, notifyTab, openModal, closeModal };
+  return { load, save, reload, markDirty, onTabActivated, notifyTab, openModal, closeModal, registerSaveValidator };
 })();

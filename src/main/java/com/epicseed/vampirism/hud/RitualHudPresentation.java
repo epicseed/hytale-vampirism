@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualPointState;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeSnapshot;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTraceProgress;
 
 final class RitualHudPresentation {
 
@@ -26,7 +27,7 @@ final class RitualHudPresentation {
                 snapshot.displayName(),
                 formatPhase(snapshot.phase()),
                 guidance(snapshot, traceState),
-                progress(snapshot),
+                progress(snapshot, traceState),
                 context(snapshot, traceState),
                 stability(snapshot.stability()),
                 corruption(snapshot.corruption()),
@@ -66,7 +67,10 @@ final class RitualHudPresentation {
     }
 
     @Nonnull
-    private static String progress(@Nonnull VampiricRitualRuntimeSnapshot snapshot) {
+    private static String progress(@Nonnull VampiricRitualRuntimeSnapshot snapshot, @Nullable TraceState traceState) {
+        if (traceState != null) {
+            return "Trace " + traceState.progressText();
+        }
         if (snapshot.requiredChannelSeconds() > 0d
                 && (snapshot.phase() == VampiricRitualRuntimePhase.CHANNELING
                 || snapshot.phase() == VampiricRitualRuntimePhase.UNSTABLE)) {
@@ -87,8 +91,7 @@ final class RitualHudPresentation {
         if (traceState != null) {
             return "Primary traces " + traceState.symbolName()
                     + " · release to stop · "
-                    + traceState.traceProgress()
-                    + " / " + traceState.totalTraceSteps();
+                    + traceState.progressText();
         }
         if (snapshot.interferenceCount() > 0) {
             return snapshot.interferenceCount() == 1
@@ -102,7 +105,7 @@ final class RitualHudPresentation {
             case BINDING -> "The committed circle is taking hold. Stay near the coffin.";
             case CHANNELING -> "The ritual is resolving. Stay near the coffin until it settles.";
             case UNSTABLE -> "The circle is slipping. Recover stability before it collapses.";
-            case SUCCESS -> "The ritual settled. Reveal it again if you need one more pulse.";
+            case SUCCESS -> "The ritual settled. Its afterimage lingers briefly, then fades on its own.";
             case COLLAPSE -> "The circle collapsed. Retrace the sigils to try again.";
         };
     }
@@ -179,6 +182,9 @@ final class RitualHudPresentation {
         }
     }
 
-    private record TraceState(@Nonnull String symbolName, int traceProgress, int totalTraceSteps) {
+    private record TraceState(@Nonnull String symbolName, @Nonnull String progressText) {
+        private TraceState(@Nonnull String symbolName, int traceProgress, int totalTraceSteps) {
+            this(symbolName, VampiricRitualTraceProgress.displayProgressText(traceProgress, totalTraceSteps));
+        }
     }
 }

@@ -151,7 +151,7 @@ Group #GameplayNotificationsCard {
   }
   Label {
     Anchor: (Left: 18, Top: 34, Right: 170, Height: 16);
-    Text: "Mute or enable Vampirism progression and general gameplay notifications.";
+    Text: "Mute or enable progression, ritual offering, and other general Vampirism notifications.";
     Style: (FontSize: 11, TextColor: #9bb0c2);
   }
   Label #GameplayNotificationsValue {
@@ -170,12 +170,12 @@ Group #RitualRuntimeNotificationsCard {
   Background: #14202c;
   Label {
     Anchor: (Left: 18, Top: 12, Width: 320, Height: 18);
-    Text: "Ritual Runtime Alerts";
+    Text: "Ritual Runtime Warnings";
     Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
   }
   Label {
     Anchor: (Left: 18, Top: 34, Right: 170, Height: 16);
-    Text: "Mute or enable ritual tick alerts such as instability, tracing, and collapse warnings.";
+    Text: "Mute or enable ongoing ritual state warnings such as instability, tracing, and collapse.";
     Style: (FontSize: 11, TextColor: #9bb0c2);
   }
   Label #RitualRuntimeNotificationsValue {
