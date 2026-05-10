@@ -112,6 +112,12 @@
       ],
       "presentation": null,
       "requiredAgeTierId": "fledgling",
+      "requiredAffinities": [
+        {
+          "affinityId": "vermin",
+          "minAmount": 1
+        }
+      ],
       "requiredContextTags": [
         "night"
       ],

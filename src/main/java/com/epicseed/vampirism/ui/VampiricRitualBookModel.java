@@ -193,6 +193,9 @@ final class VampiricRitualBookModel {
         if (!entry.definition().requiredProofIds().isEmpty()) {
             lines.add("Proof: " + joinProofLabels(entry.definition().requiredProofIds()));
         }
+        if (!entry.definition().requiredAffinities().isEmpty()) {
+            lines.add("Affinity: " + joinAffinityLabels(entry.definition().requiredAffinities()));
+        }
         if (!entry.definition().requiredContextTags().isEmpty()) {
             lines.add("Omens: " + joinHumanized(entry.definition().requiredContextTags()));
         }
@@ -513,6 +516,11 @@ final class VampiricRitualBookModel {
         if (reason.startsWith("missing_proof:")) {
             return VampiricProgressionProofs.blockingLabel(reason.substring("missing_proof:".length())) + ".";
         }
+        VampiricRitualDefinition.AffinityRequirement affinityRequirement =
+                VampiricRitualDefinition.AffinityRequirement.fromBlockingReason(reason);
+        if (affinityRequirement != null) {
+            return affinityRequirement.blockingLabel();
+        }
         if (reason.startsWith("missing_tag:")) {
             return switch (reason.substring("missing_tag:".length())) {
                 case VampiricRitualRegistry.TAG_NIGHT -> "Only responds at night.";
@@ -537,6 +545,13 @@ final class VampiricRitualBookModel {
     @Nonnull
     private static String joinProofLabels(@Nonnull Set<String> values) {
         return values.stream().map(VampiricProgressionProofs::requirementLabel).toList().toString()
+                .replace("[", "")
+                .replace("]", "");
+    }
+
+    @Nonnull
+    private static String joinAffinityLabels(@Nonnull List<VampiricRitualDefinition.AffinityRequirement> values) {
+        return values.stream().map(VampiricRitualDefinition.AffinityRequirement::requirementLabel).toList().toString()
                 .replace("[", "")
                 .replace("]", "");
     }

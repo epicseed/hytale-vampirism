@@ -271,6 +271,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                 store.getAgeTierId(uuid),
                 progressionAccess.getUnlockedSkillIds(uuid),
                 store.getMilestoneProofIds(uuid),
+                store.getBloodAffinities(uuid),
                 inferredRitualTags(uuid, store));
         return ritualService.registry().definitions().values().stream()
                 .map(definition -> ritualService.evaluate(uuid, definition.id(), context))

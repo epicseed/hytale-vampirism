@@ -300,7 +300,9 @@ public final class VampirismRuntime {
                 VampirismUiPaths.theme(),
                 skillTreeUiAdapter,
                 relicUiAdapter,
-                settingsUiAdapter);
+                settingsUiAdapter,
+                ritualService,
+                ritualContextResolver);
         ProgressionPageFactory progressionPageFactory = vampirismProgressionPageFactory;
 
         PassiveRuntimeServices<SkillRuntimeContext, PassiveService> passiveRuntimeServices =

@@ -74,28 +74,32 @@ final class HuntCompendiumModel {
     private final List<NightHuntPreparedLoadout> availableLoadouts;
     private final NightHuntPreparedLoadout currentLoadout;
     private final NightHuntPreparedLoadout previewLoadout;
+    private final HuntCompendiumNextRiteResolver.NextRite nextRite;
     private final Tab selectedTab;
 
     private HuntCompendiumModel(@Nonnull NightHuntMasterySnapshot mastery,
                                 @Nonnull NamedHuntProgress progress,
                                 @Nonnull List<NightHuntSpawnRegistry.SpawnOption> preyCatalogue,
-                                @Nonnull List<NightHuntPreparedLoadout> availableLoadouts,
-                                @Nonnull NightHuntPreparedLoadout currentLoadout,
-                                @Nonnull NightHuntPreparedLoadout previewLoadout,
-                                @Nonnull Tab selectedTab) {
+                                 @Nonnull List<NightHuntPreparedLoadout> availableLoadouts,
+                                 @Nonnull NightHuntPreparedLoadout currentLoadout,
+                                 @Nonnull NightHuntPreparedLoadout previewLoadout,
+                                 @Nullable HuntCompendiumNextRiteResolver.NextRite nextRite,
+                                 @Nonnull Tab selectedTab) {
         this.mastery = mastery;
         this.progress = progress;
         this.preyCatalogue = preyCatalogue;
         this.availableLoadouts = availableLoadouts;
         this.currentLoadout = currentLoadout;
         this.previewLoadout = previewLoadout;
+        this.nextRite = nextRite;
         this.selectedTab = selectedTab;
     }
 
     @Nonnull
     static HuntCompendiumModel create(@Nonnull UUID uuid,
                                       @Nonnull Tab selectedTab,
-                                      @Nullable String previewPreparationId) {
+                                      @Nullable String previewPreparationId,
+                                      @Nullable HuntCompendiumNextRiteResolver.NextRite nextRite) {
         NamedHuntProgress progress = VampirePlayerStateStore.get().getNamedHuntProgress(uuid, NightHuntContracts.HUNT_ID);
         List<NightHuntSpawnRegistry.SpawnOption> preyCatalogue = new ArrayList<>(NightHuntSpawnRegistry.get().allSpawns());
         preyCatalogue.sort(Comparator
@@ -113,6 +117,7 @@ final class HuntCompendiumModel {
                 List.copyOf(availableLoadouts),
                 currentLoadout,
                 previewLoadout,
+                nextRite,
                 selectedTab);
     }
 
@@ -210,7 +215,10 @@ final class HuntCompendiumModel {
         String outcome = progress.lastOutcomeId != null
                 ? "\nLast outcome: " + NightHuntPresentationText.humanize(progress.lastOutcomeId)
                 : "";
-        return "Most recent prey: " + source + "\n" + rewards + milestone + outcome;
+        String nextStep = nextRite != null
+                ? "\n\nNext rite: " + nextRite.ritualName() + "\n" + nextRite.guidance()
+                : "";
+        return "Most recent prey: " + source + "\n" + rewards + milestone + outcome + nextStep;
     }
 
     @Nonnull

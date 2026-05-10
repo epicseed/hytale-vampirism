@@ -6,6 +6,9 @@ import javax.annotation.Nonnull;
 
 import com.epicseed.epiccore.hytale.PlayerFeedbackAdapter;
 import com.epicseed.vampirism.domain.hunt.NightHuntProgressionService;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualContext;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
@@ -25,11 +28,21 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompendiumEventData> {
 
+    private final HuntCompendiumNextRiteResolver nextRiteResolver;
+    private final VampiricRitualContextResolver ritualContextResolver;
     private HuntCompendiumModel.Tab selectedTab = HuntCompendiumModel.Tab.OVERVIEW;
     private String previewPreparationId;
 
     public HuntCompendiumPage(@Nonnull PlayerRef playerRef) {
+        this(playerRef, null, null);
+    }
+
+    public HuntCompendiumPage(@Nonnull PlayerRef playerRef,
+                              VampiricRitualService ritualService,
+                              VampiricRitualContextResolver ritualContextResolver) {
         super(playerRef, CustomPageLifetime.CanDismiss, HuntCompendiumEventData.CODEC);
+        this.nextRiteResolver = ritualService != null ? new HuntCompendiumNextRiteResolver(ritualService) : null;
+        this.ritualContextResolver = ritualContextResolver;
     }
 
     @Override
@@ -38,7 +51,7 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
                       @Nonnull UIEventBuilder events,
                       @Nonnull Store<EntityStore> store) {
         cmd.append(VampirismUiPaths.huntCompendiumLayout());
-        HuntCompendiumModel model = model();
+        HuntCompendiumModel model = model(store);
         bindEvents(events);
         appendPreparationCards(cmd, model);
         bindPreparationEvents(events, model);
@@ -76,7 +89,7 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
         }
 
         UICommandBuilder cmd = new UICommandBuilder();
-        render(cmd, model());
+        render(cmd, model(store));
         sendUpdate(cmd);
     }
 
@@ -183,7 +196,7 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
     }
 
     private void applyPreparationSelection() {
-        HuntCompendiumModel model = model();
+        HuntCompendiumModel model = model(null);
         if (model.previewMatchesSelection()) {
             return;
         }
@@ -198,10 +211,22 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
     }
 
     @Nonnull
-    private HuntCompendiumModel model() {
-        HuntCompendiumModel latest = HuntCompendiumModel.create(playerRef.getUuid(), selectedTab, previewPreparationId);
+    private HuntCompendiumModel model(Store<EntityStore> store) {
+        HuntCompendiumModel latest = HuntCompendiumModel.create(
+                playerRef.getUuid(),
+                selectedTab,
+                previewPreparationId,
+                resolveNextRite(store));
         previewPreparationId = latest.previewPreparationId();
         return latest;
+    }
+
+    private HuntCompendiumNextRiteResolver.NextRite resolveNextRite(Store<EntityStore> store) {
+        if (nextRiteResolver == null || ritualContextResolver == null || store == null) {
+            return null;
+        }
+        VampiricRitualContext ritualContext = ritualContextResolver.buildContext(playerRef, store, java.util.Set.of());
+        return nextRiteResolver.resolve(playerRef.getUuid(), ritualContext);
     }
 
     @Nonnull

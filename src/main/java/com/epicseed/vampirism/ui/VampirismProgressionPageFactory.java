@@ -5,6 +5,8 @@ import com.epicseed.epiccore.skill.ui.ProgressionRelicBindingsPage;
 import com.epicseed.epiccore.skill.ui.ProgressionUiPaths;
 import com.epicseed.epiccore.skill.ui.RelicUiAdapter;
 import com.epicseed.epiccore.skill.ui.SkillTreeUiAdapter;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 
@@ -14,15 +16,21 @@ public final class VampirismProgressionPageFactory implements ProgressionPageFac
     private final SkillTreeUiAdapter skillTreeUiAdapter;
     private final RelicUiAdapter relicUiAdapter;
     private final VampirismSettingsUiAdapter settingsUiAdapter;
+    private final VampiricRitualService ritualService;
+    private final VampiricRitualContextResolver ritualContextResolver;
 
     public VampirismProgressionPageFactory(ProgressionUiPaths uiPaths,
                                            SkillTreeUiAdapter skillTreeUiAdapter,
                                            RelicUiAdapter relicUiAdapter,
-                                           VampirismSettingsUiAdapter settingsUiAdapter) {
+                                           VampirismSettingsUiAdapter settingsUiAdapter,
+                                           VampiricRitualService ritualService,
+                                           VampiricRitualContextResolver ritualContextResolver) {
         this.uiPaths = uiPaths;
         this.skillTreeUiAdapter = skillTreeUiAdapter;
         this.relicUiAdapter = relicUiAdapter;
         this.settingsUiAdapter = settingsUiAdapter;
+        this.ritualService = ritualService;
+        this.ritualContextResolver = ritualContextResolver;
     }
 
     @Override
@@ -41,6 +49,6 @@ public final class VampirismProgressionPageFactory implements ProgressionPageFac
     }
 
     public InteractiveCustomUIPage<?> createHuntCompendiumPage(PlayerRef playerRef) {
-        return new HuntCompendiumPage(playerRef);
+        return new HuntCompendiumPage(playerRef, ritualService, ritualContextResolver);
     }
 }

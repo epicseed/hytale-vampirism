@@ -169,6 +169,41 @@ class VampiricRitualBookModelTest {
         assertTrue(model.blockingText().contains("Complete a night hunt first."));
     }
 
+    @Test
+    void affinityRequirementsAppearInRequirementsAndBlockingCopy() {
+        String anchorBlockId = "Furniture_Ancient_Coffin";
+        VampiricRitualDefinition definition = new VampiricRitualDefinition(
+                "summon_familiar",
+                "Summon Familiar",
+                "Test description",
+                0,
+                0,
+                null,
+                Set.of(),
+                Set.of(),
+                List.of(new VampiricRitualDefinition.AffinityRequirement("vermin", 1)),
+                Set.of(),
+                Set.of(),
+                List.of(),
+                VampiricRitualDefinition.Rewards.none(),
+                VampiricRitualDefinition.Presentation.none());
+        VampiricRitualBookModel model = VampiricRitualBookModel.create(
+                anchorBlockId,
+                List.of(new VampiricRitualRuntimeService.ResolvedAnchorRitual("summon_familiar", "Summon Familiar", anchorBlockId)),
+                Map.of("summon_familiar", definition),
+                Map.of("summon_familiar", template("summon_familiar", "Summon Familiar", anchorBlockId)),
+                Map.of("summon_familiar", new VampiricRitualEvaluation(
+                        definition,
+                        new RitualProgressState(),
+                        RitualProgressState.STATUS_LOCKED,
+                        Map.of(),
+                        List.of("missing_affinity:vermin:1"))),
+                null);
+
+        assertTrue(model.requirementsText().contains("Affinity: Vermin 1+"));
+        assertTrue(model.blockingText().contains("Needs Vermin affinity 1."));
+    }
+
     private static VampiricRitualDefinition definition(String id, String name) {
         return new VampiricRitualDefinition(
                 id,
