@@ -32,6 +32,7 @@ import com.epicseed.vampirism.domain.ritual.VampiricRitualContext;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualEvaluation;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeExposureLevel;
+import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatPolicy;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatSnapshot;
 import com.epicseed.vampirism.domain.skill.SkillTreePresenter;
@@ -235,27 +236,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                         "Heat",
                         "Masquerade Heat",
                         "No masquerade telemetry has been recorded yet.",
-                        List.of(
-                                new ProgressionCardView(
-                                        "Masquerade Heat",
-                                        formatHeat(masquerade.heat()),
-                                        "Last updated: " + formatInstant(
-                                                masquerade.lastUpdatedAtMs(),
-                                                "Never"),
-                                        "#f59e0b"),
-                                new ProgressionCardView(
-                                        "Strikes",
-                                        Integer.toString(masquerade.strikeCount()),
-                                        "Accumulated masquerade strike count.",
-                                        "#dc2626"),
-                                new ProgressionCardView(
-                                        "Hunter Pressure",
-                                        Integer.toString(masquerade.hunterPressure()),
-                                        formatExposureLevel(masquerade.exposureLevel())
-                                                + (masquerade.progressionLocked()
-                                                ? " · progression gating active"
-                                                : " · progression gating clear"),
-                                        "#2563eb"))));
+                        buildHeatCards(masquerade, masqueradeHeatService.policy(), lineageEvaluations)));
     }
 
     @Nonnull
@@ -360,6 +341,35 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
     }
 
     @Nonnull
+    static List<ProgressionCardView> buildHeatCards(@Nonnull MasqueradeHeatSnapshot masquerade,
+                                                    @Nonnull MasqueradeHeatPolicy policy,
+                                                    @Nonnull List<VampiricLineageEvaluation> lineageEvaluations) {
+        HeatThresholdView nextThreshold = nextHeatThreshold(masquerade, policy);
+        HeatOpportunityView opportunity = heatOpportunity(masquerade, lineageEvaluations);
+        return List.of(
+                new ProgressionCardView(
+                        "Current Exposure",
+                        formatExposureLevel(masquerade.exposureLevel()) + " · " + formatHeat(masquerade.heat()) + " heat",
+                        "Last updated: " + formatInstant(masquerade.lastUpdatedAtMs(), "Never"),
+                        heatAccent(masquerade.exposureLevel())),
+                new ProgressionCardView(
+                        "Next Threshold",
+                        nextThreshold.value(),
+                        nextThreshold.detail(),
+                        nextThreshold.accentColor()),
+                new ProgressionCardView(
+                        "Current Risk",
+                        currentRiskValue(masquerade),
+                        currentRiskDetail(masquerade),
+                        masquerade.progressionLocked() ? "#ef4444" : heatAccent(masquerade.exposureLevel())),
+                new ProgressionCardView(
+                        "Current Opportunity",
+                        opportunity.value(),
+                        opportunity.detail(),
+                        opportunity.accentColor()));
+    }
+
+    @Nonnull
     private static List<ProgressionCardView> buildLineageCards(@Nonnull UUID uuid,
                                                                @Nonnull VampirePlayerStateStore store,
                                                                @Nonnull List<VampiricLineageEvaluation> lineageEvaluations,
@@ -438,5 +448,178 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                     return evaluation.definition().displayName() + " waits on " + evaluation.blockingReasons().get(0);
                 })
                 .orElse("Complete more rites and hunts to reveal your first lineage.");
+    }
+
+    @Nonnull
+    private static HeatThresholdView nextHeatThreshold(@Nonnull MasqueradeHeatSnapshot masquerade,
+                                                       @Nonnull MasqueradeHeatPolicy policy) {
+        double heat = masquerade.heat();
+        ArrayList<HeatThresholdView> thresholds = new ArrayList<>();
+        addHeatThreshold(
+                thresholds,
+                "Watched",
+                policy.watchedThreshold(),
+                heat,
+                "hunter attention turns your way.",
+                "#f59e0b");
+        addHeatThreshold(
+                thresholds,
+                "Hunted",
+                policy.huntedThreshold(),
+                heat,
+                "hunters escalate into active pursuit.",
+                "#f97316");
+        addHeatThreshold(
+                thresholds,
+                "Progression Lock",
+                policy.progressionLockThreshold(),
+                heat,
+                "low-heat progression routes lock shut.",
+                "#ef4444");
+        addHeatThreshold(
+                thresholds,
+                "Breached",
+                policy.breachedThreshold(),
+                heat,
+                "the masquerade becomes a full breach.",
+                "#b91c1c");
+        return thresholds.stream()
+                .min(java.util.Comparator.comparingDouble(HeatThresholdView::threshold))
+                .orElseGet(() -> new HeatThresholdView(
+                        "At full breach",
+                        "Every tracked heat threshold is already active. Cool off or lean on ritual relief to reopen safer routes.",
+                        "#b91c1c",
+                        Double.MAX_VALUE));
+    }
+
+    private static void addHeatThreshold(@Nonnull List<HeatThresholdView> thresholds,
+                                         @Nonnull String label,
+                                         double threshold,
+                                         double currentHeat,
+                                         @Nonnull String consequence,
+                                         @Nonnull String accentColor) {
+        if (!Double.isFinite(threshold) || threshold <= currentHeat) {
+            return;
+        }
+        if (thresholds.stream().anyMatch(existing -> Math.abs(existing.threshold() - threshold) < 0.0001d)) {
+            return;
+        }
+        thresholds.add(new HeatThresholdView(
+                label + " at " + formatHeat(threshold),
+                formatHeat(threshold - currentHeat) + " heat remaining before " + consequence,
+                accentColor,
+                threshold));
+    }
+
+    @Nonnull
+    private static String currentRiskValue(@Nonnull MasqueradeHeatSnapshot masquerade) {
+        if (masquerade.progressionLocked()) {
+            return "Progression locked";
+        }
+        if (masquerade.hunterPressure() > 0) {
+            return "Pressure " + masquerade.hunterPressure();
+        }
+        return "Routes clear";
+    }
+
+    @Nonnull
+    private static String currentRiskDetail(@Nonnull MasqueradeHeatSnapshot masquerade) {
+        String strikeDetail = masquerade.strikeCount() > 0
+                ? " " + masquerade.strikeCount() + " strike" + (masquerade.strikeCount() == 1 ? "" : "s") + " tracked."
+                : "";
+        if (masquerade.progressionLocked()) {
+            return "Low-heat progression is closed right now. Shed exposure before chasing more gated unlocks." + strikeDetail;
+        }
+        return switch (masquerade.exposureLevel()) {
+            case QUIET -> strikeDetail.isBlank()
+                    ? "No active hunter route pressure is building right now."
+                    : "Heat is low, but past exposure still keeps hunters alert." + strikeDetail;
+            case WATCHED -> "Hunters are watching your routes. Another loud spike will push you toward pursuit." + strikeDetail;
+            case HUNTED -> "Your trail is hot enough to draw pursuit. Cooling now protects future low-heat unlocks." + strikeDetail;
+            case BREACHED -> "Exposure is blown wide open. Staying here makes every low-heat route harder to hold." + strikeDetail;
+        };
+    }
+
+    @Nonnull
+    private static HeatOpportunityView heatOpportunity(@Nonnull MasqueradeHeatSnapshot masquerade,
+                                                       @Nonnull List<VampiricLineageEvaluation> lineageEvaluations) {
+        List<VampiricLineageEvaluation> heatSensitive = lineageEvaluations.stream()
+                .filter(evaluation -> !evaluation.selected())
+                .filter(evaluation -> evaluation.definition().requirements().maxMasqueradeHeat() != null)
+                .toList();
+        if (heatSensitive.isEmpty()) {
+            return new HeatOpportunityView(
+                    "No heat gate wired",
+                    "Current lineage routes are not using masquerade heat as a progression gate yet.",
+                    "#64748b");
+        }
+
+        double heat = masquerade.heat();
+        VampiricLineageEvaluation blocked = heatSensitive.stream()
+                .filter(evaluation -> heat > evaluation.definition().requirements().maxMasqueradeHeat())
+                .min(java.util.Comparator
+                        .comparingDouble((VampiricLineageEvaluation evaluation) ->
+                                heat - evaluation.definition().requirements().maxMasqueradeHeat())
+                        .thenComparing(evaluation -> evaluation.definition().displayName()))
+                .orElse(null);
+        if (blocked != null) {
+            double cap = blocked.definition().requirements().maxMasqueradeHeat();
+            return new HeatOpportunityView(
+                    blocked.definition().displayName() + " blocked",
+                    "Cool " + formatHeat(heat - cap) + " heat to reach the " + formatHeat(cap)
+                            + " cap and reopen this lineage route.",
+                    "#f97316");
+        }
+
+        VampiricLineageEvaluation available = heatSensitive.stream()
+                .filter(VampiricLineageEvaluation::available)
+                .min(java.util.Comparator
+                        .comparingDouble((VampiricLineageEvaluation evaluation) ->
+                                evaluation.definition().requirements().maxMasqueradeHeat())
+                        .thenComparing(evaluation -> evaluation.definition().displayName()))
+                .orElse(null);
+        if (available != null) {
+            double cap = available.definition().requirements().maxMasqueradeHeat();
+            return new HeatOpportunityView(
+                    available.definition().displayName() + " ready",
+                    "The low-heat window is open now. Stay at or below " + formatHeat(cap)
+                            + " to keep this lineage claimable.",
+                    "#22c55e");
+        }
+
+        VampiricLineageEvaluation futureWindow = heatSensitive.stream()
+                .filter(evaluation -> heat <= evaluation.definition().requirements().maxMasqueradeHeat())
+                .min(java.util.Comparator
+                        .comparingInt((VampiricLineageEvaluation evaluation) -> evaluation.blockingReasons().size())
+                        .thenComparingDouble(evaluation -> evaluation.definition().requirements().maxMasqueradeHeat())
+                        .thenComparing(evaluation -> evaluation.definition().displayName()))
+                .orElse(heatSensitive.get(0));
+        double cap = futureWindow.definition().requirements().maxMasqueradeHeat();
+        return new HeatOpportunityView(
+                "Heat window open",
+                futureWindow.definition().displayName() + " keeps a " + formatHeat(cap)
+                        + " heat cap, so staying cool preserves that lineage route.",
+                "#a855f7");
+    }
+
+    @Nonnull
+    private static String heatAccent(@Nonnull MasqueradeExposureLevel level) {
+        return switch (level) {
+            case QUIET -> "#22c55e";
+            case WATCHED -> "#f59e0b";
+            case HUNTED -> "#f97316";
+            case BREACHED -> "#ef4444";
+        };
+    }
+
+    private record HeatThresholdView(String value,
+                                     String detail,
+                                     String accentColor,
+                                     double threshold) {
+    }
+
+    private record HeatOpportunityView(String value,
+                                       String detail,
+                                       String accentColor) {
     }
 }
