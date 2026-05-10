@@ -27,7 +27,14 @@
           "BloodThirst"
         ],
         "requiredCompletedRitualIds": [
-          "awakening"
+          "awakening",
+          "summon_familiar"
+        ],
+        "requiredAffinities": [
+          {
+            "affinityId": "vermin",
+            "minAmount": 1
+          }
         ]
       },
       "perks": [
@@ -104,7 +111,14 @@
           "AncientForm"
         ],
         "requiredCompletedRitualIds": [
-          "awakening"
+          "awakening",
+          "soul_exchange"
+        ],
+        "requiredAffinities": [
+          {
+            "affinityId": "monstrous",
+            "minAmount": 1
+          }
         ],
         "maxMasqueradeHeat": 15.0
       },

@@ -6,6 +6,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.hytale.PlayerFeedbackAdapter;
+import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.domain.hunt.NightHuntProgressionService;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
@@ -259,7 +260,12 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
         if (lineageService == null || masquerade == null) {
             return null;
         }
-        return LineageWindowOpportunity.resolve(masquerade, lineageService.evaluateAll(playerRef.getUuid()));
+        return LineageWindowOpportunity.resolve(
+                masquerade,
+                VampirePlayerStateStore.isInitialized()
+                        ? VampirePlayerStateStore.get().getBloodAffinities(playerRef.getUuid())
+                        : java.util.Map.of(),
+                lineageService.evaluateAll(playerRef.getUuid()));
     }
 
     @Nonnull

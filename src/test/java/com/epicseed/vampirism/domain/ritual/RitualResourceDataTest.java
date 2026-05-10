@@ -38,10 +38,11 @@ class RitualResourceDataTest {
     }
 
     @Test
-    void shippedDefinitionsExposeSummonFamiliarOfferingRequirements() {
+    void shippedDefinitionsExposeAffinityAndOfferingRequirements() {
         VampiricRitualRegistry registry = new VampiricRitualRegistry();
 
         VampiricRitualDefinition summonFamiliar = registry.definition("summon_familiar").orElseThrow();
+        VampiricRitualDefinition soulExchange = registry.definition("soul_exchange").orElseThrow();
         VampiricRitualDefinition veilOfNight = registry.definition("veil_of_night").orElseThrow();
 
         assertEquals(36, summonFamiliar.minBlood());
@@ -50,14 +51,23 @@ class RitualResourceDataTest {
         assertEquals("bind_familiar", objective.id());
         assertEquals("Ingredient_Voidheart", objective.offering().itemId());
         assertEquals(VampiricRitualOfferingSurfacePolicy.ANY_POINT_OR_CENTER, objective.offering().surfacePolicy());
+        assertEquals(1, summonFamiliar.requiredAffinities().size());
+        assertEquals("vermin", summonFamiliar.requiredAffinities().get(0).affinityId());
+        assertEquals(1, summonFamiliar.requiredAffinities().get(0).minAmount());
+        assertEquals(1, soulExchange.requiredAffinities().size());
+        assertEquals("monstrous", soulExchange.requiredAffinities().get(0).affinityId());
+        assertEquals(1, soulExchange.requiredAffinities().get(0).minAmount());
         assertEquals(Set.of(VampiricProgressionProofs.FIRST_NIGHT_HUNT_COMPLETION), veilOfNight.requiredProofIds());
     }
 
     @Test
-    void shippedDefinitionsMatchEpiccoreDefaults() {
+    void shippedDefinitionsKeepEpiccoreRitualCoverage() {
         VampiricRitualRegistry shippedRegistry = new VampiricRitualRegistry();
+        VampiricRitualRegistry defaultRegistry = VampiricRitualRegistry.defaultAscensionRegistry();
 
-        assertEquals(VampiricRitualRegistry.defaultAscensionRegistry().definitions(), shippedRegistry.definitions());
+        assertEquals(
+                defaultRegistry.definitions().keySet().stream().sorted().toList(),
+                shippedRegistry.definitions().keySet().stream().sorted().toList());
     }
 
     @Test

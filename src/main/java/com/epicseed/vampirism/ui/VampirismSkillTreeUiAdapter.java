@@ -170,7 +170,13 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                         "Lineage",
                         "Lineage Legacy",
                         "No lineage details are available.",
-                        buildLineageCards(uuid, store, lineageEvaluations, selectedLineage, availableLineages)),
+                        buildLineageCards(
+                                store.getLineageUnlockedAtMs(uuid),
+                                store.getLineageRespecCount(uuid),
+                                bloodAffinities,
+                                lineageEvaluations,
+                                selectedLineage,
+                                availableLineages)),
                 new ProgressionSectionView(
                         "rituals",
                         "Rituals",
@@ -239,7 +245,12 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                         "Heat",
                         "Masquerade Heat",
                         "No masquerade telemetry has been recorded yet.",
-                        buildHeatCards(masquerade, masqueradeHeatService.policy(), lineageEvaluations, continuity)));
+                        buildHeatCards(
+                                masquerade,
+                                masqueradeHeatService.policy(),
+                                bloodAffinities,
+                                lineageEvaluations,
+                                continuity)));
     }
 
     @Nonnull
@@ -346,11 +357,15 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
     @Nonnull
     static List<ProgressionCardView> buildHeatCards(@Nonnull MasqueradeHeatSnapshot masquerade,
                                                     @Nonnull MasqueradeHeatPolicy policy,
+                                                    @Nonnull Map<String, Integer> bloodAffinities,
                                                     @Nonnull List<VampiricLineageEvaluation> lineageEvaluations,
                                                     @Nonnull NightHuntContinuitySnapshot continuity) {
         MasqueradeHeatThresholdText.ThresholdView nextThreshold =
                 MasqueradeHeatThresholdText.nextThreshold(masquerade, policy);
-        LineageWindowOpportunity.View opportunity = LineageWindowOpportunity.resolve(masquerade, lineageEvaluations);
+        LineageWindowOpportunity.View opportunity = LineageWindowOpportunity.resolve(
+                masquerade,
+                bloodAffinities,
+                lineageEvaluations);
         PressureOutlookText.View pressureOutlook = PressureOutlookText.resolve(continuity);
         PressureDriversText.View pressureDrivers = PressureDriversText.resolve(continuity);
         return List.of(
@@ -387,8 +402,9 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
     }
 
     @Nonnull
-    private static List<ProgressionCardView> buildLineageCards(@Nonnull UUID uuid,
-                                                               @Nonnull VampirePlayerStateStore store,
+    static List<ProgressionCardView> buildLineageCards(long lineageUnlockedAtMs,
+                                                               int lineageRespecCount,
+                                                               @Nonnull Map<String, Integer> bloodAffinities,
                                                                @Nonnull List<VampiricLineageEvaluation> lineageEvaluations,
                                                                @Nullable VampiricLineageEvaluation selectedLineage,
                                                                long availableLineages) {
@@ -399,7 +415,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                         ? selectedLineage.definition().displayName()
                         : "Unbound",
                 (selectedLineage != null ? selectedLineage.clan().displayName() : "No clan selected")
-                        + " · Unlocked at: " + formatInstant(store.getLineageUnlockedAtMs(uuid), "Not yet unlocked"),
+                        + " · Unlocked at: " + formatInstant(lineageUnlockedAtMs, "Not yet unlocked"),
                 selectedLineage != null ? selectedLineage.clan().accentColor() : "#ef4444"));
         cards.add(new ProgressionCardView(
                 "Lineage Milestone",
@@ -411,20 +427,23 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                         : "Await rites",
                 selectedLineage != null
                         ? lineagePerkSummary(selectedLineage.definition())
-                        : nextLineageLead(lineageEvaluations, availableLineages),
+                        : nextLineageLead(lineageEvaluations, bloodAffinities, availableLineages),
                 selectedLineage != null
                         ? selectedLineage.clan().accentColor()
                         : availableLineages > 0 ? "#22c55e" : "#f97316"));
         cards.add(new ProgressionCardView(
                 "Respec Count",
-                Integer.toString(store.getLineageRespecCount(uuid)),
+                Integer.toString(lineageRespecCount),
                 "Eligible lineages: " + availableLineages + " / " + lineageEvaluations.size(),
                 "#f97316"));
         for (VampiricLineageEvaluation evaluation : lineageEvaluations) {
             String status = evaluation.selected() ? "Selected" : evaluation.available() ? "Available" : "Locked";
             String detail = lineagePerkSummary(evaluation.definition());
             if (!evaluation.available()) {
-                detail = detail + " · " + String.join(" ", evaluation.blockingReasons());
+                String blockerSummary = LineageRequirementText.blockerSummary(evaluation, bloodAffinities);
+                if (!blockerSummary.isBlank()) {
+                    detail = detail + " · " + blockerSummary;
+                }
             }
             cards.add(new ProgressionCardView(
                     evaluation.definition().displayName(),
@@ -448,6 +467,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
 
     @Nonnull
     private static String nextLineageLead(@Nonnull List<VampiricLineageEvaluation> lineageEvaluations,
+                                          @Nonnull Map<String, Integer> bloodAffinities,
                                           long availableLineages) {
         if (availableLineages > 0) {
             return lineageEvaluations.stream()
@@ -457,12 +477,19 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                     .orElse("A lineage is ready to claim.");
         }
         return lineageEvaluations.stream()
+                .sorted(java.util.Comparator
+                        .comparingInt((VampiricLineageEvaluation evaluation) -> evaluation.blockingReasons().size())
+                        .thenComparing(evaluation -> evaluation.definition().displayName()))
                 .findFirst()
                 .map(evaluation -> {
                     if (evaluation.blockingReasons().isEmpty()) {
                         return "Complete more rites and hunts to reveal your first lineage.";
                     }
-                    return evaluation.definition().displayName() + " waits on " + evaluation.blockingReasons().get(0);
+                    String action = LineageRequirementText.primaryActionText(evaluation, bloodAffinities);
+                    if (action == null) {
+                        return "Complete more rites and hunts to reveal your first lineage.";
+                    }
+                    return evaluation.definition().displayName() + " needs you to " + action + ".";
                 })
                 .orElse("Complete more rites and hunts to reveal your first lineage.");
     }

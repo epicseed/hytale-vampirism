@@ -3,6 +3,7 @@ package com.epicseed.vampirism.ui;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import javax.annotation.Nonnull;
 
@@ -16,6 +17,7 @@ final class LineageWindowOpportunity {
 
     @Nonnull
     static View resolve(@Nonnull MasqueradeHeatSnapshot masquerade,
+                        @Nonnull Map<String, Integer> bloodAffinities,
                         @Nonnull List<VampiricLineageEvaluation> lineageEvaluations) {
         List<VampiricLineageEvaluation> heatSensitive = lineageEvaluations.stream()
                 .filter(evaluation -> !evaluation.selected())
@@ -67,9 +69,16 @@ final class LineageWindowOpportunity {
                         .thenComparing(evaluation -> evaluation.definition().displayName()))
                 .orElse(heatSensitive.get(0));
         double cap = futureWindow.definition().requirements().maxMasqueradeHeat();
+        String detail = "Stay at or below " + formatHeat(cap) + " heat while you finish its other requirements.";
+        if (LineageRequirementText.hasAffinityAsMainRemainingBlocker(futureWindow)) {
+            String action = LineageRequirementText.primaryActionText(futureWindow, bloodAffinities);
+            if (action != null) {
+                detail = "Stay at or below " + formatHeat(cap) + " heat while you " + action + ".";
+            }
+        }
         return new View(
                 futureWindow.definition().displayName() + " pending",
-                "Stay at or below " + formatHeat(cap) + " heat while you finish its other requirements.",
+                detail,
                 "#a855f7");
     }
 
