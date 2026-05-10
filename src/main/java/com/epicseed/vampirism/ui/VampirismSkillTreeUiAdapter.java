@@ -345,7 +345,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                                                     @Nonnull MasqueradeHeatPolicy policy,
                                                     @Nonnull List<VampiricLineageEvaluation> lineageEvaluations) {
         HeatThresholdView nextThreshold = nextHeatThreshold(masquerade, policy);
-        HeatOpportunityView opportunity = heatOpportunity(masquerade, lineageEvaluations);
+        LineageWindowOpportunity.View opportunity = LineageWindowOpportunity.resolve(masquerade, lineageEvaluations);
         return List.of(
                 new ProgressionCardView(
                         "Current Exposure",
@@ -541,68 +541,6 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
     }
 
     @Nonnull
-    private static HeatOpportunityView heatOpportunity(@Nonnull MasqueradeHeatSnapshot masquerade,
-                                                       @Nonnull List<VampiricLineageEvaluation> lineageEvaluations) {
-        List<VampiricLineageEvaluation> heatSensitive = lineageEvaluations.stream()
-                .filter(evaluation -> !evaluation.selected())
-                .filter(evaluation -> evaluation.definition().requirements().maxMasqueradeHeat() != null)
-                .toList();
-        if (heatSensitive.isEmpty()) {
-            return new HeatOpportunityView(
-                    "No heat gate wired",
-                    "Current lineage routes are not using masquerade heat as a progression gate yet.",
-                    "#64748b");
-        }
-
-        double heat = masquerade.heat();
-        VampiricLineageEvaluation blocked = heatSensitive.stream()
-                .filter(evaluation -> heat > evaluation.definition().requirements().maxMasqueradeHeat())
-                .min(java.util.Comparator
-                        .comparingDouble((VampiricLineageEvaluation evaluation) ->
-                                heat - evaluation.definition().requirements().maxMasqueradeHeat())
-                        .thenComparing(evaluation -> evaluation.definition().displayName()))
-                .orElse(null);
-        if (blocked != null) {
-            double cap = blocked.definition().requirements().maxMasqueradeHeat();
-            return new HeatOpportunityView(
-                    blocked.definition().displayName() + " blocked",
-                    "Cool " + formatHeat(heat - cap) + " heat to reach the " + formatHeat(cap)
-                            + " cap and reopen this lineage route.",
-                    "#f97316");
-        }
-
-        VampiricLineageEvaluation available = heatSensitive.stream()
-                .filter(VampiricLineageEvaluation::available)
-                .min(java.util.Comparator
-                        .comparingDouble((VampiricLineageEvaluation evaluation) ->
-                                evaluation.definition().requirements().maxMasqueradeHeat())
-                        .thenComparing(evaluation -> evaluation.definition().displayName()))
-                .orElse(null);
-        if (available != null) {
-            double cap = available.definition().requirements().maxMasqueradeHeat();
-            return new HeatOpportunityView(
-                    available.definition().displayName() + " ready",
-                    "The low-heat window is open now. Stay at or below " + formatHeat(cap)
-                            + " to keep this lineage claimable.",
-                    "#22c55e");
-        }
-
-        VampiricLineageEvaluation futureWindow = heatSensitive.stream()
-                .filter(evaluation -> heat <= evaluation.definition().requirements().maxMasqueradeHeat())
-                .min(java.util.Comparator
-                        .comparingInt((VampiricLineageEvaluation evaluation) -> evaluation.blockingReasons().size())
-                        .thenComparingDouble(evaluation -> evaluation.definition().requirements().maxMasqueradeHeat())
-                        .thenComparing(evaluation -> evaluation.definition().displayName()))
-                .orElse(heatSensitive.get(0));
-        double cap = futureWindow.definition().requirements().maxMasqueradeHeat();
-        return new HeatOpportunityView(
-                "Heat window open",
-                futureWindow.definition().displayName() + " keeps a " + formatHeat(cap)
-                        + " heat cap, so staying cool preserves that lineage route.",
-                "#a855f7");
-    }
-
-    @Nonnull
     private static String heatAccent(@Nonnull MasqueradeExposureLevel level) {
         return switch (level) {
             case QUIET -> "#22c55e";
@@ -616,10 +554,5 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                                      String detail,
                                      String accentColor,
                                      double threshold) {
-    }
-
-    private record HeatOpportunityView(String value,
-                                       String detail,
-                                       String accentColor) {
     }
 }

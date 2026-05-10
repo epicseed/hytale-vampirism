@@ -302,7 +302,9 @@ public final class VampirismRuntime {
                 relicUiAdapter,
                 settingsUiAdapter,
                 ritualService,
-                ritualContextResolver);
+                ritualContextResolver,
+                lineageService,
+                masqueradeHeatService);
         ProgressionPageFactory progressionPageFactory = vampirismProgressionPageFactory;
 
         PassiveRuntimeServices<SkillRuntimeContext, PassiveService> passiveRuntimeServices =

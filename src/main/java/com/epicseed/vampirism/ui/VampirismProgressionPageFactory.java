@@ -5,6 +5,8 @@ import com.epicseed.epiccore.skill.ui.ProgressionRelicBindingsPage;
 import com.epicseed.epiccore.skill.ui.ProgressionUiPaths;
 import com.epicseed.epiccore.skill.ui.RelicUiAdapter;
 import com.epicseed.epiccore.skill.ui.SkillTreeUiAdapter;
+import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
+import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
@@ -18,19 +20,25 @@ public final class VampirismProgressionPageFactory implements ProgressionPageFac
     private final VampirismSettingsUiAdapter settingsUiAdapter;
     private final VampiricRitualService ritualService;
     private final VampiricRitualContextResolver ritualContextResolver;
+    private final VampiricLineageService lineageService;
+    private final MasqueradeHeatService masqueradeHeatService;
 
     public VampirismProgressionPageFactory(ProgressionUiPaths uiPaths,
                                            SkillTreeUiAdapter skillTreeUiAdapter,
                                            RelicUiAdapter relicUiAdapter,
                                            VampirismSettingsUiAdapter settingsUiAdapter,
                                            VampiricRitualService ritualService,
-                                           VampiricRitualContextResolver ritualContextResolver) {
+                                           VampiricRitualContextResolver ritualContextResolver,
+                                           VampiricLineageService lineageService,
+                                           MasqueradeHeatService masqueradeHeatService) {
         this.uiPaths = uiPaths;
         this.skillTreeUiAdapter = skillTreeUiAdapter;
         this.relicUiAdapter = relicUiAdapter;
         this.settingsUiAdapter = settingsUiAdapter;
         this.ritualService = ritualService;
         this.ritualContextResolver = ritualContextResolver;
+        this.lineageService = lineageService;
+        this.masqueradeHeatService = masqueradeHeatService;
     }
 
     @Override
@@ -49,6 +57,11 @@ public final class VampirismProgressionPageFactory implements ProgressionPageFac
     }
 
     public InteractiveCustomUIPage<?> createHuntCompendiumPage(PlayerRef playerRef) {
-        return new HuntCompendiumPage(playerRef, ritualService, ritualContextResolver);
+        return new HuntCompendiumPage(
+                playerRef,
+                ritualService,
+                ritualContextResolver,
+                lineageService,
+                masqueradeHeatService);
     }
 }

@@ -6,6 +6,8 @@ import javax.annotation.Nonnull;
 
 import com.epicseed.epiccore.hytale.PlayerFeedbackAdapter;
 import com.epicseed.vampirism.domain.hunt.NightHuntProgressionService;
+import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
+import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContext;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
@@ -30,19 +32,31 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
 
     private final HuntCompendiumNextRiteResolver nextRiteResolver;
     private final VampiricRitualContextResolver ritualContextResolver;
+    private final VampiricLineageService lineageService;
+    private final MasqueradeHeatService masqueradeHeatService;
     private HuntCompendiumModel.Tab selectedTab = HuntCompendiumModel.Tab.OVERVIEW;
     private String previewPreparationId;
 
     public HuntCompendiumPage(@Nonnull PlayerRef playerRef) {
-        this(playerRef, null, null);
+        this(playerRef, null, null, null, null);
     }
 
     public HuntCompendiumPage(@Nonnull PlayerRef playerRef,
                               VampiricRitualService ritualService,
                               VampiricRitualContextResolver ritualContextResolver) {
+        this(playerRef, ritualService, ritualContextResolver, null, null);
+    }
+
+    public HuntCompendiumPage(@Nonnull PlayerRef playerRef,
+                              VampiricRitualService ritualService,
+                              VampiricRitualContextResolver ritualContextResolver,
+                              VampiricLineageService lineageService,
+                              MasqueradeHeatService masqueradeHeatService) {
         super(playerRef, CustomPageLifetime.CanDismiss, HuntCompendiumEventData.CODEC);
         this.nextRiteResolver = ritualService != null ? new HuntCompendiumNextRiteResolver(ritualService) : null;
         this.ritualContextResolver = ritualContextResolver;
+        this.lineageService = lineageService;
+        this.masqueradeHeatService = masqueradeHeatService;
     }
 
     @Override
@@ -216,7 +230,8 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
                 playerRef.getUuid(),
                 selectedTab,
                 previewPreparationId,
-                resolveNextRite(store));
+                resolveNextRite(store),
+                resolveLineageWindow());
         previewPreparationId = latest.previewPreparationId();
         return latest;
     }
@@ -227,6 +242,15 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
         }
         VampiricRitualContext ritualContext = ritualContextResolver.buildContext(playerRef, store, java.util.Set.of());
         return nextRiteResolver.resolve(playerRef.getUuid(), ritualContext);
+    }
+
+    private LineageWindowOpportunity.View resolveLineageWindow() {
+        if (lineageService == null || masqueradeHeatService == null) {
+            return null;
+        }
+        return LineageWindowOpportunity.resolve(
+                masqueradeHeatService.snapshot(playerRef.getUuid(), System.currentTimeMillis()),
+                lineageService.evaluateAll(playerRef.getUuid()));
     }
 
     @Nonnull
