@@ -344,7 +344,8 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
     static List<ProgressionCardView> buildHeatCards(@Nonnull MasqueradeHeatSnapshot masquerade,
                                                     @Nonnull MasqueradeHeatPolicy policy,
                                                     @Nonnull List<VampiricLineageEvaluation> lineageEvaluations) {
-        HeatThresholdView nextThreshold = nextHeatThreshold(masquerade, policy);
+        MasqueradeHeatThresholdText.ThresholdView nextThreshold =
+                MasqueradeHeatThresholdText.nextThreshold(masquerade, policy);
         LineageWindowOpportunity.View opportunity = LineageWindowOpportunity.resolve(masquerade, lineageEvaluations);
         return List.of(
                 new ProgressionCardView(
@@ -451,67 +452,6 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
     }
 
     @Nonnull
-    private static HeatThresholdView nextHeatThreshold(@Nonnull MasqueradeHeatSnapshot masquerade,
-                                                       @Nonnull MasqueradeHeatPolicy policy) {
-        double heat = masquerade.heat();
-        ArrayList<HeatThresholdView> thresholds = new ArrayList<>();
-        addHeatThreshold(
-                thresholds,
-                "Watched",
-                policy.watchedThreshold(),
-                heat,
-                "hunter attention turns your way.",
-                "#f59e0b");
-        addHeatThreshold(
-                thresholds,
-                "Hunted",
-                policy.huntedThreshold(),
-                heat,
-                "hunters escalate into active pursuit.",
-                "#f97316");
-        addHeatThreshold(
-                thresholds,
-                "Progression Lock",
-                policy.progressionLockThreshold(),
-                heat,
-                "low-heat progression routes lock shut.",
-                "#ef4444");
-        addHeatThreshold(
-                thresholds,
-                "Breached",
-                policy.breachedThreshold(),
-                heat,
-                "the masquerade becomes a full breach.",
-                "#b91c1c");
-        return thresholds.stream()
-                .min(java.util.Comparator.comparingDouble(HeatThresholdView::threshold))
-                .orElseGet(() -> new HeatThresholdView(
-                        "At full breach",
-                        "Every tracked heat threshold is already active. Cool off or lean on ritual relief to reopen safer routes.",
-                        "#b91c1c",
-                        Double.MAX_VALUE));
-    }
-
-    private static void addHeatThreshold(@Nonnull List<HeatThresholdView> thresholds,
-                                         @Nonnull String label,
-                                         double threshold,
-                                         double currentHeat,
-                                         @Nonnull String consequence,
-                                         @Nonnull String accentColor) {
-        if (!Double.isFinite(threshold) || threshold <= currentHeat) {
-            return;
-        }
-        if (thresholds.stream().anyMatch(existing -> Math.abs(existing.threshold() - threshold) < 0.0001d)) {
-            return;
-        }
-        thresholds.add(new HeatThresholdView(
-                label + " at " + formatHeat(threshold),
-                formatHeat(threshold - currentHeat) + " heat remaining before " + consequence,
-                accentColor,
-                threshold));
-    }
-
-    @Nonnull
     private static String currentRiskValue(@Nonnull MasqueradeHeatSnapshot masquerade) {
         if (masquerade.progressionLocked()) {
             return "Progression locked";
@@ -550,9 +490,4 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
         };
     }
 
-    private record HeatThresholdView(String value,
-                                     String detail,
-                                     String accentColor,
-                                     double threshold) {
-    }
 }

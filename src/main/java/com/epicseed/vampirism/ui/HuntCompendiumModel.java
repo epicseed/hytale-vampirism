@@ -79,18 +79,20 @@ final class HuntCompendiumModel {
     private final HuntCompendiumNextRiteResolver.NextRite nextRite;
     private final LineageWindowOpportunity.View lineageWindow;
     private final VampiricAgeTierSnapshot ageTierSnapshot;
+    private final String nextThresholdText;
     private final Tab selectedTab;
 
     private HuntCompendiumModel(@Nonnull NightHuntMasterySnapshot mastery,
                                 @Nonnull NamedHuntProgress progress,
                                 @Nonnull List<NightHuntSpawnRegistry.SpawnOption> preyCatalogue,
                                  @Nonnull List<NightHuntPreparedLoadout> availableLoadouts,
-                                   @Nonnull NightHuntPreparedLoadout currentLoadout,
-                                   @Nonnull NightHuntPreparedLoadout previewLoadout,
-                                   @Nullable HuntCompendiumNextRiteResolver.NextRite nextRite,
-                                   @Nullable LineageWindowOpportunity.View lineageWindow,
-                                   @Nonnull VampiricAgeTierSnapshot ageTierSnapshot,
-                                   @Nonnull Tab selectedTab) {
+                                    @Nonnull NightHuntPreparedLoadout currentLoadout,
+                                    @Nonnull NightHuntPreparedLoadout previewLoadout,
+                                    @Nullable HuntCompendiumNextRiteResolver.NextRite nextRite,
+                                    @Nullable LineageWindowOpportunity.View lineageWindow,
+                                    @Nonnull VampiricAgeTierSnapshot ageTierSnapshot,
+                                    @Nullable String nextThresholdText,
+                                    @Nonnull Tab selectedTab) {
         this.mastery = mastery;
         this.progress = progress;
         this.preyCatalogue = preyCatalogue;
@@ -100,6 +102,7 @@ final class HuntCompendiumModel {
         this.nextRite = nextRite;
         this.lineageWindow = lineageWindow;
         this.ageTierSnapshot = ageTierSnapshot;
+        this.nextThresholdText = nextThresholdText;
         this.selectedTab = selectedTab;
     }
 
@@ -108,7 +111,8 @@ final class HuntCompendiumModel {
                                       @Nonnull Tab selectedTab,
                                       @Nullable String previewPreparationId,
                                       @Nullable HuntCompendiumNextRiteResolver.NextRite nextRite,
-                                      @Nullable LineageWindowOpportunity.View lineageWindow) {
+                                      @Nullable LineageWindowOpportunity.View lineageWindow,
+                                      @Nullable String nextThresholdText) {
         NamedHuntProgress progress = VampirePlayerStateStore.get().getNamedHuntProgress(uuid, NightHuntContracts.HUNT_ID);
         List<NightHuntSpawnRegistry.SpawnOption> preyCatalogue = new ArrayList<>(NightHuntSpawnRegistry.get().allSpawns());
         preyCatalogue.sort(Comparator
@@ -129,6 +133,7 @@ final class HuntCompendiumModel {
                 nextRite,
                 lineageWindow,
                 VampiricAgeTierService.snapshot(uuid),
+                nextThresholdText,
                 selectedTab);
     }
 
@@ -226,27 +231,35 @@ final class HuntCompendiumModel {
         String outcome = progress.lastOutcomeId != null
                 ? "\nLast outcome: " + NightHuntPresentationText.humanize(progress.lastOutcomeId)
                 : "";
-        String nextStep = overviewGuidanceText(nextRite, lineageWindow, ageTierSnapshot);
+        String nextStep = overviewGuidanceText(nextRite, lineageWindow, ageTierSnapshot, nextThresholdText);
         return "Most recent prey: " + source + "\n" + rewards + milestone + outcome + nextStep;
     }
 
     @Nonnull
     static String overviewGuidanceText(@Nullable HuntCompendiumNextRiteResolver.NextRite nextRite,
                                        @Nullable LineageWindowOpportunity.View lineageWindow,
-                                       @Nullable VampiricAgeTierSnapshot ageTierSnapshot) {
-        String lineageWindowText = lineageWindow != null ? lineageWindow.compactText() : "";
-        String nextRiseText = ageTierSnapshot != null
-                ? VampiricAgeTierProgressionText.compactNextRiseLine(ageTierSnapshot)
-                : "";
+                                       @Nullable VampiricAgeTierSnapshot ageTierSnapshot,
+                                       @Nullable String nextThresholdText) {
+        ArrayList<String> downstreamLines = new ArrayList<>();
+        if (lineageWindow != null) {
+            downstreamLines.add(lineageWindow.compactText());
+        }
+        if (ageTierSnapshot != null) {
+            String nextRiseText = VampiricAgeTierProgressionText.compactNextRiseLine(ageTierSnapshot);
+            if (!nextRiseText.isEmpty()) {
+                downstreamLines.add(nextRiseText);
+            }
+        }
+        String compactThresholdText = nextThresholdText != null ? nextThresholdText.trim() : "";
+        if (!compactThresholdText.isEmpty()) {
+            downstreamLines.add(compactThresholdText);
+        }
         if (nextRite != null) {
             return "\n\nNext rite: " + nextRite.ritualName()
                     + "\n" + nextRite.guidance()
-                    + (lineageWindowText.isEmpty() ? "" : "\n" + lineageWindowText)
-                    + (nextRiseText.isEmpty() ? "" : "\n" + nextRiseText);
+                    + (downstreamLines.isEmpty() ? "" : "\n" + String.join("\n", downstreamLines));
         }
-        String downstreamText = lineageWindowText.isEmpty()
-                ? nextRiseText
-                : nextRiseText.isEmpty() ? lineageWindowText : lineageWindowText + "\n" + nextRiseText;
+        String downstreamText = String.join("\n", downstreamLines);
         return downstreamText.isEmpty() ? "" : "\n\n" + downstreamText;
     }
 

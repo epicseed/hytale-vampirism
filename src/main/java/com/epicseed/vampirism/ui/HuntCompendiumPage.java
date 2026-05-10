@@ -3,11 +3,13 @@ package com.epicseed.vampirism.ui;
 import java.util.List;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.hytale.PlayerFeedbackAdapter;
 import com.epicseed.vampirism.domain.hunt.NightHuntProgressionService;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
+import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatSnapshot;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContext;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
@@ -226,12 +228,14 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
 
     @Nonnull
     private HuntCompendiumModel model(Store<EntityStore> store) {
+        MasqueradeHeatSnapshot masquerade = resolveMasqueradeSnapshot();
         HuntCompendiumModel latest = HuntCompendiumModel.create(
                 playerRef.getUuid(),
                 selectedTab,
                 previewPreparationId,
                 resolveNextRite(store),
-                resolveLineageWindow());
+                resolveLineageWindow(masquerade),
+                masquerade != null ? MasqueradeHeatThresholdText.compactLine(masquerade, masqueradeHeatService.policy()) : null);
         previewPreparationId = latest.previewPreparationId();
         return latest;
     }
@@ -244,13 +248,18 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
         return nextRiteResolver.resolve(playerRef.getUuid(), ritualContext);
     }
 
-    private LineageWindowOpportunity.View resolveLineageWindow() {
-        if (lineageService == null || masqueradeHeatService == null) {
+    private MasqueradeHeatSnapshot resolveMasqueradeSnapshot() {
+        if (masqueradeHeatService == null) {
             return null;
         }
-        return LineageWindowOpportunity.resolve(
-                masqueradeHeatService.snapshot(playerRef.getUuid(), System.currentTimeMillis()),
-                lineageService.evaluateAll(playerRef.getUuid()));
+        return masqueradeHeatService.snapshot(playerRef.getUuid(), System.currentTimeMillis());
+    }
+
+    private LineageWindowOpportunity.View resolveLineageWindow(@Nullable MasqueradeHeatSnapshot masquerade) {
+        if (lineageService == null || masquerade == null) {
+            return null;
+        }
+        return LineageWindowOpportunity.resolve(masquerade, lineageService.evaluateAll(playerRef.getUuid()));
     }
 
     @Nonnull
