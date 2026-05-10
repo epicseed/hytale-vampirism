@@ -4,7 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
+import com.epicseed.epiccore.vampirism.domain.age.VampiricAgeTierDefinition;
+import com.epicseed.epiccore.vampirism.domain.age.VampiricAgeTierSnapshot;
+
 class HuntCompendiumModelTest {
+
+    private static final VampiricAgeTierDefinition FLEDGLING =
+            new VampiricAgeTierDefinition("fledgling", "Fledgling", "", 100L, "#c084fc");
+    private static final VampiricAgeTierDefinition ELDER =
+            new VampiricAgeTierDefinition("elder", "Elder", "", 250L, "#ef4444");
 
     @Test
     void overviewGuidanceTextPlacesLineageWindowUnderNextRite() {
@@ -13,11 +21,22 @@ class HuntCompendiumModelTest {
                 new LineageWindowOpportunity.View(
                         "Voidspawn ready",
                         "Stay at or below 25.0 heat to keep it claimable.",
-                        "#22c55e"));
+                        "#22c55e"),
+                new VampiricAgeTierSnapshot(
+                        "fledgling",
+                        true,
+                        FLEDGLING,
+                        ELDER,
+                        1,
+                        3,
+                        65L,
+                        250L,
+                        185L));
 
         assertEquals(
                 "\n\nNext rite: Veil of Night\nReady now. Return to a ritual anchor and invoke it.\n"
-                        + "Lineage window: Voidspawn ready - stay at or below 25.0 heat to keep it claimable.",
+                        + "Lineage window: Voidspawn ready - stay at or below 25.0 heat to keep it claimable.\n"
+                        + "Next rise: Elder - 185 progress remaining (65 / 250).",
                 text);
     }
 }
