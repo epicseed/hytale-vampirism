@@ -1,0 +1,34 @@
+{
+  "ageTiers": [
+    {
+      "id": "fledgling",
+      "hunterPressureMultiplier": 1.0
+    },
+    {
+      "id": "elder",
+      "hunterPressureMultiplier": 1.2
+    },
+    {
+      "id": "ancient",
+      "hunterPressureMultiplier": 1.5
+    }
+  ],
+  "lineages": [
+    {
+      "id": "outlander",
+      "worldThreatEscalationMultiplier": 1.3
+    },
+    {
+      "id": "mesmerist",
+      "worldThreatEscalationMultiplier": 0.8
+    },
+    {
+      "id": "voidspawn",
+      "worldThreatEscalationMultiplier": 0.8
+    },
+    {
+      "id": "voidtaken",
+      "worldThreatEscalationMultiplier": 0.8
+    }
+  ]
+}

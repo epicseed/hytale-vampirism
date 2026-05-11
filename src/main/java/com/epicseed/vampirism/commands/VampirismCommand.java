@@ -25,6 +25,7 @@ import com.epicseed.vampirism.Vampirism;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.domain.hunt.NightHuntProgressionService;
+import com.epicseed.vampirism.domain.identity.IdentityPressureRegistry;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
@@ -187,6 +188,7 @@ public class VampirismCommand extends AbstractCommand {
                     .register("night hunt progression", NightHuntProgressionService::reload)
                     .register("night hunt spawn registry", () -> NightHuntSpawnRegistry.get().reload())
                     .register("vampiric age tiers", VampiricAgeTierService::reload)
+                    .register("identity pressure", () -> IdentityPressureRegistry.get().reload())
                     .register("vampiric lineages", () -> lineageService.registry().reload())
                     .register("ritual templates", () -> ritualRuntimeService.templateRegistry().reload())
                     .register("runtime refresh", () -> runtimeReloadRef.set(

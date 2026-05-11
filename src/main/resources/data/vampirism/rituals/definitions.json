@@ -166,6 +166,35 @@
           "minAmount": 1
         }
       ]
+    },
+    {
+      "blockedContextTags": [],
+      "description": "Pull a mortal will apart in blood until the court's whisper answers back.",
+      "displayName": "Mind Weave",
+      "id": "mind_weave",
+      "minBlood": 34,
+      "minCompletedNightHunts": 2,
+      "objectives": [],
+      "presentation": null,
+      "requiredAgeTierId": "fledgling",
+      "requiredAffinities": [
+        {
+          "affinityId": "humanoid",
+          "minAmount": 1
+        }
+      ],
+      "requiredContextTags": [
+        "night"
+      ],
+      "requiredSkills": [
+        "BloodThrow"
+      ],
+      "rewards": {
+        "bloodDelta": 0,
+        "grantedSkills": [],
+        "sideEffectIds": [],
+        "skillPoints": 2
+      }
     }
   ]
 }

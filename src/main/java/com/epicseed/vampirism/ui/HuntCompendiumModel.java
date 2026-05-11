@@ -65,6 +65,7 @@ final class HuntCompendiumModel {
     record PreparationOption(@Nonnull String preparationId,
                              @Nonnull String displayName,
                              @Nonnull String modeDisplayName,
+                             @Nonnull String focusLabel,
                              @Nonnull String statusText,
                              boolean selected,
                              boolean previewed) {
@@ -151,7 +152,10 @@ final class HuntCompendiumModel {
 
     @Nonnull
     String preparedLoadoutText() {
-        return currentLoadout.preparationDisplayName() + " · " + currentLoadout.modeDisplayName();
+        NightHuntPreparationAffinityContent.PreparationAffinity focus =
+                NightHuntPreparationAffinityContent.focusForPreparation(currentLoadout.preparationId());
+        return currentLoadout.preparationDisplayName() + " · " + currentLoadout.modeDisplayName()
+                + (focus != null ? " · " + focus.laneLabel() : "");
     }
 
     @Nonnull
@@ -166,6 +170,7 @@ final class HuntCompendiumModel {
         return String.join("\n",
                 "Contracts completed: " + mastery.totalCompletions() + " · unique contracts " + mastery.uniqueContractsCompleted(),
                 "Prepared for next hunt: " + currentLoadout.preparationDisplayName() + " into " + currentLoadout.modeDisplayName() + ".",
+                "Affinity lane: " + preparationRecapText(currentLoadout),
                 "Objective focus: " + currentLoadout.objectiveText(),
                 "Elite prey claimed: " + mastery.eliteCompletionCount());
     }
@@ -224,15 +229,21 @@ final class HuntCompendiumModel {
                 : mastery.lastRewardedContractId() != null
                 ? NightHuntPresentationText.contractTargetSummary(mastery.lastRewardedContractId())
                 : "Unknown prey";
-        String rewards = parts.isEmpty() ? "No tangible bonus recorded." : String.join(" · ", parts);
-        String milestone = mastery.lastRewardedArchetypeMilestoneId() != null
-                ? "\nMilestone: " + NightHuntPresentationText.humanize(mastery.lastRewardedArchetypeMilestoneId())
-                : "";
-        String outcome = progress.lastOutcomeId != null
-                ? "\nLast outcome: " + NightHuntPresentationText.humanize(progress.lastOutcomeId)
-                : "";
+        ArrayList<String> lines = new ArrayList<>();
+        lines.add("Most recent prey: " + source);
+        lines.add(parts.isEmpty() ? "No tangible bonus recorded." : String.join(" · ", parts));
+        String laneReadout = recentRewardLaneText(mastery);
+        if (!laneReadout.isBlank()) {
+            lines.add(laneReadout);
+        }
+        if (mastery.lastRewardedArchetypeMilestoneId() != null) {
+            lines.add("Milestone: " + NightHuntPresentationText.humanize(mastery.lastRewardedArchetypeMilestoneId()));
+        }
+        if (progress.lastOutcomeId != null) {
+            lines.add("Last outcome: " + NightHuntPresentationText.humanize(progress.lastOutcomeId));
+        }
         String nextStep = overviewGuidanceText(nextRite, lineageWindow, ageTierSnapshot, nextThresholdText);
-        return "Most recent prey: " + source + "\n" + rewards + milestone + outcome + nextStep;
+        return String.join("\n", lines) + nextStep;
     }
 
     @Nonnull
@@ -276,6 +287,7 @@ final class HuntCompendiumModel {
                     loadout.preparationId(),
                     loadout.preparationDisplayName(),
                     loadout.modeDisplayName(),
+                    preparationFocusLabel(loadout.preparationId()),
                     status,
                     selected,
                     previewed));
@@ -308,6 +320,15 @@ final class HuntCompendiumModel {
     @Nonnull
     String preparationPreviewEffects() {
         ArrayList<String> lines = new ArrayList<>();
+        NightHuntPreparationAffinityContent.PreparationAffinity focus =
+                NightHuntPreparationAffinityContent.focusForPreparation(previewLoadout.preparationId());
+        if (focus != null) {
+            lines.add("Affinity focus: " + focus.preyFamilyDisplayName());
+            lines.add("Lane bonus: " + focus.bonusText());
+            lines.add("Affinity path: " + focus.focusText());
+        } else {
+            lines.add("Affinity focus: none");
+        }
         lines.add("Trail tier delta: " + signedDelta(previewLoadout.visualTierDelta()));
         lines.add("Route delta: " + signedDelta(previewLoadout.waypointTargetAdjustment()) + " waypoint"
                 + (Math.abs(previewLoadout.waypointTargetAdjustment()) == 1 ? "" : "s"));
@@ -386,6 +407,90 @@ final class HuntCompendiumModel {
             }
         }
         return String.join("\n", lines);
+    }
+
+    @Nonnull
+    static String preparationFocusLabel(@Nullable String preparationId) {
+        NightHuntPreparationAffinityContent.PreparationAffinity focus =
+                NightHuntPreparationAffinityContent.focusForPreparation(preparationId);
+        return focus != null ? focus.laneLabel() : "Open focus";
+    }
+
+    @Nonnull
+    static String preparationRecapText(@Nonnull NightHuntPreparedLoadout loadout) {
+        NightHuntPreparationAffinityContent.PreparationAffinity focus =
+                NightHuntPreparationAffinityContent.focusForPreparation(loadout.preparationId());
+        if (focus == null) {
+            return "No dedicated prey-family lane is authored for this preparation.";
+        }
+        ArrayList<String> parts = new ArrayList<>();
+        parts.add(focus.laneLabel());
+        String bonus = matchingBonusText(loadout.affinityFocusMasteryBonus(), loadout.affinityFocusBloodBonus(), focus.preyFamilyDisplayName());
+        if (!bonus.isBlank()) {
+            parts.add(bonus);
+        }
+        parts.add(focus.bonusText());
+        return String.join(" · ", parts);
+    }
+
+    @Nonnull
+    static String recentRewardLaneText(@Nonnull NightHuntMasterySnapshot mastery) {
+        if (mastery.lastRewardPreparationId() != null && mastery.lastRewardPreparationAffinityFocusId() != null) {
+            NightHuntPreparationAffinityContent.PreparationAffinity focus =
+                    NightHuntPreparationAffinityContent.focusForPreparation(mastery.lastRewardPreparationId());
+            if (focus == null) {
+                focus = NightHuntPreparationAffinityContent.focusForPreyFamily(mastery.lastRewardPreparationAffinityFocusId());
+            }
+            if (focus != null) {
+                ArrayList<String> parts = new ArrayList<>();
+                parts.add("Preparation bonus: " + focus.preparationDisplayName() + " · " + focus.laneLabel());
+                String appliedBonus = matchingBonusText(
+                        mastery.lastRewardPreparationMasteryBonus(),
+                        mastery.lastRewardPreparationBloodBonus(),
+                        focus.preyFamilyDisplayName());
+                if (!appliedBonus.isBlank()) {
+                    parts.add(appliedBonus);
+                }
+                parts.add(focus.bonusText());
+                return String.join(" · ", parts);
+            }
+        }
+        String preyFamilyId = mastery.lastRewardedPreyFamilyId() != null
+                ? mastery.lastRewardedPreyFamilyId()
+                : mastery.lastRewardAffinityId();
+        if (preyFamilyId == null || preyFamilyId.isBlank()) {
+            return "";
+        }
+        NightHuntPreparationAffinityContent.PreparationAffinity focus =
+                NightHuntPreparationAffinityContent.focusForPreyFamily(preyFamilyId);
+        if (focus == null) {
+            return NightHuntPresentationText.humanize(preyFamilyId)
+                    + " prey currently have no dedicated preparation lane.";
+        }
+        NightHuntPreparedLoadout loadout = NightHuntProgressionService.preparedLoadout(focus.preparationId(), null);
+        ArrayList<String> parts = new ArrayList<>();
+        parts.add("Matching lane: " + focus.preparationDisplayName() + " · " + focus.laneLabel());
+        String matchBonus = matchingBonusText(loadout.affinityFocusMasteryBonus(), loadout.affinityFocusBloodBonus(), focus.preyFamilyDisplayName());
+        if (!matchBonus.isBlank()) {
+            parts.add(matchBonus);
+        }
+        parts.add(focus.bonusText());
+        return String.join(" · ", parts);
+    }
+
+    @Nonnull
+    private static String matchingBonusText(int masteryBonus, int bloodBonus, @Nonnull String preyFamilyDisplayName) {
+        ArrayList<String> parts = new ArrayList<>();
+        if (masteryBonus > 0) {
+            parts.add("+" + masteryBonus + " mastery");
+        }
+        if (bloodBonus > 0) {
+            parts.add("+" + bloodBonus + " blood");
+        }
+        if (parts.isEmpty()) {
+            return "";
+        }
+        return String.join(" · ", parts) + " on matching " + preyFamilyDisplayName + " hunts";
     }
 
     @Nonnull

@@ -191,7 +191,7 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
             String selector = "#PreparationOptions[" + i + "]";
             cmd.set(selector + ".Visible", true);
             cmd.set(selector + " #PrepName.Text", option.displayName());
-            cmd.set(selector + " #PrepMode.Text", option.modeDisplayName());
+            cmd.set(selector + " #PrepMode.Text", option.modeDisplayName() + " · " + option.focusLabel());
             cmd.set(selector + " #PrepStatus.Text", option.statusText());
             cmd.set(selector + ".Background.Color", option.previewed()
                     ? "#1e3048"

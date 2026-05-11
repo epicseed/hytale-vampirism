@@ -43,6 +43,7 @@ class RitualResourceDataTest {
 
         VampiricRitualDefinition summonFamiliar = registry.definition("summon_familiar").orElseThrow();
         VampiricRitualDefinition soulExchange = registry.definition("soul_exchange").orElseThrow();
+        VampiricRitualDefinition mindWeave = registry.definition("mind_weave").orElseThrow();
         VampiricRitualDefinition veilOfNight = registry.definition("veil_of_night").orElseThrow();
 
         assertEquals(36, summonFamiliar.minBlood());
@@ -57,6 +58,9 @@ class RitualResourceDataTest {
         assertEquals(1, soulExchange.requiredAffinities().size());
         assertEquals("monstrous", soulExchange.requiredAffinities().get(0).affinityId());
         assertEquals(1, soulExchange.requiredAffinities().get(0).minAmount());
+        assertEquals(1, mindWeave.requiredAffinities().size());
+        assertEquals("humanoid", mindWeave.requiredAffinities().get(0).affinityId());
+        assertEquals(2, mindWeave.minCompletedNightHunts());
         assertEquals(Set.of(VampiricProgressionProofs.FIRST_NIGHT_HUNT_COMPLETION), veilOfNight.requiredProofIds());
     }
 

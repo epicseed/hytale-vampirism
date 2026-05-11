@@ -50,6 +50,15 @@
       "displayName": "Bloodhound Rite",
       "description": "Sharpen the scent and commit to a direct blood pursuit.",
       "preferredModeId": "pursuit",
+      "affinityFocusId": "beast",
+      "affinityMasteryBonus": 20,
+      "affinityBloodBonus": 0,
+      "affinityFocus": {
+        "preyFamilyId": "beast",
+        "familyDisplayName": "Beast",
+        "focusText": "Pick this when you want Beast affinity rewards to keep lining up with beast-gated rites and lineages.",
+        "bonusText": "Longer scent trails and a direct Blood Pursuit make Beast prey the cleanest specialization lane."
+      },
       "routeWaypointAdjustment": 1,
       "visualTierDelta": 0
     },
@@ -58,6 +67,15 @@
       "displayName": "Siphon Rite",
       "description": "Shorten the route and prepare to finish the prey through draining pressure.",
       "preferredModeId": "siphon",
+      "affinityFocusId": "vermin",
+      "affinityMasteryBonus": 15,
+      "affinityBloodBonus": 1,
+      "affinityFocus": {
+        "preyFamilyId": "vermin",
+        "familyDisplayName": "Vermin",
+        "focusText": "Pick this when you want Vermin affinity rewards feeding the same drain-heavy ritual and lineage path.",
+        "bonusText": "Shorter routes and sustained siphon pressure turn Vermin hunts into the steady affinity farming lane."
+      },
       "routeWaypointAdjustment": 0,
       "visualTierDelta": 0
     },
@@ -66,8 +84,34 @@
       "displayName": "Dread Mantle",
       "description": "Thicken the omen and force the prey to break before it dies.",
       "preferredModeId": "dread",
+      "affinityFocusId": "monstrous",
+      "affinityMasteryBonus": 20,
+      "affinityBloodBonus": 0,
+      "affinityFocus": {
+        "preyFamilyId": "monstrous",
+        "familyDisplayName": "Monstrous",
+        "focusText": "Pick this when you want Monstrous affinity rewards to reinforce terror-focused rites and lineages.",
+        "bonusText": "Heavier omen pressure and a stronger trail tier keep Monstrous hunts on the fear-driven specialization lane."
+      },
       "routeWaypointAdjustment": 0,
       "visualTierDelta": 1
+    },
+    {
+      "id": "shadow-pact",
+      "displayName": "Shadow Pact",
+      "description": "Turn the hunt intimate and keep close enough to unravel mortal resolve.",
+      "preferredModeId": "siphon",
+      "affinityFocusId": "humanoid",
+      "affinityMasteryBonus": 15,
+      "affinityBloodBonus": 1,
+      "affinityFocus": {
+        "preyFamilyId": "humanoid",
+        "familyDisplayName": "Humanoid",
+        "focusText": "Pick this when you want Humanoid affinity rewards feeding the courtly identity route without opening a separate specialization screen.",
+        "bonusText": "Closer routes and siphon pressure turn Humanoid hunts into the clean social-pressure lane."
+      },
+      "routeWaypointAdjustment": -1,
+      "visualTierDelta": 0
     }
   ],
   "ranks": [

@@ -22,9 +22,9 @@ Group #HuntCompendiumRoot {
     @Anchor = (Right: 24, Top: 18, Width: 100, Height: 32);
   }
 
-  Group #SnapshotStrip {
-    Anchor: (Left: 24, Right: 24, Top: 82, Height: 78);
-    Background: #14202c;
+    Group #SnapshotStrip {
+      Anchor: (Left: 24, Right: 24, Top: 82, Height: 90);
+      Background: #14202c;
 
     Label {
       Anchor: (Left: 18, Top: 12, Width: 120, Height: 16);
@@ -33,9 +33,9 @@ Group #HuntCompendiumRoot {
     }
 
     Label #PreparedLoadoutValue {
-      Anchor: (Left: 18, Top: 30, Width: 340, Height: 20);
+      Anchor: (Left: 18, Top: 30, Width: 420, Height: 34);
       Text: "";
-      Style: (FontSize: 14, RenderBold: true, TextColor: #ffffff);
+      Style: (FontSize: 14, RenderBold: true, TextColor: #ffffff, Wrap: true);
     }
 
     Label {
@@ -45,9 +45,9 @@ Group #HuntCompendiumRoot {
     }
 
     Label #NextRankValue {
-      Anchor: (Right: 18, Top: 30, Width: 220, Height: 20);
+      Anchor: (Right: 18, Top: 30, Width: 220, Height: 34);
       Text: "";
-      Style: (FontSize: 14, RenderBold: true, TextColor: #facc15, HorizontalAlignment: End);
+      Style: (FontSize: 14, RenderBold: true, TextColor: #facc15, HorizontalAlignment: End, VerticalAlignment: Center);
     }
   }
 
@@ -194,12 +194,12 @@ Group #HuntCompendiumRoot {
         Style: (FontSize: 11, TextColor: #7dd3fc, RenderBold: true);
       }
       Label #PreparationPreviewDescription {
-        Anchor: (Left: 16, Top: 82, Right: 16, Height: 32);
+        Anchor: (Left: 16, Top: 82, Right: 16, Height: 46);
         Text: "";
         Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
       }
       Label #PreparationPreviewObjective {
-        Anchor: (Left: 16, Top: 118, Right: 16, Height: 34);
+        Anchor: (Left: 16, Top: 132, Right: 16, Height: 28);
         Text: "";
         Style: (FontSize: 11, TextColor: #facc15, Wrap: true);
       }

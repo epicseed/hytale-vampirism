@@ -17,6 +17,7 @@ class LineageResourceDataTest {
         VampiricLineageRegistry registry = new VampiricLineageRegistry();
 
         VampiricLineageDefinition outlander = registry.lineage("outlander").orElseThrow();
+        VampiricLineageDefinition mesmerist = registry.lineage("mesmerist").orElseThrow();
         VampiricLineageDefinition voidspawn = registry.lineage("voidspawn").orElseThrow();
         VampiricLineageDefinition voidtaken = registry.lineage("voidtaken").orElseThrow();
 
@@ -26,6 +27,10 @@ class LineageResourceDataTest {
                 outlander.requirements().requiredAffinities());
         assertEquals(Set.of("awakening"), voidspawn.requirements().requiredCompletedRitualIds());
         assertTrue(voidspawn.requirements().requiredAffinities().isEmpty());
+        assertTrue(mesmerist.requirements().requiredCompletedRitualIds().contains("mind_weave"));
+        assertEquals(
+                List.of(new VampiricRitualDefinition.AffinityRequirement("humanoid", 1)),
+                mesmerist.requirements().requiredAffinities());
         assertTrue(voidtaken.requirements().requiredCompletedRitualIds().contains("soul_exchange"));
         assertEquals(
                 List.of(new VampiricRitualDefinition.AffinityRequirement("monstrous", 1)),

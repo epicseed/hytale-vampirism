@@ -133,6 +133,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
         Map<String, NamedHuntProgress> namedHuntProgress = store.getAllNamedHuntProgress(uuid);
         List<VampiricLineageEvaluation> lineageEvaluations = lineageService.evaluateAll(uuid);
         List<VampiricRitualEvaluation> ritualEvaluations = ritualEvaluations(uuid, store);
+        String ageTierId = store.getAgeTierId(uuid);
 
         int trackedRituals = Math.max(ritualStates.size(), ritualEvaluations.size());
         long activeRituals = ritualEvaluations.stream()
@@ -231,7 +232,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                                 new ProgressionCardView(
                                         "Preparation",
                                         huntLoadout.preparationDisplayName(),
-                                        huntLoadout.modeDisplayName() + " · Open the Hunt Briefing to preview and change.",
+                                        summarizePreparationDetail(huntLoadout),
                                         "#f59e0b"),
                                 new ProgressionCardView(
                                         "Recent Reward",
@@ -248,6 +249,8 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                         buildHeatCards(
                                 masquerade,
                                 masqueradeHeatService.policy(),
+                                ageTierId,
+                                selectedLineage,
                                 bloodAffinities,
                                 lineageEvaluations,
                                 continuity)));
@@ -326,7 +329,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
     }
 
     @Nonnull
-    private static String summarizeRecentHuntReward(@Nonnull com.epicseed.vampirism.domain.hunt.NightHuntMasterySnapshot mastery) {
+    static String summarizeRecentHuntReward(@Nonnull com.epicseed.vampirism.domain.hunt.NightHuntMasterySnapshot mastery) {
         if (mastery.lastRewardedAtMs() <= 0L) {
             return "No hunt reward has been recorded yet.";
         }
@@ -341,7 +344,15 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
         if (mastery.lastRewardedArchetypeMilestoneId() != null) {
             parts.add(formatIdentifier(mastery.lastRewardedArchetypeMilestoneId(), "Milestone"));
         }
-        return parts.isEmpty() ? "No tangible bonus recorded." : String.join(" · ", parts);
+        String summary = parts.isEmpty() ? "No tangible bonus recorded." : String.join(" · ", parts);
+        String laneReadout = HuntCompendiumModel.recentRewardLaneText(mastery);
+        return laneReadout.isBlank() ? summary : summary + " · " + laneReadout;
+    }
+
+    @Nonnull
+    static String summarizePreparationDetail(@Nonnull com.epicseed.vampirism.domain.hunt.NightHuntPreparedLoadout loadout) {
+        return loadout.modeDisplayName() + " · " + HuntCompendiumModel.preparationRecapText(loadout)
+                + " Open the Hunt Briefing to preview and change.";
     }
 
     @Nonnull
@@ -357,6 +368,8 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
     @Nonnull
     static List<ProgressionCardView> buildHeatCards(@Nonnull MasqueradeHeatSnapshot masquerade,
                                                     @Nonnull MasqueradeHeatPolicy policy,
+                                                    @Nullable String ageTierId,
+                                                    @Nullable VampiricLineageEvaluation selectedLineage,
                                                     @Nonnull Map<String, Integer> bloodAffinities,
                                                     @Nonnull List<VampiricLineageEvaluation> lineageEvaluations,
                                                     @Nonnull NightHuntContinuitySnapshot continuity) {
@@ -368,6 +381,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                 lineageEvaluations);
         PressureOutlookText.View pressureOutlook = PressureOutlookText.resolve(continuity);
         PressureDriversText.View pressureDrivers = PressureDriversText.resolve(continuity);
+        IdentityPressureText.View identityPressure = IdentityPressureText.resolve(ageTierId, selectedLineage);
         return List.of(
                 new ProgressionCardView(
                         "Current Exposure",
@@ -384,6 +398,11 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                         currentRiskValue(masquerade),
                         currentRiskDetail(masquerade),
                         masquerade.progressionLocked() ? "#ef4444" : heatAccent(masquerade.exposureLevel())),
+                new ProgressionCardView(
+                        "Identity Pressure",
+                        identityPressure.value(),
+                        identityPressure.detail(),
+                        identityPressure.accentColor()),
                 new ProgressionCardView(
                         "Pressure Outlook",
                         pressureOutlook.value(),

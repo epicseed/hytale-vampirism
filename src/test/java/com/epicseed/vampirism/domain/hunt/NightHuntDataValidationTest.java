@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
+import com.epicseed.vampirism.ui.NightHuntPreparationAffinityContent;
 
 import java.util.stream.Collectors;
 
@@ -22,12 +23,23 @@ class NightHuntDataValidationTest {
         assertTrue(report.warnings().isEmpty(), () -> String.join("\n", report.warnings()));
         assertTrue(report.errors().isEmpty(), () -> String.join("\n", report.errors()));
         assertEquals(3, registry.snapshot().contractModes().size());
-        assertEquals(3, registry.snapshot().preparations().size());
+        assertEquals(4, registry.snapshot().preparations().size());
         assertEquals(3, registry.snapshot().ranks().size());
         assertEquals(4, registry.snapshot().archetypes().size());
         assertTrue(registry.snapshot().hasContractMode("dread"));
         assertTrue(registry.snapshot().hasPreparation("bloodhound-rite"));
         assertTrue(registry.snapshot().hasResolution("drain"));
+        assertEquals(4, NightHuntPreparationAffinityContent.snapshot().byPreparationId().size());
+        assertEquals("beast",
+                NightHuntPreparationAffinityContent.focusForPreparation("bloodhound-rite").preyFamilyId());
+        assertEquals("vermin",
+                NightHuntPreparationAffinityContent.focusForPreparation("siphon-rite").preyFamilyId());
+        assertEquals("monstrous",
+                NightHuntPreparationAffinityContent.focusForPreparation("dread-mantle").preyFamilyId());
+        assertEquals("humanoid",
+                NightHuntPreparationAffinityContent.focusForPreparation("shadow-pact").preyFamilyId());
+        assertEquals("shadow-pact",
+                NightHuntPreparationAffinityContent.focusForPreyFamily("humanoid").preparationId());
     }
 
     @Test

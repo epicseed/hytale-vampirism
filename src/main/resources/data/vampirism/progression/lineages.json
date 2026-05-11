@@ -143,6 +143,51 @@
           ]
         }
       ]
+    },
+    {
+      "id": "mesmerist",
+      "clanId": "voidcourt",
+      "displayName": "Mesmerist",
+      "description": "A court lineage that feeds on poise, promises, and broken mortal will.",
+      "requirements": {
+        "requiredAgeTierId": "fledgling",
+        "minCompletedNightHunts": 2,
+        "requiredSkills": [
+          "BloodThrow"
+        ],
+        "requiredCompletedRitualIds": [
+          "awakening",
+          "mind_weave"
+        ],
+        "requiredAffinities": [
+          {
+            "affinityId": "humanoid",
+            "minAmount": 1
+          }
+        ],
+        "maxMasqueradeHeat": 20.0
+      },
+      "perks": [
+        {
+          "id": "silver-tongue",
+          "displayName": "Silver Tongue",
+          "description": "Closer feeds and disciplined bloodcraft make mortal pressure easier to sustain.",
+          "modifiers": [
+            {
+              "statId": "FEEDING_SPEED",
+              "operation": "ADD",
+              "value": 0.1,
+              "priority": 160
+            },
+            {
+              "statId": "ABILITY_COOLDOWN_REDUCTION",
+              "operation": "ADD",
+              "value": 0.05,
+              "priority": 160
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -10,6 +10,9 @@ import org.junit.jupiter.api.Test;
 
 import com.epicseed.epiccore.skill.ui.ProgressionCardView;
 import com.epicseed.epiccore.vampirism.domain.player.MasqueradeHeatState;
+import com.epicseed.vampirism.domain.hunt.NightHuntMasterySnapshot;
+import com.epicseed.vampirism.domain.hunt.NightHuntPreparedLoadout;
+import com.epicseed.vampirism.domain.hunt.NightHuntProgressionRegistry;
 import com.epicseed.vampirism.domain.hunt.NightHuntContinuitySnapshot;
 import com.epicseed.vampirism.domain.lineage.VampiricClanDefinition;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageDefinition;
@@ -33,6 +36,8 @@ class VampirismSkillTreeUiAdapterTest {
         List<ProgressionCardView> cards = VampirismSkillTreeUiAdapter.buildHeatCards(
                 snapshot,
                 MasqueradeHeatPolicy.defaults(),
+                "elder",
+                lineageEvaluation("voidspawn", "Voidspawn", 25.0d, false, List.of("Heat gated")),
                 Map.of(),
                 List.of(lineageEvaluation("voidspawn", "Voidspawn", 25.0d, false, List.of("Heat gated"))),
                 new NightHuntContinuitySnapshot(
@@ -54,6 +59,9 @@ class VampirismSkillTreeUiAdapterTest {
         assertEquals("Hunted at 45.0", card(cards, "Next Threshold").value());
         assertTrue(card(cards, "Next Threshold").detail().contains("15.0 heat remaining"));
         assertEquals("Pressure 45", card(cards, "Current Risk").value());
+        assertEquals("Elder · Voidspawn", card(cards, "Identity Pressure").value());
+        assertTrue(card(cards, "Identity Pressure").detail().contains("visibility +20%"));
+        assertTrue(card(cards, "Identity Pressure").detail().contains("threat escalation -20%"));
         assertEquals("Hunter crackdown · Siphon Ledger II", card(cards, "Pressure Outlook").value());
         assertTrue(card(cards, "Pressure Outlook").detail().contains("Break this chain before the next hunt"));
         assertEquals("Siphon Ledger II", card(cards, "Pressure Drivers").value());
@@ -74,11 +82,14 @@ class VampirismSkillTreeUiAdapterTest {
         List<ProgressionCardView> cards = VampirismSkillTreeUiAdapter.buildHeatCards(
                 snapshot,
                 MasqueradeHeatPolicy.defaults(),
+                "fledgling",
+                lineageEvaluation("voidspawn", "Voidspawn", 25.0d, true, List.of()),
                 Map.of(),
                 List.of(lineageEvaluation("voidspawn", "Voidspawn", 25.0d, true, List.of())),
                 NightHuntContinuitySnapshot.empty());
 
         assertEquals("Routes clear", card(cards, "Current Risk").value());
+        assertEquals("Fledgling · Voidspawn", card(cards, "Identity Pressure").value());
         assertEquals("Quiet routes", card(cards, "Pressure Outlook").value());
         assertTrue(card(cards, "Pressure Outlook").detail().contains("No active world response"));
         assertEquals("No active driver", card(cards, "Pressure Drivers").value());
@@ -99,6 +110,8 @@ class VampirismSkillTreeUiAdapterTest {
         List<ProgressionCardView> cards = VampirismSkillTreeUiAdapter.buildHeatCards(
                 snapshot,
                 MasqueradeHeatPolicy.defaults(),
+                "fledgling",
+                null,
                 Map.of("void", 1),
                 List.of(lineageEvaluation(
                         "voidspawn",
@@ -109,6 +122,7 @@ class VampirismSkillTreeUiAdapterTest {
                         List.of("missing_affinity:void:2"))),
                 NightHuntContinuitySnapshot.empty());
 
+        assertEquals("Fledgling · Unbound", card(cards, "Identity Pressure").value());
         assertEquals("Voidspawn pending", card(cards, "Current Opportunity").value());
         assertTrue(card(cards, "Current Opportunity").detail().contains("raise Void affinity to 2 (currently 1/2)"));
     }
@@ -132,6 +146,66 @@ class VampirismSkillTreeUiAdapterTest {
         assertTrue(card(cards, "Lineage Milestone").detail()
                 .contains("Voidspawn needs you to raise Void affinity to 2 (currently 1/2)."));
         assertTrue(card(cards, "Voidspawn").detail().contains("Raise Void affinity to 2 (currently 1/2)"));
+    }
+
+    @Test
+    void summarizePreparationDetailIncludesAffinityLaneBonus() {
+        NightHuntPreparedLoadout loadout = new NightHuntPreparedLoadout(
+                "siphon-rite",
+                "Siphon Rite",
+                "Shorten the route and prepare to finish the prey through draining pressure.",
+                "vermin",
+                15,
+                1,
+                "siphon",
+                "Siphon Contract",
+                "drain",
+                "Wound the prey, then stay close until the rite drains it dry.",
+                0,
+                0,
+                0.9f,
+                2,
+                6f,
+                7d);
+
+        assertEquals(
+                "Siphon Contract · Vermin focus · +15 mastery · +1 blood on matching Vermin hunts · Shorter routes and sustained siphon pressure turn Vermin hunts into the steady affinity farming lane. Open the Hunt Briefing to preview and change.",
+                VampirismSkillTreeUiAdapter.summarizePreparationDetail(loadout));
+    }
+
+    @Test
+    void summarizeRecentHuntRewardIncludesPreparationLaneReadout() {
+        NightHuntMasterySnapshot mastery = new NightHuntMasterySnapshot(
+                120,
+                2,
+                2,
+                Map.of(),
+                Map.of("monstrous", 1),
+                java.util.Set.of("elderfang"),
+                0,
+                new NightHuntProgressionRegistry.RankDefinition("blooded", "Blooded", 0, 1, "#b91c1c"),
+                null,
+                0,
+                "night-hunt:dread:elderfang",
+                "elderfang",
+                null,
+                null,
+                "monstrous",
+                1,
+                100,
+                0,
+                0L,
+                "monstrous",
+                1,
+                "dread-mantle",
+                "monstrous",
+                20,
+                0,
+                1L);
+
+        assertEquals(
+                "+1 skill · +100 mastery · Monstrous +1 · Preparation bonus: Dread Mantle · Monstrous focus · +20 mastery on matching Monstrous hunts · Heavier omen pressure and a stronger trail tier keep Monstrous hunts on the fear-driven specialization lane.",
+                VampirismSkillTreeUiAdapter.summarizeRecentHuntReward(mastery));
     }
 
     private static ProgressionCardView card(List<ProgressionCardView> cards, String title) {

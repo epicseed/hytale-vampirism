@@ -11,9 +11,9 @@ Group #PreparationCard {
   }
 
   Label #PrepMode {
-    Anchor: (Left: 14, Top: 34, Right: 14, Height: 16);
+    Anchor: (Left: 14, Top: 32, Right: 14, Height: 28);
     Text: "";
-    Style: (FontSize: 11, TextColor: #d5e2ef);
+    Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
   }
 
   Label #PrepStatus {
