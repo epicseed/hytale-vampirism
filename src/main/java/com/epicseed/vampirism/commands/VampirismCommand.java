@@ -8,6 +8,7 @@ import javax.annotation.Nonnull;
 
 import com.epicseed.epiccore.registry.ReloadRegistry;
 import com.epicseed.vampirism.commands.admin.AbilityAdminCommands;
+import com.epicseed.vampirism.commands.admin.AffinityAdminCommands;
 import com.epicseed.vampirism.commands.admin.AgeAdminCommands;
 import com.epicseed.vampirism.commands.admin.AnimationAdminCommand;
 import com.epicseed.vampirism.commands.admin.BloodAdminCommands;
@@ -65,6 +66,7 @@ public class VampirismCommand extends AbstractCommand {
         this.addSubCommand(new StatusCommand());
         this.addSubCommand(new SatietyInfoCommand());
         this.addSubCommand(new AgeAdminCommands());
+        this.addSubCommand(new AffinityAdminCommands());
         this.addSubCommand(new BloodAdminCommands());
         this.addSubCommand(new HuntAdminCommands(progressionAccess, nightHuntService));
         this.addSubCommand(new LineageAdminCommands(lineageService));
@@ -89,6 +91,7 @@ public class VampirismCommand extends AbstractCommand {
         ctx.sendMessage(Message.raw("/vampirism status <player> - full debug overview").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism satiety <player> - satiety details").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism age info|set-tier|set-progress|add-progress <player> [...] - inspect age tiers").color("yellow"));
+        ctx.sendMessage(Message.raw("/vampirism affinity info|list|add|set|clear|clear-all ... - inspect or change blood affinities").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism blood add <player> <percent> - add blood to a player").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism hunt summary|info|compendium|list-loadouts|prepare|force|reset-cooldown <player> - control marked prey hunts").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism lineage info|list|choose|clear <player> [lineageId] - inspect or change lineages").color("yellow"));

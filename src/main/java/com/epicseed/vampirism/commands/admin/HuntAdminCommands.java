@@ -190,6 +190,10 @@ public final class HuntAdminCommands extends AbstractCommand {
             ctx.sendMessage(Message.raw("Compendium: " + mastery.discoveredPreyRoleIds().size()
                     + " prey discovered | " + summarizeCounts(mastery.archetypeCompletionCounts())
                     + " | elite=" + mastery.eliteCompletionCount()).color("white"));
+            ctx.sendMessage(Message.raw("Blood affinities: "
+                    + AffinityAdminCommandSupport.summarizeAffinities(
+                    VampirePlayerStateStore.get().getBloodAffinities(uuid),
+                    progressionRegistry.snapshot())).color("white"));
             ctx.sendMessage(Message.raw("Preparation: " + loadout.preparationDisplayName()
                     + " | contract=" + loadout.modeDisplayName()
                     + " | resolution=" + humanize(loadout.resolutionId())).color("white"));
