@@ -11,9 +11,13 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.vampirism.domain.age.VampiricAgeTierSnapshot;
+import com.epicseed.epiccore.vampirism.domain.player.PersistedNightHuntState;
 import com.epicseed.epiccore.vampirism.domain.player.NamedHuntProgress;
 import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.domain.age.VampiricAgeTierService;
+import com.epicseed.vampirism.domain.hunt.NightHuntCasefileService;
+import com.epicseed.vampirism.domain.hunt.NightHuntContinuityService;
+import com.epicseed.vampirism.domain.hunt.NightHuntContinuitySnapshot;
 import com.epicseed.vampirism.domain.hunt.NightHuntContracts;
 import com.epicseed.vampirism.domain.hunt.NightHuntMasterySnapshot;
 import com.epicseed.vampirism.domain.hunt.NightHuntPreparedLoadout;
@@ -77,6 +81,8 @@ final class HuntCompendiumModel {
     private final List<NightHuntPreparedLoadout> availableLoadouts;
     private final NightHuntPreparedLoadout currentLoadout;
     private final NightHuntPreparedLoadout previewLoadout;
+    private final PersistedNightHuntState persistedNightHuntState;
+    private final NightHuntContinuitySnapshot continuity;
     private final HuntCompendiumNextRiteResolver.NextRite nextRite;
     private final LineageWindowOpportunity.View lineageWindow;
     private final VampiricAgeTierSnapshot ageTierSnapshot;
@@ -86,12 +92,14 @@ final class HuntCompendiumModel {
     private HuntCompendiumModel(@Nonnull NightHuntMasterySnapshot mastery,
                                 @Nonnull NamedHuntProgress progress,
                                 @Nonnull List<NightHuntSpawnRegistry.SpawnOption> preyCatalogue,
-                                 @Nonnull List<NightHuntPreparedLoadout> availableLoadouts,
-                                    @Nonnull NightHuntPreparedLoadout currentLoadout,
-                                    @Nonnull NightHuntPreparedLoadout previewLoadout,
-                                    @Nullable HuntCompendiumNextRiteResolver.NextRite nextRite,
-                                    @Nullable LineageWindowOpportunity.View lineageWindow,
-                                    @Nonnull VampiricAgeTierSnapshot ageTierSnapshot,
+                                @Nonnull List<NightHuntPreparedLoadout> availableLoadouts,
+                                     @Nonnull NightHuntPreparedLoadout currentLoadout,
+                                     @Nonnull NightHuntPreparedLoadout previewLoadout,
+                                     @Nonnull PersistedNightHuntState persistedNightHuntState,
+                                     @Nonnull NightHuntContinuitySnapshot continuity,
+                                     @Nullable HuntCompendiumNextRiteResolver.NextRite nextRite,
+                                     @Nullable LineageWindowOpportunity.View lineageWindow,
+                                     @Nonnull VampiricAgeTierSnapshot ageTierSnapshot,
                                     @Nullable String nextThresholdText,
                                     @Nonnull Tab selectedTab) {
         this.mastery = mastery;
@@ -100,6 +108,8 @@ final class HuntCompendiumModel {
         this.availableLoadouts = availableLoadouts;
         this.currentLoadout = currentLoadout;
         this.previewLoadout = previewLoadout;
+        this.persistedNightHuntState = persistedNightHuntState;
+        this.continuity = continuity;
         this.nextRite = nextRite;
         this.lineageWindow = lineageWindow;
         this.ageTierSnapshot = ageTierSnapshot;
@@ -124,6 +134,7 @@ final class HuntCompendiumModel {
         List<NightHuntPreparedLoadout> availableLoadouts = NightHuntProgressionService.availablePreparedLoadouts();
         NightHuntPreparedLoadout currentLoadout = NightHuntProgressionService.preparedLoadout(progress);
         NightHuntPreparedLoadout previewLoadout = resolvePreviewLoadout(availableLoadouts, currentLoadout, previewPreparationId);
+        NightHuntContinuitySnapshot continuity = NightHuntContinuityService.snapshot(progress);
         return new HuntCompendiumModel(
                 NightHuntProgressionService.snapshot(progress),
                 progress,
@@ -131,6 +142,8 @@ final class HuntCompendiumModel {
                 List.copyOf(availableLoadouts),
                 currentLoadout,
                 previewLoadout,
+                VampirePlayerStateStore.get().getPersistedNightHuntState(uuid),
+                continuity,
                 nextRite,
                 lineageWindow,
                 VampiricAgeTierService.snapshot(uuid),
@@ -178,27 +191,35 @@ final class HuntCompendiumModel {
     @Nonnull
     String overviewContinuityText() {
         ArrayList<String> lines = new ArrayList<>();
-        lines.add("Threat: " + (progress.worldThreatLevel > 0
-                ? NightHuntPresentationText.humanize(threatName()) + " (" + progress.worldThreatLevel + ")"
+        HuntCrackdownText.View crackdown = HuntCrackdownText.resolve(persistedNightHuntState, continuity, progress);
+        HuntCasefileText.View casefile = HuntCasefileText.resolve(persistedNightHuntState, progress);
+        if (persistedNightHuntState.cooldownRemainingMs(System.currentTimeMillis()) > 0L || crackdown.active()) {
+            lines.add("Next window: " + crackdown.value());
+            lines.add(crackdown.detail());
+        }
+        if (casefile.active()) {
+            lines.add("Casefile: " + casefile.value());
+            lines.add(casefile.detail());
+        } else {
+            String lastClearedCasefile = NightHuntCasefileService.lastClearedCasefileDisplayName(progress);
+            if (lastClearedCasefile != null) {
+                lines.add("Last cleared casefile: " + lastClearedCasefile);
+                lines.add("Hunters are pivoting away from that file before they reopen the same route.");
+            }
+        }
+        lines.add("Threat: " + (continuity.worldThreatLevel() > 0
+                ? continuity.worldThreatName() + " (" + continuity.worldThreatLevel() + ")"
                 : "Quiet"));
-        if (progress.pendingChainPreyRoleId != null) {
-            int preyMemory = progress.preyAdaptationLevels.getOrDefault(progress.pendingChainPreyRoleId, 0);
-            if (preyMemory > 0) {
-                lines.add("Prey memory: " + NightHuntPresentationText.preyName(progress.pendingChainPreyRoleId)
-                        + " (" + preyMemory + ")");
-            }
+        if (continuity.preyMemoryName() != null && continuity.preyMemoryLevel() > 0) {
+            lines.add("Prey memory: " + continuity.preyMemoryName() + " (" + continuity.preyMemoryLevel() + ")");
         }
-        if (progress.pendingChainModeId != null) {
-            int modeMemory = progress.modeSuccessCounts.getOrDefault(progress.pendingChainModeId, 0) / 2;
-            if (modeMemory > 0) {
-                lines.add("Behavior read: " + NightHuntPresentationText.contractName(null, progress.pendingChainModeId)
-                        + " (" + modeMemory + ")");
-            }
+        if (continuity.behaviorMemoryName() != null && continuity.behaviorMemoryLevel() > 0) {
+            lines.add("Behavior read: " + continuity.behaviorMemoryName() + " (" + continuity.behaviorMemoryLevel() + ")");
         }
-        if (progress.activeChainId != null && progress.activeChainStep > 0) {
-            lines.add("Chain: " + NightHuntPresentationText.humanize(progress.activeChainId) + " " + roman(progress.activeChainStep));
+        if (continuity.activeChainName() != null && continuity.activeChainStep() > 0) {
+            lines.add("Chain: " + continuity.activeChainName() + " " + roman(continuity.activeChainStep()));
         }
-        lines.add("Current streak: " + progress.successStreak + " success / " + progress.failureStreak + " failure");
+        lines.add("Current streak: " + continuity.successStreak() + " success / " + continuity.failureStreak() + " failure");
         return String.join("\n", lines);
     }
 
@@ -429,6 +450,10 @@ final class HuntCompendiumModel {
         if (!bonus.isBlank()) {
             parts.add(bonus);
         }
+        String signaturePreview = signaturePreviewText(loadout, focus);
+        if (!signaturePreview.isBlank()) {
+            parts.add(signaturePreview);
+        }
         parts.add(focus.bonusText());
         return String.join(" · ", parts);
     }
@@ -450,6 +475,24 @@ final class HuntCompendiumModel {
                         focus.preyFamilyDisplayName());
                 if (!appliedBonus.isBlank()) {
                     parts.add(appliedBonus);
+                }
+                String resonanceBonus = resonanceBonusText(
+                        mastery.lastRewardResonanceMasteryBonus(),
+                        mastery.lastRewardResonanceBloodBonus(),
+                        focus.preyFamilyDisplayName());
+                if (!resonanceBonus.isBlank()) {
+                    parts.add(resonanceBonus);
+                }
+                String signatureReward = signatureRewardText(mastery, focus);
+                if (!signatureReward.isBlank()) {
+                    parts.add(signatureReward);
+                }
+                String pressureResonanceBonus = pressureResonanceBonusText(
+                        mastery.lastRewardPressureResonanceMasteryBonus(),
+                        mastery.lastRewardPressureResonanceAgeProgress(),
+                        mastery.lastRewardPressureResonanceTargetAgeTierId());
+                if (!pressureResonanceBonus.isBlank()) {
+                    parts.add(pressureResonanceBonus);
                 }
                 parts.add(focus.bonusText());
                 return String.join(" · ", parts);
@@ -491,6 +534,152 @@ final class HuntCompendiumModel {
             return "";
         }
         return String.join(" · ", parts) + " on matching " + preyFamilyDisplayName + " hunts";
+    }
+
+    @Nonnull
+    private static String resonanceBonusText(int masteryBonus, int bloodBonus, @Nonnull String preyFamilyDisplayName) {
+        ArrayList<String> parts = new ArrayList<>();
+        if (masteryBonus > 0) {
+            parts.add("+" + masteryBonus + " mastery");
+        }
+        if (bloodBonus > 0) {
+            parts.add("+" + bloodBonus + " blood");
+        }
+        if (parts.isEmpty()) {
+            return "";
+        }
+        return "Resonance " + String.join(" · ", parts) + " on owned " + preyFamilyDisplayName + " hunts";
+    }
+
+    @Nonnull
+    static String pressureResonanceBonusText(int masteryBonus,
+                                             long ageProgressBonus,
+                                             @Nullable String targetAgeTierId) {
+        ArrayList<String> parts = new ArrayList<>();
+        if (ageProgressBonus > 0) {
+            parts.add("+" + ageProgressBonus + " age toward "
+                    + NightHuntPresentationText.humanize(targetAgeTierId != null ? targetAgeTierId : "ancient"));
+        }
+        if (masteryBonus > 0) {
+            parts.add("+" + masteryBonus + " mastery");
+        }
+        if (parts.isEmpty()) {
+            return "";
+        }
+        return "Pressure resonance " + String.join(" · ", parts)
+                + " on elder lineage hunts that end in crackdown pressure";
+    }
+
+    @Nonnull
+    private static String signaturePreviewText(@Nonnull NightHuntPreparedLoadout loadout,
+                                               @Nonnull NightHuntPreparationAffinityContent.PreparationAffinity focus) {
+        NightHuntProgressionRegistry.AffinitySignatureDefinition signature =
+                NightHuntProgressionRegistry.get().snapshot().affinitySignature(loadout.preparationId());
+        if (signature == null) {
+            return "";
+        }
+        String bundleText = signatureBundleText(
+                signature.rewardBundle().masteryBonus(),
+                signature.rewardBundle().bloodBonus(),
+                signature.rewardBundle().ageProgressBonus(),
+                signature.rewardBundle().affinityAmount(),
+                focus.preyFamilyDisplayName());
+        if (bundleText.isBlank()) {
+            return "";
+        }
+        return "Signature pull: " + signature.displayName()
+                + " · " + signaturePairingText(signature)
+                + " · " + bundleText
+                + " when resonance lands the full pairing";
+    }
+
+    @Nonnull
+    private static String signatureRewardText(@Nonnull NightHuntMasterySnapshot mastery,
+                                              @Nonnull NightHuntPreparationAffinityContent.PreparationAffinity focus) {
+        if (mastery.lastRewardSignaturePackageId() == null || mastery.lastRewardSignaturePackageId().isBlank()) {
+            return "";
+        }
+        NightHuntProgressionRegistry.AffinitySignatureDefinition signature =
+                signatureDefinition(mastery.lastRewardPreparationId(), mastery.lastRewardSignaturePackageId());
+        if (signature == null) {
+            return "";
+        }
+        String bundleText = signatureBundleText(
+                mastery.lastRewardSignatureMasteryBonus(),
+                mastery.lastRewardSignatureBloodBonus(),
+                mastery.lastRewardSignatureAgeProgress(),
+                mastery.lastRewardSignatureAffinityAmount(),
+                focus.preyFamilyDisplayName());
+        if (bundleText.isBlank()) {
+            return "";
+        }
+        return "Signature hunt: " + signature.displayName()
+                + " · " + signaturePairingText(signature)
+                + " · " + bundleText;
+    }
+
+    @Nullable
+    private static NightHuntProgressionRegistry.AffinitySignatureDefinition signatureDefinition(@Nullable String preparationId,
+                                                                                                @Nullable String packageId) {
+        String normalizedPackageId = packageId != null ? packageId.trim().toLowerCase(Locale.ROOT) : null;
+        if (normalizedPackageId == null || normalizedPackageId.isBlank()) {
+            return null;
+        }
+        NightHuntProgressionRegistry.Snapshot snapshot = NightHuntProgressionRegistry.get().snapshot();
+        if (preparationId != null) {
+            NightHuntProgressionRegistry.AffinitySignatureDefinition signature = snapshot.affinitySignature(preparationId);
+            if (signature != null && normalizedPackageId.equals(signature.id())) {
+                return signature;
+            }
+        }
+        for (NightHuntProgressionRegistry.PreparationDefinition preparation : snapshot.preparations()) {
+            NightHuntProgressionRegistry.AffinitySignatureDefinition signature = preparation.affinitySignature();
+            if (signature != null && normalizedPackageId.equals(signature.id())) {
+                return signature;
+            }
+        }
+        return null;
+    }
+
+    @Nonnull
+    private static String signaturePairingText(@Nonnull NightHuntProgressionRegistry.AffinitySignatureDefinition signature) {
+        NightHuntSpawnRegistry.EnvironmentOption environment = null;
+        NightHuntSpawnRegistry.EncounterBeatOption encounterBeat = null;
+        try {
+            NightHuntSpawnRegistry registry = NightHuntSpawnRegistry.get();
+            environment = registry.environment(signature.environmentId());
+            encounterBeat = registry.encounterBeat(signature.encounterBeatId());
+        } catch (IllegalStateException ignored) {
+        }
+        String environmentName = environment != null
+                ? environment.displayName()
+                : NightHuntPresentationText.humanize(signature.environmentId());
+        String encounterBeatName = encounterBeat != null
+                ? encounterBeat.displayName()
+                : NightHuntPresentationText.humanize(signature.encounterBeatId());
+        return environmentName + " → " + encounterBeatName;
+    }
+
+    @Nonnull
+    private static String signatureBundleText(int masteryBonus,
+                                              int bloodBonus,
+                                              long ageProgressBonus,
+                                              int affinityAmount,
+                                              @Nonnull String preyFamilyDisplayName) {
+        ArrayList<String> parts = new ArrayList<>();
+        if (masteryBonus > 0) {
+            parts.add("+" + masteryBonus + " mastery");
+        }
+        if (bloodBonus > 0) {
+            parts.add("+" + bloodBonus + " blood");
+        }
+        if (ageProgressBonus > 0) {
+            parts.add("+" + ageProgressBonus + " age progress");
+        }
+        if (affinityAmount > 0) {
+            parts.add("Affinity " + preyFamilyDisplayName + " +" + affinityAmount);
+        }
+        return String.join(" · ", parts);
     }
 
     @Nonnull

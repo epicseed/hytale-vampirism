@@ -60,6 +60,23 @@
       "preyLifetimeSeconds": 106.0
     },
     {
+      "roleId": "Goblin_Thief",
+      "displayName": "Whisper-Marked Cutpurse",
+      "dropPoints": 1,
+      "chance": 0.52,
+      "requiredAcquiredPoints": 2,
+      "maxAcquiredPoints": 8,
+      "minCompletedWaypoints": 1,
+      "maxCompletedWaypoints": 2,
+      "archetype": "stalker",
+      "preyFamily": "humanoid",
+      "visualTier": 1,
+      "healthMultiplier": 1.05,
+      "escapeWithoutHitSeconds": 12.0,
+      "onSpawnMessage": "A whisper-marked cutpurse slips back across the trail, daring the pact to keep pace.",
+      "preyLifetimeSeconds": 96.0
+    },
+    {
       "roleId": "Bear_Grizzly",
       "displayName": "Greater Grizzly Prey",
       "dropPoints": 2,
@@ -264,6 +281,28 @@
       "minCompletedWaypoints": 1,
       "visualTierDelta": 1,
       "instantGuideBursts": 1
+    },
+    {
+      "id": "lantern-shadowing",
+      "text": "Lantern scouts parallel the trail and keep the route boxed inside sightlines the hunters already prepared.",
+      "textColor": "red",
+      "chance": 0.06,
+      "requiredAcquiredPoints": 4,
+      "minCompletedWaypoints": 1,
+      "minVisualTier": 2,
+      "extraWaypoints": 1,
+      "instantGuideBursts": 1
+    },
+    {
+      "id": "sanction-relay",
+      "text": "Mirrored ward readers pass the mark ahead of you, turning the trail into a sanctioned relay the hunters can verify in motion.",
+      "textColor": "red",
+      "chance": 0.04,
+      "requiredAcquiredPoints": 8,
+      "minCompletedWaypoints": 2,
+      "minVisualTier": 3,
+      "visualTierDelta": 1,
+      "instantGuideBursts": 2
     }
   ],
   "failStates": [
@@ -338,6 +377,98 @@
       "ambushHelperRoleId": "Wolf_Black",
       "ambushHelperCount": 2,
       "ambushHelperSpreadRadius": 3.8
+    },
+    {
+      "id": "dragnet-intercept",
+      "text": "Your hesitation gives the dragnet a clean angle. Lantern hunters close the route before the scent can recover.",
+      "textColor": "red",
+      "chance": 0.22,
+      "requiredAcquiredPoints": 6,
+      "minCompletedWaypoints": 2,
+      "minVisualTier": 2,
+      "allowedFailurePhases": [
+        "summoning",
+        "prey-active"
+      ],
+      "ambushRoleId": "Goblin_Thief",
+      "ambushDisplayName": "Dragnet Interceptor",
+      "ambushDropPoints": 1,
+      "ambushLifetimeSeconds": 64.0,
+      "ambushHealthMultiplier": 1.45,
+      "ambushVisualTier": 2,
+      "ambushArchetype": "ambusher",
+      "ambushHelperRoleId": "Goblin_Scrapper",
+      "ambushHelperCount": 2,
+      "ambushHelperSpreadRadius": 3.4
+    },
+    {
+      "id": "sunward-seizure",
+      "text": "Sanction wards bite shut and the hunters seize the failed trail as if the rite named you instead.",
+      "textColor": "red",
+      "chance": 0.14,
+      "requiredAcquiredPoints": 10,
+      "minCompletedWaypoints": 3,
+      "minVisualTier": 3,
+      "allowedFailurePhases": [
+        "summoning",
+        "prey-active"
+      ],
+      "ambushRoleId": "Goblin_Ogre",
+      "ambushDisplayName": "Sunward Enforcer",
+      "ambushDropPoints": 2,
+      "ambushLifetimeSeconds": 70.0,
+      "ambushHealthMultiplier": 1.6,
+      "ambushVisualTier": 3,
+      "ambushArchetype": "brute",
+      "ambushHelperRoleId": "Goblin_Scrapper",
+      "ambushHelperCount": 2,
+      "ambushHelperSpreadRadius": 3.8
+    },
+    {
+      "id": "ledger-seizure",
+      "text": "Confiscated blood notes let the hunters spring the route again, this time with the ledger already marked in your name.",
+      "textColor": "red",
+      "chance": 0.2,
+      "requiredAcquiredPoints": 5,
+      "minCompletedWaypoints": 2,
+      "minVisualTier": 2,
+      "allowedFailurePhases": [
+        "summoning",
+        "prey-active"
+      ],
+      "ambushRoleId": "Goblin_Thief",
+      "ambushDisplayName": "Ledger Seizer",
+      "ambushDropPoints": 1,
+      "ambushLifetimeSeconds": 62.0,
+      "ambushHealthMultiplier": 1.4,
+      "ambushVisualTier": 2,
+      "ambushArchetype": "ambusher",
+      "ambushHelperRoleId": "Goblin_Scrapper",
+      "ambushHelperCount": 1,
+      "ambushHelperSpreadRadius": 3.2
+    },
+    {
+      "id": "mirror-seizure",
+      "text": "Audit mirrors catch the failed rite from every side and the sanction teams close in before the trail can go dark again.",
+      "textColor": "red",
+      "chance": 0.12,
+      "requiredAcquiredPoints": 9,
+      "minCompletedWaypoints": 3,
+      "minVisualTier": 3,
+      "allowedFailurePhases": [
+        "summoning",
+        "prey-active"
+      ],
+      "ambushRoleId": "Goblin_Ogre",
+      "ambushDisplayName": "Mirror Seizure Marshal",
+      "ambushDropPoints": 2,
+      "ambushLifetimeSeconds": 72.0,
+      "ambushHealthMultiplier": 1.62,
+      "ambushVisualTier": 3,
+      "ambushArchetype": "brute",
+      "ambushHelperRoleId": "Goblin_Scrapper",
+      "ambushHelperCount": 2,
+      "ambushHelperSpreadRadius": 4.0
     }
   ],
   "environments": [
@@ -368,6 +499,30 @@
       "pressureSecondsDelta": -1.0
     },
     {
+      "id": "bloodhound-mire",
+      "displayName": "Scent-Bound Mire",
+      "text": "Bloodhound salts turn the mire into a living trail where every print swells back to the surface.",
+      "textColor": "dark_red",
+      "riskDisplayName": "Scented bog",
+      "chance": 0.18,
+      "requiredPreparationId": "bloodhound-rite",
+      "maxDestinationY": 75.0,
+      "preyLifetimeMultiplier": 1.08,
+      "pressureSecondsDelta": -1.0
+    },
+    {
+      "id": "blooded-warren",
+      "displayName": "Blooded Warren",
+      "text": "Siphon marks seep through root-tunnels and drain holes until every spilled drop sends the brood circling back to feed.",
+      "textColor": "dark_red",
+      "riskDisplayName": "Brood burrows",
+      "chance": 0.18,
+      "requiredPreparationId": "siphon-rite",
+      "maxDestinationY": 60.0,
+      "preyLifetimeMultiplier": 1.08,
+      "pressureSecondsDelta": 1.0
+    },
+    {
       "id": "consecrated-threshold",
       "displayName": "Consecrated Threshold",
       "text": "The route cuts across hostile sacred ground that pushes back against the rite.",
@@ -380,6 +535,81 @@
       "visualTierDelta": 1,
       "pressureSecondsDelta": 1.0,
       "failCooldownDeltaSeconds": 6.0
+    },
+    {
+      "id": "omen-threshold",
+      "displayName": "Omen Threshold",
+      "text": "The mantle stains the route with dread where every warded stone answers back to the rite.",
+      "textColor": "red",
+      "riskDisplayName": "Omen wards",
+      "chance": 0.16,
+      "requiredPreparationId": "dread-mantle",
+      "requiredAcquiredPoints": 6,
+      "minVisualTier": 2,
+      "visualTierDelta": 1,
+      "pressureSecondsDelta": 1.0
+    },
+    {
+      "id": "whisper-court",
+      "displayName": "Whisper Court",
+      "text": "The pact steers the trail through lamp-black alleys where every lie turns the whole circle against itself.",
+      "textColor": "dark_red",
+      "riskDisplayName": "Frayed composure",
+      "chance": 0.16,
+      "requiredPreparationId": "shadow-pact",
+      "minVisualTier": 1,
+      "preyLifetimeMultiplier": 0.96,
+      "pressureSecondsDelta": 1.0
+    },
+    {
+      "id": "watch-post-perimeter",
+      "displayName": "Watch-Post Perimeter",
+      "text": "Oil lamps and temporary watch posts narrow the route into actively searched ground.",
+      "textColor": "red",
+      "riskDisplayName": "Checkpoint scrutiny",
+      "chance": 0.18,
+      "requiredAcquiredPoints": 5,
+      "minVisualTier": 2,
+      "pressureSecondsDelta": 1.0,
+      "failCooldownDeltaSeconds": 4.0
+    },
+    {
+      "id": "sunward-checkpoint",
+      "displayName": "Sunward Checkpoint",
+      "text": "Mirrored lanterns and warding salts turn the route into a sanctioned kill corridor.",
+      "textColor": "red",
+      "riskDisplayName": "Sunward wards",
+      "chance": 0.12,
+      "requiredAcquiredPoints": 8,
+      "minVisualTier": 3,
+      "visualTierDelta": 1,
+      "pressureSecondsDelta": 1.0,
+      "failCooldownDeltaSeconds": 8.0
+    },
+    {
+      "id": "ledger-crossroads",
+      "displayName": "Ledger Crossroads",
+      "text": "Confiscated witness notes and blood tallies turn the route into a handoff point the hunters now know by heart.",
+      "textColor": "red",
+      "riskDisplayName": "Filed evidence",
+      "chance": 0.16,
+      "requiredAcquiredPoints": 5,
+      "minVisualTier": 2,
+      "pressureSecondsDelta": 1.0,
+      "failCooldownDeltaSeconds": 5.0
+    },
+    {
+      "id": "mirror-audit-yard",
+      "displayName": "Mirror Audit Yard",
+      "text": "Mirrored braziers and sanction ledgers turn the trail into an exposed audit lane where every delay is witnessed twice.",
+      "textColor": "red",
+      "riskDisplayName": "Audit mirrors",
+      "chance": 0.1,
+      "requiredAcquiredPoints": 9,
+      "minVisualTier": 3,
+      "visualTierDelta": 1,
+      "pressureSecondsDelta": 1.0,
+      "failCooldownDeltaSeconds": 8.0
     }
   ],
   "encounterBeats": [
@@ -447,6 +677,243 @@
       ],
       "preyLifetimeDeltaSeconds": 8.0,
       "pressureSecondsDelta": -1.0
+    },
+    {
+      "id": "scent-lure-pack",
+      "displayName": "Blood Scent Relay",
+      "text": "Fresh spoor folds the pack back across the mire, turning the pursuit into a clean bestial kill lane.",
+      "textColor": "dark_red",
+      "riskDisplayName": "Running spoor",
+      "setpieceDisplayName": "Blood scent relay",
+      "chance": 0.18,
+      "requiredPreparationId": "bloodhound-rite",
+      "requiredEnvironmentId": "bloodhound-mire",
+      "allowedPreyFamilies": [
+        "beast"
+      ],
+      "preyLifetimeDeltaSeconds": 6.0,
+      "pressureSecondsDelta": -1.0
+    },
+    {
+      "id": "drain-brood-spiral",
+      "displayName": "Drain Brood Spiral",
+      "text": "The swarm keeps folding through the warren, reopening the wound until the rite can lock into a clean siphon.",
+      "textColor": "dark_red",
+      "riskDisplayName": "Feeding spiral",
+      "setpieceDisplayName": "Drain brood spiral",
+      "chance": 0.18,
+      "requiredPreparationId": "siphon-rite",
+      "requiredEnvironmentId": "blooded-warren",
+      "allowedPreyFamilies": [
+        "vermin"
+      ],
+      "preyLifetimeDeltaSeconds": 6.0,
+      "pressureSecondsDelta": 1.0
+    },
+    {
+      "id": "omen-howl",
+      "displayName": "Omen Howl",
+      "text": "The prey answers the mantle with a territorial howl that drags the finish into a fear-soaked circle.",
+      "textColor": "red",
+      "riskDisplayName": "Dread howl",
+      "setpieceDisplayName": "Omen howl circle",
+      "chance": 0.18,
+      "requiredPreparationId": "dread-mantle",
+      "requiredEnvironmentId": "omen-threshold",
+      "allowedPreyFamilies": [
+        "monstrous"
+      ],
+      "visualTierDelta": 1,
+      "pressureSecondsDelta": 1.0
+    },
+    {
+      "id": "courtly-unraveling",
+      "displayName": "Courtly Unraveling",
+      "text": "One whispered accusation snaps the group's poise and lets the pact strip a favored mortal's will apart at arm's length.",
+      "textColor": "dark_red",
+      "riskDisplayName": "Broken poise",
+      "setpieceDisplayName": "Whisper court collapse",
+      "chance": 0.16,
+      "requiredPreparationId": "shadow-pact",
+      "requiredEnvironmentId": "whisper-court",
+      "allowedPreyFamilies": [
+        "humanoid"
+      ],
+      "preyLifetimeDeltaSeconds": -4.0,
+      "pressureSecondsDelta": 2.0
+    },
+    {
+      "id": "evidence-sweep",
+      "displayName": "Evidence Sweep",
+      "text": "Lantern teams fan across the trail, testing blood traces and forcing a tighter finish.",
+      "textColor": "red",
+      "riskDisplayName": "Hunter search line",
+      "setpieceDisplayName": "Lantern search line",
+      "chance": 0.16,
+      "requiredAcquiredPoints": 5,
+      "minVisualTier": 2,
+      "pressureSecondsDelta": 1.0,
+      "rivalRoleId": "Goblin_Thief",
+      "rivalDisplayName": "Ledger Hunter",
+      "rivalCount": 1,
+      "rivalSpreadRadius": 4.0
+    },
+    {
+      "id": "dragnet-crossfire",
+      "displayName": "Dragnet Crossfire",
+      "text": "Marked bolts and lantern fire close from both flanks as the hunters collapse the route.",
+      "textColor": "red",
+      "riskDisplayName": "Dragnet crossfire",
+      "setpieceDisplayName": "Collapsed kill lane",
+      "chance": 0.14,
+      "requiredAcquiredPoints": 7,
+      "minVisualTier": 2,
+      "visualTierDelta": 1,
+      "preyLifetimeDeltaSeconds": -6.0,
+      "pressureSecondsDelta": 2.0,
+      "rivalRoleId": "Goblin_Thief",
+      "rivalDisplayName": "Dragnet Hunter",
+      "rivalCount": 2,
+      "rivalSpreadRadius": 4.5
+    },
+    {
+      "id": "sanction-search",
+      "displayName": "Sanction Search",
+      "text": "Consecrated searchers sweep ahead of the rite, turning the finish into a sanctioned inspection line.",
+      "textColor": "red",
+      "riskDisplayName": "Sanction line",
+      "setpieceDisplayName": "Sunward checkpoint",
+      "chance": 0.12,
+      "requiredAcquiredPoints": 8,
+      "minVisualTier": 3,
+      "visualTierDelta": 1,
+      "pressureSecondsDelta": 1.0,
+      "rivalRoleId": "Goblin_Thief",
+      "rivalDisplayName": "Sunward Searcher",
+      "rivalCount": 1,
+      "rivalSpreadRadius": 4.0
+    },
+    {
+      "id": "sunward-flush",
+      "displayName": "Sunward Flush",
+      "text": "Mirrored lanterns and warding salts drive the prey into open ground where hunters prepare the seal.",
+      "textColor": "red",
+      "riskDisplayName": "Sunward seal",
+      "setpieceDisplayName": "Sanction killbox",
+      "chance": 0.1,
+      "requiredAcquiredPoints": 10,
+      "minVisualTier": 3,
+      "visualTierDelta": 1,
+      "preyLifetimeDeltaSeconds": -8.0,
+      "pressureSecondsDelta": 2.0,
+      "rivalRoleId": "Goblin_Ogre",
+      "rivalDisplayName": "Sunward Enforcer",
+      "rivalCount": 1,
+      "rivalSpreadRadius": 4.5
+    },
+    {
+      "id": "ledger-scrutiny",
+      "displayName": "Ledger Scrutiny",
+      "text": "Tagged blood traces and witness scraps pin the route to a single corridor while hunters remeasure every step you take.",
+      "textColor": "red",
+      "riskDisplayName": "Filed trail",
+      "setpieceDisplayName": "Evidence handoff",
+      "chance": 0.14,
+      "requiredAcquiredPoints": 5,
+      "minVisualTier": 2,
+      "requiredEnvironmentId": "ledger-crossroads",
+      "pressureSecondsDelta": 1.0,
+      "rivalRoleId": "Goblin_Thief",
+      "rivalDisplayName": "Ledger Hunter",
+      "rivalCount": 1,
+      "rivalSpreadRadius": 4.2
+    },
+    {
+      "id": "mirror-audit",
+      "displayName": "Mirror Audit",
+      "text": "Audit mirrors and sanction readers force the finish into open view while the hunters verify the rite like a public sentence.",
+      "textColor": "red",
+      "riskDisplayName": "Audit line",
+      "setpieceDisplayName": "Mirror audit lane",
+      "chance": 0.1,
+      "requiredAcquiredPoints": 9,
+      "minVisualTier": 3,
+      "requiredEnvironmentId": "mirror-audit-yard",
+      "visualTierDelta": 1,
+      "pressureSecondsDelta": 1.0,
+      "rivalRoleId": "Goblin_Ogre",
+      "rivalDisplayName": "Mirror Marshal",
+      "rivalCount": 1,
+      "rivalSpreadRadius": 4.5
+    }
+  ],
+  "casefiles": [
+    {
+      "id": "hunter-watch",
+      "displayName": "Hunter Watch",
+      "priority": 0,
+      "minCrackdownTier": 0,
+      "minHunterPressure": 0,
+      "activeEnvironmentId": "consecrated-threshold",
+      "activeEncounterBeatId": "hunter-patrol",
+      "escalatedEncounterBeatId": "sacred-ground",
+      "escalatedFailStateId": "blood-counter-ambush",
+      "activeRouteEventId": "lantern-shadowing",
+      "escalatedRouteEventId": "lantern-shadowing"
+    },
+    {
+      "id": "lantern-ledger",
+      "displayName": "Lantern Ledger",
+      "priority": 10,
+      "minCrackdownTier": 1,
+      "minHunterPressure": 35,
+      "activeEnvironmentId": "watch-post-perimeter",
+      "activeEncounterBeatId": "evidence-sweep",
+      "escalatedEncounterBeatId": "dragnet-crossfire",
+      "escalatedFailStateId": "dragnet-intercept",
+      "activeRouteEventId": "lantern-shadowing",
+      "escalatedRouteEventId": "lantern-shadowing"
+    },
+    {
+      "id": "ledger-echo",
+      "displayName": "Ledger Echo",
+      "priority": 14,
+      "minCrackdownTier": 0,
+      "minHunterPressure": 35,
+      "requiredLastClearedCasefileId": "hunter-watch",
+      "activeEnvironmentId": "ledger-crossroads",
+      "activeEncounterBeatId": "ledger-scrutiny",
+      "escalatedEncounterBeatId": "dragnet-crossfire",
+      "escalatedFailStateId": "ledger-seizure",
+      "activeRouteEventId": "lantern-shadowing",
+      "escalatedRouteEventId": "lantern-shadowing"
+    },
+    {
+      "id": "sunward-sanction",
+      "displayName": "Sunward Sanction",
+      "priority": 20,
+      "minCrackdownTier": 2,
+      "minHunterPressure": 50,
+      "activeEnvironmentId": "sunward-checkpoint",
+      "activeEncounterBeatId": "sanction-search",
+      "escalatedEncounterBeatId": "sunward-flush",
+      "escalatedFailStateId": "sunward-seizure",
+      "activeRouteEventId": "sanction-relay",
+      "escalatedRouteEventId": "sanction-relay"
+    },
+    {
+      "id": "mirror-sanction",
+      "displayName": "Mirror Sanction",
+      "priority": 24,
+      "minCrackdownTier": 2,
+      "minHunterPressure": 50,
+      "requiredLastClearedCasefileId": "lantern-ledger",
+      "activeEnvironmentId": "mirror-audit-yard",
+      "activeEncounterBeatId": "mirror-audit",
+      "escalatedEncounterBeatId": "sunward-flush",
+      "escalatedFailStateId": "mirror-seizure",
+      "activeRouteEventId": "sanction-relay",
+      "escalatedRouteEventId": "sanction-relay"
     }
   ]
 }

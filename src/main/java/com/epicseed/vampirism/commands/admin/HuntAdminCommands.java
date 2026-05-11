@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nonnull;
 
 import com.epicseed.vampirism.domain.hunt.NightHuntDiagnostics;
+import com.epicseed.vampirism.domain.hunt.NightHuntCasefileService;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
 import com.epicseed.vampirism.domain.hunt.NightHuntProgressionRegistry;
 import com.epicseed.vampirism.domain.hunt.NightHuntPresentationText;
@@ -125,6 +126,17 @@ public final class HuntAdminCommands extends AbstractCommand {
                     + (continuity.lastOutcomeId() != null
                     ? " · last " + NightHuntPresentationText.humanize(continuity.lastOutcomeId())
                     : "")).color("gray"));
+            if (namedProgress.hunterCasefile != null && namedProgress.hunterCasefile.active()) {
+                String routeEventBias = NightHuntCasefileService.routeEventBiasDisplayName(namedProgress);
+                ctx.sendMessage(Message.raw("Casefile: "
+                        + NightHuntCasefileService.casefileDisplayName(namedProgress)
+                        + " · " + NightHuntPresentationText.humanize(namedProgress.hunterCasefile.stage)
+                        + (routeEventBias != null ? " · route " + routeEventBias : "")).color("yellow"));
+            } else if (NightHuntCasefileService.lastClearedCasefileDisplayName(namedProgress) != null) {
+                ctx.sendMessage(Message.raw("Last cleared casefile: "
+                        + NightHuntCasefileService.lastClearedCasefileDisplayName(namedProgress)
+                        + " · immediate repeat suppressed").color("yellow"));
+            }
         }
     }
 
@@ -204,6 +216,9 @@ public final class HuntAdminCommands extends AbstractCommand {
                     + (persisted.adaptationName != null ? " | adaptation=" + persisted.adaptationName : "")
                     + (persisted.worldThreatName != null ? " | threat=" + persisted.worldThreatName : "")
                     + (persisted.chainName != null ? " | chain=" + persisted.chainName + " " + persisted.chainStep : "")
+                    + (persisted.casefileDisplayName != null ? " | casefile=" + persisted.casefileDisplayName : "")
+                    + (persisted.casefileStage != null ? " | casefileStage=" + persisted.casefileStage : "")
+                    + (persisted.casefileRouteEventId != null ? " | casefileRouteEventId=" + persisted.casefileRouteEventId : "")
                     + " | updated=" + persisted.lastUpdatedAtMs + "ms").color("gray"));
             ctx.sendMessage(Message.raw("Continuity: prey memory="
                     + describeContinuityLevel(continuity.preyMemoryLevel(), continuity.preyMemoryName())
@@ -214,9 +229,35 @@ public final class HuntAdminCommands extends AbstractCommand {
                     ? " | chain=" + continuity.activeChainName() + " " + continuity.activeChainStep()
                     : "")
                     + (continuity.lastOutcomeId() != null ? " | last outcome=" + continuity.lastOutcomeId() : "")
-                    + (continuity.lastThreatEscalationReason() != null
-                    ? " | note=" + continuity.lastThreatEscalationReason()
-                    : "")).color("gray"));
+                        + (continuity.lastThreatEscalationReason() != null
+                        ? " | note=" + continuity.lastThreatEscalationReason()
+                        : "")).color("gray"));
+            if (namedProgress.hunterCasefile != null && namedProgress.hunterCasefile.casefileId != null) {
+                String followUpSource = NightHuntCasefileService.followUpSourceDisplayName(namedProgress);
+                ctx.sendMessage(Message.raw("Casefile profile: "
+                        + NightHuntCasefileService.casefileDisplayName(namedProgress)
+                        + " [" + namedProgress.hunterCasefile.casefileId + "]"
+                        + " | stage=" + namedProgress.hunterCasefile.stage
+                        + (namedProgress.hunterCasefile.lastClearedCasefileId != null
+                        ? " | lastCleared=" + namedProgress.hunterCasefile.lastClearedCasefileId
+                        : "")
+                        + (namedProgress.hunterCasefile.lastClearedCasefileClearedAtMs > 0L
+                        ? " | lastClearedAt=" + namedProgress.hunterCasefile.lastClearedCasefileClearedAtMs + "ms"
+                        : "")
+                        + (followUpSource != null ? " | follow-up from=" + followUpSource : "")
+                        + (namedProgress.hunterCasefile.environmentId != null
+                        ? " | environmentId=" + namedProgress.hunterCasefile.environmentId
+                        : "")
+                        + (namedProgress.hunterCasefile.encounterBeatId != null
+                        ? " | encounterBeatId=" + namedProgress.hunterCasefile.encounterBeatId
+                        : "")
+                        + (namedProgress.hunterCasefile.failStateId != null
+                        ? " | failStateId=" + namedProgress.hunterCasefile.failStateId
+                        : "")
+                        + (namedProgress.hunterCasefile.routeEventId != null
+                        ? " | routeEventId=" + namedProgress.hunterCasefile.routeEventId
+                        : "")).color("yellow"));
+            }
             for (String warning : registryWarnings) {
                 ctx.sendMessage(Message.raw("Registry warning: " + warning).color("yellow"));
             }

@@ -19,5 +19,9 @@ class IdentityPressureResourceDataTest {
         assertEquals(0.8d, registry.worldThreatEscalationMultiplier("mesmerist"));
         assertEquals(0.8d, registry.worldThreatEscalationMultiplier("voidspawn"));
         assertEquals(0.8d, registry.worldThreatEscalationMultiplier("voidtaken"));
+        assertEquals(1.25d, registry.lineageAdaptationBias("outlander").preyMemoryMultiplier());
+        assertEquals(0.9d, registry.lineageAdaptationBias("outlander").behaviorMemoryMultiplier());
+        assertEquals(0.85d, registry.lineageAdaptationBias("voidspawn").preyMemoryMultiplier());
+        assertEquals(1.3d, registry.lineageAdaptationBias("voidtaken").behaviorMemoryMultiplier());
     }
 }

@@ -17,13 +17,16 @@ final class IdentityPressureText {
     static View resolve(@Nullable String ageTierId,
                         @Nullable VampiricLineageEvaluation selectedLineage) {
         VampiricAgeTierDefinition ageTier = VampiricAgeTierService.catalog().tier(ageTierId);
-        double hunterPressureMultiplier = IdentityPressureRegistry.get().hunterPressureMultiplier(ageTier.id());
+        IdentityPressureRegistry registry = IdentityPressureRegistry.get();
+        double hunterPressureMultiplier = registry.hunterPressureMultiplier(ageTier.id());
         double threatEscalationMultiplier = selectedLineage != null
-                ? IdentityPressureRegistry.get().worldThreatEscalationMultiplier(selectedLineage.definition().id())
+                ? registry.worldThreatEscalationMultiplier(selectedLineage.definition().id())
                 : 1.0d;
+        IdentityPressureRegistry.LineageAdaptationBias adaptationBias = LineageAdaptationBiasText.resolve(selectedLineage);
         return new View(
                 ageTier.displayName() + " · " + (selectedLineage != null ? selectedLineage.definition().displayName() : "Unbound"),
-                ageTierDetail(ageTier, hunterPressureMultiplier) + " " + lineageDetail(selectedLineage, threatEscalationMultiplier),
+                ageTierDetail(ageTier, hunterPressureMultiplier) + " "
+                        + lineageDetail(selectedLineage, threatEscalationMultiplier, adaptationBias),
                 selectedLineage != null ? selectedLineage.clan().accentColor() : ageTier.accentColor());
     }
 
@@ -43,19 +46,25 @@ final class IdentityPressureText {
 
     @Nonnull
     private static String lineageDetail(@Nullable VampiricLineageEvaluation selectedLineage,
-                                        double multiplier) {
+                                        double multiplier,
+                                        @Nonnull IdentityPressureRegistry.LineageAdaptationBias adaptationBias) {
         if (selectedLineage == null) {
             return "No lineage is bending world response yet.";
         }
+        String escalationDetail;
         if (isBaseline(multiplier)) {
-            return selectedLineage.definition().displayName() + " leaves threat escalation at the baseline pace.";
-        }
-        if (multiplier > 1.0d) {
-            return selectedLineage.definition().displayName() + " threat escalation " + signedPercent(multiplier)
+            escalationDetail = selectedLineage.definition().displayName()
+                    + " leaves threat escalation at the baseline pace.";
+        } else if (multiplier > 1.0d) {
+            escalationDetail = selectedLineage.definition().displayName() + " threat escalation "
+                    + LineageAdaptationBiasText.signedPercent(multiplier)
                     + ": repeated hunts feed the world response faster.";
+        } else {
+            escalationDetail = selectedLineage.definition().displayName() + " threat escalation "
+                    + LineageAdaptationBiasText.signedPercent(multiplier)
+                    + ": repeated hunts feed the world response more slowly.";
         }
-        return selectedLineage.definition().displayName() + " threat escalation " + signedPercent(multiplier)
-                + ": repeated hunts feed the world response more slowly.";
+        return escalationDetail + " " + LineageAdaptationBiasText.generalSummary(selectedLineage, adaptationBias);
     }
 
     private static boolean isBaseline(double multiplier) {
@@ -64,8 +73,7 @@ final class IdentityPressureText {
 
     @Nonnull
     private static String signedPercent(double multiplier) {
-        int delta = (int) Math.round((multiplier - 1.0d) * 100.0d);
-        return (delta >= 0 ? "+" : "") + delta + "%";
+        return LineageAdaptationBiasText.signedPercent(multiplier);
     }
 
     record View(@Nonnull String value, @Nonnull String detail, @Nonnull String accentColor) {

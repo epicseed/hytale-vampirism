@@ -153,6 +153,9 @@ final class NightHuntHudPresentation {
             builder.append(targetName(snapshot));
             appendSegment(builder, snapshot.riskName());
             appendSegment(builder, snapshot.setpieceName());
+            appendSegment(builder, signatureLabel(snapshot));
+            appendSegment(builder, casefileLabel(snapshot));
+            appendSegment(builder, resonanceLabel(snapshot));
             if (builder.toString().equals("Target \u00b7 " + targetName(snapshot))
                     && holdingStage(snapshot)) {
                 appendSegment(builder, "Radius " + trimRadius(loadout.pressureRadius()) + "m");
@@ -165,10 +168,39 @@ final class NightHuntHudPresentation {
         }
         appendSegment(builder, snapshot.riskName());
         appendSegment(builder, snapshot.setpieceName());
+        appendSegment(builder, signatureLabel(snapshot));
+        appendSegment(builder, casefileLabel(snapshot));
+        appendSegment(builder, resonanceLabel(snapshot));
         if ("Conditions".equals(builder.toString())) {
             appendSegment(builder, "Trail tier " + Math.max(1, snapshot.visualTier()));
         }
         return builder.toString();
+    }
+
+    @Nullable
+    private static String resonanceLabel(@Nonnull NightHuntStatusSnapshot snapshot) {
+        if (snapshot.resonancePreyFamilyId() == null || snapshot.resonancePreyFamilyId().isBlank()) {
+            return null;
+        }
+        return "Resonance " + NightHuntPresentationText.humanize(snapshot.resonancePreyFamilyId());
+    }
+
+    @Nullable
+    private static String signatureLabel(@Nonnull NightHuntStatusSnapshot snapshot) {
+        if (snapshot.signaturePreyFamilyId() == null || snapshot.signaturePreyFamilyId().isBlank()) {
+            return null;
+        }
+        return "Signature " + NightHuntPresentationText.humanize(snapshot.signaturePreyFamilyId());
+    }
+
+    @Nullable
+    private static String casefileLabel(@Nonnull NightHuntStatusSnapshot snapshot) {
+        if (snapshot.casefileName() == null || snapshot.casefileName().isBlank()) {
+            return null;
+        }
+        return "escalated".equalsIgnoreCase(snapshot.casefileStage())
+                ? "Casefile " + snapshot.casefileName() + " (Escalated)"
+                : "Casefile " + snapshot.casefileName();
     }
 
     @Nonnull

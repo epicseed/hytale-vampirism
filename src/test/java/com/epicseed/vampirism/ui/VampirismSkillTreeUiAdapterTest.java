@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 
 import com.epicseed.epiccore.skill.ui.ProgressionCardView;
 import com.epicseed.epiccore.vampirism.domain.player.MasqueradeHeatState;
+import com.epicseed.epiccore.vampirism.domain.player.NamedHuntProgress;
+import com.epicseed.epiccore.vampirism.domain.player.PersistedNightHuntState;
 import com.epicseed.vampirism.domain.hunt.NightHuntMasterySnapshot;
 import com.epicseed.vampirism.domain.hunt.NightHuntPreparedLoadout;
 import com.epicseed.vampirism.domain.hunt.NightHuntProgressionRegistry;
@@ -34,6 +36,7 @@ class VampirismSkillTreeUiAdapterTest {
                 false);
 
         List<ProgressionCardView> cards = VampirismSkillTreeUiAdapter.buildHeatCards(
+                masterySnapshot(0, 35L, "ancient"),
                 snapshot,
                 MasqueradeHeatPolicy.defaults(),
                 "elder",
@@ -53,19 +56,27 @@ class VampirismSkillTreeUiAdapterTest {
                         null,
                         2,
                         0,
-                        "drained"));
+                        "drained"),
+                crackdownState(2, 30f, 50_000L),
+                new NamedHuntProgress());
 
         assertEquals("Watched · 30.0 heat", card(cards, "Current Exposure").value());
         assertEquals("Hunted at 45.0", card(cards, "Next Threshold").value());
         assertTrue(card(cards, "Next Threshold").detail().contains("15.0 heat remaining"));
         assertEquals("Pressure 45", card(cards, "Current Risk").value());
+        assertEquals("Hunter crackdown · Siphon Ledger II", card(cards, "Next Hunt Window").value());
+        assertTrue(card(cards, "Next Hunt Window").detail().contains("delayed +30s"));
         assertEquals("Elder · Voidspawn", card(cards, "Identity Pressure").value());
         assertTrue(card(cards, "Identity Pressure").detail().contains("visibility +20%"));
         assertTrue(card(cards, "Identity Pressure").detail().contains("threat escalation -20%"));
+        assertTrue(card(cards, "Identity Pressure").detail().contains("bends live adaptation toward route counterplay"));
         assertEquals("Hunter crackdown · Siphon Ledger II", card(cards, "Pressure Outlook").value());
         assertTrue(card(cards, "Pressure Outlook").detail().contains("Break this chain before the next hunt"));
+        assertTrue(card(cards, "Pressure Outlook").detail().contains("Voidspawn will bend the next live adaptation toward route counterplay."));
+        assertTrue(card(cards, "Pressure Outlook").detail().contains("Last pressure payoff: Pressure resonance +35 age toward Ancient"));
         assertEquals("Siphon Ledger II", card(cards, "Pressure Drivers").value());
         assertTrue(card(cards, "Pressure Drivers").detail().contains("keeping Hunter crackdown live"));
+        assertTrue(card(cards, "Pressure Drivers").detail().contains("Voidspawn will bend the next live adaptation toward route counterplay."));
         assertEquals("Voidspawn blocked", card(cards, "Current Opportunity").value());
         assertTrue(card(cards, "Current Opportunity").detail().contains("Cool 5.0 heat"));
     }
@@ -80,20 +91,26 @@ class VampirismSkillTreeUiAdapterTest {
                 false);
 
         List<ProgressionCardView> cards = VampirismSkillTreeUiAdapter.buildHeatCards(
+                emptyMastery(),
                 snapshot,
                 MasqueradeHeatPolicy.defaults(),
                 "fledgling",
                 lineageEvaluation("voidspawn", "Voidspawn", 25.0d, true, List.of()),
                 Map.of(),
                 List.of(lineageEvaluation("voidspawn", "Voidspawn", 25.0d, true, List.of())),
-                NightHuntContinuitySnapshot.empty());
+                NightHuntContinuitySnapshot.empty(),
+                new PersistedNightHuntState(),
+                new NamedHuntProgress());
 
         assertEquals("Routes clear", card(cards, "Current Risk").value());
+        assertEquals("Routes open", card(cards, "Next Hunt Window").value());
         assertEquals("Fledgling · Voidspawn", card(cards, "Identity Pressure").value());
         assertEquals("Quiet routes", card(cards, "Pressure Outlook").value());
         assertTrue(card(cards, "Pressure Outlook").detail().contains("No active world response"));
+        assertTrue(card(cards, "Pressure Outlook").detail().contains("Voidspawn will bend the next live adaptation toward route counterplay."));
         assertEquals("No active driver", card(cards, "Pressure Drivers").value());
         assertTrue(card(cards, "Pressure Drivers").detail().contains("No chain, threat, or memory"));
+        assertTrue(card(cards, "Pressure Drivers").detail().contains("Voidspawn will bend the next live adaptation toward route counterplay."));
         assertEquals("Voidspawn ready", card(cards, "Current Opportunity").value());
         assertTrue(card(cards, "Current Opportunity").detail().contains("Stay at or below 25.0"));
     }
@@ -108,6 +125,7 @@ class VampirismSkillTreeUiAdapterTest {
                 false);
 
         List<ProgressionCardView> cards = VampirismSkillTreeUiAdapter.buildHeatCards(
+                emptyMastery(),
                 snapshot,
                 MasqueradeHeatPolicy.defaults(),
                 "fledgling",
@@ -120,7 +138,9 @@ class VampirismSkillTreeUiAdapterTest {
                         false,
                         List.of(new VampiricRitualDefinition.AffinityRequirement("void", 2)),
                         List.of("missing_affinity:void:2"))),
-                NightHuntContinuitySnapshot.empty());
+                NightHuntContinuitySnapshot.empty(),
+                new PersistedNightHuntState(),
+                new NamedHuntProgress());
 
         assertEquals("Fledgling · Unbound", card(cards, "Identity Pressure").value());
         assertEquals("Voidspawn pending", card(cards, "Current Opportunity").value());
@@ -169,7 +189,10 @@ class VampirismSkillTreeUiAdapterTest {
                 7d);
 
         assertEquals(
-                "Siphon Contract · Vermin focus · +15 mastery · +1 blood on matching Vermin hunts · Shorter routes and sustained siphon pressure turn Vermin hunts into the steady affinity farming lane. Open the Hunt Briefing to preview and change.",
+                "Siphon Contract · Vermin focus · +15 mastery · +1 blood on matching Vermin hunts"
+                        + " · Signature pull: Siphon Warren Signature · Blooded Warren → Drain Brood Spiral"
+                        + " · +8 mastery · +1 blood · Affinity Vermin +1 when resonance lands the full pairing"
+                        + " · Shorter routes and sustained siphon pressure turn Vermin hunts into the steady affinity farming lane. Open the Hunt Briefing to preview and change.",
                 VampirismSkillTreeUiAdapter.summarizePreparationDetail(loadout));
     }
 
@@ -201,10 +224,17 @@ class VampirismSkillTreeUiAdapterTest {
                 "monstrous",
                 20,
                 0,
+                10,
+                0,
+                0,
+                0L,
+                null,
                 1L);
 
         assertEquals(
-                "+1 skill · +100 mastery · Monstrous +1 · Preparation bonus: Dread Mantle · Monstrous focus · +20 mastery on matching Monstrous hunts · Heavier omen pressure and a stronger trail tier keep Monstrous hunts on the fear-driven specialization lane.",
+                "+1 skill · +100 mastery · Monstrous +1 · Preparation bonus: Dread Mantle · Monstrous focus · +20 mastery on matching Monstrous hunts"
+                        + " · Resonance +10 mastery on owned Monstrous hunts"
+                        + " · Heavier omen pressure and a stronger trail tier keep Monstrous hunts on the fear-driven specialization lane.",
                 VampirismSkillTreeUiAdapter.summarizeRecentHuntReward(mastery));
     }
 
@@ -213,6 +243,56 @@ class VampirismSkillTreeUiAdapterTest {
                 .filter(card -> title.equals(card.title()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Missing card: " + title));
+    }
+
+    private static NightHuntMasterySnapshot emptyMastery() {
+        return masterySnapshot(0, 0L, null);
+    }
+
+    private static NightHuntMasterySnapshot masterySnapshot(int pressureResonanceMasteryBonus,
+                                                            long pressureResonanceAgeProgress,
+                                                            String pressureResonanceTargetAgeTierId) {
+        return new NightHuntMasterySnapshot(
+                0,
+                0,
+                0,
+                Map.of(),
+                Map.of(),
+                java.util.Set.of(),
+                0,
+                new NightHuntProgressionRegistry.RankDefinition("blooded", "Blooded", 0, 1, "#b91c1c"),
+                null,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null,
+                0,
+                0,
+                0,
+                0L,
+                null,
+                0,
+                null,
+                null,
+                0,
+                0,
+                0,
+                0,
+                pressureResonanceMasteryBonus,
+                pressureResonanceAgeProgress,
+                pressureResonanceTargetAgeTierId,
+                0L);
+    }
+
+    private static PersistedNightHuntState crackdownState(int tier, float extraCooldownSeconds, long cooldownEndsAtMs) {
+        PersistedNightHuntState persisted = new PersistedNightHuntState();
+        persisted.crackdownTier = tier;
+        persisted.crackdownExtraCooldownSeconds = extraCooldownSeconds;
+        persisted.cooldownEndsAtMs = System.currentTimeMillis() + cooldownEndsAtMs;
+        persisted.worldThreatName = tier >= 2 ? "Hunter crackdown" : "Hunter watch";
+        return persisted;
     }
 
     private static VampiricLineageEvaluation lineageEvaluation(String id,

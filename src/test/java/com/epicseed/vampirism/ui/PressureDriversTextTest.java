@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 import com.epicseed.vampirism.domain.hunt.NightHuntContinuitySnapshot;
+import com.epicseed.vampirism.domain.lineage.VampiricClanDefinition;
+import com.epicseed.vampirism.domain.lineage.VampiricLineageDefinition;
+import com.epicseed.vampirism.domain.lineage.VampiricLineageEvaluation;
 
 class PressureDriversTextTest {
 
@@ -86,5 +89,50 @@ class PressureDriversTextTest {
         assertEquals("No active driver", view.value());
         assertTrue(view.detail().contains("No chain, threat, or memory"));
         assertEquals("#22c55e", view.accentColor());
+    }
+
+    @Test
+    void resolveCallsOutLineageBiasOnDominantMemory() {
+        PressureDriversText.View view = PressureDriversText.resolve(
+                new NightHuntContinuitySnapshot(
+                        1,
+                        "Wary Emberwulf",
+                        2,
+                        "Prepared drain counterplay",
+                        0,
+                        null,
+                        null,
+                        null,
+                        0,
+                        null,
+                        1,
+                        0,
+                        "drained"),
+                lineageEvaluation("voidspawn", "Voidspawn"));
+
+        assertEquals("Prepared drain counterplay", view.value());
+        assertTrue(view.detail().contains("Voidspawn makes that route counterplay land +25% harder."));
+    }
+
+    private static VampiricLineageEvaluation lineageEvaluation(String id, String displayName) {
+        VampiricLineageDefinition definition = new VampiricLineageDefinition(
+                id,
+                "voidcourt",
+                displayName,
+                displayName + " description",
+                null,
+                new VampiricLineageDefinition.UnlockRequirements(
+                        null,
+                        0,
+                        java.util.Set.of(),
+                        java.util.Set.of(),
+                        java.util.List.of(),
+                        25.0d),
+                java.util.List.of());
+        return new VampiricLineageEvaluation(
+                definition,
+                new VampiricClanDefinition("voidcourt", "Void Court", "", "#8b5cf6"),
+                true,
+                java.util.List.of());
     }
 }

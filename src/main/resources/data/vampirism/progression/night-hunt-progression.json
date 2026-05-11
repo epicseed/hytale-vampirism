@@ -4,7 +4,21 @@
     "firstContractBonus": 40,
     "repeatContractBonus": 15,
     "repeatContractDecay": 5,
-    "firstPreyFamilyAffinityAmount": 1
+    "firstPreyFamilyAffinityAmount": 1,
+    "spawnAffinityBiasMultiplier": 1.5,
+    "resonanceMasteryBonus": 10,
+    "resonanceBloodBonus": 0,
+    "pressureResonanceAscension": {
+      "requiredAgeTierId": "elder",
+      "targetAgeTierId": "ancient",
+      "requireSelectedLineage": true,
+      "requirePressureObjective": true,
+      "masteryBonus": 0,
+      "ageProgressBonus": 35,
+      "minWorldThreatLevel": 2,
+      "minHunterPressure": 45,
+      "minCrackdownTier": 2
+    }
   },
   "contractModes": [
     {
@@ -59,6 +73,19 @@
         "focusText": "Pick this when you want Beast affinity rewards to keep lining up with beast-gated rites and lineages.",
         "bonusText": "Longer scent trails and a direct Blood Pursuit make Beast prey the cleanest specialization lane."
       },
+      "affinitySignature": {
+        "id": "bloodhound-mire-signature",
+        "displayName": "Bloodhound Mire Signature",
+        "environmentId": "bloodhound-mire",
+        "encounterBeatId": "scent-lure-pack",
+        "environmentWeightBonus": 0.22,
+        "encounterBeatWeightBonus": 0.26,
+        "rewardBundle": {
+          "masteryBonus": 10,
+          "bloodBonus": 1,
+          "affinityAmount": 1
+        }
+      },
       "routeWaypointAdjustment": 1,
       "visualTierDelta": 0
     },
@@ -75,6 +102,19 @@
         "familyDisplayName": "Vermin",
         "focusText": "Pick this when you want Vermin affinity rewards feeding the same drain-heavy ritual and lineage path.",
         "bonusText": "Shorter routes and sustained siphon pressure turn Vermin hunts into the steady affinity farming lane."
+      },
+      "affinitySignature": {
+        "id": "siphon-warren-signature",
+        "displayName": "Siphon Warren Signature",
+        "environmentId": "blooded-warren",
+        "encounterBeatId": "drain-brood-spiral",
+        "environmentWeightBonus": 0.24,
+        "encounterBeatWeightBonus": 0.26,
+        "rewardBundle": {
+          "masteryBonus": 8,
+          "bloodBonus": 1,
+          "affinityAmount": 1
+        }
       },
       "routeWaypointAdjustment": 0,
       "visualTierDelta": 0
@@ -93,6 +133,19 @@
         "focusText": "Pick this when you want Monstrous affinity rewards to reinforce terror-focused rites and lineages.",
         "bonusText": "Heavier omen pressure and a stronger trail tier keep Monstrous hunts on the fear-driven specialization lane."
       },
+      "affinitySignature": {
+        "id": "dread-omen-signature",
+        "displayName": "Dread Omen Signature",
+        "environmentId": "omen-threshold",
+        "encounterBeatId": "omen-howl",
+        "environmentWeightBonus": 0.22,
+        "encounterBeatWeightBonus": 0.28,
+        "rewardBundle": {
+          "masteryBonus": 10,
+          "ageProgressBonus": 10,
+          "affinityAmount": 1
+        }
+      },
       "routeWaypointAdjustment": 0,
       "visualTierDelta": 1
     },
@@ -109,6 +162,19 @@
         "familyDisplayName": "Humanoid",
         "focusText": "Pick this when you want Humanoid affinity rewards feeding the courtly identity route without opening a separate specialization screen.",
         "bonusText": "Closer routes and siphon pressure turn Humanoid hunts into the clean social-pressure lane."
+      },
+      "affinitySignature": {
+        "id": "shadow-court-signature",
+        "displayName": "Shadow Court Signature",
+        "environmentId": "whisper-court",
+        "encounterBeatId": "courtly-unraveling",
+        "environmentWeightBonus": 0.22,
+        "encounterBeatWeightBonus": 0.28,
+        "rewardBundle": {
+          "masteryBonus": 8,
+          "ageProgressBonus": 10,
+          "affinityAmount": 1
+        }
       },
       "routeWaypointAdjustment": -1,
       "visualTierDelta": 0
