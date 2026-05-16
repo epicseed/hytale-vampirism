@@ -3,47 +3,89 @@ $C = "../../Common.ui";
 
 Group #SettingsRoot {
   Anchor: (Full: 0);
-  Background: #0b1218;
+  Background: "../../EpicCore/Assets/Shared/Backgrounds/SkillPanelsBackground.png";
 }
 
 Group #NavTabs {
-  Anchor: (Left: 0, Top: 0, Width: 440, Height: 44);
+  Anchor: (Left: 0, Top: 0, Width: 728, Height: 44);
 
   Group #TabSkillTreeWrapper {
     Anchor: (Left: 0, Top: 0, Width: 140, Height: 44);
     Background: #0d1820;
+
     Label {
       Anchor: (Full: 0);
       Text: "Skill Tree";
       Style: (FontSize: 12, TextColor: #999999, HorizontalAlignment: Center, VerticalAlignment: Center);
+      HitTestVisible: false;
     }
+
     Button #TabSkillTreeBtn {
       Anchor: (Full: 0);
       Style: $C.@TertiaryButtonStyle;
     }
   }
 
-  Group #TabRelicBindingsWrapper {
-    Anchor: (Left: 144, Top: 0, Width: 146, Height: 44);
+  Group #TabProfileWrapper {
+    Anchor: (Left: 144, Top: 0, Width: 120, Height: 44);
     Background: #0d1820;
+
+    Label {
+      Anchor: (Full: 0);
+      Text: "Profile";
+      Style: (FontSize: 12, TextColor: #999999, HorizontalAlignment: Center, VerticalAlignment: Center);
+      HitTestVisible: false;
+    }
+
+    Button #TabProfileBtn {
+      Anchor: (Full: 0);
+      Style: $C.@TertiaryButtonStyle;
+    }
+  }
+
+  Group #TabRelicBindingsWrapper {
+    Anchor: (Left: 268, Top: 0, Width: 146, Height: 44);
+    Background: #0d1820;
+
     Label {
       Anchor: (Full: 0);
       Text: "Relic Bindings";
       Style: (FontSize: 12, TextColor: #999999, HorizontalAlignment: Center, VerticalAlignment: Center);
+      HitTestVisible: false;
     }
+
     Button #TabRelicBindingsBtn {
       Anchor: (Full: 0);
       Style: $C.@TertiaryButtonStyle;
     }
   }
 
-  Group #TabSettings {
-    Anchor: (Left: 294, Top: 0, Width: 146, Height: 44);
-    Background: #1e3048;
+  Group #TabHuntCompendiumWrapper {
+    Anchor: (Left: 418, Top: 0, Width: 160, Height: 44);
+    Background: #0d1820;
+
     Label {
       Anchor: (Full: 0);
-      Text: "Settings";
+      Text: "Hunt Compendium";
+      Style: (FontSize: 12, TextColor: #999999, HorizontalAlignment: Center, VerticalAlignment: Center);
+      HitTestVisible: false;
+    }
+
+    Button #TabHuntCompendiumBtn {
+      Anchor: (Full: 0);
+      Style: $C.@TertiaryButtonStyle;
+    }
+  }
+
+  Group #TabSettings {
+    Anchor: (Left: 582, Top: 0, Width: 146, Height: 44);
+    Background: #1e3048;
+
+    Label {
+      Anchor: (Full: 0);
+        Text: "Settings";
       Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+      HitTestVisible: false;
     }
   }
 }
@@ -57,159 +99,277 @@ Group #HeaderBtns {
   }
 }
 
-Group #SettingsPanel {
-  Anchor: (Left: 40, Right: 40, Top: 72, Bottom: 40);
-}
+$C.@Panel #SettingsPanel {
+  Anchor: (Left: 60, Right: 60, Top: 64, Bottom: 36);
+  Padding: (Full: 16);
 
-Group #NightHuntCompendiumCard {
-  Anchor: (Left: 0, Right: 0, Top: 0, Height: 82);
-  Background: #14202c;
-  Label {
-    Anchor: (Left: 18, Top: 12, Width: 240, Height: 18);
-    Text: "Night Hunt Briefing";
-    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-  }
-  Label {
-    Anchor: (Left: 18, Top: 34, Right: 170, Height: 16);
-    Text: "Review prey discoveries, prepare your next contract, and inspect hunt mastery.";
-    Style: (FontSize: 11, TextColor: #9bb0c2);
-  }
-  $C.@SecondaryTextButton #NightHuntCompendiumBtn {
-    @Text = "Open";
-    @Anchor = (Right: 16, Top: 24, Width: 120, Height: 32);
-  }
-}
+  Group #SettingsPanelContent {
+    Anchor: (Full: 0);
+    LayoutMode: Top;
 
-Group #BloodHudCard {
-  Anchor: (Left: 0, Right: 0, Top: 96, Height: 82);
-  Background: #14202c;
-  Label {
-    Anchor: (Left: 18, Top: 12, Width: 240, Height: 18);
-    Text: "Blood HUD";
-    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-  }
-  Label {
-    Anchor: (Left: 18, Top: 34, Right: 170, Height: 16);
-    Text: "Show or hide the persistent blood resource HUD.";
-    Style: (FontSize: 11, TextColor: #9bb0c2);
-  }
-  Label #BloodHudValue {
-    Anchor: (Left: 18, Top: 56, Width: 160, Height: 16);
-    Text: "Visible";
-    Style: (FontSize: 12, TextColor: #7dd3fc, RenderBold: true);
-  }
-  $C.@SecondaryTextButton #BloodHudToggleBtn {
-    @Text = "Toggle";
-    @Anchor = (Right: 16, Top: 24, Width: 120, Height: 32);
-  }
-}
+        Label {
+          Anchor: (Height: 18, Bottom: 8);
+          Text: "NAVIGATION";
+          Style: (FontSize: 12, TextColor: #8ea2b5, RenderBold: true);
+        }
 
-Group #RitualHudCard {
-  Anchor: (Left: 0, Right: 0, Top: 192, Height: 82);
-  Background: #14202c;
-  Label {
-    Anchor: (Left: 18, Top: 12, Width: 240, Height: 18);
-    Text: "Ritual HUD";
-    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-  }
-  Label {
-    Anchor: (Left: 18, Top: 34, Right: 170, Height: 16);
-    Text: "Show or hide the ritual status overlay and native fallback slot.";
-    Style: (FontSize: 11, TextColor: #9bb0c2);
-  }
-  Label #RitualHudValue {
-    Anchor: (Left: 18, Top: 56, Width: 160, Height: 16);
-    Text: "Visible";
-    Style: (FontSize: 12, TextColor: #7dd3fc, RenderBold: true);
-  }
-  $C.@SecondaryTextButton #RitualHudToggleBtn {
-    @Text = "Toggle";
-    @Anchor = (Right: 16, Top: 24, Width: 120, Height: 32);
-  }
-}
+        Group #NightHuntCompendiumRow {
+          Anchor: (Height: 58, Bottom: 12);
+          Background: #14202c;
 
-Group #RitualModeCard {
-  Anchor: (Left: 0, Right: 0, Top: 288, Height: 108);
-  Background: #14202c;
-  Label {
-    Anchor: (Left: 18, Top: 12, Width: 280, Height: 18);
-    Text: "Ritual HUD Detail";
-    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-  }
-  Label {
-    Anchor: (Left: 18, Top: 34, Right: 24, Height: 16);
-    Text: "Minimal stays quiet, Contextual reacts to ritual state, Expanded keeps the full panel visible.";
-    Style: (FontSize: 11, TextColor: #9bb0c2);
-  }
-  Label #RitualModeValue {
-    Anchor: (Left: 18, Top: 56, Width: 180, Height: 16);
-    Text: "Contextual";
-    Style: (FontSize: 12, TextColor: #facc15, RenderBold: true);
-  }
-  $C.@SecondaryTextButton #RitualModeMinimalBtn {
-    @Text = "Minimal";
-    @Anchor = (Right: 276, Bottom: 14, Width: 92, Height: 32);
-  }
-  $C.@SecondaryTextButton #RitualModeContextualBtn {
-    @Text = "Contextual";
-    @Anchor = (Right: 146, Bottom: 14, Width: 120, Height: 32);
-  }
-  $C.@SecondaryTextButton #RitualModeExpandedBtn {
-    @Text = "Expanded";
-    @Anchor = (Right: 16, Bottom: 14, Width: 120, Height: 32);
-  }
-}
+          Label {
+            Anchor: (Left: 16, Top: 11, Right: 140, Height: 18);
+            Text: "Night Hunt Briefing";
+            Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true);
+            HitTestVisible: false;
+          }
 
-Group #GameplayNotificationsCard {
-  Anchor: (Left: 0, Right: 0, Top: 410, Height: 82);
-  Background: #14202c;
-  Label {
-    Anchor: (Left: 18, Top: 12, Width: 320, Height: 18);
-    Text: "Gameplay Alerts";
-    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-  }
-  Label {
-    Anchor: (Left: 18, Top: 34, Right: 170, Height: 16);
-    Text: "Mute or enable progression, ritual offering, and other general Vampirism notifications.";
-    Style: (FontSize: 11, TextColor: #9bb0c2);
-  }
-  Label #GameplayNotificationsValue {
-    Anchor: (Left: 18, Top: 56, Width: 160, Height: 16);
-    Text: "Enabled";
-    Style: (FontSize: 12, TextColor: #7dd3fc, RenderBold: true);
-  }
-  $C.@SecondaryTextButton #GameplayNotificationsToggleBtn {
-    @Text = "Toggle";
-    @Anchor = (Right: 16, Top: 24, Width: 120, Height: 32);
-  }
-}
+          Label {
+            Anchor: (Left: 16, Top: 31, Right: 140, Height: 15);
+            Text: "Open the compendium, review hunt records, and prepare the next contract.";
+            Style: (FontSize: 11, TextColor: #9bb0c2, Wrap: true);
+            HitTestVisible: false;
+          }
 
-Group #RitualRuntimeNotificationsCard {
-  Anchor: (Left: 0, Right: 0, Top: 506, Height: 82);
-  Background: #14202c;
-  Label {
-    Anchor: (Left: 18, Top: 12, Width: 320, Height: 18);
-    Text: "Ritual Runtime Warnings";
-    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-  }
-  Label {
-    Anchor: (Left: 18, Top: 34, Right: 170, Height: 16);
-    Text: "Mute or enable ongoing ritual state warnings such as instability, tracing, and collapse.";
-    Style: (FontSize: 11, TextColor: #9bb0c2);
-  }
-  Label #RitualRuntimeNotificationsValue {
-    Anchor: (Left: 18, Top: 56, Width: 160, Height: 16);
-    Text: "Enabled";
-    Style: (FontSize: 12, TextColor: #7dd3fc, RenderBold: true);
-  }
-  $C.@SecondaryTextButton #RitualRuntimeNotificationsToggleBtn {
-    @Text = "Toggle";
-    @Anchor = (Right: 16, Top: 24, Width: 120, Height: 32);
+          $C.@SecondaryTextButton #NightHuntCompendiumBtn {
+            @Text = "Open";
+            @Anchor = (Right: 12, Top: 14, Width: 104, Height: 30);
+          }
+        }
+
+        Group {
+          Anchor: (Height: 1, Bottom: 12);
+          Background: #ffffff(0.08);
+          HitTestVisible: false;
+        }
+
+        Label {
+          Anchor: (Height: 18, Bottom: 8);
+          Text: "HUD";
+          Style: (FontSize: 12, TextColor: #8ea2b5, RenderBold: true);
+        }
+
+        Group #BloodHudRow {
+          Anchor: (Height: 58, Bottom: 8);
+          Background: #14202c;
+
+          Label {
+            Anchor: (Left: 16, Top: 11, Right: 250, Height: 18);
+            Text: "Blood HUD";
+            Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true);
+            HitTestVisible: false;
+          }
+
+          Label {
+            Anchor: (Left: 16, Top: 31, Right: 250, Height: 15);
+            Text: "Show the persistent blood resource HUD.";
+            Style: (FontSize: 11, TextColor: #9bb0c2);
+            HitTestVisible: false;
+          }
+
+          Label #BloodHudValue {
+            Anchor: (Right: 126, Top: 20, Width: 96, Height: 16);
+            Text: "Visible";
+            Style: (FontSize: 12, TextColor: #7dd3fc, RenderBold: true, HorizontalAlignment: End, VerticalAlignment: Center);
+            HitTestVisible: false;
+          }
+
+          $C.@SecondaryTextButton #BloodHudToggleBtn {
+            @Text = "Toggle";
+            @Anchor = (Right: 12, Top: 14, Width: 104, Height: 30);
+          }
+        }
+
+        Group #RitualHudRow {
+          Anchor: (Height: 58, Bottom: 8);
+          Background: #14202c;
+
+          Label {
+            Anchor: (Left: 16, Top: 11, Right: 250, Height: 18);
+            Text: "Ritual HUD";
+            Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true);
+            HitTestVisible: false;
+          }
+
+          Label {
+            Anchor: (Left: 16, Top: 31, Right: 250, Height: 15);
+            Text: "Show the ritual state overlay.";
+            Style: (FontSize: 11, TextColor: #9bb0c2);
+            HitTestVisible: false;
+          }
+
+          Label #RitualHudValue {
+            Anchor: (Right: 126, Top: 20, Width: 96, Height: 16);
+            Text: "Visible";
+            Style: (FontSize: 12, TextColor: #7dd3fc, RenderBold: true, HorizontalAlignment: End, VerticalAlignment: Center);
+            HitTestVisible: false;
+          }
+
+          $C.@SecondaryTextButton #RitualHudToggleBtn {
+            @Text = "Toggle";
+            @Anchor = (Right: 12, Top: 14, Width: 104, Height: 30);
+          }
+        }
+
+        Group #RitualModeRow {
+          Anchor: (Height: 82, Bottom: 12);
+          Background: #14202c;
+
+          Label {
+            Anchor: (Left: 16, Top: 11, Right: 330, Height: 18);
+            Text: "Ritual HUD Detail";
+            Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true);
+            HitTestVisible: false;
+          }
+
+          Label {
+            Anchor: (Left: 16, Top: 31, Right: 330, Height: 30);
+            Text: "Choose how much ritual state detail stays visible during live gameplay.";
+            Style: (FontSize: 11, TextColor: #9bb0c2, Wrap: true);
+            HitTestVisible: false;
+          }
+
+          Label #RitualModeValue {
+            Anchor: (Right: 330, Top: 14, Width: 110, Height: 16);
+            Text: "Contextual";
+            Style: (FontSize: 12, TextColor: #facc15, RenderBold: true, HorizontalAlignment: End, VerticalAlignment: Center);
+            HitTestVisible: false;
+          }
+
+          Group #RitualModeButtons {
+            Anchor: (Right: 12, Top: 14, Width: 308, Height: 32);
+
+            Group #RitualModeMinimalWrap {
+              Anchor: (Left: 0, Top: 0, Width: 94, Height: 32);
+              Background: #1a2532;
+
+              Label #RitualModeMinimalLabel {
+                Anchor: (Full: 0);
+                Text: "Minimal";
+                Style: (FontSize: 11, TextColor: #8ea2b5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                HitTestVisible: false;
+              }
+
+              Button #RitualModeMinimalBtn {
+                Anchor: (Full: 0);
+                Style: $C.@TertiaryButtonStyle;
+              }
+            }
+
+            Group #RitualModeContextualWrap {
+              Anchor: (Left: 102, Top: 0, Width: 102, Height: 32);
+              Background: #1a2532;
+
+              Label #RitualModeContextualLabel {
+                Anchor: (Full: 0);
+                Text: "Contextual";
+                Style: (FontSize: 11, TextColor: #8ea2b5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                HitTestVisible: false;
+              }
+
+              Button #RitualModeContextualBtn {
+                Anchor: (Full: 0);
+                Style: $C.@TertiaryButtonStyle;
+              }
+            }
+
+            Group #RitualModeExpandedWrap {
+              Anchor: (Right: 0, Top: 0, Width: 94, Height: 32);
+              Background: #1a2532;
+
+              Label #RitualModeExpandedLabel {
+                Anchor: (Full: 0);
+                Text: "Expanded";
+                Style: (FontSize: 11, TextColor: #8ea2b5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                HitTestVisible: false;
+              }
+
+              Button #RitualModeExpandedBtn {
+                Anchor: (Full: 0);
+                Style: $C.@TertiaryButtonStyle;
+              }
+            }
+          }
+        }
+
+        Group {
+          Anchor: (Height: 1, Bottom: 12);
+          Background: #ffffff(0.08);
+          HitTestVisible: false;
+        }
+
+        Label {
+          Anchor: (Height: 18, Bottom: 8);
+          Text: "ALERTS";
+          Style: (FontSize: 12, TextColor: #8ea2b5, RenderBold: true);
+        }
+
+        Group #GameplayNotificationsRow {
+          Anchor: (Height: 58, Bottom: 8);
+          Background: #14202c;
+
+          Label {
+            Anchor: (Left: 16, Top: 11, Right: 250, Height: 18);
+            Text: "Gameplay Alerts";
+            Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true);
+            HitTestVisible: false;
+          }
+
+          Label {
+            Anchor: (Left: 16, Top: 31, Right: 250, Height: 15);
+            Text: "Enable general Vampirism notifications.";
+            Style: (FontSize: 11, TextColor: #9bb0c2);
+            HitTestVisible: false;
+          }
+
+          Label #GameplayNotificationsValue {
+            Anchor: (Right: 126, Top: 20, Width: 96, Height: 16);
+            Text: "Enabled";
+            Style: (FontSize: 12, TextColor: #7dd3fc, RenderBold: true, HorizontalAlignment: End, VerticalAlignment: Center);
+            HitTestVisible: false;
+          }
+
+          $C.@SecondaryTextButton #GameplayNotificationsToggleBtn {
+            @Text = "Toggle";
+            @Anchor = (Right: 12, Top: 14, Width: 104, Height: 30);
+          }
+        }
+
+        Group #RitualRuntimeNotificationsRow {
+          Anchor: (Height: 58);
+          Background: #14202c;
+
+          Label {
+            Anchor: (Left: 16, Top: 11, Right: 250, Height: 18);
+            Text: "Ritual Runtime Warnings";
+            Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true);
+            HitTestVisible: false;
+          }
+
+          Label {
+            Anchor: (Left: 16, Top: 31, Right: 250, Height: 15);
+            Text: "Enable instability, tracing, and collapse warnings.";
+            Style: (FontSize: 11, TextColor: #9bb0c2);
+            HitTestVisible: false;
+          }
+
+          Label #RitualRuntimeNotificationsValue {
+            Anchor: (Right: 126, Top: 20, Width: 96, Height: 16);
+            Text: "Enabled";
+            Style: (FontSize: 12, TextColor: #7dd3fc, RenderBold: true, HorizontalAlignment: End, VerticalAlignment: Center);
+            HitTestVisible: false;
+          }
+
+          $C.@SecondaryTextButton #RitualRuntimeNotificationsToggleBtn {
+            @Text = "Toggle";
+            @Anchor = (Right: 12, Top: 14, Width: 104, Height: 30);
+          }
+        }
   }
 }
 
 Label #FooterHint {
-  Anchor: (Left: 56, Right: 56, Bottom: 18, Height: 16);
+  Anchor: (Left: 0, Right: 0, Bottom: 10, Height: 16);
   Text: "";
-  Style: (FontSize: 11, TextColor: #8ea2b5, HorizontalAlignment: Center);
+  Style: (FontSize: 11, TextColor: #8ea2b5, HorizontalAlignment: Center, VerticalAlignment: Center);
 }

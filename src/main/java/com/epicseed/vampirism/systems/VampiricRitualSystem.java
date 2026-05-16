@@ -181,7 +181,7 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
                 && snapshot.isPresent()
                 && !snapshot.get().active()
                 && snapshot.get().pointStates().stream().anyMatch(point -> point.tracing() && !point.active())) {
-            TargetedBlock sampleTarget = VampiricRitualTargeting.resolveTargetedBlock(ref, store, world);
+            TargetedBlock sampleTarget = VampiricRitualTargeting.resolveTargetedBlockIfLoaded(ref, store, world);
             Vector3d pointTarget = VampiricRitualTargeting.resolvePointTarget(
                     ref,
                     store,
@@ -313,8 +313,13 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
                                                                                     @Nonnull Store<EntityStore> store,
                                                                                     @Nullable World world,
                                                                                     @Nonnull VampiricRitualRuntimeSnapshot snapshot) {
-        boolean anchorValid = world == null
-                || VampiricRitualTargeting.isAnchorBlock(world, snapshot.anchorBlockPosition(), snapshot.anchorBlockId());
+        Boolean anchorLoadedMatch = world == null
+                ? Boolean.TRUE
+                : VampiricRitualTargeting.isAnchorBlockIfLoaded(
+                        world,
+                        snapshot.anchorBlockPosition(),
+                        snapshot.anchorBlockId());
+        boolean anchorValid = anchorLoadedMatch == null || anchorLoadedMatch;
         return new VampiricRitualRuntimeService.RuntimeConditions(
                 anchorValid,
                 VampiricRitualTargeting.distanceToAnchor(ref, store, snapshot.anchorCenter()),
@@ -326,7 +331,7 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
                                                                     @Nonnull Ref<EntityStore> ref,
                                                                     @Nonnull Store<EntityStore> store,
                                                                     @Nonnull World world) {
-        TargetedBlock target = VampiricRitualTargeting.resolveTargetedBlock(ref, store, world);
+        TargetedBlock target = VampiricRitualTargeting.resolveTargetedBlockIfLoaded(ref, store, world);
         if (target == null) {
             return Optional.empty();
         }
@@ -353,7 +358,10 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
         if (world == null) {
             return Set.of();
         }
-        if (VampiricRitualTargeting.isAnchorBlock(world, snapshot.anchorBlockPosition(), snapshot.anchorBlockId())
+        if (Boolean.TRUE.equals(VampiricRitualTargeting.isAnchorBlockIfLoaded(
+                world,
+                snapshot.anchorBlockPosition(),
+                snapshot.anchorBlockId()))
                 && VampiricRitualTargeting.isNearAnchor(
                 ref,
                 store,
@@ -380,13 +388,16 @@ public final class VampiricRitualSystem extends EntityTickingSystem<EntityStore>
                 persisted.anchorCenterX,
                 persisted.anchorCenterY,
                 persisted.anchorCenterZ);
-        boolean anchorPresent = VampiricRitualTargeting.isAnchorBlock(
+        Boolean anchorPresent = VampiricRitualTargeting.isAnchorBlockIfLoaded(
                 world,
                 new com.hypixel.hytale.math.vector.Vector3i(
                         persisted.anchorBlockX,
                         persisted.anchorBlockY,
                         persisted.anchorBlockZ),
                 persisted.anchorBlockId);
+        if (anchorPresent == null) {
+            return;
+        }
         boolean nearAnchor = anchorPresent && VampiricRitualTargeting.isNearAnchor(
                 ref,
                 store,

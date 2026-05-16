@@ -5,6 +5,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.epicseed.epiccore.skill.ui.ProgressionPageFactory;
 import com.epicseed.epiccore.hytale.PlayerFeedbackAdapter;
 import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.domain.hunt.NightHuntProgressionService;
@@ -33,6 +34,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompendiumEventData> {
 
+    private final ProgressionPageFactory pageFactory;
     private final HuntCompendiumNextRiteResolver nextRiteResolver;
     private final VampiricRitualContextResolver ritualContextResolver;
     private final VampiricLineageService lineageService;
@@ -41,13 +43,13 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
     private String previewPreparationId;
 
     public HuntCompendiumPage(@Nonnull PlayerRef playerRef) {
-        this(playerRef, null, null, null, null);
+        this(playerRef, null, null, null, null, null);
     }
 
     public HuntCompendiumPage(@Nonnull PlayerRef playerRef,
                               VampiricRitualService ritualService,
                               VampiricRitualContextResolver ritualContextResolver) {
-        this(playerRef, ritualService, ritualContextResolver, null, null);
+        this(playerRef, null, ritualService, ritualContextResolver, null, null);
     }
 
     public HuntCompendiumPage(@Nonnull PlayerRef playerRef,
@@ -55,7 +57,17 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
                               VampiricRitualContextResolver ritualContextResolver,
                               VampiricLineageService lineageService,
                               MasqueradeHeatService masqueradeHeatService) {
+        this(playerRef, null, ritualService, ritualContextResolver, lineageService, masqueradeHeatService);
+    }
+
+    public HuntCompendiumPage(@Nonnull PlayerRef playerRef,
+                              @Nullable ProgressionPageFactory pageFactory,
+                              VampiricRitualService ritualService,
+                              VampiricRitualContextResolver ritualContextResolver,
+                              VampiricLineageService lineageService,
+                              MasqueradeHeatService masqueradeHeatService) {
         super(playerRef, CustomPageLifetime.CanDismiss, HuntCompendiumEventData.CODEC);
+        this.pageFactory = pageFactory;
         this.nextRiteResolver = ritualService != null ? new HuntCompendiumNextRiteResolver(ritualService) : null;
         this.ritualContextResolver = ritualContextResolver;
         this.lineageService = lineageService;
@@ -93,6 +105,26 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
                 sendUpdate();
                 return;
             }
+            case "openSkillTree" -> {
+                openPage(player, ref, store, pageFactory != null ? pageFactory.createSkillTreePage(playerRef) : null);
+                sendUpdate();
+                return;
+            }
+            case "openProfile" -> {
+                openPage(player, ref, store, pageFactory != null ? pageFactory.createProfilePage(playerRef) : null);
+                sendUpdate();
+                return;
+            }
+            case "openBindings" -> {
+                openPage(player, ref, store, pageFactory != null ? pageFactory.createRelicBindingsPage(playerRef) : null);
+                sendUpdate();
+                return;
+            }
+            case "openSettings" -> {
+                openPage(player, ref, store, pageFactory != null ? pageFactory.createSettingsPage(playerRef) : null);
+                sendUpdate();
+                return;
+            }
             case "selectTab" -> selectedTab = HuntCompendiumModel.Tab.fromValue(data.value);
             case "previewPreparation" -> {
                 if (data.value != null && !data.value.isBlank()) {
@@ -111,6 +143,14 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
     }
 
     private void bindEvents(@Nonnull UIEventBuilder events) {
+        events.addEventBinding(CustomUIEventBindingType.Activating, "#TabSkillTreeBtn",
+                new EventData().append("Action", "openSkillTree"), false);
+        events.addEventBinding(CustomUIEventBindingType.Activating, "#TabProfileBtn",
+                new EventData().append("Action", "openProfile"), false);
+        events.addEventBinding(CustomUIEventBindingType.Activating, "#TabRelicBindingsBtn",
+                new EventData().append("Action", "openBindings"), false);
+        events.addEventBinding(CustomUIEventBindingType.Activating, "#TabSettingsBtn",
+                new EventData().append("Action", "openSettings"), false);
         events.addEventBinding(CustomUIEventBindingType.Activating, "#CloseBtn",
                 new EventData().append("Action", "close"), false);
         for (HuntCompendiumModel.Tab tab : HuntCompendiumModel.Tab.values()) {
@@ -200,7 +240,9 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
                     ? "#facc15"
                     : option.previewed() ? "#7dd3fc" : "#9bb0c2");
         }
-        cmd.set("#PrepareConfirmBtn.Enabled", !model.previewMatchesSelection());
+        boolean canApplyPreparation = !model.previewMatchesSelection();
+        cmd.set("#PrepareConfirmBtn.HitTestVisible", canApplyPreparation);
+        cmd.set("#PrepareConfirmLabel.Style.TextColor", canApplyPreparation ? "#ffffff" : "#8ea2b5");
     }
 
     private void renderRecords(@Nonnull UICommandBuilder cmd, @Nonnull HuntCompendiumModel model) {
@@ -286,5 +328,15 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
         anchor.setWidth(Value.of(width));
         anchor.setHeight(Value.of(height));
         return anchor;
+    }
+
+    private void openPage(@Nullable Player player,
+                          @Nonnull Ref<EntityStore> ref,
+                          @Nonnull Store<EntityStore> store,
+                          @Nullable InteractiveCustomUIPage<?> page) {
+        if (player == null || page == null) {
+            return;
+        }
+        player.getPageManager().openCustomPage(ref, store, page);
     }
 }

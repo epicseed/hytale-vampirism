@@ -579,8 +579,9 @@ public final class VampirismRuntime {
                                                          @Nonnull Ref<EntityStore> attackerRef,
                                                          @Nonnull Ref<EntityStore> preyRef,
                                                          @Nonnull Store<EntityStore> store) {
-                        nightHuntService.onPlayerKilledMarkedPrey(attackerUuid, attackerRef, preyRef, store);
-                        VampirismPlayerFeedback.notifyMarkedPreyKilled(attackerRef, store);
+                        if (nightHuntService.onPlayerKilledMarkedPrey(attackerUuid, attackerRef, preyRef, store)) {
+                            VampirismPlayerFeedback.notifyMarkedPreyKilled(attackerRef, store);
+                        }
                     }
                 },
                 skillRuntimeStateResolver));

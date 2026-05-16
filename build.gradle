@@ -67,9 +67,6 @@ dependencies {
         runtimeOnly(files(serverJarFile))
     }
 
-    // MultipleHUD — optional dependency (https://github.com/Buuz135/MultipleHUD)
-    // Jar is in libs/ and active — remove to disable HUD support:
-    compileOnly(files("libs/MultipleHUD.jar"))
     testImplementation("com.hypixel.hytale:Server:$hytale_build")
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

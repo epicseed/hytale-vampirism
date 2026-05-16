@@ -85,11 +85,5 @@
         }
       }
     ]
-  },
-  "Ping": {
-    "PingDuration": 5.0,
-    "PingCooldown": 1.0,
-    "PingBroadcastRadius": 100.0,
-    "PingSound": "SFX_Ping"
   }
 }

@@ -32,6 +32,24 @@ public final class VampiricRitualTargeting {
     public static TargetedBlock resolveTargetedBlock(@Nonnull Ref<EntityStore> ref,
                                                      @Nonnull Store<EntityStore> store,
                                                      @Nonnull World world) {
+        return resolveTargetedBlock(ref, store, world, true);
+    }
+
+    /**
+     * Hot in-tick variant that never triggers chunk loading while sampling the hit block.
+     */
+    @Nullable
+    public static TargetedBlock resolveTargetedBlockIfLoaded(@Nonnull Ref<EntityStore> ref,
+                                                             @Nonnull Store<EntityStore> store,
+                                                             @Nonnull World world) {
+        return resolveTargetedBlock(ref, store, world, false);
+    }
+
+    @Nullable
+    private static TargetedBlock resolveTargetedBlock(@Nonnull Ref<EntityStore> ref,
+                                                      @Nonnull Store<EntityStore> store,
+                                                      @Nonnull World world,
+                                                      boolean allowChunkLoading) {
         Transform look = TargetUtil.getLook(ref, store);
         if (look == null || look.getDirection() == null || look.getDirection().length() < 0.001d) {
             return null;
@@ -49,8 +67,11 @@ public final class VampiricRitualTargeting {
             return null;
         }
 
-        BlockType blockType = blockTypeAt(world, hitBlock);
-        String blockId = blockType != null ? blockType.getId() : "";
+        BlockType blockType = blockTypeAt(world, hitBlock, allowChunkLoading);
+        if (blockType == null) {
+            return null;
+        }
+        String blockId = blockType.getId();
         return new TargetedBlock(
                 new Vector3i(hitBlock.x, hitBlock.y, hitBlock.z),
                 new Vector3d(hitBlock.x + 0.5d, hitBlock.y + 0.15d, hitBlock.z + 0.5d),
@@ -75,7 +96,7 @@ public final class VampiricRitualTargeting {
             for (int dx = -ANCHOR_SEARCH_RADIUS; dx <= ANCHOR_SEARCH_RADIUS; dx++) {
                 for (int dz = -ANCHOR_SEARCH_RADIUS; dz <= ANCHOR_SEARCH_RADIUS; dz++) {
                     Vector3i candidate = new Vector3i(centerBlockPosition.x + dx, y, centerBlockPosition.z + dz);
-                    BlockType blockType = blockTypeAt(world, candidate);
+                    BlockType blockType = blockTypeAt(world, candidate, true);
                     if (blockType == null || !supportedAnchorBlockIds.test(blockType.getId())) {
                         continue;
                     }
@@ -118,7 +139,23 @@ public final class VampiricRitualTargeting {
     }
 
     public static boolean isAnchorBlock(@Nonnull World world, @Nonnull Vector3i blockPosition, @Nonnull String blockId) {
-        BlockType type = blockTypeAt(world, blockPosition);
+        BlockType type = blockTypeAt(world, blockPosition, true);
+        return type != null && blockId.equals(type.getId());
+    }
+
+    /**
+     * Returns null when the anchor chunk is not loaded yet.
+     */
+    @Nullable
+    public static Boolean isAnchorBlockIfLoaded(@Nonnull World world,
+                                                @Nonnull Vector3i blockPosition,
+                                                @Nonnull String blockId) {
+        long chunkKey = chunkKey(blockPosition);
+        WorldChunk chunk = world.getChunkIfLoaded(chunkKey);
+        if (chunk == null) {
+            return null;
+        }
+        BlockType type = chunk.getBlockType(blockPosition.x, blockPosition.y, blockPosition.z);
         return type != null && blockId.equals(type.getId());
     }
 
@@ -145,9 +182,20 @@ public final class VampiricRitualTargeting {
 
     @Nullable
     private static BlockType blockTypeAt(@Nonnull World world, @Nonnull Vector3i blockPosition) {
-        long chunkKey = (((long) (blockPosition.x >> 5)) << 32) | (((long) (blockPosition.z >> 5)) & 0xFFFFFFFFL);
-        WorldChunk chunk = world.getNonTickingChunk(chunkKey);
+        return blockTypeAt(world, blockPosition, true);
+    }
+
+    @Nullable
+    private static BlockType blockTypeAt(@Nonnull World world,
+                                         @Nonnull Vector3i blockPosition,
+                                         boolean allowChunkLoading) {
+        long chunkKey = chunkKey(blockPosition);
+        WorldChunk chunk = allowChunkLoading ? world.getNonTickingChunk(chunkKey) : world.getChunkIfLoaded(chunkKey);
         return chunk != null ? chunk.getBlockType(blockPosition.x, blockPosition.y, blockPosition.z) : null;
+    }
+
+    private static long chunkKey(@Nonnull Vector3i blockPosition) {
+        return (((long) (blockPosition.x >> 5)) << 32) | (((long) (blockPosition.z >> 5)) & 0xFFFFFFFFL);
     }
 
     private static boolean isSolidBlockId(int blockId) {

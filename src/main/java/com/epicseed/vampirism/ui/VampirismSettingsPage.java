@@ -46,8 +46,12 @@ public final class VampirismSettingsPage extends InteractiveCustomUIPage<Vampiri
 
         events.addEventBinding(CustomUIEventBindingType.Activating, "#TabSkillTreeBtn",
                 new EventData().append("Action", "openSkillTree"), false);
+        events.addEventBinding(CustomUIEventBindingType.Activating, "#TabProfileBtn",
+                new EventData().append("Action", "openProfile"), false);
         events.addEventBinding(CustomUIEventBindingType.Activating, "#TabRelicBindingsBtn",
                 new EventData().append("Action", "openBindings"), false);
+        events.addEventBinding(CustomUIEventBindingType.Activating, "#TabHuntCompendiumBtn",
+                new EventData().append("Action", "openHuntCompendium"), false);
         events.addEventBinding(CustomUIEventBindingType.Activating, "#CloseBtn",
                 new EventData().append("Action", "close"), false);
         events.addEventBinding(CustomUIEventBindingType.Activating, "#NightHuntCompendiumBtn",
@@ -92,6 +96,13 @@ public final class VampirismSettingsPage extends InteractiveCustomUIPage<Vampiri
             case "openBindings" -> {
                 if (player != null) {
                     player.getPageManager().openCustomPage(ref, store, pageFactory.createRelicBindingsPage(playerRef));
+                }
+                sendUpdate();
+                return;
+            }
+            case "openProfile" -> {
+                if (player != null) {
+                    player.getPageManager().openCustomPage(ref, store, pageFactory.createProfilePage(playerRef));
                 }
                 sendUpdate();
                 return;
@@ -155,11 +166,33 @@ public final class VampirismSettingsPage extends InteractiveCustomUIPage<Vampiri
         RitualHudDisplayMode displayMode = settingsUiAdapter.ritualHudDisplayMode(uuid);
 
         cmd.set("#BloodHudValue.Text", bloodHudVisible ? "Visible" : "Hidden");
+        cmd.set("#BloodHudValue.Style.TextColor", bloodHudVisible ? "#7dd3fc" : "#8ea2b5");
         cmd.set("#RitualHudValue.Text", ritualHudVisible ? "Visible" : "Hidden");
+        cmd.set("#RitualHudValue.Style.TextColor", ritualHudVisible ? "#7dd3fc" : "#8ea2b5");
         cmd.set("#RitualModeValue.Text", humanDisplayMode(displayMode));
+        cmd.set("#RitualModeValue.Style.TextColor", "#facc15");
         cmd.set("#GameplayNotificationsValue.Text", gameplayNotificationsEnabled ? "Enabled" : "Muted");
+        cmd.set("#GameplayNotificationsValue.Style.TextColor", gameplayNotificationsEnabled ? "#7dd3fc" : "#8ea2b5");
         cmd.set("#RitualRuntimeNotificationsValue.Text", ritualRuntimeNotificationsEnabled ? "Enabled" : "Muted");
+        cmd.set("#RitualRuntimeNotificationsValue.Style.TextColor",
+                ritualRuntimeNotificationsEnabled ? "#7dd3fc" : "#8ea2b5");
+        renderDisplayModeState(cmd, RitualHudDisplayMode.MINIMAL, displayMode,
+                "#RitualModeMinimalWrap", "#RitualModeMinimalLabel");
+        renderDisplayModeState(cmd, RitualHudDisplayMode.CONTEXTUAL, displayMode,
+                "#RitualModeContextualWrap", "#RitualModeContextualLabel");
+        renderDisplayModeState(cmd, RitualHudDisplayMode.EXPANDED, displayMode,
+                "#RitualModeExpandedWrap", "#RitualModeExpandedLabel");
         cmd.set("#FooterHint.Text", "Settings save instantly to your Vampirism player profile.");
+    }
+
+    private static void renderDisplayModeState(@Nonnull UICommandBuilder cmd,
+                                               @Nonnull RitualHudDisplayMode candidate,
+                                               @Nonnull RitualHudDisplayMode selected,
+                                               @Nonnull String wrapperSelector,
+                                               @Nonnull String labelSelector) {
+        boolean active = candidate == selected;
+        cmd.set(wrapperSelector + ".Background", active ? "#314863" : "#1a2532");
+        cmd.set(labelSelector + ".Style.TextColor", active ? "#ffffff" : "#8ea2b5");
     }
 
     private void notifySaved(@Nonnull String label, @Nonnull String value) {
