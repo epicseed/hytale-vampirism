@@ -113,6 +113,46 @@ class VampiricRitualBookModelTest {
     }
 
     @Test
+    void pointPreviewUsesStaticBaseLayout() {
+        String anchorBlockId = "Furniture_Ancient_Coffin";
+        VampiricRitualBookModel model = VampiricRitualBookModel.create(
+                anchorBlockId,
+                List.of(new VampiricRitualRuntimeService.ResolvedAnchorRitual("awakening", "Awakening", anchorBlockId)),
+                Map.of("awakening", definition("awakening", "Awakening")),
+                Map.of("awakening", template("awakening", "Awakening", anchorBlockId)),
+                Map.of("awakening", evaluation("awakening", RitualProgressState.STATUS_AVAILABLE)),
+                null);
+
+        VampiricRitualBookModel.PointView point = model.pointViews().get(0);
+        assertEquals(232, point.left());
+        assertEquals(120, point.top());
+        assertEquals("#6c4f3f", point.fillColor());
+        assertTrue(!point.active());
+    }
+
+    @Test
+    void preservesResolvedRitualOrder() {
+        String anchorBlockId = "Furniture_Ancient_Coffin";
+        VampiricRitualBookModel model = VampiricRitualBookModel.create(
+                anchorBlockId,
+                List.of(
+                        new VampiricRitualRuntimeService.ResolvedAnchorRitual("veil", "Veil", anchorBlockId),
+                        new VampiricRitualRuntimeService.ResolvedAnchorRitual("awakening", "Awakening", anchorBlockId)),
+                Map.of(
+                        "awakening", definition("awakening", "Awakening"),
+                        "veil", definition("veil", "Veil")),
+                Map.of(
+                        "awakening", template("awakening", "Awakening", anchorBlockId),
+                        "veil", template("veil", "Veil", anchorBlockId)),
+                Map.of(
+                        "awakening", evaluation("awakening", RitualProgressState.STATUS_AVAILABLE),
+                        "veil", evaluation("veil", RitualProgressState.STATUS_LOCKED, "missing_tag:night")),
+                null);
+
+        assertEquals(List.of("veil", "awakening"), model.rituals().stream().map(VampiricRitualBookModel.RitualEntry::ritualId).toList());
+    }
+
+    @Test
     void explicitSelectionWinsOverAvailabilitySorting() {
         String anchorBlockId = "Furniture_Ancient_Coffin";
         VampiricRitualBookModel model = VampiricRitualBookModel.create(

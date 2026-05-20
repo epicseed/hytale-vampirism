@@ -24,6 +24,7 @@ Group #HuntCompendiumRoot {
         Style: $C.@TertiaryButtonStyle;
       }
     }
+    }
 
     Group #TabProfileWrapper {
       Anchor: (Left: 144, Top: 0, Width: 120, Height: 44);

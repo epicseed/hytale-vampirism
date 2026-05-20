@@ -1,8 +1,6 @@
 package com.epicseed.vampirism.ui;
 
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -14,7 +12,6 @@ import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.vampirism.domain.player.RitualProgressState;
 import com.epicseed.vampirism.domain.progression.VampiricProgressionProofs;
-import com.epicseed.vampirism.domain.ritual.VampiricRitualActivationLink;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContext;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualDefinition;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualEvaluation;
@@ -25,22 +22,12 @@ import com.epicseed.vampirism.domain.ritual.VampiricRitualTemplatePoint;
 
 final class VampiricRitualBookModel {
 
-    private static final List<PhasePreview> PHASES = List.of(
-            new PhasePreview("preparing", "Dormant", "#6c4f3f",
-                    "The circle rests. Study the sigils before tracing the first mark."),
-            new PhasePreview("binding", "Binding", "#8d5d3b",
-                    "The committed circle begins to answer. Early links tighten around the anchor."),
-            new PhasePreview("channeling", "Channeling", "#7a1f2b",
-                    "Every sigil answers in sequence. The ritual is resolving around the anchor."),
-            new PhasePreview("unstable", "Unstable", "#8a2d1c",
-                    "The cadence slips. The circle needs steady control before it collapses."),
-            new PhasePreview("success", "Ascendant", "#8f6a2a",
-                    "The ritual settles into its final pattern and the reward can manifest."));
+    private static final String PREVIEW_POINT_FILL = "#6c4f3f";
+    private static final String PREVIEW_POINT_TEXT = "#f7e7c8";
 
     private final String anchorBlockId;
     private final List<RitualEntry> rituals;
     private int selectedIndex;
-    private int phaseIndex;
 
     VampiricRitualBookModel(@Nonnull String anchorBlockId,
                             @Nonnull List<RitualEntry> rituals,
@@ -48,7 +35,6 @@ final class VampiricRitualBookModel {
         this.anchorBlockId = Objects.requireNonNull(anchorBlockId, "anchorBlockId");
         this.rituals = rituals == null ? List.of() : List.copyOf(rituals);
         this.selectedIndex = selectedIndexFor(selectedRitualId);
-        this.phaseIndex = 0;
     }
 
     @Nonnull
@@ -68,8 +54,6 @@ final class VampiricRitualBookModel {
             }
             entries.add(new RitualEntry(ritual, definition, template, evaluation, resolveIcon(definition)));
         }
-        entries.sort(Comparator.comparing((RitualEntry entry) -> statusSortKey(entry.evaluation()))
-                .thenComparing(entry -> entry.definition().displayName(), String.CASE_INSENSITIVE_ORDER));
         return new VampiricRitualBookModel(anchorBlockId, entries, selectedRitualId);
     }
 
@@ -94,19 +78,6 @@ final class VampiricRitualBookModel {
 
     public void selectRitual(@Nullable String ritualId) {
         selectedIndex = selectedIndexFor(ritualId);
-        phaseIndex = 0;
-    }
-
-    public void cyclePhase(int delta) {
-        if (PHASES.isEmpty()) {
-            return;
-        }
-        phaseIndex = Math.floorMod(phaseIndex + delta, PHASES.size());
-    }
-
-    @Nonnull
-    public PhasePreview phase() {
-        return PHASES.get(Math.max(0, Math.min(phaseIndex, PHASES.size() - 1)));
     }
 
     @Nonnull
@@ -272,51 +243,6 @@ final class VampiricRitualBookModel {
     }
 
     @Nonnull
-    public String phaseLabel() {
-        return phase().displayName();
-    }
-
-    @Nonnull
-    public String phaseColor() {
-        return phase().color();
-    }
-
-    @Nonnull
-    public String phaseSummary() {
-        PhasePreview phase = phase();
-        return switch (phase.id()) {
-            case "binding" -> phase.summary() + " The first lit sigils show where the committed circle starts answering.";
-            case "channeling" -> phase.summary() + " A fully lit circle means the ritual is resolving in sequence.";
-            case "unstable" -> phase.summary() + " If the circle looks like this in-world, steady it fast.";
-            case "success" -> phase.summary() + " This is the settled pattern to remember before the circle fades.";
-            default -> phase.summary() + " Hover the sigils to study each mark before tracing.";
-        };
-    }
-
-    @Nonnull
-    public String cadenceText() {
-        RitualEntry entry = selected();
-        if (entry.template().activationLinks().isEmpty()) {
-            return "The ritual follows the sigil order engraved in the circle.";
-        }
-        ArrayList<String> lines = new ArrayList<>();
-        List<VampiricRitualActivationLink> links = new ArrayList<>(entry.template().activationLinks());
-        links.sort(Comparator.comparingDouble(VampiricRitualActivationLink::startTimeSeconds));
-        for (int i = 0; i < Math.min(5, links.size()); i++) {
-            VampiricRitualActivationLink link = links.get(i);
-            String duration = link.activeDurationSeconds() > 0d
-                    ? " · " + formatNumber(link.activeDurationSeconds()) + "s"
-                    : "";
-            lines.add((i + 1) + ". " + humanizeId(link.fromPointId()) + " -> " + humanizeId(link.toPointId())
-                    + " @ " + formatNumber(link.startTimeSeconds()) + "s" + duration);
-        }
-        if (links.size() > 6) {
-            lines.add("…");
-        }
-        return String.join("\n", lines);
-    }
-
-    @Nonnull
     public String attuneButtonText() {
         return "Attune Ritual";
     }
@@ -357,16 +283,12 @@ final class VampiricRitualBookModel {
             radius = Math.max(radius, Math.max(Math.abs(point.offsetX()), Math.abs(point.offsetZ())));
         }
         double scale = 112d / radius;
-        double elapsed = simulatedElapsedSeconds(entry.template(), phase().id());
-        Set<String> energizedPoints = energizedPoints(entry.template(), phase().id(), elapsed);
-        String fill = phasePointColor(phase().id());
 
         ArrayList<PointView> rendered = new ArrayList<>();
         for (int i = 0; i < points.size(); i++) {
             VampiricRitualTemplatePoint point = points.get(i);
             int left = (int) Math.round(144d + point.offsetX() * scale - 24d);
             int top = (int) Math.round(144d + point.offsetZ() * scale - 24d);
-            boolean active = energizedPoints.contains(point.id());
             rendered.add(new PointView(
                     i + 1,
                     point.id(),
@@ -374,9 +296,9 @@ final class VampiricRitualBookModel {
                     point.symbolName(),
                     left,
                     top,
-                    active,
-                    active ? fill : "#5b4638",
-                    active ? "#f7e7c8" : "#d1b08c"));
+                    false,
+                    PREVIEW_POINT_FILL,
+                    PREVIEW_POINT_TEXT));
         }
         return List.copyOf(rendered);
     }
@@ -398,70 +320,6 @@ final class VampiricRitualBookModel {
             }
         }
         return 0;
-    }
-
-    private static int statusSortKey(@Nonnull VampiricRitualEvaluation evaluation) {
-        if (evaluation.available() && !evaluation.completed()) {
-            return 0;
-        }
-        if (evaluation.active()) {
-            return 1;
-        }
-        if (evaluation.completed()) {
-            return 2;
-        }
-        return 3;
-    }
-
-    @Nonnull
-    private static String phasePointColor(@Nonnull String phaseId) {
-        return switch (phaseId) {
-            case "binding" -> "#875a38";
-            case "channeling" -> "#7d2330";
-            case "unstable" -> "#8a2d1c";
-            case "success" -> "#8f6a2a";
-            default -> "#6c4f3f";
-        };
-    }
-
-    private static double simulatedElapsedSeconds(@Nonnull VampiricRitualTemplate template,
-                                                  @Nonnull String phaseId) {
-        return switch (phaseId) {
-            case "binding" -> Math.max(1.2d, template.channelDurationSeconds() * 0.32d);
-            case "channeling" -> Math.max(2.4d, template.channelDurationSeconds() * 0.72d);
-            case "unstable" -> Math.max(template.channelDurationSeconds(), template.channelDurationSeconds() * 0.92d);
-            case "success" -> Double.MAX_VALUE;
-            default -> -1d;
-        };
-    }
-
-    @Nonnull
-    private static Set<String> energizedPoints(@Nonnull VampiricRitualTemplate template,
-                                               @Nonnull String phaseId,
-                                               double elapsedSeconds) {
-        if ("success".equals(phaseId) || "unstable".equals(phaseId) || "channeling".equals(phaseId)) {
-            LinkedHashMap<String, Boolean> all = new LinkedHashMap<>();
-            for (VampiricRitualTemplatePoint point : template.points()) {
-                all.put(point.id(), Boolean.TRUE);
-            }
-            return all.keySet();
-        }
-        if ("preparing".equals(phaseId)) {
-            return Set.of();
-        }
-        LinkedHashMap<String, Boolean> active = new LinkedHashMap<>();
-        List<VampiricRitualActivationLink> links = new ArrayList<>(template.activationLinks());
-        links.sort(Comparator.comparingDouble(VampiricRitualActivationLink::startTimeSeconds));
-        for (VampiricRitualActivationLink link : links) {
-            if (link.visibleAt(elapsedSeconds)) {
-                active.put(link.fromPointId(), Boolean.TRUE);
-                active.put(link.toPointId(), Boolean.TRUE);
-            }
-        }
-        if (active.isEmpty() && !template.points().isEmpty()) {
-            active.put(template.points().get(0).id(), Boolean.TRUE);
-        }
-        return active.keySet();
     }
 
     @Nonnull
@@ -595,14 +453,6 @@ final class VampiricRitualBookModel {
         return out.toString().trim();
     }
 
-    @Nonnull
-    private static String formatNumber(double value) {
-        if (Math.abs(value - Math.rint(value)) < 0.001d) {
-            return Long.toString(Math.round(value));
-        }
-        return String.format(Locale.US, "%.1f", value);
-    }
-
     record RitualEntry(
             @Nonnull VampiricRitualRuntimeService.ResolvedAnchorRitual ritual,
             @Nonnull VampiricRitualDefinition definition,
@@ -653,12 +503,5 @@ final class VampiricRitualBookModel {
         String symbolTexturePath() {
             return VampiricRitualBookModel.resolveSymbolTexture(symbolId);
         }
-    }
-
-    record PhasePreview(
-            @Nonnull String id,
-            @Nonnull String displayName,
-            @Nonnull String color,
-            @Nonnull String summary) {
     }
 }

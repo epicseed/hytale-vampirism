@@ -15,101 +15,6 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 public final class RitualStatusHud extends ComposableCustomHud {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-    private static final String INLINE_MARKUP = """
-            $C = "../../Common.ui";
-
-            @BottomHudClearance = 180;
-
-            $C.@Panel #RitualHudRoot {
-              Anchor: (Left: 24, Bottom: @BottomHudClearance, Width: 360, Height: 112);
-              Visible: false;
-              HitTestVisible: false;
-              Padding: (Full: 10);
-
-              Group #CompactStrip {
-                Anchor: (Left: 0, Right: 0, Top: 0, Height: 38);
-                HitTestVisible: false;
-
-                Group #PhaseChip {
-                  Anchor: (Left: 0, Top: 4, Width: 84, Height: 22);
-                  Background: #34161f(0.94);
-                  HitTestVisible: false;
-
-                  Label #PhaseValue {
-                    Anchor: (Full: 0);
-                    Text: "";
-                    Style: (FontSize: 10, TextColor: #f6dce3, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
-                    HitTestVisible: false;
-                  }
-                }
-
-                Label #RitualName {
-                  Anchor: (Left: 96, Top: 0, Right: 88, Height: 18);
-                  Text: "";
-                  Style: (FontName: "Secondary", FontSize: 15, TextColor: #f7d2d8, RenderBold: true);
-                  HitTestVisible: false;
-                }
-
-                Label #ProgressValue {
-                  Anchor: (Right: 0, Top: 0, Width: 82, Height: 18);
-                  Text: "";
-                  Style: (FontSize: 10, TextColor: $C.@ColorGrayCaption, RenderBold: true, HorizontalAlignment: End);
-                  HitTestVisible: false;
-                }
-
-                Label #GuidanceValue {
-                  Anchor: (Left: 96, Top: 20, Right: 0, Height: 16);
-                  Text: "";
-                  Style: (FontSize: 11, TextColor: $C.@ColorDefaultLabel, RenderBold: true);
-                  HitTestVisible: false;
-                }
-              }
-
-              $C.@ContentSeparator {
-                Anchor: (Left: 0, Right: 0, Top: 46, Height: 1);
-              }
-
-              Group #ExpandedSection {
-                Anchor: (Left: 0, Right: 0, Bottom: 0, Height: 48);
-                Visible: false;
-                HitTestVisible: false;
-
-                Label #ContextValue {
-                  Anchor: (Left: 0, Right: 0, Top: 0, Height: 18);
-                  Text: "";
-                  Style: (FontSize: 11, TextColor: #f0e2e6, Wrap: true);
-                  HitTestVisible: false;
-                }
-
-                Group #StabilityPill {
-                  Anchor: (Left: 0, Top: 26, Width: 168, Height: 20);
-                  Background: #14241c(0.9);
-                  HitTestVisible: false;
-
-                  Label #StabilityValue {
-                    Anchor: (Left: 8, Right: 8, Top: 0, Height: 20);
-                    Text: "";
-                    Style: (FontSize: 10, TextColor: #d7e4dd, RenderBold: true, VerticalAlignment: Center);
-                    HitTestVisible: false;
-                  }
-                }
-
-                Group #CorruptionPill {
-                  Anchor: (Right: 0, Top: 26, Width: 168, Height: 20);
-                  Background: #31111b(0.92);
-                  HitTestVisible: false;
-
-                  Label #CorruptionValue {
-                    Anchor: (Left: 8, Right: 8, Top: 0, Height: 20);
-                    Text: "";
-                    Style: (FontSize: 10, TextColor: #f3c3cf, RenderBold: true, VerticalAlignment: Center);
-                    HitTestVisible: false;
-                  }
-                }
-              }
-            }
-            """;
-
     private static final String ROOT = "#RitualHudRoot";
     private static final String TITLE = ROOT + " #RitualName";
     private static final String PHASE = ROOT + " #PhaseValue";
@@ -133,12 +38,6 @@ public final class RitualStatusHud extends ComposableCustomHud {
     @Nonnull
     protected String documentPath() {
         return VampirismUiPaths.ritualHudLayout();
-    }
-
-    @Override
-    @Nullable
-    protected String inlineMarkup() {
-        return INLINE_MARKUP;
     }
 
     @Override
