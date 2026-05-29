@@ -24,6 +24,10 @@ final class VampiricRitualBookModel {
 
     private static final String PREVIEW_POINT_FILL = "#6c4f3f";
     private static final String PREVIEW_POINT_TEXT = "#f7e7c8";
+    private static final double PREVIEW_CANVAS_SIZE = 436d;
+    private static final double PREVIEW_CENTER = PREVIEW_CANVAS_SIZE / 2d;
+    private static final double PREVIEW_RADIUS = 174d;
+    private static final double PREVIEW_POINT_SIZE = 64d;
 
     private final String anchorBlockId;
     private final List<RitualEntry> rituals;
@@ -282,13 +286,13 @@ final class VampiricRitualBookModel {
         for (VampiricRitualTemplatePoint point : points) {
             radius = Math.max(radius, Math.max(Math.abs(point.offsetX()), Math.abs(point.offsetZ())));
         }
-        double scale = 112d / radius;
+        double scale = PREVIEW_RADIUS / radius;
 
         ArrayList<PointView> rendered = new ArrayList<>();
         for (int i = 0; i < points.size(); i++) {
             VampiricRitualTemplatePoint point = points.get(i);
-            int left = (int) Math.round(144d + point.offsetX() * scale - 24d);
-            int top = (int) Math.round(144d + point.offsetZ() * scale - 24d);
+            int left = (int) Math.round(PREVIEW_CENTER + point.offsetX() * scale - PREVIEW_POINT_SIZE / 2d);
+            int top = (int) Math.round(PREVIEW_CENTER + point.offsetZ() * scale - PREVIEW_POINT_SIZE / 2d);
             rendered.add(new PointView(
                     i + 1,
                     point.id(),
@@ -485,6 +489,10 @@ final class VampiricRitualBookModel {
                 case RitualProgressState.STATUS_AVAILABLE -> "#67503a";
                 default -> "#5b4638";
             };
+        }
+
+        boolean completed() {
+            return RitualProgressState.STATUS_COMPLETED.equals(RitualProgressState.normalizeStatus(evaluation.status()));
         }
     }
 

@@ -124,8 +124,8 @@ class VampiricRitualBookModelTest {
                 null);
 
         VampiricRitualBookModel.PointView point = model.pointViews().get(0);
-        assertEquals(232, point.left());
-        assertEquals(120, point.top());
+        assertEquals(360, point.left());
+        assertEquals(186, point.top());
         assertEquals("#6c4f3f", point.fillColor());
         assertTrue(!point.active());
     }

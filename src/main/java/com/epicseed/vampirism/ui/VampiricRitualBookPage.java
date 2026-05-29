@@ -41,6 +41,10 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
     private static final int TAB_GAP = 8;
     private static final int TAB_GUTTER_HEIGHT = 552;
     private static final int TAB_MAX_PER_SIDE = (TAB_GUTTER_HEIGHT + TAB_GAP) / (TAB_HEIGHT + TAB_GAP);
+    private static final int PREVIEW_POINT_SIZE = 64;
+    private static final String PREVIEW_BASE_TEXTURE = "Vampirism/Assets/Rituals/Vampirism_RitualGlyph_Base.png";
+    private static final String PREVIEW_CORE_TEXTURE = "Vampirism/Assets/Rituals/Vampirism_RitualGlyph_Core_Calm.png";
+    private static final String PREVIEW_NODE_TEXTURE = "Vampirism/Assets/Rituals/Vampirism_RitualGlyph_Node_Inactive.png";
 
     private final VampiricRitualSelectionService selectionService;
     private final TargetedBlock anchor;
@@ -181,9 +185,10 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
             cmd.set("#BlockersText.Text", "");
             cmd.set("#ObjectivesText.Text", "");
             cmd.set("#RewardsText.Text", "");
-            cmd.set("#AttuneBtnLabel.Text", "Attune Ritual");
+            cmd.set("#AttuneBtnLabel.Text", "Attuned");
             cmd.set("#AttuneBtn.Disabled", true);
-            cmd.set("#DiagramAnchorCore.Background", "#6c4f3f");
+            cmd.set("#DiagramBase.Background", PREVIEW_BASE_TEXTURE);
+            cmd.set("#DiagramCore.Background", PREVIEW_CORE_TEXTURE);
             return;
         }
 
@@ -198,9 +203,10 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
         cmd.set("#BlockersText.Text", model.blockingText());
         cmd.set("#ObjectivesText.Text", model.objectivesText());
         cmd.set("#RewardsText.Text", model.rewardsText());
-        cmd.set("#AttuneBtnLabel.Text", model.attuneButtonText());
-        cmd.set("#AttuneBtn.Disabled", false);
-        cmd.set("#DiagramAnchorCore.Background", "#6c4f3f");
+        cmd.set("#AttuneBtnLabel.Text", attuneButtonText());
+        cmd.set("#AttuneBtn.Disabled", selectedRitualAlreadyAttuned());
+        cmd.set("#DiagramBase.Background", PREVIEW_BASE_TEXTURE);
+        cmd.set("#DiagramCore.Background", PREVIEW_CORE_TEXTURE);
     }
 
     private void renderTabsState(@Nonnull UICommandBuilder cmd) {
@@ -211,10 +217,15 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
             String selector = (right ? "#RightTabGutter" : "#LeftTabGutter") + "[" + indexOnSide + "]";
             VampiricRitualBookModel.RitualEntry entry = model.rituals().get(i);
             boolean selected = entry.ritualId().equals(model.selectedRitualId());
+            boolean completed = entry.completed();
+            String tabColor = tabPlateColor(selected, completed);
             cmd.set(selector + " #TabIcon.Background", entry.iconPath());
             cmd.set(selector + " #TabTitle.Text", entry.definition().displayName());
-            cmd.set(selector + " #TabPlate.Background", tabPlateColor(selected));
-            cmd.set(selector + " #TabTitle.Style.TextColor", selected ? "#f6e7c6" : "#d2b59a");
+            cmd.set(selector + " #TabPlate.Background", tabColor);
+            cmd.set(selector + " #TabInset.Background", tabColor);
+            cmd.set(selector + " #TabSelectionAccent.Visible", selected);
+            cmd.set(selector + " #TabCompletionAccent.Visible", completed);
+            cmd.set(selector + " #TabTitle.Style.TextColor", tabTitleColor(selected, completed));
             cmd.set(selector + " #TabButton.TooltipText",
                     entry.definition().displayName()
                             + "\n\n"
@@ -232,8 +243,8 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
             }
             VampiricRitualBookModel.PointView point = points.get(i);
             cmd.set(selector + ".Visible", true);
-            cmd.setObject(selector + ".Anchor", anchor(point.left(), point.top(), 48, 48));
-            cmd.set(selector + " #PointPlate.Background", point.fillColor());
+            cmd.setObject(selector + ".Anchor", anchor(point.left(), point.top(), PREVIEW_POINT_SIZE, PREVIEW_POINT_SIZE));
+            cmd.set(selector + " #PointPlate.Background", PREVIEW_NODE_TEXTURE);
             cmd.set(selector + " #PointGlyph.Background", point.symbolTexturePath());
             cmd.set(selector + " #PointIndex.Text", Integer.toString(point.index()));
             cmd.set(selector + " #PointIndex.Style.TextColor", point.textColor());
@@ -249,6 +260,15 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
                 Message.raw(displayName).color("white"),
                 Message.raw(" for " + model.attunementScope() + ".").color("gray"));
         PlayerFeedbackAdapter.sendNotificationWithFallback(playerRef, message, NotificationStyle.Success, message);
+    }
+
+    @Nonnull
+    private String attuneButtonText() {
+        return selectedRitualAlreadyAttuned() ? "Attuned" : model.attuneButtonText();
+    }
+
+    private boolean selectedRitualAlreadyAttuned() {
+        return Objects.equals(model.selectedRitualId(), attunedRitualId);
     }
 
     private static int rightTabCount(int total) {
@@ -286,10 +306,24 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
     }
 
     @Nonnull
-    private static String tabPlateColor(boolean selected) {
+    private static String tabPlateColor(boolean selected, boolean completed) {
         if (selected) {
-            return "#6b4133";
+            return "#7a5140";
+        }
+        if (completed) {
+            return "#6a5334";
         }
         return "#50372c";
+    }
+
+    @Nonnull
+    private static String tabTitleColor(boolean selected, boolean completed) {
+        if (selected) {
+            return "#f6e7c6";
+        }
+        if (completed) {
+            return "#e4cb8f";
+        }
+        return "#d2b59a";
     }
 }

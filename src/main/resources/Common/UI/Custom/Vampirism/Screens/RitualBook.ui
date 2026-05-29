@@ -3,7 +3,6 @@ $C = "../../Common.ui";
 
 @BookBackground = PatchStyle(TexturePath: "../Assets/RitualBook/BG.png");
 @SectionDividerColor = #7f624d(0.42);
-@DiagramFieldTint = #eadcc4(0.72);
 @PageBoundsTint = #f1e4cf(0.18);
 
 @BookButtonStyle = ButtonStyle(
@@ -176,42 +175,42 @@ Group #RitualBookRoot {
       Anchor: (Full: 0);
       Background: @PageBoundsTint;
       Group #RightPageContent {
-        Anchor: (Left: 18, Top: 10, Right: 18, Bottom: 10);
+        Anchor: (Left: 8, Top: 4, Right: 8, Bottom: 4);
 
         Group #DiagramCard {
-          Anchor: (Left: 0, Top: 0, Right: 0, Height: 566);
+          Anchor: (Left: 0, Top: 26, Right: 0, Bottom: 104);
 
           Group #DiagramField {
-            Anchor: (Left: 70, Top: 131, Width: 312, Height: 304);
-            Background: @DiagramFieldTint;
+            Anchor: (Left: 0, Top: 0, Right: 0, Height: 472);
 
-            Group #DiagramCanvas {
-              Anchor: (Left: 12, Top: -6, Width: 288, Height: 288);
+            Group #DiagramBase {
+              Anchor: (Full: 0);
+              Background: #000000(0.0);
             }
 
-            Group #DiagramAnchor {
-              Anchor: (Left: 130, Top: 100, Width: 52, Height: 52);
-              Background: #574132;
-              Group #DiagramAnchorCore {
-                Anchor: (Left: 10, Top: 10, Width: 32, Height: 32);
-                Background: #6c4f3f;
-              }
+            Group #DiagramCanvas {
+              Anchor: (Full: 18);
+            }
+
+            Group #DiagramCore {
+              Anchor: (Left: 174, Top: 174, Width: 124, Height: 124);
+              Background: #000000(0.0);
             }
           }
         }
 
         Group #AttuneCard {
-          Anchor: (Left: 0, Top: 578, Right: 0, Bottom: 0);
+          Anchor: (Left: 0, Right: 0, Bottom: 46, Height: 58);
           Group {
             Anchor: (Left: 0, Right: 0, Top: 0, Height: 1);
             Background: @SectionDividerColor;
           }
           Button #AttuneBtn {
-            Anchor: (Left: 126, Top: 14, Width: 200, Height: 36);
+            Anchor: (Left: 136, Top: 12, Width: 200, Height: 36);
             Style: @BookButtonStyle;
           }
           Label #AttuneBtnLabel {
-            Anchor: (Left: 126, Top: 14, Width: 200, Height: 36);
+            Anchor: (Left: 136, Top: 12, Width: 200, Height: 36);
             Text: "Attune Ritual";
             Style: (FontSize: 11, RenderBold: true, TextColor: #f6e7c6, HorizontalAlignment: Center, VerticalAlignment: Center);
           }

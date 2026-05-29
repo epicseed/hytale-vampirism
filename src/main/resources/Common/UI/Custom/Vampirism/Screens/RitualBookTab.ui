@@ -1,10 +1,10 @@
 $C = "../../Common.ui";
 
 @TabButtonStyle = ButtonStyle(
-  Default: (Background: #50372c),
-  Hovered: (Background: #684839),
-  Pressed: (Background: #422d24),
-  Disabled: (Background: #3a2821),
+  Default: (Background: #000000(0.0)),
+  Hovered: (Background: #ffffff(0.06)),
+  Pressed: (Background: #ffffff(0.12)),
+  Disabled: (Background: #000000(0.0)),
   Sounds: $C.@ButtonSounds,
 );
 
@@ -16,9 +16,21 @@ Group #RitualBookTab {
     Background: #50372c;
   }
 
-  Group {
+  Group #TabSelectionAccent {
+    Anchor: (Left: 0, Top: 0, Width: 5, Height: 30);
+    Background: #f0d8ab;
+    Visible: false;
+  }
+
+  Group #TabCompletionAccent {
+    Anchor: (Right: 0, Top: 0, Width: 5, Height: 30);
+    Background: #b38d45;
+    Visible: false;
+  }
+
+  Group #TabInset {
     Anchor: (Left: 6, Top: 5, Right: 6, Bottom: 5);
-    Background: #6a4f3d;
+    Background: #50372c;
   }
 
   Button #TabButton {
