@@ -10,8 +10,8 @@ import com.hypixel.hytale.component.SystemGroup;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.math.vector.Rotation3f;
+import org.joml.Vector3d;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
 import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -118,7 +118,7 @@ public class CrimsonUmbrellaVisualSystem extends EntityTickingSystem<EntityStore
         }
 
         Vector3d position = displayPosition(playerTransform);
-        Vector3f rotation = new Vector3f(playerTransform.getRotation());
+        Rotation3f rotation = new Rotation3f(playerTransform.getRotation());
         Holder<EntityStore> holder = ProjectileComponent.assembleDefaultProjectile(
                 time, DISPLAY_PROJECTILE_ID, position, rotation);
         ProjectileComponent projectile = holder.getComponent(ProjectileComponent.getComponentType());
@@ -137,8 +137,8 @@ public class CrimsonUmbrellaVisualSystem extends EntityTickingSystem<EntityStore
             return null;
         }
 
-        projectile.shoot(holder, ownerUuid, position.getX(), position.getY(), position.getZ(),
-                rotation.getYaw(), rotation.getPitch());
+        projectile.shoot(holder, ownerUuid, position.x(), position.y(), position.z(),
+                rotation.yaw(), rotation.pitch());
         zeroPhysics(projectile, holder);
 
         Ref<EntityStore> displayRef = new Ref<>(store);
@@ -152,7 +152,7 @@ public class CrimsonUmbrellaVisualSystem extends EntityTickingSystem<EntityStore
                                     @Nonnull TransformComponent playerTransform,
                                     @Nonnull Store<EntityStore> store) {
         displayTransform.teleportPosition(displayPosition(playerTransform));
-        displayTransform.setRotation(new Vector3f(playerTransform.getRotation()));
+        displayTransform.setRotation(new Rotation3f(playerTransform.getRotation()));
 
         ProjectileComponent projectile = (ProjectileComponent) store.getComponent(
                 displayRef, ProjectileComponent.getComponentType());
@@ -163,7 +163,7 @@ public class CrimsonUmbrellaVisualSystem extends EntityTickingSystem<EntityStore
 
     private static Vector3d displayPosition(@Nonnull TransformComponent playerTransform) {
         Vector3d position = new Vector3d(playerTransform.getPosition());
-        position.setY(position.getY() + DISPLAY_Y_OFFSET);
+        position.y = position.y() + DISPLAY_Y_OFFSET;
         return position;
     }
 

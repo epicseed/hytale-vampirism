@@ -41,7 +41,7 @@ import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatSnapshot;
 import com.epicseed.vampirism.domain.skill.SkillTreePresenter;
 import com.epicseed.vampirism.skill.manager.SkillTreeManager;
-import com.hypixel.hytale.math.vector.Vector2d;
+import org.joml.Vector2d;
 
 public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
 
@@ -88,7 +88,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
     @Nonnull
     public SkillTreeLayoutBounds layoutBounds() {
         Vector2d highestPosition = highestPositionSupplier.get();
-        return new SkillTreeLayoutBounds((int) highestPosition.getX(), (int) highestPosition.getY());
+        return new SkillTreeLayoutBounds((int) highestPosition.x(), (int) highestPosition.y());
     }
 
     @Override

@@ -25,8 +25,8 @@ import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3i;
+import org.joml.Vector3d;
+import org.joml.Vector3i;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
@@ -528,9 +528,9 @@ public final class DebugShapeAdminCommands extends AbstractCommand {
                                     @Nonnull Vector3d targetPosition) {
         VampiricDebugShapeRenderer.addCleanSphere(
                 world,
-                targetPosition.getX(),
-                targetPosition.getY() + 1.0d,
-                targetPosition.getZ(),
+                targetPosition.x(),
+                targetPosition.y() + 1.0d,
+                targetPosition.z(),
                 DebugUtils.COLOR_RED,
                 TARGET_SPHERE_OPACITY,
                 TARGET_SPHERE_SCALE,
@@ -538,9 +538,9 @@ public final class DebugShapeAdminCommands extends AbstractCommand {
                 0);
         VampiricDebugShapeRenderer.addCleanDisc(
                 world,
-                targetPosition.getX(),
-                targetPosition.getY() + 2.7d,
-                targetPosition.getZ(),
+                targetPosition.x(),
+                targetPosition.y() + 2.7d,
+                targetPosition.z(),
                 TARGET_DISC_RADIUS,
                 DebugUtils.COLOR_MAGENTA,
                 TARGET_DISC_OPACITY,
@@ -548,24 +548,24 @@ public final class DebugShapeAdminCommands extends AbstractCommand {
                 DebugUtils.FLAG_FADE);
         DebugUtils.addLine(
                 world,
-                targetPosition.getX(),
-                targetPosition.getY() + 0.1d,
-                targetPosition.getZ(),
-                targetPosition.getX(),
-                targetPosition.getY() + TARGET_PILLAR_HEIGHT,
-                targetPosition.getZ(),
+                targetPosition.x(),
+                targetPosition.y() + 0.1d,
+                targetPosition.z(),
+                targetPosition.x(),
+                targetPosition.y() + TARGET_PILLAR_HEIGHT,
+                targetPosition.z(),
                 DebugUtils.COLOR_RED,
                 TARGET_PILLAR_THICKNESS,
                 LOCATOR_DURATION_SECONDS,
                 DebugUtils.FLAG_FADE);
         DebugUtils.addLine(
                 world,
-                viewerPosition.getX(),
-                viewerPosition.getY() + 1.6d,
-                viewerPosition.getZ(),
-                targetPosition.getX(),
-                targetPosition.getY() + 1.2d,
-                targetPosition.getZ(),
+                viewerPosition.x(),
+                viewerPosition.y() + 1.6d,
+                viewerPosition.z(),
+                targetPosition.x(),
+                targetPosition.y() + 1.2d,
+                targetPosition.z(),
                 DebugUtils.COLOR_YELLOW,
                 VIEWER_LINK_THICKNESS,
                 LOCATOR_DURATION_SECONDS,
@@ -616,9 +616,9 @@ public final class DebugShapeAdminCommands extends AbstractCommand {
     }
 
     private static double distanceSquared(@Nonnull Vector3d a, @Nonnull Vector3d b) {
-        double dx = a.getX() - b.getX();
-        double dy = a.getY() - b.getY();
-        double dz = a.getZ() - b.getZ();
+        double dx = a.x() - b.x();
+        double dy = a.y() - b.y();
+        double dz = a.z() - b.z();
         return dx * dx + dy * dy + dz * dz;
     }
 
@@ -843,13 +843,13 @@ public final class DebugShapeAdminCommands extends AbstractCommand {
     private static BlockSelection createSelectionAround(@Nonnull TransformComponent targetTransform, float radius) {
         Vector3d targetPosition = new Vector3d(targetTransform.getPosition());
         Vector3i min = new Vector3i(
-                floorToBlock(targetPosition.getX() - radius),
-                floorToBlock(targetPosition.getY() - SELECTION_BASE_OFFSET),
-                floorToBlock(targetPosition.getZ() - radius));
+                floorToBlock(targetPosition.x() - radius),
+                floorToBlock(targetPosition.y() - SELECTION_BASE_OFFSET),
+                floorToBlock(targetPosition.z() - radius));
         Vector3i max = new Vector3i(
-                floorToBlock(targetPosition.getX() + radius),
-                floorToBlock(targetPosition.getY() + SELECTION_HEIGHT),
-                floorToBlock(targetPosition.getZ() + radius));
+                floorToBlock(targetPosition.x() + radius),
+                floorToBlock(targetPosition.y() + SELECTION_HEIGHT),
+                floorToBlock(targetPosition.z() + radius));
         BlockSelection selection = new BlockSelection();
         selection.setSelectionArea(min, max);
         return selection;
@@ -866,8 +866,8 @@ public final class DebugShapeAdminCommands extends AbstractCommand {
         if (min == null || max == null) {
             return "none";
         }
-        return min.getX() + ":" + min.getY() + ":" + min.getZ()
-                + "|" + max.getX() + ":" + max.getY() + ":" + max.getZ();
+        return min.x() + ":" + min.y() + ":" + min.z()
+                + "|" + max.x() + ":" + max.y() + ":" + max.z();
     }
 
     private static void sendNearbyResult(@Nonnull CommandContext ctx, float range, int marked) {

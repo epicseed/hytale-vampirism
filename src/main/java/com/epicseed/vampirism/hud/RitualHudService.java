@@ -3,7 +3,7 @@ package com.epicseed.vampirism.hud;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -36,7 +36,7 @@ public final class RitualHudService {
 
     public static void init(@Nonnull HudBackendResolver hudBackendResolver,
                             @Nonnull SingleSlotHudCoordinator singleSlotHudCoordinator,
-                            @Nonnull Function<PlayerRef, RitualStatusHud> hudFactory) {
+                            @Nonnull BiFunction<PlayerRef, String, RitualStatusHud> hudFactory) {
         Objects.requireNonNull(hudBackendResolver, "hudBackendResolver");
         Objects.requireNonNull(singleSlotHudCoordinator, "singleSlotHudCoordinator");
         Objects.requireNonNull(hudFactory, "hudFactory");
@@ -48,8 +48,8 @@ public final class RitualHudService {
                 new HudSurfacePresenter<>() {
                     @Override
                     @Nonnull
-                    public RitualStatusHud createHud(@Nonnull PlayerRef playerRef) {
-                        return Objects.requireNonNull(hudFactory.apply(playerRef), "hudFactory returned null");
+                    public RitualStatusHud createHud(@Nonnull PlayerRef playerRef, @Nonnull String hudKey) {
+                        return Objects.requireNonNull(hudFactory.apply(playerRef, hudKey), "hudFactory returned null");
                     }
 
                     @Override

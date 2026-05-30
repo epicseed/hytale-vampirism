@@ -42,8 +42,7 @@
     "Effect": {
       "Interactions": [
         {
-          "Type": "Command",
-          "Command": "vampirismpotion transform"
+          "Type": "Vampirism_PotionTransform"
         }
       ]
     },

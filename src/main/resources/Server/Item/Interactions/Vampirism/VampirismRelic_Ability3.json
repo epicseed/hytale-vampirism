@@ -1,6 +1,6 @@
 {
-  "Type": "Command",
-  "Command": "vampirismrelic ability3",
+  "Type": "Vampirism_RelicAction",
+  "Slot": "ability3",
   "Next": {
     "Type": "UseBlock",
     "Failed": {

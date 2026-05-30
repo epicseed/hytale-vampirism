@@ -2,8 +2,7 @@
   "Type": "Condition",
   "Crouching": true,
   "Next": {
-    "Type": "Command",
-    "Command": "relicbinding",
+    "Type": "Vampirism_RelicBindings",
     "Next": {
       "Type": "UseBlock",
       "Failed": {

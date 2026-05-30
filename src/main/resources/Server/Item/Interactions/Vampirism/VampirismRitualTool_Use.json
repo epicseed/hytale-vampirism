@@ -1,1 +1,1 @@
-{ "Type": "Command", "Command": "vampirismritual use" }
+{ "Type": "Vampirism_RitualToolAction", "Action": "use" }

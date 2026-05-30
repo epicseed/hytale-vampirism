@@ -116,6 +116,7 @@ tasks.register('generatePluginManifest') {
     inputs.file(manifestFile)
     inputs.property('version', version)
     inputs.property('hytale_build', hytale_build)
+    inputs.property('hytale_server_version', hytale_server_version)
     inputs.property('includes_pack', includes_pack)
     outputs.file(generatedPluginManifest)
     doLast {
@@ -124,7 +125,7 @@ tasks.register('generatePluginManifest') {
         }
         def manifestJson = new JsonSlurper().parseText(manifestFile.text)
         manifestJson.Version = version
-        manifestJson.ServerVersion = hytale_build
+        manifestJson.ServerVersion = hytale_server_version
         manifestJson.IncludesAssetPack = includes_pack.toBoolean()
         def outputFile = generatedPluginManifest.get().asFile
         outputFile.parentFile.mkdirs()
@@ -774,7 +775,10 @@ if (hasHytaleAssets && hasHytaleServerJar) {
         def programParameters = '--allow-op --disable-sentry --assets="' + assetsZipFile.absolutePath + '"'
         def modPaths = []
         if (load_user_mods.toBoolean() && installedHytalePackageDir.exists()) {
-            modPaths << "${hytaleHome}/UserData/Mods"
+            def userModsDir = patchline == 'release'
+                    ? file("${hytaleHome}/UserData/Mods")
+                    : file("${hytaleHome}/data/${patchline}/UserData/Mods")
+            modPaths << userModsDir.absolutePath
         }
         if (!modPaths.isEmpty()) {
             programParameters += ' --mods="' + modPaths.join(',') + '"'

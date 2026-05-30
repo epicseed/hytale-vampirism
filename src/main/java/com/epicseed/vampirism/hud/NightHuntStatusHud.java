@@ -23,8 +23,8 @@ public final class NightHuntStatusHud extends ComposableCustomHud {
 
     private NightHuntHudPresentation.DisplayState state = NightHuntHudPresentation.DisplayState.hidden();
 
-    public NightHuntStatusHud(@Nonnull PlayerRef playerRef) {
-        super(playerRef);
+    public NightHuntStatusHud(@Nonnull PlayerRef playerRef, @Nonnull String hudKey) {
+        super(playerRef, hudKey);
     }
 
     @Override

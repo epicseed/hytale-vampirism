@@ -28,8 +28,8 @@
       },
       "RunTime": 0.167,
       "Next": {
-        "Type": "Command",
-        "Command": "vampirismritual ability1"
+        "Type": "Vampirism_RitualToolAction",
+        "Action": "ability1"
       }
     }
   },

@@ -1,6 +1,6 @@
 {
-  "Type": "Command",
-  "Command": "vampirismritual primary",
+  "Type": "Vampirism_RitualToolAction",
+  "Action": "primary",
   "Next": {
     "Type": "Charging",
     "Effects": {
@@ -19,8 +19,8 @@
         },
         "RunTime": 0.05,
         "Next": {
-          "Type": "Command",
-          "Command": "vampirismritual primaryrelease"
+          "Type": "Vampirism_RitualToolAction",
+          "Action": "primaryrelease"
         }
       }
     },
@@ -31,8 +31,8 @@
       },
       "RunTime": 0.05,
       "Next": {
-        "Type": "Command",
-        "Command": "vampirismritual primaryrelease"
+        "Type": "Vampirism_RitualToolAction",
+        "Action": "primaryrelease"
       }
     }
   }

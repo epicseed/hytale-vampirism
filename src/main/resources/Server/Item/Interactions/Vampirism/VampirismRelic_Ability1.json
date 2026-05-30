@@ -1,1 +1,1 @@
-{ "Type": "Command", "Command": "vampirismrelic ability1" }
+{ "Type": "Vampirism_RelicAction", "Slot": "ability1" }

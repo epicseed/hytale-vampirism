@@ -1,7 +1,7 @@
 package com.epicseed.vampirism.hud;
 
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -30,7 +30,7 @@ public final class NightHuntHudService {
 
     public static void init(@Nonnull HudBackendResolver hudBackendResolver,
                             @Nonnull SingleSlotHudCoordinator singleSlotHudCoordinator,
-                            @Nonnull Function<PlayerRef, NightHuntStatusHud> hudFactory) {
+                            @Nonnull BiFunction<PlayerRef, String, NightHuntStatusHud> hudFactory) {
         Objects.requireNonNull(hudBackendResolver, "hudBackendResolver");
         Objects.requireNonNull(singleSlotHudCoordinator, "singleSlotHudCoordinator");
         Objects.requireNonNull(hudFactory, "hudFactory");
@@ -42,8 +42,8 @@ public final class NightHuntHudService {
                 new HudSurfacePresenter<>() {
                     @Override
                     @Nonnull
-                    public NightHuntStatusHud createHud(@Nonnull PlayerRef playerRef) {
-                        return Objects.requireNonNull(hudFactory.apply(playerRef), "hudFactory returned null");
+                    public NightHuntStatusHud createHud(@Nonnull PlayerRef playerRef, @Nonnull String hudKey) {
+                        return Objects.requireNonNull(hudFactory.apply(playerRef, hudKey), "hudFactory returned null");
                     }
 
                     @Override

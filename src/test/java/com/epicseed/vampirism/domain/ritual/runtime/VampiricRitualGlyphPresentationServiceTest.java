@@ -14,8 +14,8 @@ import com.epicseed.vampirism.domain.ritual.VampiricRitualAnchorLayer;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualPointState;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeSnapshot;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3i;
+import org.joml.Vector3d;
+import org.joml.Vector3i;
 
 class VampiricRitualGlyphPresentationServiceTest {
 
@@ -51,7 +51,7 @@ class VampiricRitualGlyphPresentationServiceTest {
         assertEquals(VampiricRitualGlyphPresentationService.NODE_ACTIVE_PROJECTILE_ID, activeNode.projectileId());
         assertEquals(VampiricRitualGlyphPresentationService.NODE_INACTIVE_PROJECTILE_ID, inactiveNode.projectileId());
         assertEquals(VampiricRitualGlyphPresentationService.GENERIC_SYMBOL_PROJECTILE_ID, fallbackSymbol.projectileId());
-        assertTrue(fallbackSymbol.position().getY() > activeNode.position().getY());
+        assertTrue(fallbackSymbol.position().y() > activeNode.position().y());
     }
 
     @Test
@@ -64,9 +64,9 @@ class VampiricRitualGlyphPresentationServiceTest {
         VampiricRitualGlyphPresentationService.GlyphVisualSpec node = visual(layout, "point/east/node");
         VampiricRitualGlyphPresentationService.GlyphVisualSpec symbol = visual(layout, "point/east/symbol");
 
-        assertEquals(0.0f, node.rotation().getPitch());
-        assertEquals(0.0f, symbol.rotation().getPitch());
-        assertTrue(symbol.position().getY() - node.position().getY() >= 0.045d);
+        assertEquals(0.0f, node.rotation().pitch());
+        assertEquals(0.0f, symbol.rotation().pitch());
+        assertTrue(symbol.position().y() - node.position().y() >= 0.045d);
     }
 
     @Test
@@ -111,8 +111,8 @@ class VampiricRitualGlyphPresentationServiceTest {
                         anchorLayer(0.12d),
                         List.of(point("north", true, "fang_wake", new Vector3d(0d, 0.15d, -3d)))), 0.0d);
 
-        assertEquals(0.03d, visual(layout, "anchor/base").position().getY(), 0.0001d);
-        assertEquals(0.12d, visual(layout, "anchor/core").position().getY(), 0.0001d);
+        assertEquals(0.03d, visual(layout, "anchor/base").position().y(), 0.0001d);
+        assertEquals(0.12d, visual(layout, "anchor/core").position().y(), 0.0001d);
     }
 
     @Test
@@ -132,8 +132,8 @@ class VampiricRitualGlyphPresentationServiceTest {
 
         assertEquals(VampiricRitualGlyphPresentationService.VOID_HEART_PROJECTILE_ID, center.projectileId());
         assertEquals(VampiricRitualGlyphPresentationService.VOID_HEART_PROJECTILE_ID, north.projectileId());
-        assertTrue(center.position().getY() - visual(layout, "anchor/core").position().getY() >= 0.2d);
-        assertTrue(north.position().getY() - visual(layout, "point/north/node").position().getY() >= 0.2d);
+        assertTrue(center.position().y() - visual(layout, "anchor/core").position().y() >= 0.2d);
+        assertTrue(north.position().y() - visual(layout, "point/north/node").position().y() >= 0.2d);
     }
 
     @Test
@@ -156,8 +156,8 @@ class VampiricRitualGlyphPresentationServiceTest {
         VampiricRitualGlyphPresentationService.GlyphVisualSpec startOffering = visual(start, "offering/point:north");
         VampiricRitualGlyphPresentationService.GlyphVisualSpec animatedOffering = visual(animated, "offering/point:north");
 
-        assertNotEquals(startOffering.position().getY(), animatedOffering.position().getY());
-        assertNotEquals(startOffering.rotation().getYaw(), animatedOffering.rotation().getYaw());
+        assertNotEquals(startOffering.position().y(), animatedOffering.position().y());
+        assertNotEquals(startOffering.rotation().yaw(), animatedOffering.rotation().yaw());
     }
 
     @Test

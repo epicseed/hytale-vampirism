@@ -2,8 +2,8 @@ package com.epicseed.vampirism.hytale.debug;
 
 import javax.annotation.Nonnull;
 
-import com.hypixel.hytale.math.matrix.Matrix4d;
-import com.hypixel.hytale.math.vector.Vector3f;
+import org.joml.Matrix4d;
+import org.joml.Vector3f;
 import com.hypixel.hytale.protocol.DebugShape;
 import com.hypixel.hytale.server.core.modules.debug.DebugUtils;
 import com.hypixel.hytale.server.core.universe.world.World;

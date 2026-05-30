@@ -15,17 +15,17 @@ final class VampirismRitualToolBindingsTest {
     void primaryBindingKeepsDrawCastBehavior() throws IOException {
         String primary = readResource("/Server/Item/Interactions/Vampirism/VampirismRitualTool_Primary.json");
 
-        assertTrue(primary.contains("\"Type\": \"Command\""));
-        assertTrue(primary.contains("\"Command\": \"vampirismritual primary\""));
+        assertTrue(primary.contains("\"Type\": \"Vampirism_RitualToolAction\""));
+        assertTrue(primary.contains("\"Action\": \"primary\""));
         assertTrue(primary.contains("\"Type\": \"Charging\""));
         assertTrue(primary.contains("\"AllowIndefiniteHold\": true"));
         assertTrue(primary.contains("\"ItemAnimationId\": \"CastHurlCharging\""));
         assertTrue(primary.contains("\"ItemAnimationId\": \"CastHurlCharged\""));
         assertTrue(primary.contains("\"0.0\""));
-        assertTrue(primary.contains("\"Command\": \"vampirismritual primaryrelease\""));
+        assertTrue(primary.contains("\"Action\": \"primaryrelease\""));
         assertTrue(primary.contains("\"Failed\""));
-        assertFalse(primary.contains("vampirismritual secondary"));
-        assertFalse(primary.contains("vampirismritual use"));
+        assertFalse(primary.contains("\"Type\": \"Command\""));
+        assertFalse(primary.contains("\"Command\""));
     }
 
     @Test
@@ -37,19 +37,25 @@ final class VampirismRitualToolBindingsTest {
         String use = readResource("/Server/Item/Interactions/Vampirism/VampirismRitualTool_Use.json");
         String item = readResource("/Server/Item/Items/Vampirism/VampirismRitualTool.json");
 
-        assertTrue(ability1.contains("\"Command\": \"vampirismritual ability1\""));
+        assertTrue(ability1.contains("\"Type\": \"Vampirism_RitualToolAction\""));
+        assertTrue(ability1.contains("\"Action\": \"ability1\""));
         assertTrue(ability1.contains("\"AllowIndefiniteHold\": true"));
         assertTrue(ability1.contains("\"0.0\""));
         assertTrue(ability1.contains("\"0.35\""));
         assertTrue(ability1.contains("\"WaitForAnimationToFinish\": true"));
         assertTrue(ability1.contains("\"ItemAnimationId\": \"CastPushCharged\""));
-        assertTrue(ability2.contains("\"Command\": \"vampirismritual ability2\""));
-        assertTrue(secondary.contains("\"Command\": \"vampirismritual secondary\""));
+        assertTrue(ability2.contains("\"Action\": \"ability2\""));
+        assertTrue(secondary.contains("\"Action\": \"secondary\""));
         assertTrue(secondary.contains("\"Type\": \"Simple\""));
-        assertTrue(ability3.contains("\"Command\": \"vampirismritual ability3\""));
+        assertTrue(ability3.contains("\"Action\": \"ability3\""));
         assertTrue(ability3.contains("\"Type\": \"Simple\""));
         assertFalse(ability3.contains("\"AllowIndefiniteHold\": true"));
-        assertTrue(use.contains("\"Command\": \"vampirismritual use\""));
+        assertTrue(use.contains("\"Action\": \"use\""));
+        assertFalse(ability1.contains("\"Type\": \"Command\""));
+        assertFalse(ability2.contains("\"Type\": \"Command\""));
+        assertFalse(secondary.contains("\"Type\": \"Command\""));
+        assertFalse(ability3.contains("\"Type\": \"Command\""));
+        assertFalse(use.contains("\"Type\": \"Command\""));
         assertFalse(item.contains("\"Use\""));
         assertTrue(item.contains("Primary: Hold to trace a sigil, release to stop"));
         assertTrue(item.contains("Secondary: Cancel trace or abort ritual"));

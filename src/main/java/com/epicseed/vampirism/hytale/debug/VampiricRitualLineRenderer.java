@@ -2,9 +2,9 @@ package com.epicseed.vampirism.hytale.debug;
 
 import javax.annotation.Nonnull;
 
-import com.hypixel.hytale.math.matrix.Matrix4d;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3f;
+import org.joml.Matrix4d;
+import org.joml.Vector3d;
+import org.joml.Vector3f;
 import com.hypixel.hytale.protocol.DebugShape;
 import com.hypixel.hytale.server.core.modules.debug.DebugUtils;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -84,16 +84,15 @@ public final class VampiricRitualLineRenderer {
             return;
         }
 
-        Matrix4d scratch = new Matrix4d();
         Matrix4d transform = new Matrix4d().identity();
         transform.translate(startX, startY, startZ);
 
         double yaw = Math.atan2(deltaZ, deltaX);
-        transform.rotateAxis(yaw + (Math.PI / 2.0d), 0.0d, 1.0d, 0.0d, scratch);
+        transform.rotate(yaw + (Math.PI / 2.0d), 0.0d, 1.0d, 0.0d);
 
         double horizontalDistance = Math.sqrt((deltaX * deltaX) + (deltaZ * deltaZ));
         double pitch = Math.atan2(horizontalDistance, deltaY);
-        transform.rotateAxis(pitch, 1.0d, 0.0d, 0.0d, scratch);
+        transform.rotate(pitch, 1.0d, 0.0d, 0.0d);
 
         transform.translate(0.0d, length / 2.0d, 0.0d);
         transform.scale(thickness, length, thickness);

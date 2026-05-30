@@ -31,12 +31,13 @@ import com.epicseed.vampirism.systems.VampireVitalitySystem;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.math.vector.Rotation3f;
 import com.hypixel.hytale.protocol.packets.interface_.NotificationStyle;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3f;
+import org.joml.Vector3d;
+import org.joml.Vector3f;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.nameplate.Nameplate;
-import com.hypixel.hytale.server.core.modules.entity.component.DisplayNameComponent;
+import com.hypixel.hytale.server.core.modules.entity.component.PersistentDisplayName;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
@@ -346,7 +347,7 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
         Vector3d origin = transform.getPosition();
         Vector3d spawnPosition = new Vector3d(origin.x + FAMILIAR_OFFSET, origin.y, origin.z);
         Pair<Ref<EntityStore>, INonPlayerCharacter> spawn =
-                NPCPlugin.get().spawnNPC(store, FAMILIAR_ROLE_ID, null, spawnPosition, new Vector3f());
+                NPCPlugin.get().spawnNPC(store, FAMILIAR_ROLE_ID, null, spawnPosition, new Rotation3f());
         if (spawn == null || spawn.first() == null) {
             sendRuntimeFeedback(uuid, "Summon Familiar: the call goes unanswered.", "yellow");
             return;
@@ -355,8 +356,8 @@ public final class RuntimeVampiricRitualRewardPort extends ProgressionBackedVamp
         Ref<EntityStore> familiarRef = spawn.first();
         store.putComponent(
                 familiarRef,
-                DisplayNameComponent.getComponentType(),
-                new DisplayNameComponent(Message.raw(FAMILIAR_NAME).color("green")));
+                PersistentDisplayName.getComponentType(),
+                new PersistentDisplayName(Message.raw(FAMILIAR_NAME).color("green")));
         Nameplate nameplate = (Nameplate) store.ensureAndGetComponent(familiarRef, Nameplate.getComponentType());
         nameplate.setText(FAMILIAR_NAME);
         VampiricRitualCompanionTracker.replace(

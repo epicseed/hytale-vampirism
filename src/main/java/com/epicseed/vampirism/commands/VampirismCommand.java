@@ -148,7 +148,7 @@ public class VampirismCommand extends AbstractCommand {
                                 + ", abilities=" + skillReload.abilityCount()
                                 + ", passives=" + skillReload.passiveCount()
                                 + ", effects=" + skillReload.effectCount()
-                                + ", treeBounds=" + (int) skillReload.bounds().getX() + "x" + (int) skillReload.bounds().getY())
+                                + ", treeBounds=" + (int) skillReload.bounds().x() + "x" + (int) skillReload.bounds().y())
                         .color("yellow"));
                 ctx.sendMessage(Message.raw(
                         "Online players refreshed=" + runtimeReload.refreshedPlayers()

@@ -23,8 +23,8 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.shape.Box;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.math.vector.Rotation3f;
+import org.joml.Vector3d;
 import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.server.core.asset.type.model.config.Model;
 import com.hypixel.hytale.server.core.asset.type.model.config.ModelAsset;
@@ -103,17 +103,17 @@ public final class VampiricRitualGlyphPresentationService {
                 "anchor/base",
                 BASE_PROJECTILE_ID,
                 offset(anchor, snapshot.baseLayer() != null ? snapshot.baseLayer().offsetY() : 0.035d),
-                new Vector3f()));
+                new Rotation3f()));
         visuals.add(new GlyphVisualSpec(
                 "anchor/core",
                 anchorCoreProjectileId(snapshot),
                 offset(anchor, (snapshot.coreLayer() != null ? snapshot.coreLayer().offsetY() : 0.09d)
                         + coreLift(snapshot.phase(), animationSeconds)),
-                new Vector3f(0.0f, coreRotation(snapshot.phase(), animationSeconds), 0.0f)));
+                new Rotation3f(0.0f, coreRotation(snapshot.phase(), animationSeconds), 0.0f)));
 
         for (VampiricRitualPointState point : snapshot.pointStates()) {
             double phaseOffset = phaseOffset(point.pointId());
-            Vector3f outwardRotation = outwardRotation(anchor, point.position());
+            Rotation3f outwardRotation = outwardRotation(anchor, point.position());
             visuals.add(new GlyphVisualSpec(
                     "point/" + point.pointId() + "/node",
                     point.active() ? NODE_ACTIVE_PROJECTILE_ID : NODE_INACTIVE_PROJECTILE_ID,
@@ -271,13 +271,13 @@ public final class VampiricRitualGlyphPresentationService {
     }
 
     @Nonnull
-    private static Vector3f rotated(@Nonnull Vector3f baseRotation, float yawOffset) {
-        return new Vector3f(baseRotation.getPitch(), normalizeYaw(baseRotation.getYaw() + yawOffset), baseRotation.getRoll());
+    private static Rotation3f rotated(@Nonnull Rotation3f baseRotation, float yawOffset) {
+        return new Rotation3f(baseRotation.pitch(), normalizeYaw(baseRotation.yaw() + yawOffset), baseRotation.roll());
     }
 
     @Nonnull
-    private static Vector3f outwardRotation(@Nonnull Vector3d anchor, @Nonnull Vector3d pointPosition) {
-        return new Vector3f(0.0f, VampiricRitualGeometry.outwardYawDegrees(anchor, pointPosition), 0.0f);
+    private static Rotation3f outwardRotation(@Nonnull Vector3d anchor, @Nonnull Vector3d pointPosition) {
+        return new Rotation3f(0.0f, VampiricRitualGeometry.outwardYawDegrees(anchor, pointPosition), 0.0f);
     }
 
     private static double coreLift(@Nonnull com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase phase,
@@ -414,23 +414,23 @@ public final class VampiricRitualGlyphPresentationService {
     }
 
     @Nonnull
-    private static Vector3f offeringRotation(@Nonnull VampiricRitualRuntimeSnapshot snapshot,
+    private static Rotation3f offeringRotation(@Nonnull VampiricRitualRuntimeSnapshot snapshot,
                                              @Nonnull String surfaceId,
                                              double animationSeconds) {
         float spinOffset = normalizeYaw((float) (Math.toDegrees(phaseOffset("offering/" + surfaceId))
                 + animationSeconds * OFFERING_SPIN_DEGREES_PER_SECOND));
         if ("center".equals(surfaceId)) {
-            return new Vector3f(0.0f, spinOffset, 0.0f);
+            return new Rotation3f(0.0f, spinOffset, 0.0f);
         }
         if (!surfaceId.startsWith("point:")) {
-            return new Vector3f(0.0f, spinOffset, 0.0f);
+            return new Rotation3f(0.0f, spinOffset, 0.0f);
         }
         String pointId = surfaceId.substring("point:".length());
         return snapshot.pointStates().stream()
                 .filter(point -> point.pointId().equals(pointId))
                 .findFirst()
                 .map(point -> rotated(outwardRotation(snapshot.anchorCenter(), point.position()), spinOffset))
-                .orElseGet(() -> new Vector3f(0.0f, spinOffset, 0.0f));
+                .orElseGet(() -> new Rotation3f(0.0f, spinOffset, 0.0f));
     }
 
     private static double offeringLift(double animationSeconds, double phaseOffset) {
@@ -485,11 +485,11 @@ public final class VampiricRitualGlyphPresentationService {
         projectile.shoot(
                 holder,
                 ownerUuid,
-                visual.position().getX(),
-                visual.position().getY(),
-                visual.position().getZ(),
-                visual.rotation().getYaw(),
-                visual.rotation().getPitch());
+                visual.position().x(),
+                visual.position().y(),
+                visual.position().z(),
+                visual.rotation().yaw(),
+                visual.rotation().pitch());
         zeroPhysics(projectile, holder);
 
         Ref<EntityStore> glyphRef = new Ref<>(store);
@@ -558,11 +558,11 @@ public final class VampiricRitualGlyphPresentationService {
         TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
         if (transform != null) {
             transform.teleportPosition(visual.position());
-            transform.setRotation(new Vector3f(visual.rotation()));
+            transform.setRotation(new Rotation3f(visual.rotation()));
         }
         HeadRotation headRotation = store.getComponent(ref, HeadRotation.getComponentType());
         if (headRotation != null) {
-            headRotation.setRotation(new Vector3f(visual.rotation()));
+            headRotation.setRotation(new Rotation3f(visual.rotation()));
         }
         Interactions interactions = store.getComponent(ref, Interactions.getComponentType());
         if (interactions != null && interactionHint != null) {
@@ -653,7 +653,7 @@ public final class VampiricRitualGlyphPresentationService {
             @Nonnull String key,
             @Nonnull String projectileId,
             @Nonnull Vector3d position,
-            @Nonnull Vector3f rotation) {
+            @Nonnull Rotation3f rotation) {
 
         public GlyphVisualSpec {
             Objects.requireNonNull(key, "key");
@@ -661,7 +661,7 @@ public final class VampiricRitualGlyphPresentationService {
             Objects.requireNonNull(position, "position");
             Objects.requireNonNull(rotation, "rotation");
             position = new Vector3d(position);
-            rotation = new Vector3f(rotation);
+            rotation = new Rotation3f(rotation);
         }
     }
 

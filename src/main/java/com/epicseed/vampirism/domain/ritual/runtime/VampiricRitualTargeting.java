@@ -9,8 +9,8 @@ import javax.annotation.Nullable;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Transform;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3i;
+import org.joml.Vector3d;
+import org.joml.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -56,7 +56,7 @@ public final class VampiricRitualTargeting {
         }
 
         Vector3d direction = new Vector3d(look.getDirection()).normalize();
-        Vector3d raycastStart = new Vector3d(look.getPosition()).addScaled(direction, 0.35d);
+        Vector3d raycastStart = new Vector3d(look.getPosition()).fma(0.35d, direction);
         Vector3i hitBlock = TargetUtil.getTargetBlock(
                 world,
                 (blockId, fluidId) -> isSolidBlockId(blockId),

@@ -71,6 +71,8 @@ import com.epicseed.vampirism.hud.NightHuntHudService;
 import com.epicseed.vampirism.hud.NightHuntStatusHud;
 import com.epicseed.vampirism.hud.RitualHudService;
 import com.epicseed.vampirism.hud.RitualStatusHud;
+import com.epicseed.vampirism.hytale.interaction.VampirismInteractionRuntime;
+import com.epicseed.vampirism.hytale.interaction.VampirismRitualToolActions;
 import com.epicseed.vampirism.hytale.PlayerWorldLifecycleEventAdapter;
 import com.epicseed.vampirism.hytale.VampirismPlayerFeedback;
 import com.epicseed.vampirism.hytale.ritual.RitualOfferingSurfaceInteraction;
@@ -122,7 +124,7 @@ import com.epicseed.vampirism.ui.SkillTreeUI;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Vector2d;
+import org.joml.Vector2d;
 import com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
@@ -331,7 +333,7 @@ public final class VampirismRuntime {
                 hudBackendResolver,
                 singleSlotHudCoordinator,
                 BloodGaugeHud::new,
-                playerRef -> new ProgressionRelicCooldownHud(playerRef, VampirismUiPaths.theme(), relicUiAdapter));
+                (playerRef, hudKey) -> new ProgressionRelicCooldownHud(playerRef, hudKey, VampirismUiPaths.theme(), relicUiAdapter));
         NightHuntHudService.init(hudBackendResolver, singleSlotHudCoordinator, NightHuntStatusHud::new);
         RitualHudService.init(hudBackendResolver, singleSlotHudCoordinator, RitualStatusHud::new);
         AbilityService abilityService = new AbilityService(skillRequirementEvaluator, skillActionExecutor);
@@ -347,6 +349,18 @@ public final class VampirismRuntime {
                 ritualContextResolver,
                 ritualFeedbackService,
                 ritualSelectionService);
+        VampirismRitualToolActions ritualToolActions = new VampirismRitualToolActions(
+                ritualService,
+                ritualRuntimeService,
+                ritualTemplateRegistry,
+                ritualContextResolver,
+                ritualVisualSystem,
+                ritualFeedbackService,
+                ritualSelectionService);
+        VampirismInteractionRuntime.install(new VampirismInteractionRuntime.Services(
+                ritualToolActions,
+                abilityService,
+                progressionPageFactory));
 
         VampiricSystemsSupport.configure(
                 VampirismConfig.get(),
@@ -446,6 +460,7 @@ public final class VampirismRuntime {
         VampirismClassifications.unregisterProvider();
         relicPresetSelectionAdapter.shutdown();
         RitualOfferingSurfaceInteraction.clearRuntime();
+        VampirismInteractionRuntime.clear();
     }
 
     private void registerPlayerLifecycle(@Nonnull Vampirism plugin) {

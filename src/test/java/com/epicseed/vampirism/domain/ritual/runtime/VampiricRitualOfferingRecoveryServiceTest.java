@@ -12,8 +12,8 @@ import com.epicseed.vampirism.domain.ritual.VampiricRitualPointState;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeService;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeSnapshot;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3i;
+import org.joml.Vector3d;
+import org.joml.Vector3i;
 
 class VampiricRitualOfferingRecoveryServiceTest {
 
@@ -58,9 +58,9 @@ class VampiricRitualOfferingRecoveryServiceTest {
     }
 
     private static void assertVector(Vector3d expected, Vector3d actual) {
-        assertEquals(expected.getX(), actual.getX(), 0.0001d);
-        assertEquals(expected.getY(), actual.getY(), 0.0001d);
-        assertEquals(expected.getZ(), actual.getZ(), 0.0001d);
+        assertEquals(expected.x(), actual.x(), 0.0001d);
+        assertEquals(expected.y(), actual.y(), 0.0001d);
+        assertEquals(expected.z(), actual.z(), 0.0001d);
     }
 
     private static VampiricRitualRuntimeSnapshot snapshot() {

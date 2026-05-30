@@ -2,7 +2,7 @@ package com.epicseed.vampirism.commands.admin;
 
 import javax.annotation.Nonnull;
 
-import com.hypixel.hytale.math.vector.Vector3d;
+import org.joml.Vector3d;
 
 final class EntityClearCommandSupport {
     private EntityClearCommandSupport() {
@@ -48,9 +48,9 @@ final class EntityClearCommandSupport {
     }
 
     static double distanceSquared(@Nonnull Vector3d first, @Nonnull Vector3d second) {
-        double dx = first.getX() - second.getX();
-        double dy = first.getY() - second.getY();
-        double dz = first.getZ() - second.getZ();
+        double dx = first.x() - second.x();
+        double dy = first.y() - second.y();
+        double dz = first.z() - second.z();
         return dx * dx + dy * dy + dz * dz;
     }
 }

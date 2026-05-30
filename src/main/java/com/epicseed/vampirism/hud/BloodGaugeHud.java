@@ -8,8 +8,8 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 
 public class BloodGaugeHud extends ResourceGaugeHud {
 
-    public BloodGaugeHud(@Nonnull PlayerRef playerRef) {
-        super(playerRef, VampirismUiPaths.theme().resourceGaugeLayout());
+    public BloodGaugeHud(@Nonnull PlayerRef playerRef, @Nonnull String hudKey) {
+        super(playerRef, hudKey, VampirismUiPaths.theme().resourceGaugeLayout());
     }
 
     public void syncBlood(int currentBloodValue, int maxBloodValue) {

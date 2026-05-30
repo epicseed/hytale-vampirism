@@ -14,8 +14,8 @@ import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackPlanne
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackPlanner.RitualCue;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackPlanner.RitualFeedbackState;
 import com.epicseed.vampirism.hytale.debug.VampiricDebugShapeRenderer;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3f;
+import org.joml.Vector3d;
+import org.joml.Vector3f;
 import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.modules.debug.DebugUtils;
@@ -384,9 +384,9 @@ public final class VampiricRitualFeedbackService {
         SoundUtil.playSoundEvent3d(
                 soundIndex,
                 SoundCategory.SFX,
-                position.getX(),
-                position.getY(),
-                position.getZ(),
+                position.x(),
+                position.y(),
+                position.z(),
                 volume,
                 pitch,
                 store);

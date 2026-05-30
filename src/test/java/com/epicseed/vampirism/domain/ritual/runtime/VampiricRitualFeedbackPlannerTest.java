@@ -12,8 +12,8 @@ import com.epicseed.vampirism.domain.ritual.VampiricRitualPointState;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimePhase;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeSnapshot;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackPlanner.RitualCue;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3i;
+import org.joml.Vector3d;
+import org.joml.Vector3i;
 
 class VampiricRitualFeedbackPlannerTest {
 

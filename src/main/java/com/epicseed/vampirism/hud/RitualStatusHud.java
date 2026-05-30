@@ -30,8 +30,8 @@ public final class RitualStatusHud extends ComposableCustomHud {
     private RitualHudDisplayMode displayMode = RitualHudDisplayMode.MINIMAL;
     private RitualHudPresentation.DisplayState state = RitualHudPresentation.DisplayState.hidden();
 
-    public RitualStatusHud(@Nonnull PlayerRef playerRef) {
-        super(playerRef);
+    public RitualStatusHud(@Nonnull PlayerRef playerRef, @Nonnull String hudKey) {
+        super(playerRef, hudKey);
     }
 
     @Override

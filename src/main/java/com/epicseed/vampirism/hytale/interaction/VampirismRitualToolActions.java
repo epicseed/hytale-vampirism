@@ -1,16 +1,15 @@
-package com.epicseed.vampirism.commands;
+package com.epicseed.vampirism.hytale.interaction;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.epicseed.epiccore.hytale.PlayerFeedbackAdapter;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualPointState;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualRegistry;
@@ -27,28 +26,21 @@ import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualRevealService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualSelectionResolver;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualSelectionService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTargeting;
-import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTraceProgress;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTargeting.TargetedBlock;
+import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTraceProgress;
 import com.epicseed.vampirism.systems.VampiricRitualSystem;
 import com.epicseed.vampirism.ui.VampiricRitualBookPage;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import org.joml.Vector3d;
-import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.protocol.packets.interface_.NotificationStyle;
 import com.hypixel.hytale.server.core.Message;
-import com.hypixel.hytale.server.core.command.system.AbstractCommand;
-import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
-import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
-import com.hypixel.hytale.server.core.command.system.arguments.types.ArgumentType;
-import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
-public final class VampirismRitualCommand extends AbstractCommand {
+public final class VampirismRitualToolActions {
 
     private final VampiricRitualService ritualService;
     private final VampiricRitualRuntimeService runtimeService;
@@ -58,14 +50,13 @@ public final class VampirismRitualCommand extends AbstractCommand {
     private final VampiricRitualFeedbackService feedbackService;
     private final VampiricRitualSelectionService selectionService;
 
-    public VampirismRitualCommand(@Nonnull VampiricRitualService ritualService,
-                                  @Nonnull VampiricRitualRuntimeService runtimeService,
-                                  @Nonnull VampiricRitualTemplateRegistry templateRegistry,
-                                  @Nonnull VampiricRitualContextResolver contextResolver,
-                                  @Nonnull VampiricRitualSystem ritualVisualSystem,
-                                  @Nonnull VampiricRitualFeedbackService feedbackService,
-                                  @Nonnull VampiricRitualSelectionService selectionService) {
-        super("vampirismritual", "Trace and complete vampiric rituals");
+    public VampirismRitualToolActions(@Nonnull VampiricRitualService ritualService,
+                                      @Nonnull VampiricRitualRuntimeService runtimeService,
+                                      @Nonnull VampiricRitualTemplateRegistry templateRegistry,
+                                      @Nonnull VampiricRitualContextResolver contextResolver,
+                                      @Nonnull VampiricRitualSystem ritualVisualSystem,
+                                      @Nonnull VampiricRitualFeedbackService feedbackService,
+                                      @Nonnull VampiricRitualSelectionService selectionService) {
         this.ritualService = ritualService;
         this.runtimeService = runtimeService;
         this.templateRegistry = templateRegistry;
@@ -73,215 +64,58 @@ public final class VampirismRitualCommand extends AbstractCommand {
         this.ritualVisualSystem = ritualVisualSystem;
         this.feedbackService = feedbackService;
         this.selectionService = selectionService;
-        this.setPermissionGroups(GameMode.Adventure.toString(), GameMode.Creative.toString());
-        this.addSubCommand(new PrimarySubCommand());
-        this.addSubCommand(new PrimaryReleaseSubCommand());
-        this.addSubCommand(new SecondarySubCommand());
-        this.addSubCommand(new Ability1SubCommand());
-        this.addSubCommand(new Ability2SubCommand());
-        this.addSubCommand(new Ability3SubCommand());
-        this.addSubCommand(new UseSubCommand());
-        this.addSubCommand(new ChannelSubCommand());
-        this.addSubCommand(new DebugSubCommand());
     }
 
-    @Nonnull
-    @Override
-    public CompletableFuture<Void> execute(@Nonnull CommandContext ctx) {
-        ctx.sendMessage(Message.raw("=== Vampirism Ritual Tool ===").color("dark_red"));
-        ctx.sendMessage(Message.raw("/vampirismritual primary - hold to trace a sigil, release to stop tracing").color("yellow"));
-        ctx.sendMessage(Message.raw("/vampirismritual secondary - cancel the current trace, clear the circle, or abort an active ritual").color("yellow"));
-        ctx.sendMessage(Message.raw("/vampirismritual ability1 - open the Sanguine Rite grimoire for the aimed anchor").color("yellow"));
-        ctx.sendMessage(Message.raw("/vampirismritual ability2 - reveal the active circle and pulse its next sigil").color("yellow"));
-        ctx.sendMessage(Message.raw("/vampirismritual ability3 - commit a completed circle and begin the ritual channel").color("yellow"));
-        ctx.sendMessage(Message.raw("/vampirismritual use - legacy alias for ability1/open grimoire").color("gray"));
-        ctx.sendMessage(Message.raw("/vampirismritual channel - legacy alias for ability3/commit circle").color("gray"));
-        ctx.sendMessage(Message.raw("/vampirismritual debug <on|off|toggle|status> - switch between gameplay view and full debug guides").color("yellow"));
-        return CompletableFuture.completedFuture(null);
-    }
-
-    private final class PrimarySubCommand extends AbstractPlayerCommand {
-        private PrimarySubCommand() {
-            super("primary", "Hold to trace a ritual sigil, release to stop tracing");
-        }
-
-        @Override
-        protected void execute(@Nonnull CommandContext ctx,
-                               @Nonnull Store<EntityStore> store,
-                               @Nonnull Ref<EntityStore> ref,
-                               @Nonnull PlayerRef playerRef,
-                               @Nonnull World world) {
-            drawSigil(ctx, store, ref, playerRef, world);
-        }
-    }
-
-    private final class PrimaryReleaseSubCommand extends AbstractPlayerCommand {
-        private PrimaryReleaseSubCommand() {
-            super("primaryrelease", "Internal release hook for ritual tracing");
-        }
-
-        @Override
-        protected void execute(@Nonnull CommandContext ctx,
-                               @Nonnull Store<EntityStore> store,
-                               @Nonnull Ref<EntityStore> ref,
-                               @Nonnull PlayerRef playerRef,
-                               @Nonnull World world) {
-            releaseSigil(ctx, store, ref, playerRef, world);
-        }
-    }
-
-    private final class SecondarySubCommand extends AbstractPlayerCommand {
-        private SecondarySubCommand() {
-            super("secondary", "Cancel the current trace, clear the circle, or abort an active ritual");
-        }
-
-        @Override
-        protected void execute(@Nonnull CommandContext ctx,
-                               @Nonnull Store<EntityStore> store,
-                               @Nonnull Ref<EntityStore> ref,
-                               @Nonnull PlayerRef playerRef,
-                               @Nonnull World world) {
-            Optional<VampiricRitualRuntimeSnapshot> snapshot = runtimeService.snapshot(playerRef.getUuid());
-            if (snapshot.isPresent() && snapshot.get().active()) {
-                VampiricRitualRuntimeService.ClearResult result = runtimeService.abort(
-                        playerRef.getUuid(),
-                        contextResolver.buildContext(playerRef, store, extraTagsForSnapshot(ref, store, world, snapshot.get())));
-                VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(result.offeringRecovery(), store);
-                sendFeedback(ctx, playerRef, result.message(), result.cleared() ? "green" : "yellow");
-                return;
-            }
-            VampiricRitualPointState tracingPoint = tracingPoint(snapshot.orElse(null));
-            if (tracingPoint != null) {
-                VampiricRitualRuntimeService.TraceCancelResult result = runtimeService.cancelTrace(playerRef.getUuid());
-                sendFeedback(ctx, playerRef, result.message(), result.cancelled() ? "yellow" : "red");
-                if (result.snapshot() != null) {
-                    sendSnapshot(ctx, result.snapshot());
-                    revealForPlayer(world, playerRef, result.snapshot());
+    public void execute(@Nonnull Action action,
+                        @Nonnull Store<EntityStore> store,
+                        @Nonnull Ref<EntityStore> ref,
+                        @Nonnull PlayerRef playerRef,
+                        @Nonnull World world,
+                        @Nonnull FeedbackSink feedback) {
+        switch (action) {
+            case PRIMARY -> drawSigil(store, ref, playerRef, world, feedback);
+            case PRIMARY_RELEASE -> releaseSigil(store, ref, playerRef, world, feedback);
+            case SECONDARY -> secondary(store, ref, playerRef, world, feedback);
+            case ABILITY1, USE -> openRitualBook(store, ref, playerRef, world, feedback);
+            case ABILITY2 -> {
+                if (!revealCurrentRite(store, playerRef, world, feedback)) {
+                    sendPlayerFeedback(
+                            feedback,
+                            "No active ritual is bound to you. Aim at an anchor and use Ability1 to open the grimoire or attune one.",
+                            "yellow");
                 }
-                return;
             }
-            VampiricRitualRuntimeService.ClearResult result = runtimeService.clearAssembly(playerRef.getUuid());
+            case ABILITY3, CHANNEL -> channelRite(store, ref, playerRef, world, feedback);
+        }
+    }
+
+    private void secondary(@Nonnull Store<EntityStore> store,
+                           @Nonnull Ref<EntityStore> ref,
+                           @Nonnull PlayerRef playerRef,
+                           @Nonnull World world,
+                           @Nonnull FeedbackSink feedback) {
+        Optional<VampiricRitualRuntimeSnapshot> snapshot = runtimeService.snapshot(playerRef.getUuid());
+        if (snapshot.isPresent() && snapshot.get().active()) {
+            VampiricRitualRuntimeService.ClearResult result = runtimeService.abort(
+                    playerRef.getUuid(),
+                    contextResolver.buildContext(playerRef, store, extraTagsForSnapshot(ref, store, world, snapshot.get())));
             VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(result.offeringRecovery(), store);
-            sendFeedback(ctx, playerRef, result.message(), result.cleared() ? "green" : "yellow");
+            sendFeedback(feedback, result.message(), result.cleared() ? "green" : "yellow");
+            return;
         }
-    }
-
-    private final class Ability1SubCommand extends AbstractPlayerCommand {
-        private Ability1SubCommand() {
-            super("ability1", "Open the Sanguine Rite grimoire for the current ritual anchor");
-        }
-
-        @Override
-        protected void execute(@Nonnull CommandContext ctx,
-                               @Nonnull Store<EntityStore> store,
-                               @Nonnull Ref<EntityStore> ref,
-                               @Nonnull PlayerRef playerRef,
-                               @Nonnull World world) {
-            openRitualBook(ctx, store, ref, playerRef, world);
-        }
-    }
-
-    private final class Ability2SubCommand extends AbstractPlayerCommand {
-        private Ability2SubCommand() {
-            super("ability2", "Reveal the active circle and pulse its next sigil");
-        }
-
-        @Override
-        protected void execute(@Nonnull CommandContext ctx,
-                               @Nonnull Store<EntityStore> store,
-                               @Nonnull Ref<EntityStore> ref,
-                               @Nonnull PlayerRef playerRef,
-                               @Nonnull World world) {
-            if (revealCurrentRite(ctx, store, playerRef, world)) {
-                return;
+        VampiricRitualPointState tracingPoint = tracingPoint(snapshot.orElse(null));
+        if (tracingPoint != null) {
+            VampiricRitualRuntimeService.TraceCancelResult result = runtimeService.cancelTrace(playerRef.getUuid());
+            sendFeedback(feedback, result.message(), result.cancelled() ? "yellow" : "red");
+            if (result.snapshot() != null) {
+                sendSnapshot(feedback, result.snapshot());
+                revealForPlayer(world, playerRef, result.snapshot());
             }
-            sendPlayerFeedback(
-                    ctx,
-                    playerRef,
-                    "No active ritual is bound to you. Aim at an anchor and use Ability1 to open the grimoire or attune one.",
-                    "yellow");
+            return;
         }
-    }
-
-    private final class UseSubCommand extends AbstractPlayerCommand {
-        private UseSubCommand() {
-            super("use", "Legacy alias for ability1/open grimoire");
-        }
-
-        @Override
-        protected void execute(@Nonnull CommandContext ctx,
-                               @Nonnull Store<EntityStore> store,
-                               @Nonnull Ref<EntityStore> ref,
-                               @Nonnull PlayerRef playerRef,
-                               @Nonnull World world) {
-            openRitualBook(ctx, store, ref, playerRef, world);
-        }
-    }
-
-    private final class Ability3SubCommand extends AbstractPlayerCommand {
-        private Ability3SubCommand() {
-            super("ability3", "Commit a completed circle and begin the ritual channel");
-        }
-
-        @Override
-        protected void execute(@Nonnull CommandContext ctx,
-                               @Nonnull Store<EntityStore> store,
-                               @Nonnull Ref<EntityStore> ref,
-                               @Nonnull PlayerRef playerRef,
-                               @Nonnull World world) {
-            channelRite(ctx, store, ref, playerRef, world);
-        }
-    }
-
-    private final class ChannelSubCommand extends AbstractPlayerCommand {
-        private ChannelSubCommand() {
-            super("channel", "Legacy alias for ability3/commit circle");
-        }
-
-        @Override
-        protected void execute(@Nonnull CommandContext ctx,
-                               @Nonnull Store<EntityStore> store,
-                               @Nonnull Ref<EntityStore> ref,
-                               @Nonnull PlayerRef playerRef,
-                               @Nonnull World world) {
-            channelRite(ctx, store, ref, playerRef, world);
-        }
-    }
-
-    private final class DebugSubCommand extends AbstractPlayerCommand {
-        private final RequiredArg<String> actionArg;
-
-        private DebugSubCommand() {
-            super("debug", "Switch between gameplay visuals and full ritual debug guides");
-            this.actionArg = this.withRequiredArg("action", "on, off, toggle, or status", (ArgumentType<String>) ArgTypes.STRING);
-        }
-
-        @Override
-        protected void execute(@Nonnull CommandContext ctx,
-                               @Nonnull Store<EntityStore> store,
-                               @Nonnull Ref<EntityStore> ref,
-                               @Nonnull PlayerRef playerRef,
-                               @Nonnull World world) {
-            String action = actionArg.get(ctx).trim().toLowerCase();
-            Boolean enabled = switch (action) {
-                case "on" -> ritualVisualSystem.setDebugGuidesEnabled(playerRef.getUuid(), true);
-                case "off" -> ritualVisualSystem.setDebugGuidesEnabled(playerRef.getUuid(), false);
-                case "toggle" -> ritualVisualSystem.toggleDebugGuides(playerRef.getUuid());
-                case "status" -> ritualVisualSystem.debugGuidesEnabled(playerRef.getUuid());
-                default -> null;
-            };
-            if (enabled == null) {
-                ctx.sendMessage(Message.raw("Use debug on, off, toggle, or status.").color("red"));
-                return;
-            }
-
-            ctx.sendMessage(Message.raw(
-                    enabled
-                            ? "Ritual visuals set to full guides."
-                            : "Ritual visuals set to gameplay view. Live trace strokes and timeline links stay visible.")
-                    .color(enabled ? "green" : "yellow"));
-            runtimeService.snapshot(playerRef.getUuid()).ifPresent(snapshot -> revealForPlayer(world, playerRef, snapshot));
-        }
+        VampiricRitualRuntimeService.ClearResult result = runtimeService.clearAssembly(playerRef.getUuid());
+        VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(result.offeringRecovery(), store);
+        sendFeedback(feedback, result.message(), result.cleared() ? "green" : "yellow");
     }
 
     @Nullable
@@ -350,51 +184,42 @@ public final class VampirismRitualCommand extends AbstractCommand {
         return Set.copyOf(tags);
     }
 
-    private static void sendSnapshot(@Nonnull CommandContext ctx, @Nonnull VampiricRitualRuntimeSnapshot snapshot) {
+    private static void sendSnapshot(@Nonnull FeedbackSink feedback, @Nonnull VampiricRitualRuntimeSnapshot snapshot) {
         VampiricRitualPointState tracingPoint = snapshot.pointStates().stream()
                 .filter(VampiricRitualPointState::tracing)
                 .findFirst()
                 .orElse(null);
-        ctx.sendMessage(Message.raw(snapshot.displayName()
+        feedback.send(Message.raw(snapshot.displayName()
                 + " | sigils " + snapshot.activatedPoints() + "/" + snapshot.totalPoints()
                 + traceSummary(tracingPoint)
                 + channelSummary(snapshot))
-                .color(snapshot.active() ? "aqua" : "white"));
-        ctx.sendMessage(Message.raw(nextStepMessage(snapshot, tracingPoint))
-                .color(snapshot.phase() == VampiricRitualRuntimePhase.UNSTABLE ? "yellow" : "gray"));
-        ctx.sendMessage(Message.raw("Anchor: "
+                .color(snapshot.active() ? "aqua" : "white"), NotificationStyle.Default);
+        feedback.send(Message.raw(nextStepMessage(snapshot, tracingPoint))
+                .color(snapshot.phase() == VampiricRitualRuntimePhase.UNSTABLE ? "yellow" : "gray"), NotificationStyle.Default);
+        feedback.send(Message.raw("Anchor: "
                 + VampiricRitualAnchorState.fromSnapshot(snapshot).displayName()
                 + " | " + VampiricRitualOutcomeTracker.anchorHint(snapshot))
-                .color(snapshot.phase() == VampiricRitualRuntimePhase.UNSTABLE ? "yellow" : "gray"));
+                .color(snapshot.phase() == VampiricRitualRuntimePhase.UNSTABLE ? "yellow" : "gray"), NotificationStyle.Default);
     }
 
-    private static void sendFeedback(@Nonnull CommandContext ctx,
-                                     @Nonnull PlayerRef playerRef,
+    private static void sendFeedback(@Nonnull FeedbackSink feedback,
                                      @Nullable String message,
                                      @Nonnull String color) {
         if (message != null && !message.isBlank()) {
-            sendPlayerFeedback(ctx, playerRef, message, color);
+            sendPlayerFeedback(feedback, message, color);
         }
     }
 
-    private static void sendPlayerFeedback(@Nonnull CommandContext ctx,
-                                           @Nonnull PlayerRef playerRef,
+    private static void sendPlayerFeedback(@Nonnull FeedbackSink feedback,
                                            @Nonnull String message,
                                            @Nonnull String color) {
-        Message feedback = Message.raw(message).color(color);
-        if (PlayerFeedbackAdapter.sendNotificationWithFallback(
-                playerRef,
-                feedback,
-                notificationStyle(color),
-                feedback)) {
-            return;
-        }
-        ctx.sendMessage(feedback);
+        Message feedbackMessage = Message.raw(message).color(color);
+        feedback.send(feedbackMessage, notificationStyle(color));
     }
 
     @Nonnull
     private static NotificationStyle notificationStyle(@Nonnull String color) {
-        return switch (color.toLowerCase()) {
+        return switch (color.toLowerCase(Locale.ROOT)) {
             case "green" -> NotificationStyle.Success;
             case "yellow", "gold", "orange" -> NotificationStyle.Warning;
             case "red", "dark_red" -> NotificationStyle.Danger;
@@ -442,7 +267,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
         }
         return switch (snapshot.phase()) {
             case PREPARING -> snapshot.complete()
-                    ? "Next: stand by the coffin and press Ability3, or use /vampirismritual channel, to commit the completed circle and begin the ritual."
+                    ? "Next: stand by the coffin and press Ability3 to commit the completed circle and begin the ritual."
                     : "Next: trace the remaining sigils with Primary, or press Secondary to clear the circle.";
             case BINDING -> "Next: stay beside the coffin while the committed circle takes hold, or press Secondary to abort the ritual.";
             case CHANNELING -> "Next: stay beside the coffin and watch the ritual settle.";
@@ -452,41 +277,41 @@ public final class VampirismRitualCommand extends AbstractCommand {
         };
     }
 
-    private boolean revealCurrentRite(@Nonnull CommandContext ctx,
-                                      @Nonnull Store<EntityStore> store,
+    private boolean revealCurrentRite(@Nonnull Store<EntityStore> store,
                                       @Nonnull PlayerRef playerRef,
-                                      @Nonnull World world) {
+                                      @Nonnull World world,
+                                      @Nonnull FeedbackSink feedback) {
         Optional<VampiricRitualRuntimeSnapshot> current = runtimeService.snapshot(playerRef.getUuid());
         if (current.isEmpty()) {
             return false;
         }
-        sendSnapshot(ctx, current.get());
+        sendSnapshot(feedback, current.get());
         revealForPlayer(world, playerRef, current.get());
         feedbackService.reveal(playerRef.getUuid(), store, world, current.get(), System.currentTimeMillis());
         return true;
     }
 
-    private void openRitualBook(@Nonnull CommandContext ctx,
-                                @Nonnull Store<EntityStore> store,
+    private void openRitualBook(@Nonnull Store<EntityStore> store,
                                 @Nonnull Ref<EntityStore> ref,
                                 @Nonnull PlayerRef playerRef,
-                                @Nonnull World world) {
+                                @Nonnull World world,
+                                @Nonnull FeedbackSink feedback) {
         TargetedBlock target = VampiricRitualTargeting.resolveTargetedBlock(ref, store, world);
         TargetedBlock anchor = resolveAnchor(playerRef.getUuid(), world, target);
         if (anchor == null) {
-            sendPlayerFeedback(ctx, playerRef, "Look at a ritual anchor to open the Sanguine Rite grimoire.", "yellow");
+            sendPlayerFeedback(feedback, "Look at a ritual anchor to open the Sanguine Rite grimoire.", "yellow");
             return;
         }
 
         List<VampiricRitualRuntimeService.ResolvedAnchorRitual> anchorRituals = runtimeService.listRitualsForAnchor(anchor.blockId());
         if (anchorRituals.isEmpty()) {
-            sendPlayerFeedback(ctx, playerRef, "That anchor does not resolve to a known ritual.", "yellow");
+            sendPlayerFeedback(feedback, "That anchor does not resolve to a known ritual.", "yellow");
             return;
         }
 
         Player player = store.getComponent(ref, Player.getComponentType());
         if (player == null) {
-            sendPlayerFeedback(ctx, playerRef, "The Sanguine Rite Tome cannot open from the current state.", "red");
+            sendPlayerFeedback(feedback, "The Sanguine Rite Tome cannot open from the current state.", "red");
             return;
         }
 
@@ -510,11 +335,11 @@ public final class VampirismRitualCommand extends AbstractCommand {
                         activeRitualId));
     }
 
-    private void drawSigil(@Nonnull CommandContext ctx,
-                           @Nonnull Store<EntityStore> store,
+    private void drawSigil(@Nonnull Store<EntityStore> store,
                            @Nonnull Ref<EntityStore> ref,
                            @Nonnull PlayerRef playerRef,
-                           @Nonnull World world) {
+                           @Nonnull World world,
+                           @Nonnull FeedbackSink feedback) {
         VampiricRitualPointState tracingPoint = tracingPoint(runtimeService.snapshot(playerRef.getUuid()).orElse(null));
         if (tracingPoint != null) {
             ritualVisualSystem.beginPrimaryHold(playerRef.getUuid());
@@ -523,13 +348,13 @@ public final class VampirismRitualCommand extends AbstractCommand {
 
         TargetedBlock target = VampiricRitualTargeting.resolveTargetedBlock(ref, store, world);
         if (target == null) {
-            sendPlayerFeedback(ctx, playerRef, "Aim at the ritual plane around an anchor to begin tracing.", "red");
+            sendPlayerFeedback(feedback, "Aim at the ritual plane around an anchor to begin tracing.", "red");
             return;
         }
 
         TargetedBlock anchor = resolveAnchor(playerRef.getUuid(), world, target);
         if (anchor == null) {
-            sendPlayerFeedback(ctx, playerRef, "Look at a ritual anchor first.", "yellow");
+            sendPlayerFeedback(feedback, "Look at a ritual anchor first.", "yellow");
             return;
         }
 
@@ -537,10 +362,9 @@ public final class VampirismRitualCommand extends AbstractCommand {
         VampiricRitualRuntimeService.ResolvedAnchorRitual ritual = resolveTargetRitual(playerRef.getUuid(), anchor, anchorRituals);
         if (ritual == null) {
             sendPlayerFeedback(
-                    ctx,
-                    playerRef,
+                    feedback,
                     anchorRituals.size() > 1
-                            ? "That anchor answers several rituals. Use /vampirismritual ability1 to open the Sanguine Rite grimoire and attune one for this session."
+                            ? "That anchor answers several rituals. Use Ability1 to open the Sanguine Rite grimoire and attune one for this session."
                             : "That anchor does not resolve to a known ritual.",
                     anchorRituals.size() > 1 ? "yellow" : "red");
             return;
@@ -548,7 +372,7 @@ public final class VampirismRitualCommand extends AbstractCommand {
 
         Vector3d pointTarget = VampiricRitualTargeting.resolvePointTarget(ref, store, anchor.topCenter(), target);
         if (pointTarget == null) {
-            sendPlayerFeedback(ctx, playerRef, "Aim at the ritual plane around the anchor.", "red");
+            sendPlayerFeedback(feedback, "Aim at the ritual plane around the anchor.", "red");
             return;
         }
 
@@ -564,18 +388,18 @@ public final class VampirismRitualCommand extends AbstractCommand {
         } else {
             ritualVisualSystem.releasePrimaryHold(playerRef.getUuid());
         }
-        sendFeedback(ctx, playerRef, result.message(), result.updated() ? "green" : "yellow");
+        sendFeedback(feedback, result.message(), result.updated() ? "green" : "yellow");
         if (result.snapshot() != null) {
-            sendSnapshot(ctx, result.snapshot());
+            sendSnapshot(feedback, result.snapshot());
             revealForPlayer(world, playerRef, result.snapshot());
         }
     }
 
-    private void releaseSigil(@Nonnull CommandContext ctx,
-                              @Nonnull Store<EntityStore> store,
+    private void releaseSigil(@Nonnull Store<EntityStore> store,
                               @Nonnull Ref<EntityStore> ref,
                               @Nonnull PlayerRef playerRef,
-                              @Nonnull World world) {
+                              @Nonnull World world,
+                              @Nonnull FeedbackSink feedback) {
         ritualVisualSystem.releasePrimaryHold(playerRef.getUuid());
         Optional<VampiricRitualRuntimeSnapshot> snapshot = runtimeService.snapshot(playerRef.getUuid());
         VampiricRitualPointState tracingPoint = tracingPoint(snapshot.orElse(null));
@@ -585,33 +409,32 @@ public final class VampirismRitualCommand extends AbstractCommand {
 
         VampiricRitualRuntimeService.TraceStopResult result = runtimeService.stopTrace(playerRef.getUuid());
         sendFeedback(
-                ctx,
-                playerRef,
+                feedback,
                 result.message(),
                 result.sealed() ? "green" : result.rejected() ? "red" : "yellow");
         if (result.snapshot() != null) {
-            sendSnapshot(ctx, result.snapshot());
+            sendSnapshot(feedback, result.snapshot());
             revealForPlayer(world, playerRef, result.snapshot());
         }
     }
 
-    private void channelRite(@Nonnull CommandContext ctx,
-                             @Nonnull Store<EntityStore> store,
+    private void channelRite(@Nonnull Store<EntityStore> store,
                              @Nonnull Ref<EntityStore> ref,
                              @Nonnull PlayerRef playerRef,
-                             @Nonnull World world) {
+                             @Nonnull World world,
+                             @Nonnull FeedbackSink feedback) {
         TargetedBlock target = VampiricRitualTargeting.resolveTargetedBlock(ref, store, world);
         TargetedBlock anchor = resolveAnchor(playerRef.getUuid(), world, target);
         Optional<VampiricRitualRuntimeSnapshot> snapshot = runtimeService.snapshot(playerRef.getUuid());
         Vector3d cueOrigin = cueOrigin(snapshot.orElse(null), anchor);
         VampiricRitualPointState tracingPoint = tracingPoint(snapshot.orElse(null));
         if (tracingPoint != null) {
-            sendPlayerFeedback(ctx, playerRef, "Release Primary to stop drawing before you commit the circle with Ability3.", "yellow");
+            sendPlayerFeedback(feedback, "Release Primary to stop drawing before you commit the circle with Ability3.", "yellow");
             feedbackService.emitChannelAttemptFailure(store, world, cueOrigin);
             return;
         }
         if (snapshot.isEmpty()) {
-            sendPlayerFeedback(ctx, playerRef, "Trace a ritual circle around its anchor first.", "yellow");
+            sendPlayerFeedback(feedback, "Trace a ritual circle around its anchor first.", "yellow");
             feedbackService.emitChannelAttemptFailure(store, world, cueOrigin);
             return;
         }
@@ -622,14 +445,14 @@ public final class VampirismRitualCommand extends AbstractCommand {
                 snapshot.get().ritualId(),
                 contextResolver.buildContext(playerRef, store, extraTags),
                 System.currentTimeMillis());
-        sendFeedback(ctx, playerRef, result.message(), result.started() ? "green" : "yellow");
+        sendFeedback(feedback, result.message(), result.started() ? "green" : "yellow");
         if (result.started()) {
             feedbackService.emitChannelAttemptSuccess(store, world, cueOrigin(result.snapshot(), anchor, cueOrigin));
         } else {
             feedbackService.emitChannelAttemptFailure(store, world, cueOrigin(result.snapshot(), anchor, cueOrigin));
         }
         if (result.snapshot() != null) {
-            sendSnapshot(ctx, result.snapshot());
+            sendSnapshot(feedback, result.snapshot());
             revealForPlayer(world, playerRef, result.snapshot());
         }
     }
@@ -662,5 +485,39 @@ public final class VampirismRitualCommand extends AbstractCommand {
             return anchor.topCenter();
         }
         return fallback;
+    }
+
+    public enum Action {
+        PRIMARY,
+        PRIMARY_RELEASE,
+        SECONDARY,
+        ABILITY1,
+        ABILITY2,
+        ABILITY3,
+        USE,
+        CHANNEL;
+
+        @Nonnull
+        public static Action fromAssetValue(@Nullable String value) {
+            if (value == null || value.isBlank()) {
+                throw new IllegalArgumentException("Ritual interaction action is required.");
+            }
+            return switch (value.trim().toLowerCase(Locale.ROOT).replace("-", "").replace("_", "")) {
+                case "primary" -> PRIMARY;
+                case "primaryrelease" -> PRIMARY_RELEASE;
+                case "secondary" -> SECONDARY;
+                case "ability1" -> ABILITY1;
+                case "ability2" -> ABILITY2;
+                case "ability3" -> ABILITY3;
+                case "use" -> USE;
+                case "channel" -> CHANNEL;
+                default -> throw new IllegalArgumentException("Unknown ritual interaction action: " + value);
+            };
+        }
+    }
+
+    @FunctionalInterface
+    public interface FeedbackSink {
+        void send(@Nonnull Message message, @Nonnull NotificationStyle style);
     }
 }

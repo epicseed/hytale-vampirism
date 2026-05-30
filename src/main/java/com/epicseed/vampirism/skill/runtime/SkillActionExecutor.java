@@ -26,7 +26,7 @@ import com.epicseed.vampirism.modifier.ModifierContext;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.epicseed.vampirism.util.WorldPositionHelper;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.math.vector.Vector3d;
+import org.joml.Vector3d;
 import com.hypixel.hytale.server.core.universe.world.World;
 
 public final class SkillActionExecutor {

@@ -6,7 +6,7 @@
   },
   "RunTime": 0.1,
   "Next": {
-    "Type": "Command",
-    "Command": "vampirismritual ability2"
+    "Type": "Vampirism_RitualToolAction",
+    "Action": "ability2"
   }
 }
