@@ -84,11 +84,23 @@ public final class VampiricRitualLineRenderer {
             return;
         }
 
+        Matrix4d transform = beamTransform(startX, startY, startZ, deltaX, deltaY, deltaZ, length, thickness);
+        DebugUtils.add(world, DebugShape.Cylinder, transform, color, opacity, durationSeconds, flags);
+    }
+
+    static Matrix4d beamTransform(double startX,
+                                  double startY,
+                                  double startZ,
+                                  double deltaX,
+                                  double deltaY,
+                                  double deltaZ,
+                                  double length,
+                                  double thickness) {
         Matrix4d transform = new Matrix4d().identity();
         transform.translate(startX, startY, startZ);
 
-        double yaw = Math.atan2(deltaZ, deltaX);
-        transform.rotate(yaw + (Math.PI / 2.0d), 0.0d, 1.0d, 0.0d);
+        double yaw = Math.atan2(deltaX, deltaZ);
+        transform.rotate(yaw, 0.0d, 1.0d, 0.0d);
 
         double horizontalDistance = Math.sqrt((deltaX * deltaX) + (deltaZ * deltaZ));
         double pitch = Math.atan2(horizontalDistance, deltaY);
@@ -96,6 +108,6 @@ public final class VampiricRitualLineRenderer {
 
         transform.translate(0.0d, length / 2.0d, 0.0d);
         transform.scale(thickness, length, thickness);
-        DebugUtils.add(world, DebugShape.Cylinder, transform, color, opacity, durationSeconds, flags);
+        return transform;
     }
 }
