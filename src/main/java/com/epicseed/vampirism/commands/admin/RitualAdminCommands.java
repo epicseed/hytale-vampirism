@@ -9,7 +9,6 @@ import javax.annotation.Nonnull;
 
 import com.epicseed.epiccore.vampirism.domain.player.PersistedRitualRuntimeState;
 import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
-import com.epicseed.epiccore.vampirism.skill.runtime.VampirismSkillProgressionAccess;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualCompletionResult;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContext;
@@ -24,7 +23,6 @@ import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOfferingRecoveryService;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualOutcomeTracker;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualTraceProgress;
-import com.epicseed.vampirism.ui.VampiricRitualEditorPage;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
@@ -33,7 +31,6 @@ import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgumentType;
-import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -47,7 +44,6 @@ public final class RitualAdminCommands extends AbstractCommand {
 
     public RitualAdminCommands(@Nonnull VampiricRitualService ritualService,
                                @Nonnull VampiricRitualRuntimeService runtimeService,
-                               @Nonnull VampirismSkillProgressionAccess progressionAccess,
                                @Nonnull VampiricRitualContextResolver contextResolver) {
         super("ritual", "Inspect and manipulate ritual progress");
         this.ritualService = ritualService;
@@ -64,7 +60,6 @@ public final class RitualAdminCommands extends AbstractCommand {
         this.addSubCommand(new AbortCommand());
         this.addSubCommand(new ResetCommand());
         this.addSubCommand(new ResetAllCommand());
-        this.addSubCommand(new EditorCommand());
     }
 
     @Nonnull
@@ -81,7 +76,6 @@ public final class RitualAdminCommands extends AbstractCommand {
         ctx.sendMessage(Message.raw("/vampirism ritual abort <player> <tagsCsv> - break the active runtime ritual").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ritual reset <player> <ritualId> - clear one ritual for a player").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ritual reset-all <player> - clear all ritual progress for a player").color("yellow"));
-        ctx.sendMessage(Message.raw("/vampirism ritual editor - open the dev ritual template editor").color("yellow"));
         return CompletableFuture.completedFuture(null);
     }
 
@@ -323,30 +317,6 @@ public final class RitualAdminCommands extends AbstractCommand {
                     contextResolver.buildContext(target, store, parseTags(tagsArg.get(ctx))));
             VampiricRitualOfferingRecoveryService.dropRecoveredOfferings(result.offeringRecovery(), store);
             ctx.sendMessage(Message.raw(result.message()).color(result.cleared() ? "green" : "yellow"));
-        }
-    }
-
-    private final class EditorCommand extends AbstractPlayerCommand {
-        private EditorCommand() {
-            super("editor", "Open the dev ritual template editor");
-            this.setPermissionGroups(new String[]{"admin"});
-        }
-
-        @Override
-        protected void execute(@Nonnull CommandContext ctx,
-                               @Nonnull Store<EntityStore> store,
-                               @Nonnull Ref<EntityStore> ref,
-                               @Nonnull PlayerRef playerRef,
-                               @Nonnull World world) {
-            Player player = store.getComponent(ref, Player.getComponentType());
-            if (player == null) {
-                ctx.sendMessage(Message.raw("Could not find the executing player.").color("red"));
-                return;
-            }
-            player.getPageManager().openCustomPage(
-                    ref,
-                    store,
-                    new VampiricRitualEditorPage(playerRef, runtimeService.templateRegistry()));
         }
     }
 

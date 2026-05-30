@@ -87,7 +87,8 @@ public final class VampirismRelicActionInteraction extends SimpleInstantInteract
                 uuid,
                 playerContext.ref(),
                 targetRef,
-                playerContext.store());
+                playerContext.store(),
+                playerContext.commandBuffer());
         notifyActivationFailure(playerContext, result, abilityId);
     }
 

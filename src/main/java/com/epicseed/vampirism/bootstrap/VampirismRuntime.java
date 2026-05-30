@@ -1,6 +1,7 @@
 package com.epicseed.vampirism.bootstrap;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -14,7 +15,10 @@ import com.epicseed.epiccore.hytale.WorldStoreAdapter;
 import com.epicseed.epiccore.hytale.WorldMapTrackerAdapter;
 import com.epicseed.epiccore.hytale.hud.HudBackendResolver;
 import com.epicseed.epiccore.hytale.hud.SingleSlotHudCoordinator;
+import com.epicseed.epiccore.hytale.logging.EpicLogger;
+import com.epicseed.epiccore.hytale.runtime.ManagedPluginScheduler;
 import com.epicseed.epiccore.hytale.runtime.PlayerRuntimeCleanupCoordinator;
+import com.epicseed.epiccore.hytale.runtime.PlayerRuntimeCleanupReport;
 import com.epicseed.epiccore.modifier.StatType;
 import com.epicseed.epiccore.relic.application.RelicInventoryConfig;
 import com.epicseed.epiccore.relic.application.RelicInventoryService;
@@ -43,6 +47,7 @@ import com.epicseed.vampirism.commands.VampirismRelicBindingsCommand;
 import com.epicseed.vampirism.commands.VampirismRelicCommand;
 import com.epicseed.vampirism.commands.VampirismRitualCommand;
 import com.epicseed.vampirism.commands.VampirismSkillTreeCommand;
+import com.epicseed.vampirism.compat.VampirismCompatibility;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.blood.BloodHudService;
 import com.epicseed.vampirism.domain.blood.FeedCompletionService;
@@ -135,23 +140,30 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class VampirismRuntime {
 
+    private static final EpicLogger LOGGER = EpicLogger.forMod("Vampirism").subsystem("Runtime");
+    private static final EpicLogger AUTOSAVE_LOGGER = EpicLogger.forMod("Vampirism").subsystem("Autosave");
+    private static final Duration AUTOSAVE_SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
+
     private final PlayerSkillRegistry playerSkillRegistry;
     private final PlayerRuntimeCleanupCoordinator playerRuntimeCleanupCoordinator;
     private final NightHuntService nightHuntService;
     private final RelicPresetSelectionAdapter relicPresetSelectionAdapter;
     private final VampiricLineageService lineageService;
+    private final ManagedPluginScheduler autosaveScheduler;
     private final Set<UUID> connectedPlayers = ConcurrentHashMap.newKeySet();
 
     private VampirismRuntime(@Nonnull PlayerSkillRegistry playerSkillRegistry,
                              @Nonnull PlayerRuntimeCleanupCoordinator playerRuntimeCleanupCoordinator,
                              @Nonnull NightHuntService nightHuntService,
                              @Nonnull RelicPresetSelectionAdapter relicPresetSelectionAdapter,
-                             @Nonnull VampiricLineageService lineageService) {
+                             @Nonnull VampiricLineageService lineageService,
+                             @Nullable ManagedPluginScheduler autosaveScheduler) {
         this.playerSkillRegistry = playerSkillRegistry;
         this.playerRuntimeCleanupCoordinator = playerRuntimeCleanupCoordinator;
         this.nightHuntService = nightHuntService;
         this.relicPresetSelectionAdapter = relicPresetSelectionAdapter;
         this.lineageService = lineageService;
+        this.autosaveScheduler = autosaveScheduler;
     }
 
     @Nonnull
@@ -160,7 +172,9 @@ public final class VampirismRuntime {
                                              @Nonnull java.util.function.Supplier<Vector2d> highestPositionSupplier) {
         Path dataDirectory = plugin.getPersistentDataDirectory();
         VampireStatusRegistry.init(dataDirectory, () -> VampirismConfig.get().isVampireDefaultEnabled());
-        PlayerSkillRegistry playerSkillRegistry = PlayerSkillRegistry.init(dataDirectory);
+        PlayerSkillRegistry playerSkillRegistry = PlayerSkillRegistry.init(
+                dataDirectory,
+                VampirismCompatibility.profileMigrations());
         VampirismClassifications.registerProvider();
 
         VampirismSkillProgressionAccess progressionAccess = playerSkillRegistry.progressionAccess();
@@ -423,7 +437,8 @@ public final class VampirismRuntime {
                                 persistentPassiveEffectService))),
                 nightHuntService,
                 relicPresetSelectionAdapter,
-                lineageService);
+                lineageService,
+                createProfileAutosaveScheduler(playerSkillRegistry, VampirismConfig.get()));
         runtime.registerPlayerLifecycle(plugin);
         registerSystems(
                 plugin,
@@ -457,6 +472,11 @@ public final class VampirismRuntime {
     }
 
     public void shutdown() {
+        if (autosaveScheduler != null) {
+            autosaveScheduler.close(AUTOSAVE_SHUTDOWN_TIMEOUT);
+        }
+        int savedProfiles = playerSkillRegistry.shutdown();
+        LOGGER.info("Saved %d cached player profile(s) during shutdown", savedProfiles);
         VampirismClassifications.unregisterProvider();
         relicPresetSelectionAdapter.shutdown();
         RitualOfferingSurfaceInteraction.clearRuntime();
@@ -486,7 +506,48 @@ public final class VampirismRuntime {
 
     private void onPlayerDisconnect(@Nonnull UUID uuid, @Nullable Ref<EntityStore> playerRef) {
         connectedPlayers.remove(uuid);
-        playerRuntimeCleanupCoordinator.cleanup(uuid, playerRef);
+        PlayerRuntimeCleanupReport report = playerRuntimeCleanupCoordinator.cleanupAndReport(uuid, playerRef);
+        logCleanupReport(report);
+    }
+
+    @Nullable
+    private static ManagedPluginScheduler createProfileAutosaveScheduler(@Nonnull PlayerSkillRegistry playerSkillRegistry,
+                                                                        @Nonnull VampirismConfig config) {
+        long intervalSeconds = config.getProgressionAutosaveIntervalSeconds();
+        if (intervalSeconds <= 0L) {
+            AUTOSAVE_LOGGER.info("Profile autosave disabled by config interval=%d", intervalSeconds);
+            return null;
+        }
+        ManagedPluginScheduler scheduler = ProfileAutosaveScheduler.create(
+                "Vampirism-Autosave",
+                Duration.ofSeconds(intervalSeconds),
+                playerSkillRegistry::flushOnlinePlayers,
+                (taskName, failure) -> AUTOSAVE_LOGGER.error(failure, "Scheduled task %s failed", taskName),
+                savedProfiles -> AUTOSAVE_LOGGER.info("Saved %d online player profile(s)", savedProfiles));
+        if (scheduler != null) {
+            AUTOSAVE_LOGGER.info("Profile autosave scheduled every %d second(s)", intervalSeconds);
+        }
+        return scheduler;
+    }
+
+    private static void logCleanupReport(@Nonnull PlayerRuntimeCleanupReport report) {
+        if (!report.hasFailures()) {
+            return;
+        }
+        for (PlayerRuntimeCleanupReport.Failure failure : report.failures()) {
+            LOGGER.error(
+                    failure.cause(),
+                    "Cleanup step %s failed for player=%s policy=%s",
+                    failure.stepName(),
+                    report.uuid(),
+                    failure.failurePolicy());
+        }
+        if (report.aborted()) {
+            LOGGER.warn(
+                    "Cleanup aborted for player=%s after %d attempted step(s); remaining dependent cleanup was skipped",
+                    report.uuid(),
+                    report.attemptedStepCount());
+        }
     }
 
     @Nonnull

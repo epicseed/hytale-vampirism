@@ -27,7 +27,7 @@
     "DamageResistance": {
         "Physical": [
             {
-                "CalculationType": "Multiplicative",
+                "CalculationType": "Percent",
                 "Amount": 0.15
             }
         ]

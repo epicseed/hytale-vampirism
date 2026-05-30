@@ -43,7 +43,7 @@ final class VampirismInteractionSupport {
             fail(context);
             return null;
         }
-        return new PlayerInteractionContext(store, ref, playerRef, world);
+        return new PlayerInteractionContext(store, commandBuffer, ref, playerRef, world);
     }
 
     static void fail(@Nonnull InteractionContext context) {
@@ -62,6 +62,7 @@ final class VampirismInteractionSupport {
     }
 
     record PlayerInteractionContext(@Nonnull Store<EntityStore> store,
+                                    @Nonnull CommandBuffer<EntityStore> commandBuffer,
                                     @Nonnull Ref<EntityStore> ref,
                                     @Nonnull PlayerRef playerRef,
                                     @Nonnull World world) {

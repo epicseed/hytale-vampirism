@@ -299,36 +299,6 @@
             { key: 'statId', label: 'Heal Stat', kind: 'ref', sourceKey: 'stats', required: true },
           ],
         },
-        applyTimedSpeedBoost: {
-          label: 'Apply Timed Speed Boost (deprecated)',
-          deprecated: true,
-          migrateTo: 'grantTemporaryModifier',
-          fields: [
-            { key: 'speedBoostStatId', label: 'Speed Boost Stat', kind: 'ref', sourceKey: 'stats' },
-            { key: 'durationStatId', label: 'Duration Stat', kind: 'ref', sourceKey: 'stats' },
-            { key: 'value', label: 'Fallback Boost', kind: 'number', step: '0.01' },
-            { key: 'duration', label: 'Fallback Duration (s)', kind: 'number', step: '0.5' },
-          ],
-        },
-        applyControlEffect: {
-          label: 'Apply Control Effect (REMOVED)',
-          removed: true,
-          replacement: 'applyEffect',
-          fields: [
-            { key: 'effect', label: 'Control Effect', kind: 'text' },
-            { key: 'targetingId', label: 'Targeting', kind: 'ref', sourceKey: 'targetings' },
-          ],
-        },
-        highlightEnemies: {
-          label: 'Highlight Enemies (REMOVED)',
-          removed: true,
-          replacement: 'applyEffect',
-          fields: [
-            { key: 'conditionId', label: 'Condition', kind: 'ref', sourceKey: 'conditions' },
-            { key: 'targetingId', label: 'Targeting', kind: 'ref', sourceKey: 'targetings' },
-            { key: 'durationSeconds', label: 'Duration (s)', kind: 'number', step: '0.5' },
-          ],
-        },
       },
     },
     targetings: {
@@ -407,19 +377,6 @@
 
   function cloneDefinition(value) {
     return isPlainObject(value) ? JSON.parse(JSON.stringify(value)) : {};
-  }
-
-  function migrateDefinition(fromType, definition) {
-    if (fromType === 'applyTimedSpeedBoost') {
-      const migrated = { type: 'grantTemporaryModifier', statId: 'SPEED' };
-      if (definition?.speedBoostStatId) migrated.amountStatId = definition.speedBoostStatId;
-      else if (definition?.value != null) migrated.amount = Number(definition.value);
-      if (definition?.durationStatId) migrated.durationStatId = definition.durationStatId;
-      else if (definition?.duration != null) migrated.duration = Number(definition.duration);
-      migrated.stacking = 'replace';
-      return migrated;
-    }
-    return null;
   }
 
   function makeDefinitionTab({ paneId, tabId, dataKey, label }) {
@@ -507,15 +464,12 @@
           return `execute:${SideEditors.lookupLabel('requirements', definition.requirementId)}`;
         case 'activateAbility':
           return `activate:${SideEditors.lookupLabel('abilities', definition.abilityId)}`;
-        case 'highlightEnemies':
         case 'dealDamage':
           if (definition.targetingId) return `${type}:${SideEditors.lookupLabel('targetings', definition.targetingId)}`;
           if (definition.conditionId) return `${type}:${SideEditors.lookupLabel('conditions', definition.conditionId)}`;
           return type;
         case 'healSelf':
           return `heal:${SideEditors.lookupLabel('stats', definition.statId)}`;
-        case 'applyTimedSpeedBoost':
-          return `⚠ speedBoost (deprecated)`;
         case 'grantTemporaryModifier':
           return `tempMod:${SideEditors.lookupLabel('stats', definition.statId)}`;
         case 'modifyStat':
@@ -537,8 +491,6 @@
         case 'teleport':
           if (definition.mode) return `teleport:${definition.mode}`;
           return `teleport:${SideEditors.lookupLabel('targetings', definition.targetingId)}`;
-        case 'applyControlEffect':
-          return `⛔ applyControlEffect (removed)`;
         default:
           return type;
       }
@@ -626,13 +578,6 @@
           <div class="editor-help" style="background:#3a1020;border-left:3px solid var(--accent);padding:10px;margin-bottom:12px;color:#ffb0b8">
             <strong>⛔ Action type <code>${type}</code> was removed.</strong>
             Replace it with <code>${typeDef.replacement}</code> or another generic primitive. Saving a row with this type is a blocking validation error.
-          </div>
-        `;
-      } else if (typeDef.deprecated) {
-        banner = `
-          <div class="editor-help" style="background:#3a2800;border-left:3px solid #f0c040;padding:10px;margin-bottom:12px;color:#f0d080">
-            <strong>⚠ Deprecated:</strong> migrate to <code>${typeDef.migrateTo}</code>.
-            <button class="btn-primary" type="button" style="margin-left:8px" onclick="${globalName()}.migrateCurrent()">Migrate to ${typeDef.migrateTo}</button>
           </div>
         `;
       }
@@ -798,20 +743,6 @@
       render();
     }
 
-    function migrateCurrent() {
-      const select = document.getElementById(`${dataKey}-definition-type`);
-      const type = select.value;
-      const typeDef = editorConfig.types[type];
-      if (!typeDef || !typeDef.deprecated || !typeDef.migrateTo) return;
-      const migrated = migrateDefinition(type, currentDefinition);
-      if (!migrated) return;
-      currentDefinition = migrated;
-      renderTypeOptions(migrated.type);
-      renderTypedFields(migrated.type, migrated);
-      bindTypeChange();
-      App.markDirty();
-    }
-
     function del(index) {
       if (!confirm(`Delete "${list()[index].id}"?`)) return;
       list().splice(index, 1);
@@ -833,7 +764,6 @@
       del,
       delCurrent,
       close: closeEditor,
-      migrateCurrent,
     };
   }
 

@@ -155,10 +155,7 @@ public final class SkillActionExecutor {
                         System::currentTimeMillis))
                 .register("startFeedChannel", ChannelActionHandlers::startFeedChannel)
                 .register("startHealthToBloodChannel", ChannelActionHandlers::startHealthToBloodChannel)
-                .register("modifyBlood", BloodActionHandler::modifyBlood)
-                .register("applyTimedSpeedBoost", this::grantTemporaryModifierLegacySpeed)
-                .register("applyControlEffect", this::deprecatedApplyControlEffect)
-                .register("highlightEnemies", this::deprecatedHighlightEnemies);
+                .register("modifyBlood", BloodActionHandler::modifyBlood);
     }
 
     private SkillActivationResult activateAbility(String abilityId, SkillRuntimeContext context) {
@@ -169,24 +166,4 @@ public final class SkillActionExecutor {
         onFinalBlow.accept(context);
     }
 
-    private boolean grantTemporaryModifierLegacySpeed(Map<String, Object> action, SkillRuntimeContext ctx) {
-        Map<String, Object> rewritten = new java.util.LinkedHashMap<>(action);
-        rewritten.put("type", "grantTemporaryModifier");
-        rewritten.putIfAbsent("statId", "SPEED");
-        Object boostStat = rewritten.remove("speedBoostStatId");
-        if (boostStat != null) {
-            rewritten.putIfAbsent("amountStatId", boostStat);
-        }
-        return execute(rewritten, ctx);
-    }
-
-    private boolean deprecatedApplyControlEffect(Map<String, Object> action, SkillRuntimeContext ctx) {
-        LOGGER.atWarning().log("[SkillActionExecutor] 'applyControlEffect' is deprecated; migrate to 'applyEffect' with an effectId + targetingId: " + action);
-        return false;
-    }
-
-    private boolean deprecatedHighlightEnemies(Map<String, Object> action, SkillRuntimeContext ctx) {
-        LOGGER.atWarning().log("[SkillActionExecutor] 'highlightEnemies' is deprecated; migrate to 'applyEffect' with an effectId + targetingId: " + action);
-        return false;
-    }
 }

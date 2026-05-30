@@ -7,6 +7,7 @@ import com.epicseed.epiccore.skill.model.Skill;
 import com.epicseed.epiccore.skill.runtime.CatalogBackedSkillRuntimeBootstrap;
 import com.epicseed.epiccore.skill.runtime.SkillDefinitionCatalog;
 import com.epicseed.vampirism.bootstrap.VampirismRuntime;
+import com.epicseed.vampirism.compat.VampirismCompatibility;
 import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.hytale.interaction.VampirismPotionTransformInteraction;
 import com.epicseed.vampirism.hytale.interaction.VampirismRelicActionInteraction;
@@ -48,6 +49,7 @@ public class Vampirism extends JavaPlugin {
         Path legacyDataDirectory = init.getDataDirectory().toAbsolutePath().normalize();
         this.persistentDataDirectory = resolvePersistentDataDirectory(init);
         migrateLegacyDataDirectory(legacyDataDirectory, persistentDataDirectory);
+        migrateConfig(persistentDataDirectory);
 
         Config<VampirismConfig> config = new Config<>(persistentDataDirectory, "Vampirism", VampirismConfig.CODEC);
         VampirismConfig.init(config);
@@ -174,6 +176,14 @@ public class Vampirism extends JavaPlugin {
             LOGGER.atInfo().log("[Vampirism] Using persistent data directory: " + resolvedDirectory);
         }
         return resolvedDirectory;
+    }
+
+    private void migrateConfig(@Nonnull Path resolvedDataDirectory) {
+        try {
+            VampirismCompatibility.migrateConfig(resolvedDataDirectory);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to migrate Vampirism config: " + resolvedDataDirectory, e);
+        }
     }
 
     private void migrateLegacyDataDirectory(@Nonnull Path legacyDataDirectory,

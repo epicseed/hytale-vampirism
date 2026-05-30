@@ -23,6 +23,7 @@ import com.epicseed.epiccore.skill.runtime.TargetingResolver;
 import com.epicseed.vampirism.modifier.VampireStatType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
 import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -59,6 +60,16 @@ public final class AbilityService {
                                           @Nullable Ref<EntityStore> targetRef,
                                           @Nonnull Store<EntityStore> store) {
         return service.activate(abilityId, new SkillRuntimeContext(uuid, casterRef, targetRef, store));
+    }
+
+    @Nonnull
+    public SkillActivationResult activate(@Nonnull String abilityId,
+                                          @Nonnull UUID uuid,
+                                          @Nonnull Ref<EntityStore> casterRef,
+                                          @Nullable Ref<EntityStore> targetRef,
+                                          @Nonnull Store<EntityStore> store,
+                                          @Nullable CommandBuffer<EntityStore> commandBuffer) {
+        return service.activate(abilityId, new SkillRuntimeContext(uuid, casterRef, targetRef, store, commandBuffer));
     }
 
     @Nonnull

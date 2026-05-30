@@ -70,7 +70,7 @@ public class VampirismCommand extends AbstractCommand {
         this.addSubCommand(new BloodAdminCommands());
         this.addSubCommand(new HuntAdminCommands(progressionAccess, nightHuntService));
         this.addSubCommand(new LineageAdminCommands(lineageService));
-        this.addSubCommand(new RitualAdminCommands(ritualService, ritualRuntimeService, progressionAccess, ritualContextResolver));
+        this.addSubCommand(new RitualAdminCommands(ritualService, ritualRuntimeService, ritualContextResolver));
         this.addSubCommand(new MasqueradeAdminCommands(masqueradeHeatService));
         this.addSubCommand(new AbilityAdminCommands(progressionAccess, abilityService));
         this.addSubCommand(new VampireAdminCommands());
@@ -96,7 +96,6 @@ public class VampirismCommand extends AbstractCommand {
         ctx.sendMessage(Message.raw("/vampirism hunt summary|info|compendium|list-loadouts|prepare|force|reset-cooldown <player> - control marked prey hunts").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism lineage info|list|choose|clear <player> [lineageId] - inspect or change lineages").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ritual list|info|sync|begin|progress|complete|runtime|abort|reset|reset-all ... - inspect ritual progress").color("yellow"));
-        ctx.sendMessage(Message.raw("/vampirism ritual editor - open the dev ritual template editor").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism masquerade info|set|add|strike|clear <player> [heat] - inspect masquerade heat").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ability trigger <player> <abilityId> - trigger one ability").color("yellow"));
         ctx.sendMessage(Message.raw("/vampirism ability trigger-all <player> - trigger all unlocked abilities").color("yellow"));

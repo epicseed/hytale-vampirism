@@ -112,7 +112,7 @@ public class PassiveEffectSystem extends EntityTickingSystem<EntityStore> {
             if (playerRefComp == null) return;
 
             UUID uuid = playerRefComp.getUuid();
-            SkillRuntimeContext ctx = new SkillRuntimeContext(uuid, playerRef, store);
+            SkillRuntimeContext ctx = new SkillRuntimeContext(uuid, playerRef, store, commandBuffer);
             if (!VampirismClassifications.isVampiric(uuid)) {
                 persistentPassiveEffectService.cleanupInactiveOwners(uuid, ctx, Collections.emptySet());
                 onPlayerDisconnect(uuid, passiveTriggerRuntimeService, persistentPassiveEffectService);
