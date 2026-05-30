@@ -42,8 +42,7 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
     private static final int TAB_GUTTER_HEIGHT = 552;
     private static final int TAB_MAX_PER_SIDE = (TAB_GUTTER_HEIGHT + TAB_GAP) / (TAB_HEIGHT + TAB_GAP);
     private static final int PREVIEW_POINT_SIZE = 64;
-    private static final String PREVIEW_BASE_TEXTURE = "Vampirism/Assets/Rituals/Vampirism_RitualGlyph_Base.png";
-    private static final String PREVIEW_CORE_TEXTURE = "Vampirism/Assets/Rituals/Vampirism_RitualGlyph_Core_Calm.png";
+    private static final String PREVIEW_BASE_TEXTURE = "Vampirism/Assets/Rituals/Vampirism_RitualGlyph_Base_Book.png";
     private static final String PREVIEW_NODE_TEXTURE = "Vampirism/Assets/Rituals/Vampirism_RitualGlyph_Node_Inactive.png";
 
     private final VampiricRitualSelectionService selectionService;
@@ -187,8 +186,7 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
             cmd.set("#RewardsText.Text", "");
             cmd.set("#AttuneBtnLabel.Text", "Attuned");
             cmd.set("#AttuneBtn.Disabled", true);
-            cmd.set("#DiagramBase.Background", PREVIEW_BASE_TEXTURE);
-            cmd.set("#DiagramCore.Background", PREVIEW_CORE_TEXTURE);
+            cmd.set("#DiagramBaseGlyph.Background", PREVIEW_BASE_TEXTURE);
             return;
         }
 
@@ -205,8 +203,7 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
         cmd.set("#RewardsText.Text", model.rewardsText());
         cmd.set("#AttuneBtnLabel.Text", attuneButtonText());
         cmd.set("#AttuneBtn.Disabled", selectedRitualAlreadyAttuned());
-        cmd.set("#DiagramBase.Background", PREVIEW_BASE_TEXTURE);
-        cmd.set("#DiagramCore.Background", PREVIEW_CORE_TEXTURE);
+        cmd.set("#DiagramBaseGlyph.Background", PREVIEW_BASE_TEXTURE);
     }
 
     private void renderTabsState(@Nonnull UICommandBuilder cmd) {

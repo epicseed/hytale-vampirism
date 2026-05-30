@@ -186,6 +186,10 @@ Group #RitualBookRoot {
             Group #DiagramBase {
               Anchor: (Full: 0);
               Background: #000000(0.0);
+              Group #DiagramBaseGlyph {
+                Anchor: (Left: 32, Top: 28, Width: 408, Height: 472);
+                Background: #000000(0.0);
+              }
             }
 
             Group #DiagramCanvas {
