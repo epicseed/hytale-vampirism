@@ -1,6 +1,7 @@
 package com.epicseed.vampirism.ui;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -247,6 +248,107 @@ final class VampiricRitualBookModel {
     }
 
     @Nonnull
+    public List<ChecklistItem> checklistItems() {
+        RitualEntry entry = selected();
+        VampiricRitualDefinition definition = entry.definition();
+        VampiricRitualEvaluation evaluation = entry.evaluation();
+        ArrayList<ChecklistItem> items = new ArrayList<>();
+
+        if (evaluation.completed()) {
+            items.add(ok("Completed", "This ritual already rests in your blood."));
+        } else if (evaluation.active()) {
+            items.add(info("Active", "Return to the circle and finish the rite."));
+        } else if (!evaluation.blockingReasons().isEmpty()) {
+            items.add(blocked("Blocked", "Resolve the red checks before attuning."));
+        } else {
+            items.add(ok("Ready", "All omens are aligned."));
+        }
+
+        if (definition.minBlood() > 0) {
+            boolean blocked = hasBlockingReason(evaluation, "min_blood:");
+            items.add(check("Blood", "Required: " + definition.minBlood(), blocked));
+        }
+        if (definition.minCompletedNightHunts() > 0) {
+            boolean blocked = hasBlockingReason(evaluation, "min_completed_night_hunts:");
+            items.add(check("Night hunts", "Required: " + definition.minCompletedNightHunts(), blocked));
+        }
+        if (definition.requiredAgeTierId() != null) {
+            boolean blocked = hasBlockingReason(evaluation, "required_age_tier:");
+            items.add(check("Age tier", humanizeId(definition.requiredAgeTierId()), blocked));
+        }
+        if (!definition.requiredSkills().isEmpty()) {
+            List<String> missing = missingValues(evaluation, "missing_skill:");
+            items.add(check("Skills", missing.isEmpty()
+                    ? joinHumanized(definition.requiredSkills())
+                    : "Missing " + joinHumanized(missing), !missing.isEmpty()));
+        }
+        if (!definition.requiredProofIds().isEmpty()) {
+            List<String> missing = missingValues(evaluation, "missing_proof:");
+            items.add(check("Proof", missing.isEmpty()
+                    ? joinProofLabels(definition.requiredProofIds())
+                    : missing.stream().map(VampiricProgressionProofs::requirementLabel).toList().toString()
+                    .replace("[", "Missing ")
+                    .replace("]", ""), !missing.isEmpty()));
+        }
+        if (!definition.requiredAffinities().isEmpty()) {
+            boolean blocked = definition.requiredAffinities().stream()
+                    .anyMatch(requirement -> evaluation.blockingReasons().contains(requirement.blockingReason()));
+            items.add(check("Affinity", joinAffinityLabels(definition.requiredAffinities()), blocked));
+        }
+        if (!definition.requiredContextTags().isEmpty()) {
+            List<String> missing = missingValues(evaluation, "missing_tag:");
+            items.add(check("Omens", missing.isEmpty()
+                    ? joinHumanized(definition.requiredContextTags())
+                    : "Missing " + joinHumanized(missing), !missing.isEmpty()));
+        }
+        if (!definition.blockedContextTags().isEmpty()) {
+            boolean blocked = hasBlockingReason(evaluation, "blocked_tag:");
+            items.add(check("Forbidden omens", "Avoid " + joinHumanized(definition.blockedContextTags()), blocked));
+        }
+
+        for (VampiricRitualDefinition.Objective objective : definition.objectives()) {
+            VampiricRitualEvaluation.ObjectiveProgress progress = evaluation.objectiveProgress().get(objective.id());
+            int current = progress != null ? progress.currentCount() : 0;
+            int target = progress != null ? progress.targetCount() : objective.targetCount();
+            String detail = current + "/" + target;
+            if (objective.offering() != null) {
+                detail += " · Offer " + humanizeId(objective.offering().itemId());
+            }
+            items.add(progress(objective.displayName(), detail, current, target));
+        }
+
+        if (items.size() == 1) {
+            items.add(ok("Circle", "Trace the shown sigils and commit."));
+        }
+        return List.copyOf(items);
+    }
+
+    @Nonnull
+    public List<RewardView> rewardViews() {
+        VampiricRitualDefinition.Rewards rewards = selected().definition().rewards();
+        ArrayList<RewardView> rewardsView = new ArrayList<>();
+        if (rewards.ageTierId() != null) {
+            rewardsView.add(new RewardView("AGE", humanizeId(rewards.ageTierId())));
+        }
+        if (rewards.skillPoints() > 0) {
+            rewardsView.add(new RewardView("SP", "+" + rewards.skillPoints() + " skill points"));
+        }
+        if (rewards.lineageId() != null) {
+            rewardsView.add(new RewardView("LIN", humanizeId(rewards.lineageId())));
+        }
+        if (!rewards.grantedSkills().isEmpty()) {
+            rewardsView.add(new RewardView("SKL", joinHumanized(rewards.grantedSkills())));
+        }
+        if (!rewards.sideEffectIds().isEmpty()) {
+            rewardsView.add(new RewardView("FX", joinHumanized(rewards.sideEffectIds())));
+        }
+        if (rewardsView.isEmpty()) {
+            rewardsView.add(new RewardView("FX", "Runtime effect"));
+        }
+        return List.copyOf(rewardsView);
+    }
+
+    @Nonnull
     public String attuneButtonText() {
         return "Attune Ritual";
     }
@@ -398,7 +500,7 @@ final class VampiricRitualBookModel {
     }
 
     @Nonnull
-    private static String joinHumanized(@Nonnull Set<String> values) {
+    private static String joinHumanized(@Nonnull Collection<String> values) {
         return values.stream().map(VampiricRitualBookModel::humanizeId).toList().toString()
                 .replace("[", "")
                 .replace("]", "");
@@ -416,6 +518,47 @@ final class VampiricRitualBookModel {
         return values.stream().map(VampiricRitualDefinition.AffinityRequirement::requirementLabel).toList().toString()
                 .replace("[", "")
                 .replace("]", "");
+    }
+
+    @Nonnull
+    private static ChecklistItem check(@Nonnull String title, @Nonnull String detail, boolean blocked) {
+        return blocked ? blocked(title, detail) : ok(title, detail);
+    }
+
+    @Nonnull
+    private static ChecklistItem ok(@Nonnull String title, @Nonnull String detail) {
+        return new ChecklistItem("OK", title, detail, "#4f6f2a", 0, 0);
+    }
+
+    @Nonnull
+    private static ChecklistItem blocked(@Nonnull String title, @Nonnull String detail) {
+        return new ChecklistItem("!", title, detail, "#8f251f", 0, 0);
+    }
+
+    @Nonnull
+    private static ChecklistItem info(@Nonnull String title, @Nonnull String detail) {
+        return new ChecklistItem("RUN", title, detail, "#6b321e", 0, 0);
+    }
+
+    @Nonnull
+    private static ChecklistItem progress(@Nonnull String title, @Nonnull String detail, int current, int target) {
+        int safeTarget = Math.max(1, target);
+        int safeCurrent = Math.max(0, current);
+        String mark = safeCurrent >= safeTarget ? "OK" : safeCurrent > 0 ? ".." : "DO";
+        String color = safeCurrent >= safeTarget ? "#4f6f2a" : "#6b321e";
+        return new ChecklistItem(mark, title, detail, color, safeCurrent, safeTarget);
+    }
+
+    private static boolean hasBlockingReason(@Nonnull VampiricRitualEvaluation evaluation, @Nonnull String prefix) {
+        return evaluation.blockingReasons().stream().anyMatch(reason -> reason.startsWith(prefix));
+    }
+
+    @Nonnull
+    private static List<String> missingValues(@Nonnull VampiricRitualEvaluation evaluation, @Nonnull String prefix) {
+        return evaluation.blockingReasons().stream()
+                .filter(reason -> reason.startsWith(prefix))
+                .map(reason -> reason.substring(prefix.length()))
+                .toList();
     }
 
     @Nonnull
@@ -494,6 +637,24 @@ final class VampiricRitualBookModel {
         boolean completed() {
             return RitualProgressState.STATUS_COMPLETED.equals(RitualProgressState.normalizeStatus(evaluation.status()));
         }
+    }
+
+    record ChecklistItem(
+            @Nonnull String mark,
+            @Nonnull String title,
+            @Nonnull String detail,
+            @Nonnull String color,
+            int progressCurrent,
+            int progressTarget) {
+
+        boolean hasProgress() {
+            return progressTarget > 0;
+        }
+    }
+
+    record RewardView(
+            @Nonnull String mark,
+            @Nonnull String text) {
     }
 
     record PointView(

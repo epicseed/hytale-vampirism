@@ -110,6 +110,10 @@ class VampiricRitualBookModelTest {
 
         assertTrue(model.objectivesText().contains("Bind Familiar 1/3"));
         assertTrue(model.objectivesText().contains("Offer Void Heart to any glyph or the center."));
+        assertTrue(model.checklistItems().stream().anyMatch(item ->
+                item.title().equals("Bind Familiar")
+                        && item.detail().contains("1/3")
+                        && item.hasProgress()));
     }
 
     @Test
@@ -207,6 +211,10 @@ class VampiricRitualBookModelTest {
 
         assertTrue(model.requirementsText().contains("Proof: First night hunt completed"));
         assertTrue(model.blockingText().contains("Complete a night hunt first."));
+        assertTrue(model.checklistItems().stream().anyMatch(item ->
+                item.title().equals("Proof")
+                        && item.mark().equals("!")
+                        && item.detail().contains("First night hunt completed")));
     }
 
     @Test
@@ -242,6 +250,10 @@ class VampiricRitualBookModelTest {
 
         assertTrue(model.requirementsText().contains("Affinity: Vermin 1+"));
         assertTrue(model.blockingText().contains("Needs Vermin affinity 1."));
+        assertTrue(model.checklistItems().stream().anyMatch(item ->
+                item.title().equals("Affinity")
+                        && item.mark().equals("!")
+                        && item.detail().contains("Vermin 1+")));
     }
 
     private static VampiricRitualDefinition definition(String id, String name) {

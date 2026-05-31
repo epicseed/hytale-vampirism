@@ -42,6 +42,9 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
     private static final int TAB_GUTTER_HEIGHT = 552;
     private static final int TAB_MAX_PER_SIDE = (TAB_GUTTER_HEIGHT + TAB_GAP) / (TAB_HEIGHT + TAB_GAP);
     private static final int PREVIEW_POINT_SIZE = 64;
+    private static final int MAX_CHECKLIST_ROWS = 8;
+    private static final int MAX_REWARD_CHIPS = 3;
+    private static final int CHECKLIST_PROGRESS_WIDTH = 90;
     private static final String PREVIEW_BASE_TEXTURE = "Vampirism/Assets/Rituals/Vampirism_RitualGlyph_Base_Book.png";
     private static final String PREVIEW_NODE_TEXTURE = "Vampirism/Assets/Rituals/Vampirism_RitualGlyph_Node_Inactive.png";
 
@@ -180,10 +183,8 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
             cmd.set("#RitualIcon.Background", VampirismUiPaths.theme().wipIcon());
             cmd.set("#DescriptionText.Text", "This anchor has no loaded rituals.");
             cmd.set("#OverviewLine.Text", "");
-            cmd.set("#RequirementsText.Text", "");
-            cmd.set("#BlockersText.Text", "");
-            cmd.set("#ObjectivesText.Text", "");
-            cmd.set("#RewardsText.Text", "");
+            clearChecklist(cmd);
+            clearRewardChips(cmd);
             cmd.set("#AttuneBtnLabel.Text", "Attuned");
             cmd.set("#AttuneBtn.Disabled", true);
             cmd.set("#DiagramBaseGlyph.Background", PREVIEW_BASE_TEXTURE);
@@ -197,10 +198,8 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
         cmd.set("#RitualIcon.Background", model.iconPath());
         cmd.set("#DescriptionText.Text", model.descriptionText());
         cmd.set("#OverviewLine.Text", model.overviewLine());
-        cmd.set("#RequirementsText.Text", model.requirementsText());
-        cmd.set("#BlockersText.Text", model.blockingText());
-        cmd.set("#ObjectivesText.Text", model.objectivesText());
-        cmd.set("#RewardsText.Text", model.rewardsText());
+        renderChecklist(cmd);
+        renderRewardChips(cmd);
         cmd.set("#AttuneBtnLabel.Text", attuneButtonText());
         cmd.set("#AttuneBtn.Disabled", selectedRitualAlreadyAttuned());
         cmd.set("#DiagramBaseGlyph.Background", PREVIEW_BASE_TEXTURE);
@@ -248,6 +247,69 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
             cmd.set(selector + " #PointGlow.Visible", false);
             cmd.set(selector + " #PointDormantShade.Visible", false);
             cmd.set(selector + " #PointTooltip.TooltipText", point.symbolName());
+        }
+    }
+
+    private void renderChecklist(@Nonnull UICommandBuilder cmd) {
+        List<VampiricRitualBookModel.ChecklistItem> items = model.checklistItems();
+        for (int i = 0; i < MAX_CHECKLIST_ROWS; i++) {
+            String selector = "#ChecklistRow" + i;
+            if (i >= items.size()) {
+                cmd.set(selector + ".Visible", false);
+                continue;
+            }
+            VampiricRitualBookModel.ChecklistItem item = items.get(i);
+            if (i == MAX_CHECKLIST_ROWS - 1 && items.size() > MAX_CHECKLIST_ROWS) {
+                item = new VampiricRitualBookModel.ChecklistItem(
+                        "+" + (items.size() - i),
+                        "More checks",
+                        "Additional conditions are hidden.",
+                        "#5b4638",
+                        0,
+                        0);
+            }
+            cmd.set(selector + ".Visible", true);
+            cmd.set(selector + " #ChecklistIcon" + i + ".Background", item.color());
+            cmd.set(selector + " #ChecklistMark" + i + ".Text", item.mark());
+            cmd.set(selector + " #ChecklistTitle" + i + ".Text", item.title());
+            cmd.set(selector + " #ChecklistDetail" + i + ".Text", item.detail());
+            cmd.set(selector + " #ChecklistProgressTrack" + i + ".Visible", item.hasProgress());
+            if (item.hasProgress()) {
+                int width = Math.max(2, Math.min(CHECKLIST_PROGRESS_WIDTH,
+                        (int) Math.round(CHECKLIST_PROGRESS_WIDTH * (item.progressCurrent() / (double) item.progressTarget()))));
+                cmd.set(selector + " #ChecklistProgressFill" + i + ".Background", item.color());
+                cmd.setObject(selector + " #ChecklistProgressFill" + i + ".Anchor", anchor(0, 0, width, 5));
+            }
+        }
+    }
+
+    private void clearChecklist(@Nonnull UICommandBuilder cmd) {
+        for (int i = 0; i < MAX_CHECKLIST_ROWS; i++) {
+            cmd.set("#ChecklistRow" + i + ".Visible", false);
+        }
+    }
+
+    private void renderRewardChips(@Nonnull UICommandBuilder cmd) {
+        List<VampiricRitualBookModel.RewardView> rewards = model.rewardViews();
+        for (int i = 0; i < MAX_REWARD_CHIPS; i++) {
+            String selector = "#RewardChip" + i;
+            if (i >= rewards.size()) {
+                cmd.set(selector + ".Visible", false);
+                continue;
+            }
+            VampiricRitualBookModel.RewardView reward = rewards.get(i);
+            if (i == MAX_REWARD_CHIPS - 1 && rewards.size() > MAX_REWARD_CHIPS) {
+                reward = new VampiricRitualBookModel.RewardView("+" + (rewards.size() - i), "more rewards");
+            }
+            cmd.set(selector + ".Visible", true);
+            cmd.set(selector + " #RewardMark" + i + ".Text", reward.mark());
+            cmd.set(selector + " #RewardText" + i + ".Text", reward.text());
+        }
+    }
+
+    private void clearRewardChips(@Nonnull UICommandBuilder cmd) {
+        for (int i = 0; i < MAX_REWARD_CHIPS; i++) {
+            cmd.set("#RewardChip" + i + ".Visible", false);
         }
     }
 

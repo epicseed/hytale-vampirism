@@ -2,8 +2,14 @@
 $C = "../../Common.ui";
 
 @BookBackground = PatchStyle(TexturePath: "../Assets/RitualBook/BG.png");
-@SectionDividerColor = #7f624d(0.42);
-@PageBoundsTint = #f1e4cf(0.18);
+@ChecklistDecoration = PatchStyle(TexturePath: "../Assets/RitualBook/RitualChecklist_Glyph.png");
+@SectionDividerColor = #3a2015(0.78);
+@PageBoundsTint = #f1e4cf(0);
+@InkStrong = #120805;
+@InkBody = #1e0f08;
+@InkMuted = #3c1f13;
+@RewardChipBackground = #3b241b(0.78);
+@RewardChipText = #f7e3bf;
 
 @BookButtonStyle = ButtonStyle(
   Default: (Background: #50372c),
@@ -59,7 +65,7 @@ Group #RitualBookRoot {
         Label #BookTitle {
           Anchor: (Left: 0, Top: 0, Right: 0, Height: 42);
           Text: "";
-          Style: (FontName: "Secondary", FontSize: 33, RenderBold: true, TextColor: #24140d, Wrap: true);
+          Style: (FontName: "Secondary", FontSize: 33, RenderBold: true, TextColor: @InkStrong, Wrap: true);
         }
 
         Group #OverviewCard {
@@ -67,7 +73,7 @@ Group #RitualBookRoot {
 
           Group #IconFrame {
             Anchor: (Left: 10, Top: 10, Width: 76, Height: 76);
-            Background: #573f32;
+            Background: #2b1710;
             Group #RitualIcon {
               Anchor: (Left: 6, Top: 6, Width: 64, Height: 64);
             }
@@ -76,92 +82,132 @@ Group #RitualBookRoot {
           Label #DescriptionText {
             Anchor: (Left: 98, Top: 8, Right: 0, Height: 56);
             Text: "";
-            Style: (FontSize: 14, TextColor: #2a1a12, Wrap: true);
+            Style: (FontSize: 14, RenderBold: true, TextColor: @InkBody, Wrap: true);
           }
 
           Group {
             Anchor: (Left: 98, Top: 70, Right: 0, Height: 1);
-            Background: #baa185;
+            Background: @SectionDividerColor;
           }
 
           Label #OverviewLine {
             Anchor: (Left: 98, Top: 78, Right: 0, Bottom: 8);
             Text: "";
-            Style: (FontSize: 13, TextColor: #7d573f, RenderBold: true, Wrap: true);
+            Style: (FontSize: 13, TextColor: #4e1f12, RenderBold: true, Wrap: true);
           }
         }
 
-        Group #RequirementsCard {
-          Anchor: (Left: 0, Top: 190, Right: 0, Height: 219);
+        Group #RitualChecklistCard {
+          Anchor: (Left: 0, Top: 190, Right: 0, Height: 450);
           Group {
             Anchor: (Left: 0, Right: 0, Top: 0, Height: 1);
             Background: @SectionDividerColor;
           }
           Label {
             Anchor: (Left: 0, Top: 10, Width: 250, Height: 20);
-            Text: "Requirements & blockers";
-            Style: (FontName: "Secondary", FontSize: 16, RenderBold: true, TextColor: #22150f);
+            Text: "Ritual checklist";
+            Style: (FontName: "Secondary", FontSize: 16, RenderBold: true, TextColor: @InkStrong);
           }
           Label {
-            Anchor: (Left: 0, Top: 40, Width: 150, Height: 16);
-            Text: "Requirements";
-            Style: (FontSize: 11, RenderBold: true, TextColor: #8a5b43);
+            Anchor: (Right: 0, Top: 12, Width: 160, Height: 16);
+            Text: "requirements + objectives";
+            Style: (FontSize: 10, RenderBold: true, TextColor: #5c2414, HorizontalAlignment: End);
           }
-          Label #RequirementsText {
-            Anchor: (Left: 0, Top: 60, Width: 198, Bottom: 8);
-            Text: "";
-            Style: (FontSize: 12, TextColor: #2f1f16, Wrap: true);
+          Group #ChecklistDecoration {
+            Anchor: (Left: 238, Top: 88, Width: 190, Height: 188);
+            Background: @ChecklistDecoration;
+            HitTestVisible: false;
+          }
+          Group #ChecklistRow0 {
+            Anchor: (Left: 0, Top: 42, Right: 0, Height: 36);
+            Group #ChecklistIcon0 { Anchor: (Left: 0, Top: 5, Width: 26, Height: 26); Background: #2b1710; }
+            Label #ChecklistMark0 { Anchor: (Left: 0, Top: 5, Width: 26, Height: 26); Text: ""; Style: (FontSize: 9, RenderBold: true, TextColor: #f6e7c6, HorizontalAlignment: Center, VerticalAlignment: Center); }
+            Label #ChecklistTitle0 { Anchor: (Left: 36, Top: 1, Width: 150, Height: 16); Text: ""; Style: (FontSize: 12, RenderBold: true, TextColor: @InkStrong); }
+            Label #ChecklistDetail0 { Anchor: (Left: 36, Top: 17, Right: 0, Height: 17); Text: ""; Style: (FontSize: 11, RenderBold: true, TextColor: @InkMuted, Wrap: true); }
+            Group #ChecklistProgressTrack0 { Anchor: (Right: 0, Top: 13, Width: 90, Height: 5); Background: #2e170d(0.55); Group #ChecklistProgressFill0 { Anchor: (Left: 0, Top: 0, Width: 0, Height: 5); Background: #4b2215; } }
+          }
+          Group #ChecklistRow1 {
+            Anchor: (Left: 0, Top: 82, Right: 0, Height: 36);
+            Group #ChecklistIcon1 { Anchor: (Left: 0, Top: 5, Width: 26, Height: 26); Background: #2b1710; }
+            Label #ChecklistMark1 { Anchor: (Left: 0, Top: 5, Width: 26, Height: 26); Text: ""; Style: (FontSize: 9, RenderBold: true, TextColor: #f6e7c6, HorizontalAlignment: Center, VerticalAlignment: Center); }
+            Label #ChecklistTitle1 { Anchor: (Left: 36, Top: 1, Width: 150, Height: 16); Text: ""; Style: (FontSize: 12, RenderBold: true, TextColor: @InkStrong); }
+            Label #ChecklistDetail1 { Anchor: (Left: 36, Top: 17, Right: 0, Height: 17); Text: ""; Style: (FontSize: 11, RenderBold: true, TextColor: @InkMuted, Wrap: true); }
+            Group #ChecklistProgressTrack1 { Anchor: (Right: 0, Top: 13, Width: 90, Height: 5); Background: #2e170d(0.55); Group #ChecklistProgressFill1 { Anchor: (Left: 0, Top: 0, Width: 0, Height: 5); Background: #4b2215; } }
+          }
+          Group #ChecklistRow2 {
+            Anchor: (Left: 0, Top: 122, Right: 0, Height: 36);
+            Group #ChecklistIcon2 { Anchor: (Left: 0, Top: 5, Width: 26, Height: 26); Background: #2b1710; }
+            Label #ChecklistMark2 { Anchor: (Left: 0, Top: 5, Width: 26, Height: 26); Text: ""; Style: (FontSize: 9, RenderBold: true, TextColor: #f6e7c6, HorizontalAlignment: Center, VerticalAlignment: Center); }
+            Label #ChecklistTitle2 { Anchor: (Left: 36, Top: 1, Width: 150, Height: 16); Text: ""; Style: (FontSize: 12, RenderBold: true, TextColor: @InkStrong); }
+            Label #ChecklistDetail2 { Anchor: (Left: 36, Top: 17, Right: 0, Height: 17); Text: ""; Style: (FontSize: 11, RenderBold: true, TextColor: @InkMuted, Wrap: true); }
+            Group #ChecklistProgressTrack2 { Anchor: (Right: 0, Top: 13, Width: 90, Height: 5); Background: #2e170d(0.55); Group #ChecklistProgressFill2 { Anchor: (Left: 0, Top: 0, Width: 0, Height: 5); Background: #4b2215; } }
+          }
+          Group #ChecklistRow3 {
+            Anchor: (Left: 0, Top: 162, Right: 0, Height: 36);
+            Group #ChecklistIcon3 { Anchor: (Left: 0, Top: 5, Width: 26, Height: 26); Background: #2b1710; }
+            Label #ChecklistMark3 { Anchor: (Left: 0, Top: 5, Width: 26, Height: 26); Text: ""; Style: (FontSize: 9, RenderBold: true, TextColor: #f6e7c6, HorizontalAlignment: Center, VerticalAlignment: Center); }
+            Label #ChecklistTitle3 { Anchor: (Left: 36, Top: 1, Width: 150, Height: 16); Text: ""; Style: (FontSize: 12, RenderBold: true, TextColor: @InkStrong); }
+            Label #ChecklistDetail3 { Anchor: (Left: 36, Top: 17, Right: 0, Height: 17); Text: ""; Style: (FontSize: 11, RenderBold: true, TextColor: @InkMuted, Wrap: true); }
+            Group #ChecklistProgressTrack3 { Anchor: (Right: 0, Top: 13, Width: 90, Height: 5); Background: #2e170d(0.55); Group #ChecklistProgressFill3 { Anchor: (Left: 0, Top: 0, Width: 0, Height: 5); Background: #4b2215; } }
+          }
+          Group #ChecklistRow4 {
+            Anchor: (Left: 0, Top: 202, Right: 0, Height: 36);
+            Group #ChecklistIcon4 { Anchor: (Left: 0, Top: 5, Width: 26, Height: 26); Background: #2b1710; }
+            Label #ChecklistMark4 { Anchor: (Left: 0, Top: 5, Width: 26, Height: 26); Text: ""; Style: (FontSize: 9, RenderBold: true, TextColor: #f6e7c6, HorizontalAlignment: Center, VerticalAlignment: Center); }
+            Label #ChecklistTitle4 { Anchor: (Left: 36, Top: 1, Width: 150, Height: 16); Text: ""; Style: (FontSize: 12, RenderBold: true, TextColor: @InkStrong); }
+            Label #ChecklistDetail4 { Anchor: (Left: 36, Top: 17, Right: 0, Height: 17); Text: ""; Style: (FontSize: 11, RenderBold: true, TextColor: @InkMuted, Wrap: true); }
+            Group #ChecklistProgressTrack4 { Anchor: (Right: 0, Top: 13, Width: 90, Height: 5); Background: #2e170d(0.55); Group #ChecklistProgressFill4 { Anchor: (Left: 0, Top: 0, Width: 0, Height: 5); Background: #4b2215; } }
+          }
+          Group #ChecklistRow5 {
+            Anchor: (Left: 0, Top: 242, Right: 0, Height: 36);
+            Group #ChecklistIcon5 { Anchor: (Left: 0, Top: 5, Width: 26, Height: 26); Background: #2b1710; }
+            Label #ChecklistMark5 { Anchor: (Left: 0, Top: 5, Width: 26, Height: 26); Text: ""; Style: (FontSize: 9, RenderBold: true, TextColor: #f6e7c6, HorizontalAlignment: Center, VerticalAlignment: Center); }
+            Label #ChecklistTitle5 { Anchor: (Left: 36, Top: 1, Width: 150, Height: 16); Text: ""; Style: (FontSize: 12, RenderBold: true, TextColor: @InkStrong); }
+            Label #ChecklistDetail5 { Anchor: (Left: 36, Top: 17, Right: 0, Height: 17); Text: ""; Style: (FontSize: 11, RenderBold: true, TextColor: @InkMuted, Wrap: true); }
+            Group #ChecklistProgressTrack5 { Anchor: (Right: 0, Top: 13, Width: 90, Height: 5); Background: #2e170d(0.55); Group #ChecklistProgressFill5 { Anchor: (Left: 0, Top: 0, Width: 0, Height: 5); Background: #4b2215; } }
+          }
+          Group #ChecklistRow6 {
+            Anchor: (Left: 0, Top: 282, Right: 0, Height: 36);
+            Group #ChecklistIcon6 { Anchor: (Left: 0, Top: 5, Width: 26, Height: 26); Background: #2b1710; }
+            Label #ChecklistMark6 { Anchor: (Left: 0, Top: 5, Width: 26, Height: 26); Text: ""; Style: (FontSize: 9, RenderBold: true, TextColor: #f6e7c6, HorizontalAlignment: Center, VerticalAlignment: Center); }
+            Label #ChecklistTitle6 { Anchor: (Left: 36, Top: 1, Width: 150, Height: 16); Text: ""; Style: (FontSize: 12, RenderBold: true, TextColor: @InkStrong); }
+            Label #ChecklistDetail6 { Anchor: (Left: 36, Top: 17, Right: 0, Height: 17); Text: ""; Style: (FontSize: 11, RenderBold: true, TextColor: @InkMuted, Wrap: true); }
+            Group #ChecklistProgressTrack6 { Anchor: (Right: 0, Top: 13, Width: 90, Height: 5); Background: #2e170d(0.55); Group #ChecklistProgressFill6 { Anchor: (Left: 0, Top: 0, Width: 0, Height: 5); Background: #4b2215; } }
+          }
+          Group #ChecklistRow7 {
+            Anchor: (Left: 0, Top: 322, Right: 0, Height: 36);
+            Group #ChecklistIcon7 { Anchor: (Left: 0, Top: 5, Width: 26, Height: 26); Background: #2b1710; }
+            Label #ChecklistMark7 { Anchor: (Left: 0, Top: 5, Width: 26, Height: 26); Text: ""; Style: (FontSize: 9, RenderBold: true, TextColor: #f6e7c6, HorizontalAlignment: Center, VerticalAlignment: Center); }
+            Label #ChecklistTitle7 { Anchor: (Left: 36, Top: 1, Width: 150, Height: 16); Text: ""; Style: (FontSize: 12, RenderBold: true, TextColor: @InkStrong); }
+            Label #ChecklistDetail7 { Anchor: (Left: 36, Top: 17, Right: 0, Height: 17); Text: ""; Style: (FontSize: 11, RenderBold: true, TextColor: @InkMuted, Wrap: true); }
+            Group #ChecklistProgressTrack7 { Anchor: (Right: 0, Top: 13, Width: 90, Height: 5); Background: #2e170d(0.55); Group #ChecklistProgressFill7 { Anchor: (Left: 0, Top: 0, Width: 0, Height: 5); Background: #4b2215; } }
           }
           Group {
-            Anchor: (Left: 214, Top: 40, Width: 1, Bottom: 8);
+            Anchor: (Left: 0, Right: 0, Top: 374, Height: 1);
             Background: @SectionDividerColor;
           }
           Label {
-            Anchor: (Left: 232, Top: 40, Width: 150, Height: 16);
-            Text: "Blockers";
-            Style: (FontSize: 11, RenderBold: true, TextColor: #8a5b43);
-          }
-          Label #BlockersText {
-            Anchor: (Left: 232, Top: 60, Right: 0, Bottom: 8);
-            Text: "";
-            Style: (FontSize: 12, TextColor: #2f1f16, Wrap: true);
-          }
-        }
-
-        Group #ObjectivesCard {
-          Anchor: (Left: 0, Top: 421, Right: 0, Height: 219);
-          Group {
-            Anchor: (Left: 0, Right: 0, Top: 0, Height: 1);
-            Background: @SectionDividerColor;
-          }
-          Label {
-            Anchor: (Left: 0, Top: 10, Width: 220, Height: 20);
-            Text: "Objectives & rewards";
-            Style: (FontName: "Secondary", FontSize: 16, RenderBold: true, TextColor: #22150f);
-          }
-          Label {
-            Anchor: (Left: 0, Top: 40, Width: 150, Height: 16);
-            Text: "Objectives";
-            Style: (FontSize: 11, RenderBold: true, TextColor: #8a5b43);
-          }
-          Label #ObjectivesText {
-            Anchor: (Left: 0, Top: 60, Width: 198, Bottom: 8);
-            Text: "";
-            Style: (FontSize: 12, TextColor: #2f1f16, Wrap: true);
-          }
-          Group {
-            Anchor: (Left: 214, Top: 40, Width: 1, Bottom: 8);
-            Background: @SectionDividerColor;
-          }
-          Label {
-            Anchor: (Left: 232, Top: 40, Width: 150, Height: 16);
+            Anchor: (Left: 0, Top: 386, Width: 90, Height: 16);
             Text: "Rewards";
-            Style: (FontSize: 11, RenderBold: true, TextColor: #8a5b43);
+            Style: (FontSize: 11, RenderBold: true, TextColor: #5c2414);
           }
-          Label #RewardsText {
-            Anchor: (Left: 232, Top: 60, Right: 0, Bottom: 8);
-            Text: "";
-            Style: (FontSize: 12, TextColor: #2f1f16, Wrap: true);
+          Group #RewardChip0 {
+            Anchor: (Left: 0, Top: 408, Width: 142, Height: 30);
+            Background: @RewardChipBackground;
+            Label #RewardMark0 { Anchor: (Left: 8, Top: 0, Width: 24, Height: 30); Text: ""; Style: (FontSize: 12, RenderBold: true, TextColor: #ffd79a, HorizontalAlignment: Center, VerticalAlignment: Center); }
+            Label #RewardText0 { Anchor: (Left: 36, Top: 0, Right: 8, Height: 30); Text: ""; Style: (FontSize: 10, RenderBold: true, TextColor: @RewardChipText, Wrap: true, VerticalAlignment: Center); }
+          }
+          Group #RewardChip1 {
+            Anchor: (Left: 154, Top: 408, Width: 142, Height: 30);
+            Background: @RewardChipBackground;
+            Label #RewardMark1 { Anchor: (Left: 8, Top: 0, Width: 24, Height: 30); Text: ""; Style: (FontSize: 12, RenderBold: true, TextColor: #ffd79a, HorizontalAlignment: Center, VerticalAlignment: Center); }
+            Label #RewardText1 { Anchor: (Left: 36, Top: 0, Right: 8, Height: 30); Text: ""; Style: (FontSize: 10, RenderBold: true, TextColor: @RewardChipText, Wrap: true, VerticalAlignment: Center); }
+          }
+          Group #RewardChip2 {
+            Anchor: (Left: 308, Top: 408, Width: 142, Height: 30);
+            Background: @RewardChipBackground;
+            Label #RewardMark2 { Anchor: (Left: 8, Top: 0, Width: 24, Height: 30); Text: ""; Style: (FontSize: 12, RenderBold: true, TextColor: #ffd79a, HorizontalAlignment: Center, VerticalAlignment: Center); }
+            Label #RewardText2 { Anchor: (Left: 36, Top: 0, Right: 8, Height: 30); Text: ""; Style: (FontSize: 10, RenderBold: true, TextColor: @RewardChipText, Wrap: true, VerticalAlignment: Center); }
           }
         }
       }

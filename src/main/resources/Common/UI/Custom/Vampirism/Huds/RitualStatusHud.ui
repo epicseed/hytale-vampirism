@@ -2,8 +2,55 @@ $C = "../../Common.ui";
 
 @BottomHudClearance = 180;
 
+@HudChecklistRow = Group {
+  Anchor: (Left: 0, Right: 0, Top: 0, Height: 20);
+  Background: #170a0f(0.72);
+  HitTestVisible: false;
+  Visible: false;
+
+  Group #HudChecklistIcon {
+    Anchor: (Left: 0, Top: 0, Width: 28, Height: 20);
+    Background: #4f7a5c;
+    HitTestVisible: false;
+
+    Label #HudChecklistMark {
+      Anchor: (Full: 0);
+      Text: "";
+      Style: (FontSize: 8, TextColor: #fff5e2, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+      HitTestVisible: false;
+    }
+  }
+
+  Label #HudChecklistTitle {
+    Anchor: (Left: 34, Top: 1, Width: 74, Bottom: 1);
+    Text: "";
+    Style: (FontSize: 10, TextColor: #ffe2b8, RenderBold: true, VerticalAlignment: Center);
+    HitTestVisible: false;
+  }
+
+  Label #HudChecklistDetail {
+    Anchor: (Left: 112, Top: 1, Right: 78, Bottom: 1);
+    Text: "";
+    Style: (FontSize: 10, TextColor: #f3d8cf, RenderBold: true, Wrap: true, VerticalAlignment: Center);
+    HitTestVisible: false;
+  }
+
+  Group #HudChecklistProgressTrack {
+    Anchor: (Right: 8, Top: 7, Width: 64, Height: 5);
+    Background: #32131a(0.88);
+    Visible: false;
+    HitTestVisible: false;
+
+    Group #HudChecklistProgressFill {
+      Anchor: (Left: 0, Top: 0, Width: 2, Height: 5);
+      Background: #4f7a5c;
+      HitTestVisible: false;
+    }
+  }
+};
+
 $C.@Panel #RitualHudRoot {
-  Anchor: (Left: 24, Bottom: @BottomHudClearance, Width: 360, Height: 112);
+  Anchor: (Left: 24, Bottom: @BottomHudClearance, Width: 360, Height: 58);
   Visible: false;
   HitTestVisible: false;
   Padding: (Full: 10);
@@ -26,14 +73,14 @@ $C.@Panel #RitualHudRoot {
     }
 
     Label #RitualName {
-      Anchor: (Left: 96, Top: 0, Right: 88, Height: 18);
+      Anchor: (Left: 96, Top: 0, Right: 120, Height: 18);
       Text: "";
       Style: (FontName: "Secondary", FontSize: 15, TextColor: #f7d2d8, RenderBold: true);
       HitTestVisible: false;
     }
 
     Label #ProgressValue {
-      Anchor: (Right: 0, Top: 0, Width: 82, Height: 18);
+      Anchor: (Right: 0, Top: 0, Width: 114, Height: 18);
       Text: "";
       Style: (FontSize: 10, TextColor: $C.@ColorGrayCaption, RenderBold: true, HorizontalAlignment: End);
       HitTestVisible: false;
@@ -47,46 +94,27 @@ $C.@Panel #RitualHudRoot {
     }
   }
 
-  $C.@ContentSeparator {
+  $C.@ContentSeparator #DetailSeparator {
     Anchor: (Left: 0, Right: 0, Top: 46, Height: 1);
+    Visible: false;
   }
 
-  Group #ExpandedSection {
-    Anchor: (Left: 0, Right: 0, Bottom: 0, Height: 48);
+  Group #DetailSection {
+    Anchor: (Left: 0, Right: 0, Top: 52, Height: 0);
     Visible: false;
     HitTestVisible: false;
 
-    Label #ContextValue {
-      Anchor: (Left: 0, Right: 0, Top: 0, Height: 18);
-      Text: "";
-      Style: (FontSize: 11, TextColor: #f0e2e6, Wrap: true);
-      HitTestVisible: false;
-    }
-
-    Group #StabilityPill {
-      Anchor: (Left: 0, Top: 26, Width: 168, Height: 20);
-      Background: #14241c(0.9);
-      HitTestVisible: false;
-
-      Label #StabilityValue {
-        Anchor: (Left: 8, Right: 8, Top: 0, Height: 20);
-        Text: "";
-        Style: (FontSize: 10, TextColor: #d7e4dd, RenderBold: true, VerticalAlignment: Center);
-        HitTestVisible: false;
-      }
-    }
-
-    Group #CorruptionPill {
-      Anchor: (Right: 0, Top: 26, Width: 168, Height: 20);
-      Background: #31111b(0.92);
-      HitTestVisible: false;
-
-      Label #CorruptionValue {
-        Anchor: (Left: 8, Right: 8, Top: 0, Height: 20);
-        Text: "";
-        Style: (FontSize: 10, TextColor: #f3c3cf, RenderBold: true, VerticalAlignment: Center);
-        HitTestVisible: false;
-      }
-    }
+    @HudChecklistRow #HudChecklistRow0 {}
+    @HudChecklistRow #HudChecklistRow1 {}
+    @HudChecklistRow #HudChecklistRow2 {}
+    @HudChecklistRow #HudChecklistRow3 {}
+    @HudChecklistRow #HudChecklistRow4 {}
+    @HudChecklistRow #HudChecklistRow5 {}
+    @HudChecklistRow #HudChecklistRow6 {}
+    @HudChecklistRow #HudChecklistRow7 {}
+    @HudChecklistRow #HudChecklistRow8 {}
+    @HudChecklistRow #HudChecklistRow9 {}
+    @HudChecklistRow #HudChecklistRow10 {}
+    @HudChecklistRow #HudChecklistRow11 {}
   }
 }
