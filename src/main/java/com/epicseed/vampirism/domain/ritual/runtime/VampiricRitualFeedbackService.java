@@ -13,12 +13,9 @@ import com.epicseed.vampirism.domain.ritual.VampiricRitualRuntimeSnapshot;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackPlanner.FeedbackPlan;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackPlanner.RitualCue;
 import com.epicseed.vampirism.domain.ritual.runtime.VampiricRitualFeedbackPlanner.RitualFeedbackState;
-import com.epicseed.vampirism.hytale.debug.VampiricDebugShapeRenderer;
 import org.joml.Vector3d;
-import org.joml.Vector3f;
 import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
-import com.hypixel.hytale.server.core.modules.debug.DebugUtils;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -65,7 +62,7 @@ public final class VampiricRitualFeedbackService {
         VampiricRitualRuntimeSnapshot previousSnapshot = lastSnapshots.get(uuid);
         FeedbackPlan plan = VampiricRitualFeedbackPlanner.plan(previousState, snapshot, nowMs);
         for (RitualCue cue : plan.cues()) {
-            emitCue(cue, store, world, previousSnapshot, snapshot);
+            emitCue(cue, store, previousSnapshot, snapshot);
         }
         if (plan.nextState() == null) {
             playerStates.remove(uuid);
@@ -88,21 +85,18 @@ public final class VampiricRitualFeedbackService {
         Vector3d anchor = snapshot.anchorCenter();
         playSound(REVEAL_SOUND_ID, anchor, 0.82f, 1.04f, store);
         playSound(REVEAL_AMBIENCE_SOUND_ID, elevated(anchor, 0.22d), 0.38f, 0.76f, store);
-        if (world != null) {
-            drawAnchorFlash(world, anchor, DebugUtils.COLOR_MAGENTA, 3.45d, 0.05d, 0.12f, 0.32f);
-        }
     }
 
     public void emitChannelAttemptSuccess(@Nonnull Store<EntityStore> store,
                                           @Nullable World world,
                                           @Nullable Vector3d origin) {
-        emitCommandCue(store, world, origin, SPELLBOOK_IMPACT_SOUND_ID, DebugUtils.COLOR_MAGENTA, 1.8d, 0.74f, 1.0f);
+        emitCommandCue(store, origin, SPELLBOOK_IMPACT_SOUND_ID, 0.74f, 1.0f);
     }
 
     public void emitChannelAttemptFailure(@Nonnull Store<EntityStore> store,
                                           @Nullable World world,
                                           @Nullable Vector3d origin) {
-        emitCommandCue(store, world, origin, TRACE_REJECT_SOUND_ID, DebugUtils.COLOR_YELLOW, 1.6d, 0.82f, 0.92f);
+        emitCommandCue(store, origin, TRACE_REJECT_SOUND_ID, 0.82f, 0.92f);
     }
 
     public void clearPlayer(@Nonnull UUID uuid) {
@@ -113,7 +107,6 @@ public final class VampiricRitualFeedbackService {
 
     private void emitCue(@Nonnull RitualCue cue,
                          @Nonnull Store<EntityStore> store,
-                         @Nullable World world,
                          @Nullable VampiricRitualRuntimeSnapshot previousSnapshot,
                          @Nullable VampiricRitualRuntimeSnapshot currentSnapshot) {
         switch (cue) {
@@ -142,9 +135,6 @@ public final class VampiricRitualFeedbackService {
                     return;
                 }
                 playSound(TRACE_REJECT_SOUND_ID, origin, 0.82f, 0.94f, store);
-                if (world != null) {
-                    drawAnchorFlash(world, origin, DebugUtils.COLOR_YELLOW, 0.75d, 0.0d, 0.16f, 0.22f);
-                }
             }
             case GLYPH_SEALED -> {
                 VampiricRitualPointState point = changedPoint(previousSnapshot, currentSnapshot, true);
@@ -155,9 +145,6 @@ public final class VampiricRitualFeedbackService {
                     return;
                 }
                 playSound(GLYPH_SEAL_SOUND_ID, origin, 0.72f, 1.06f, store);
-                if (world != null && currentSnapshot != null) {
-                    drawAnchorFlash(world, currentSnapshot.anchorCenter(), DebugUtils.COLOR_MAGENTA, 1.05d, 0.08d, 0.10f, 0.24f);
-                }
             }
             case GLYPH_UNSEALED -> {
                 VampiricRitualPointState point = changedPoint(previousSnapshot, currentSnapshot, false);
@@ -175,37 +162,28 @@ public final class VampiricRitualFeedbackService {
                     return;
                 }
                 playSound(INTERFERENCE_SOUND_ID, elevated(anchor, 0.24d), 0.70f, 0.92f, store);
-                if (world != null) {
-                    drawAnchorFlash(world, anchor, DebugUtils.COLOR_YELLOW, 3.8d, 0.06d, 0.12f, 0.28f);
-                }
             }
-            case PHASE_BINDING -> emitBindingCue(currentSnapshot, store, world);
-            case PHASE_CHANNELING -> emitChannelingCue(currentSnapshot, store, world);
-            case PHASE_UNSTABLE -> emitPhaseCue(currentSnapshot, store, world, UNSTABLE_SOUND_ID, DebugUtils.COLOR_YELLOW, 3.9d, 0.84f, 0.92f);
-            case PHASE_STEADIED -> emitPhaseCue(currentSnapshot, store, world, STEADIED_SOUND_ID, DebugUtils.COLOR_MAGENTA, 2.4d, 0.68f, 1.08f);
+            case PHASE_BINDING -> emitBindingCue(currentSnapshot, store);
+            case PHASE_CHANNELING -> emitChannelingCue(currentSnapshot, store);
+            case PHASE_UNSTABLE -> emitPhaseCue(currentSnapshot, store, UNSTABLE_SOUND_ID, 0.84f, 0.92f);
+            case PHASE_STEADIED -> emitPhaseCue(currentSnapshot, store, STEADIED_SOUND_ID, 0.68f, 1.08f);
             case CHANNEL_CADENCE -> emitCadenceCue(currentSnapshot, store, CHANNEL_CADENCE_SOUND_ID, 0.34f, 1.0f);
             case UNSTABLE_CADENCE -> emitCadenceCue(currentSnapshot, store, UNSTABLE_SOUND_ID, 0.36f, 0.84f);
-            case PHASE_SUCCESS -> emitSuccessCue(currentSnapshot, store, world);
-            case PHASE_COLLAPSE -> emitTerminalCue(currentSnapshot, store, world, COLLAPSE_SOUND_ID, DebugUtils.COLOR_RED, 4.35d, 0.96f, 0.9f);
+            case PHASE_SUCCESS -> emitSuccessCue(currentSnapshot, store);
+            case PHASE_COLLAPSE -> emitTerminalCue(currentSnapshot, store, COLLAPSE_SOUND_ID, 0.96f, 0.9f);
             case RITUAL_CLEARED -> {
                 Vector3d anchor = resolveAnchor(previousSnapshot, currentSnapshot);
                 if (anchor == null) {
                     return;
                 }
                 playSound(CLEAR_SOUND_ID, elevated(anchor, 0.18d), 0.74f, 0.94f, store);
-                if (world != null) {
-                    drawAnchorFlash(world, anchor, DebugUtils.COLOR_YELLOW, 3.2d, 0.03d, 0.08f, 0.18f);
-                }
             }
         }
     }
 
     private void emitPhaseCue(@Nullable VampiricRitualRuntimeSnapshot snapshot,
                               @Nonnull Store<EntityStore> store,
-                              @Nullable World world,
                               @Nonnull String soundId,
-                              @Nonnull Vector3f color,
-                              double radius,
                               float volume,
                               float pitch) {
         if (snapshot == null) {
@@ -213,37 +191,26 @@ public final class VampiricRitualFeedbackService {
         }
         Vector3d anchor = snapshot.anchorCenter();
         playSound(soundId, elevated(anchor, 0.24d), volume, pitch, store);
-        if (world != null) {
-            drawAnchorFlash(world, anchor, color, radius, 0.08d, 0.14f, 0.34f);
-        }
     }
 
     private void emitBindingCue(@Nullable VampiricRitualRuntimeSnapshot snapshot,
-                                @Nonnull Store<EntityStore> store,
-                                @Nullable World world) {
+                                @Nonnull Store<EntityStore> store) {
         if (snapshot == null) {
             return;
         }
         Vector3d anchor = snapshot.anchorCenter();
         playSound(BINDING_SOUND_ID, elevated(anchor, 0.24d), 0.74f, 0.98f, store);
         playSound(BINDING_AMBIENCE_SOUND_ID, elevated(anchor, 0.18d), 0.34f, 0.78f, store);
-        if (world != null) {
-            drawAnchorFlash(world, anchor, DebugUtils.COLOR_MAGENTA, 3.55d, 0.08d, 0.14f, 0.34f);
-        }
     }
 
     private void emitChannelingCue(@Nullable VampiricRitualRuntimeSnapshot snapshot,
-                                   @Nonnull Store<EntityStore> store,
-                                   @Nullable World world) {
+                                   @Nonnull Store<EntityStore> store) {
         if (snapshot == null) {
             return;
         }
         Vector3d anchor = snapshot.anchorCenter();
         playSound(CHANNEL_START_SOUND_ID, elevated(anchor, 0.24d), 0.78f, 1.02f, store);
         playSound(CHANNEL_AMBIENCE_SOUND_ID, elevated(anchor, 0.28d), 0.26f, 0.92f, store);
-        if (world != null) {
-            drawAnchorFlash(world, anchor, DebugUtils.COLOR_RED, 3.7d, 0.08d, 0.14f, 0.34f);
-        }
     }
 
     private void emitCadenceCue(@Nullable VampiricRitualRuntimeSnapshot snapshot,
@@ -261,26 +228,18 @@ public final class VampiricRitualFeedbackService {
     }
 
     private void emitSuccessCue(@Nullable VampiricRitualRuntimeSnapshot snapshot,
-                                @Nonnull Store<EntityStore> store,
-                                @Nullable World world) {
+                                @Nonnull Store<EntityStore> store) {
         if (snapshot == null) {
             return;
         }
         Vector3d anchor = snapshot.anchorCenter();
         playSound(SUCCESS_SOUND_ID, elevated(anchor, 0.34d), 0.82f, 0.78f, store);
         playSound(SUCCESS_ACCENT_SOUND_ID, elevated(anchor, 0.28d), 0.76f, 0.92f, store);
-        if (world != null) {
-            drawAnchorFlash(world, anchor, DebugUtils.COLOR_MAGENTA, 4.2d, 0.10d, 0.18f, 0.42f);
-            drawAnchorFlash(world, anchor, DebugUtils.COLOR_MAGENTA, 1.15d, 0.72d, 0.16f, 0.38f);
-        }
     }
 
     private void emitTerminalCue(@Nullable VampiricRitualRuntimeSnapshot snapshot,
                                  @Nonnull Store<EntityStore> store,
-                                 @Nullable World world,
                                  @Nonnull String soundId,
-                                 @Nonnull Vector3f color,
-                                 double radius,
                                  float volume,
                                  float pitch) {
         if (snapshot == null) {
@@ -288,27 +247,17 @@ public final class VampiricRitualFeedbackService {
         }
         Vector3d anchor = snapshot.anchorCenter();
         playSound(soundId, elevated(anchor, 0.34d), volume, pitch, store);
-        if (world != null) {
-            drawAnchorFlash(world, anchor, color, radius, 0.10d, 0.18f, 0.42f);
-            drawAnchorFlash(world, anchor, color, 1.15d, 0.72d, 0.16f, 0.38f);
-        }
     }
 
     private void emitCommandCue(@Nonnull Store<EntityStore> store,
-                                @Nullable World world,
                                 @Nullable Vector3d origin,
                                 @Nonnull String soundId,
-                                @Nonnull Vector3f color,
-                                double radius,
                                 float volume,
                                 float pitch) {
         if (origin == null) {
             return;
         }
         playSound(soundId, elevated(origin, 0.24d), volume, pitch, store);
-        if (world != null) {
-            drawAnchorFlash(world, origin, color, radius, 0.06d, 0.10f, 0.20f);
-        }
     }
 
     @Nullable
@@ -390,34 +339,6 @@ public final class VampiricRitualFeedbackService {
                 volume,
                 pitch,
                 store);
-    }
-
-    private static void drawAnchorFlash(@Nonnull World world,
-                                        @Nonnull Vector3d anchor,
-                                        @Nonnull Vector3f color,
-                                        double radius,
-                                        double yOffset,
-                                        float opacity,
-                                        float durationSeconds) {
-        VampiricDebugShapeRenderer.addCleanDisc(
-                world,
-                anchor.x,
-                anchor.y + yOffset,
-                anchor.z,
-                radius,
-                color,
-                opacity,
-                durationSeconds,
-                0);
-        VampiricDebugShapeRenderer.addCleanSphere(
-                world,
-                anchor.x,
-                anchor.y + yOffset + 0.18d,
-                anchor.z,
-                color,
-                opacity * 1.1f,
-                Math.max(0.32d, radius * 0.16d),
-                durationSeconds);
     }
 
     @Nonnull

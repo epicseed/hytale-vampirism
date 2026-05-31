@@ -42,8 +42,6 @@ public final class VampiricRitualRevealService {
     private static final float LIVE_TRACE_OPACITY = 0.82f;
     private static final float PILLAR_OPACITY = 0.42f;
     private static final float CROSS_OPACITY = 0.50f;
-    private static final double LINK_ENERGY_SPHERE_SCALE = 0.070d;
-    private static final double ACTIVE_LINK_PULSE_SCALE = 0.080d;
 
     private VampiricRitualRevealService() {
     }
@@ -215,17 +213,6 @@ public final class VampiricRitualRevealService {
                     thickness,
                     opacity,
                     STABLE_LINE_DURATION_SECONDS);
-            double travel = animationProgress(animationSeconds * (activeLink ? 0.95d : 0.55d) + link.startTimeSeconds() * 0.33d);
-            Vector3d focus = interpolate(from.position(), to.position(), travel);
-            VampiricDebugShapeRenderer.addCleanSphere(
-                    world,
-                    focus.x,
-                    focus.y + 0.10d,
-                    focus.z,
-                    activeLink ? DebugUtils.COLOR_RED : style.focusColor(),
-                    activeLink ? 0.30f : 0.22f,
-                    activeLink ? LINK_ENERGY_SPHERE_SCALE + ACTIVE_LINK_PULSE_SCALE * 0.2d : LINK_ENERGY_SPHERE_SCALE,
-                    REVEAL_DURATION_SECONDS);
         }
     }
 
@@ -281,8 +268,8 @@ public final class VampiricRitualRevealService {
         for (int index = 0; index < point.traceStrokePositions().size(); index++) {
             Vector3d stroke = point.traceStrokePositions().get(index);
             boolean tip = index == point.traceStrokePositions().size() - 1;
-            double tipPulse = tip ? 1.0d + Math.sin(animationSeconds * 12.0d) * 0.12d : 1.0d;
-            if (showDebugGuides || tip) {
+            if (showDebugGuides) {
+                double tipPulse = tip ? 1.0d + Math.sin(animationSeconds * 12.0d) * 0.12d : 1.0d;
                 VampiricDebugShapeRenderer.addCleanSphere(
                         world,
                         stroke.x,
@@ -408,19 +395,6 @@ public final class VampiricRitualRevealService {
                         REVEAL_DURATION_SECONDS);
             }
         }
-    }
-
-    @Nonnull
-    private static Vector3d interpolate(@Nonnull Vector3d start, @Nonnull Vector3d end, double alpha) {
-        double clamped = Math.max(0.0d, Math.min(1.0d, alpha));
-        return new Vector3d(
-                start.x + (end.x - start.x) * clamped,
-                start.y + (end.y - start.y) * clamped,
-                start.z + (end.z - start.z) * clamped);
-    }
-
-    private static double animationProgress(double value) {
-        return value - Math.floor(value);
     }
 
     private static void drawHorizontalCross(@Nonnull World world,
