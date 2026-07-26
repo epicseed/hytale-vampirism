@@ -1,0 +1,47 @@
+$C = "../../Common.ui";
+
+Group #StatusRow {
+  Anchor: (Width: 320, Height: 54);
+  Background: #14202c;
+
+  Group #StatusAccent {
+    Anchor: (Left: 0, Top: 0, Width: 4, Bottom: 0);
+    Background: #22c55e;
+    HitTestVisible: false;
+  }
+
+  Group #StatusIconFrame {
+    Anchor: (Left: 12, Top: 12, Width: 30, Height: 30);
+    Background: #22c55e;
+    Visible: false;
+    Label #StatusIcon { Anchor: (Full: 0); Text: ""; Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); HitTestVisible: false; }
+  }
+
+  Group #StatusStateBadge {
+    Anchor: (Right: 10, Top: 7, Width: 54, Height: 14);
+    Background: #64748b;
+    Visible: false;
+    Label #StatusStateLabel { Anchor: (Full: 0); Text: ""; Style: (FontSize: 8, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); HitTestVisible: false; }
+  }
+
+  Label #StatusLabel {
+    Anchor: (Left: 52, Top: 7, Width: 90, Height: 14);
+    Text: "";
+    Style: (FontSize: 10, TextColor: #8ea2b5, RenderBold: true);
+    HitTestVisible: false;
+  }
+
+  Label #StatusValue {
+    Anchor: (Left: 150, Top: 5, Right: 70, Height: 18);
+    Text: "";
+    Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: End);
+    HitTestVisible: false;
+  }
+
+  Label #StatusDetail {
+    Anchor: (Left: 52, Top: 28, Right: 12, Height: 16);
+    Text: "";
+    Style: (FontSize: 10, TextColor: #b7c7d6, Wrap: true);
+    HitTestVisible: false;
+  }
+}

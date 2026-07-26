@@ -32,6 +32,7 @@ import com.epicseed.vampirism.domain.hunt.NightHuntProgressionService;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageDefinition;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageEvaluation;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
+import com.epicseed.vampirism.domain.progression.VampirismProgressionFeaturePolicy;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContext;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualEvaluation;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
@@ -53,6 +54,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
     private final VampiricLineageService lineageService;
     private final VampiricRitualService ritualService;
     private final MasqueradeHeatService masqueradeHeatService;
+    private final Supplier<? extends VampirismProgressionFeaturePolicy> featurePolicySupplier;
 
     public VampirismSkillTreeUiAdapter(@Nonnull ProgressionDefinitionProvider definitionProvider,
                                        @Nonnull SkillProgressionAccess progressionAccess,
@@ -62,6 +64,26 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                                        @Nonnull VampiricLineageService lineageService,
                                        @Nonnull VampiricRitualService ritualService,
                                        @Nonnull MasqueradeHeatService masqueradeHeatService) {
+        this(definitionProvider,
+                progressionAccess,
+                highestPositionSupplier,
+                presenter,
+                skillTreeManager,
+                lineageService,
+                ritualService,
+                masqueradeHeatService,
+                VampirismProgressionFeaturePolicy::allEnabled);
+    }
+
+    public VampirismSkillTreeUiAdapter(@Nonnull ProgressionDefinitionProvider definitionProvider,
+                                       @Nonnull SkillProgressionAccess progressionAccess,
+                                       @Nonnull Supplier<Vector2d> highestPositionSupplier,
+                                       @Nonnull SkillTreePresenter presenter,
+                                       @Nonnull SkillTreeManager skillTreeManager,
+                                       @Nonnull VampiricLineageService lineageService,
+                                       @Nonnull VampiricRitualService ritualService,
+                                       @Nonnull MasqueradeHeatService masqueradeHeatService,
+                                       @Nonnull Supplier<? extends VampirismProgressionFeaturePolicy> featurePolicySupplier) {
         this.definitionProvider = definitionProvider;
         this.progressionAccess = progressionAccess;
         this.highestPositionSupplier = highestPositionSupplier;
@@ -70,6 +92,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
         this.lineageService = lineageService;
         this.ritualService = ritualService;
         this.masqueradeHeatService = masqueradeHeatService;
+        this.featurePolicySupplier = featurePolicySupplier;
     }
 
     @Override
@@ -136,6 +159,7 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
         List<VampiricLineageEvaluation> lineageEvaluations = lineageService.evaluateAll(uuid);
         List<VampiricRitualEvaluation> ritualEvaluations = ritualEvaluations(uuid, store);
         String ageTierId = store.getAgeTierId(uuid);
+        VampirismProgressionFeaturePolicy featurePolicy = featurePolicySupplier.get();
 
         int trackedRituals = Math.max(ritualStates.size(), ritualEvaluations.size());
         long activeRituals = ritualEvaluations.stream()
@@ -167,9 +191,15 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                 .findFirst()
                 .orElse(null);
 
-        return List.of(
-                VampiricAgeTierSectionFactory.build(uuid, bloodAffinities),
-                new ProgressionSectionView(
+        ArrayList<ProgressionSectionView> sections = new ArrayList<>();
+        if (featurePolicy.ageTierProgressionEnabled() || featurePolicy.bloodAffinityProgressionEnabled()) {
+            sections.add(VampiricAgeTierSectionFactory.build(
+                    uuid,
+                    bloodAffinities,
+                    featurePolicy.ageTierProgressionEnabled(),
+                    featurePolicy.bloodAffinityProgressionEnabled()));
+        }
+        sections.add(new ProgressionSectionView(
                         "lineage",
                         "Lineage",
                         "Lineage Legacy",
@@ -180,8 +210,8 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                                 bloodAffinities,
                                 lineageEvaluations,
                                 selectedLineage,
-                                availableLineages)),
-                new ProgressionSectionView(
+                                availableLineages)));
+        sections.add(new ProgressionSectionView(
                         "rituals",
                         "Rituals",
                         "Ritual Tracking",
@@ -193,58 +223,33 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                                         trackedRituals == 0
                                                 ? "No ritual ids have been persisted for this player."
                                                 : activeRituals + " active · " + completedRituals + " completed",
-                                        "#22c55e"),
+                                        "#22c55e",
+                                        VampirismVisuals.ICON_RITUAL,
+                                        trackedRituals == 0 ? "Empty" : "Tracked",
+                                        trackedRituals == 0 ? VampirismVisuals.NEUTRAL : VampirismVisuals.SAFE),
                                 new ProgressionCardView(
                                         "Availability",
                                         availableRituals + " ready",
                                         lockedRituals + " locked · " + activeRituals + " active",
-                                        "#14b8a6"),
+                                        "#14b8a6",
+                                        VampirismVisuals.ICON_READY,
+                                        availableRituals > 0 ? "Ready" : "Wait",
+                                        availableRituals > 0 ? VampirismVisuals.SAFE : VampirismVisuals.WARNING),
                                 new ProgressionCardView(
                                         "Named Hunts",
                                         namedHuntProgress.size() + " tracked",
                                         activeHunts + " active hunts · " + completedHunts + " completions",
-                                        "#06b6d4"))),
-                new ProgressionSectionView(
+                                        "#06b6d4",
+                                        VampirismVisuals.ICON_HUNT,
+                                        activeHunts > 0 ? "Active" : "Log",
+                                        activeHunts > 0 ? VampirismVisuals.WARNING : VampirismVisuals.INFO))));
+        sections.add(new ProgressionSectionView(
                         "hunt",
                         "Hunt",
-                        "Night Hunt Mastery",
-                        "No hunt mastery has been recorded yet.",
-                        List.of(
-                                new ProgressionCardView(
-                                        "Hunt Rank",
-                                        huntMastery.currentRank().displayName(),
-                                        huntMastery.masteryPoints() + " mastery · tier " + huntMastery.baseVisualTier(),
-                                        huntMastery.currentRank().accentColor()),
-                                new ProgressionCardView(
-                                        "Compendium",
-                                        huntMastery.discoveredPreyRoleIds().size() + " prey",
-                                        huntMastery.uniqueContractsCompleted() + " contracts · " + huntMastery.eliteCompletionCount() + " elite claims",
-                                        "#ef4444"),
-                                new ProgressionCardView(
-                                        "Archetype Mastery",
-                                        huntMastery.archetypeCompletionCounts().size() + " tracked",
-                                        summarizeTopArchetype(huntMastery),
-                                        "#dc2626"),
-                                new ProgressionCardView(
-                                        "Next Rank",
-                                        huntMastery.nextRank() != null ? huntMastery.nextRank().displayName() : "Max rank",
-                                        huntMastery.nextRank() != null
-                                                ? huntMastery.masteryToNextRank() + " mastery remaining"
-                                                : "All hunt mastery milestones claimed",
-                                        "#f59e0b"),
-                                new ProgressionCardView(
-                                        "Preparation",
-                                        huntLoadout.preparationDisplayName(),
-                                        summarizePreparationDetail(huntLoadout),
-                                        "#f59e0b"),
-                                new ProgressionCardView(
-                                        "Recent Reward",
-                                        huntMastery.lastRewardedPreyRoleId() != null
-                                                ? NightHuntPresentationText.preyName(huntMastery.lastRewardedPreyRoleId())
-                                                : "No recent hunt",
-                                        summarizeRecentHuntReward(huntMastery),
-                                        "#f59e0b"))),
-                new ProgressionSectionView(
+                        featurePolicy.nightHuntProgressionEnabled() ? "Night Hunt Mastery" : "Night Hunt Records",
+                        "No hunt records have been recorded yet.",
+                        huntCards(huntMastery, huntLoadout, featurePolicy)));
+        sections.add(new ProgressionSectionView(
                         "heat",
                         "Heat",
                         "Masquerade Heat",
@@ -253,13 +258,80 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                                 huntMastery,
                                 masquerade,
                                 masqueradeHeatService.policy(),
-                                ageTierId,
+                                featurePolicy.ageTierProgressionEnabled() ? ageTierId : null,
                                 selectedLineage,
-                                bloodAffinities,
+                                featurePolicy.bloodAffinityProgressionEnabled() ? bloodAffinities : Map.of(),
                                 lineageEvaluations,
                                 continuity,
                                 persistedNightHuntState,
-                                nightHuntProgress)));
+                                nightHuntProgress,
+                                featurePolicy)));
+        return List.copyOf(sections);
+    }
+
+    @Nonnull
+    private static List<ProgressionCardView> huntCards(@Nonnull NightHuntMasterySnapshot huntMastery,
+                                                      @Nonnull com.epicseed.vampirism.domain.hunt.NightHuntPreparedLoadout huntLoadout,
+                                                      @Nonnull VampirismProgressionFeaturePolicy featurePolicy) {
+        ArrayList<ProgressionCardView> cards = new ArrayList<>();
+        if (featurePolicy.nightHuntProgressionEnabled()) {
+            cards.add(new ProgressionCardView(
+                    "Hunt Rank",
+                    huntMastery.currentRank().displayName(),
+                    huntMastery.masteryPoints() + " mastery · tier " + huntMastery.baseVisualTier(),
+                    huntMastery.currentRank().accentColor(),
+                    VampirismVisuals.ICON_HUNT,
+                    "Rank",
+                    huntMastery.currentRank().accentColor()));
+        }
+        cards.add(
+                                new ProgressionCardView(
+                                        "Compendium",
+                                        huntMastery.discoveredPreyRoleIds().size() + " prey",
+                                        huntMastery.uniqueContractsCompleted() + " contracts · " + huntMastery.eliteCompletionCount() + " elite claims",
+                                        "#ef4444",
+                                        VampirismVisuals.ICON_PREY,
+                                        huntMastery.discoveredPreyRoleIds().isEmpty() ? "Unknown" : "Known",
+                                        huntMastery.discoveredPreyRoleIds().isEmpty() ? VampirismVisuals.NEUTRAL : VampirismVisuals.DANGER));
+        cards.add(new ProgressionCardView(
+                                        "Archetype Mastery",
+                                        huntMastery.archetypeCompletionCounts().size() + " tracked",
+                                        summarizeTopArchetype(huntMastery),
+                                        "#dc2626",
+                                        VampirismVisuals.ICON_THREAT,
+                                        "Patterns",
+                                        VampirismVisuals.DANGER));
+        if (featurePolicy.nightHuntProgressionEnabled()) {
+            cards.add(new ProgressionCardView(
+                    "Next Rank",
+                    huntMastery.nextRank() != null ? huntMastery.nextRank().displayName() : "Max rank",
+                    huntMastery.nextRank() != null
+                            ? huntMastery.masteryToNextRank() + " mastery remaining"
+                            : "All hunt mastery milestones claimed",
+                    "#f59e0b",
+                    VampirismVisuals.ICON_REWARD,
+                    huntMastery.nextRank() != null ? "Goal" : "Max",
+                    huntMastery.nextRank() != null ? VampirismVisuals.WARNING : VampirismVisuals.SPECIAL));
+        }
+        cards.add(new ProgressionCardView(
+                                        "Preparation",
+                                        huntLoadout.preparationDisplayName(),
+                                        summarizePreparationDetail(huntLoadout, featurePolicy),
+                                        "#f59e0b",
+                                        VampirismVisuals.ICON_ROUTE,
+                                        "Loadout",
+                                        VampirismVisuals.WARNING));
+        cards.add(new ProgressionCardView(
+                                        "Recent Reward",
+                                        huntMastery.lastRewardedPreyRoleId() != null
+                                                ? NightHuntPresentationText.preyName(huntMastery.lastRewardedPreyRoleId())
+                                                : "No recent hunt",
+                                        summarizeRecentHuntReward(huntMastery),
+                                        "#f59e0b",
+                                        VampirismVisuals.ICON_REWARD,
+                                        huntMastery.lastRewardedPreyRoleId() != null ? "Claimed" : "None",
+                                        huntMastery.lastRewardedPreyRoleId() != null ? VampirismVisuals.SAFE : VampirismVisuals.NEUTRAL));
+        return List.copyOf(cards);
     }
 
     @Nonnull
@@ -368,6 +440,15 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
 
     @Nonnull
     static String summarizePreparationDetail(@Nonnull com.epicseed.vampirism.domain.hunt.NightHuntPreparedLoadout loadout) {
+        return summarizePreparationDetail(loadout, VampirismProgressionFeaturePolicy.allEnabled());
+    }
+
+    @Nonnull
+    static String summarizePreparationDetail(@Nonnull com.epicseed.vampirism.domain.hunt.NightHuntPreparedLoadout loadout,
+                                             @Nonnull VampirismProgressionFeaturePolicy featurePolicy) {
+        if (!featurePolicy.bloodAffinityProgressionEnabled()) {
+            return loadout.modeDisplayName() + " · Open the Hunt Briefing to preview and change.";
+        }
         return loadout.modeDisplayName() + " · " + HuntCompendiumModel.preparationRecapText(loadout)
                 + " Open the Hunt Briefing to preview and change.";
     }
@@ -393,6 +474,32 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                                                     @Nonnull NightHuntContinuitySnapshot continuity,
                                                     @Nonnull PersistedNightHuntState persistedNightHuntState,
                                                     @Nonnull NamedHuntProgress nightHuntProgress) {
+        return buildHeatCards(
+                huntMastery,
+                masquerade,
+                policy,
+                ageTierId,
+                selectedLineage,
+                bloodAffinities,
+                lineageEvaluations,
+                continuity,
+                persistedNightHuntState,
+                nightHuntProgress,
+                VampirismProgressionFeaturePolicy.allEnabled());
+    }
+
+    @Nonnull
+    static List<ProgressionCardView> buildHeatCards(@Nonnull NightHuntMasterySnapshot huntMastery,
+                                                    @Nonnull MasqueradeHeatSnapshot masquerade,
+                                                    @Nonnull MasqueradeHeatPolicy policy,
+                                                    @Nullable String ageTierId,
+                                                    @Nullable VampiricLineageEvaluation selectedLineage,
+                                                    @Nonnull Map<String, Integer> bloodAffinities,
+                                                    @Nonnull List<VampiricLineageEvaluation> lineageEvaluations,
+                                                    @Nonnull NightHuntContinuitySnapshot continuity,
+                                                    @Nonnull PersistedNightHuntState persistedNightHuntState,
+                                                    @Nonnull NamedHuntProgress nightHuntProgress,
+                                                    @Nonnull VampirismProgressionFeaturePolicy featurePolicy) {
         MasqueradeHeatThresholdText.ThresholdView nextThreshold =
                 MasqueradeHeatThresholdText.nextThreshold(masquerade, policy);
         LineageWindowOpportunity.View opportunity = LineageWindowOpportunity.resolve(
@@ -403,50 +510,80 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
         PressureOutlookText.View pressureOutlook = PressureOutlookText.resolve(continuity, selectedLineage);
         PressureDriversText.View pressureDrivers = PressureDriversText.resolve(continuity, selectedLineage);
         IdentityPressureText.View identityPressure = IdentityPressureText.resolve(ageTierId, selectedLineage);
-        String pressureResonanceRecap = pressureResonanceHeatRecap(huntMastery);
-        return List.of(
-                new ProgressionCardView(
+        String pressureResonanceRecap = featurePolicy.ageTierProgressionEnabled()
+                || featurePolicy.nightHuntProgressionEnabled()
+                ? pressureResonanceHeatRecap(huntMastery)
+                : "";
+        ArrayList<ProgressionCardView> cards = new ArrayList<>();
+        cards.add(new ProgressionCardView(
                         "Current Exposure",
                         formatExposureLevel(masquerade.exposureLevel()) + " · " + formatHeat(masquerade.heat()) + " heat",
-                        "Last updated: " + formatInstant(masquerade.lastUpdatedAtMs(), "Never"),
-                        heatAccent(masquerade.exposureLevel())),
-                new ProgressionCardView(
+                        heatStateDetail(masquerade),
+                        heatAccent(masquerade.exposureLevel()),
+                        VampirismVisuals.ICON_HEAT,
+                        formatExposureLevel(masquerade.exposureLevel()),
+                        heatAccent(masquerade.exposureLevel())));
+        cards.add(new ProgressionCardView(
                         "Next Threshold",
                         nextThreshold.value(),
-                        nextThreshold.detail(),
-                        nextThreshold.accentColor()),
-                new ProgressionCardView(
+                        compactDetail(nextThreshold.detail()),
+                        nextThreshold.accentColor(),
+                        VampirismVisuals.ICON_THREAT,
+                        "Next",
+                        nextThreshold.accentColor()));
+        cards.add(new ProgressionCardView(
                         "Current Risk",
                         currentRiskValue(masquerade),
                         currentRiskDetail(masquerade),
-                        masquerade.progressionLocked() ? "#ef4444" : heatAccent(masquerade.exposureLevel())),
-                new ProgressionCardView(
+                        masquerade.progressionLocked() ? "#ef4444" : heatAccent(masquerade.exposureLevel()),
+                        VampirismVisuals.ICON_THREAT,
+                        masquerade.progressionLocked() ? "Locked" : "Route",
+                        masquerade.progressionLocked() ? VampirismVisuals.DANGER : heatAccent(masquerade.exposureLevel())));
+        cards.add(new ProgressionCardView(
                         "Next Hunt Window",
                         crackdown.value(),
-                        crackdown.detail(),
-                        crackdown.accentColor()),
-                new ProgressionCardView(
+                        compactDetail(crackdown.detail()),
+                        crackdown.accentColor(),
+                        VampirismVisuals.ICON_HUNT,
+                        "Window",
+                        crackdown.accentColor()));
+        cards.add(new ProgressionCardView(
                         "Identity Pressure",
                         identityPressure.value(),
-                        identityPressure.detail(),
-                        identityPressure.accentColor()),
-                new ProgressionCardView(
+                        compactDetail(identityPressure.detail()),
+                        identityPressure.accentColor(),
+                        VampirismVisuals.ICON_LINEAGE,
+                        "Identity",
+                        identityPressure.accentColor()));
+        cards.add(new ProgressionCardView(
                         "Pressure Outlook",
                         pressureOutlook.value(),
                         pressureResonanceRecap.isBlank()
-                                ? pressureOutlook.detail()
-                                : pressureOutlook.detail() + "\n" + pressureResonanceRecap,
-                        pressureOutlook.accentColor()),
-                new ProgressionCardView(
+                                ? compactDetail(pressureOutlook.detail())
+                                : joinCompact(pressureOutlook.detail(), pressureResonanceRecap),
+                        pressureOutlook.accentColor(),
+                        VampirismVisuals.ICON_ROUTE,
+                        "Outlook",
+                        pressureOutlook.accentColor()));
+        cards.add(new ProgressionCardView(
                         "Pressure Drivers",
                         pressureDrivers.value(),
-                        pressureDrivers.detail(),
-                        pressureDrivers.accentColor()),
-                new ProgressionCardView(
+                        compactDetail(pressureDrivers.detail()),
+                        pressureDrivers.accentColor(),
+                        VampirismVisuals.ICON_RECORD,
+                        "Drivers",
+                        pressureDrivers.accentColor()));
+        if (featurePolicy.bloodAffinityProgressionEnabled()) {
+            cards.add(new ProgressionCardView(
                         "Current Opportunity",
                         opportunity.value(),
-                        opportunity.detail(),
+                        compactDetail(opportunity.detail()),
+                        opportunity.accentColor(),
+                        VampirismVisuals.ICON_REWARD,
+                        "Chance",
                         opportunity.accentColor()));
+        }
+        return List.copyOf(cards);
     }
 
     @Nonnull
@@ -464,7 +601,10 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                         : "Unbound",
                 (selectedLineage != null ? selectedLineage.clan().displayName() : "No clan selected")
                         + " · Unlocked at: " + formatInstant(lineageUnlockedAtMs, "Not yet unlocked"),
-                selectedLineage != null ? selectedLineage.clan().accentColor() : "#ef4444"));
+                selectedLineage != null ? selectedLineage.clan().accentColor() : "#ef4444",
+                VampirismVisuals.ICON_LINEAGE,
+                selectedLineage != null ? "Bound" : "Open",
+                selectedLineage != null ? selectedLineage.clan().accentColor() : VampirismVisuals.DANGER));
         cards.add(new ProgressionCardView(
                 "Lineage Milestone",
                 selectedLineage != null
@@ -478,12 +618,20 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                         : nextLineageLead(lineageEvaluations, bloodAffinities, availableLineages),
                 selectedLineage != null
                         ? selectedLineage.clan().accentColor()
-                        : availableLineages > 0 ? "#22c55e" : "#f97316"));
+                        : availableLineages > 0 ? "#22c55e" : "#f97316",
+                VampirismVisuals.ICON_REWARD,
+                selectedLineage != null ? "Perks" : availableLineages > 0 ? "Ready" : "Locked",
+                selectedLineage != null
+                        ? selectedLineage.clan().accentColor()
+                        : availableLineages > 0 ? VampirismVisuals.SAFE : VampirismVisuals.WARNING));
         cards.add(new ProgressionCardView(
                 "Respec Count",
                 Integer.toString(lineageRespecCount),
                 "Eligible lineages: " + availableLineages + " / " + lineageEvaluations.size(),
-                "#f97316"));
+                "#f97316",
+                VampirismVisuals.ICON_ROUTE,
+                "Respec",
+                lineageRespecCount > 0 ? VampirismVisuals.WARNING : VampirismVisuals.NEUTRAL));
         for (VampiricLineageEvaluation evaluation : lineageEvaluations) {
             String status = evaluation.selected() ? "Selected" : evaluation.available() ? "Available" : "Locked";
             String detail = lineagePerkSummary(evaluation.definition());
@@ -497,7 +645,12 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
                     evaluation.definition().displayName(),
                     status,
                     detail,
-                    evaluation.clan().accentColor()));
+                    evaluation.clan().accentColor(),
+                    VampirismVisuals.ICON_LINEAGE,
+                    status,
+                    evaluation.selected()
+                            ? evaluation.clan().accentColor()
+                            : evaluation.available() ? VampirismVisuals.SAFE : VampirismVisuals.NEUTRAL));
         }
         return List.copyOf(cards);
     }
@@ -556,19 +709,63 @@ public final class VampirismSkillTreeUiAdapter implements SkillTreeUiAdapter {
     @Nonnull
     private static String currentRiskDetail(@Nonnull MasqueradeHeatSnapshot masquerade) {
         String strikeDetail = masquerade.strikeCount() > 0
-                ? " " + masquerade.strikeCount() + " strike" + (masquerade.strikeCount() == 1 ? "" : "s") + " tracked."
+                ? " · " + masquerade.strikeCount() + " strike" + (masquerade.strikeCount() == 1 ? "" : "s")
                 : "";
         if (masquerade.progressionLocked()) {
-            return "Low-heat progression is closed right now. Shed exposure before chasing more gated unlocks." + strikeDetail;
+            return "Shed exposure to reopen low-heat unlocks" + strikeDetail;
         }
         return switch (masquerade.exposureLevel()) {
             case QUIET -> strikeDetail.isBlank()
-                    ? "No active hunter route pressure is building right now."
-                    : "Heat is low, but past exposure still keeps hunters alert." + strikeDetail;
-            case WATCHED -> "Hunters are watching your routes. Another loud spike will push you toward pursuit." + strikeDetail;
-            case HUNTED -> "Your trail is hot enough to draw pursuit. Cooling now protects future low-heat unlocks." + strikeDetail;
-            case BREACHED -> "Exposure is blown wide open. Staying here makes every low-heat route harder to hold." + strikeDetail;
+                    ? "No active route pressure"
+                    : "Heat low, hunters still alert" + strikeDetail;
+            case WATCHED -> "Routes under watch" + strikeDetail;
+            case HUNTED -> "Pursuit risk high" + strikeDetail;
+            case BREACHED -> "Exposure breached" + strikeDetail;
         };
+    }
+
+    @Nonnull
+    private static String heatStateDetail(@Nonnull MasqueradeHeatSnapshot masquerade) {
+        ArrayList<String> parts = new ArrayList<>();
+        if (masquerade.hunterPressure() > 0) {
+            parts.add("Pressure " + masquerade.hunterPressure());
+        }
+        if (masquerade.strikeCount() > 0) {
+            parts.add(masquerade.strikeCount() + " strike" + (masquerade.strikeCount() == 1 ? "" : "s"));
+        }
+        if (masquerade.progressionLocked()) {
+            parts.add("locked");
+        }
+        return parts.isEmpty() ? "Routes quiet" : String.join(" · ", parts);
+    }
+
+    @Nonnull
+    private static String joinCompact(@Nonnull String primary, @Nonnull String secondary) {
+        String compactPrimary = compactDetail(primary);
+        String compactSecondary = compactDetail(secondary);
+        if (compactPrimary.isBlank()) {
+            return compactSecondary;
+        }
+        if (compactSecondary.isBlank()) {
+            return compactPrimary;
+        }
+        return compactPrimary + " · " + compactSecondary;
+    }
+
+    @Nonnull
+    private static String compactDetail(@Nullable String text) {
+        if (text == null || text.isBlank()) {
+            return "";
+        }
+        String normalized = text.replace('\n', ' ').replaceAll("\\s+", " ").trim();
+        if (normalized.length() <= 78) {
+            return normalized;
+        }
+        int sentenceEnd = normalized.indexOf(". ");
+        if (sentenceEnd >= 24 && sentenceEnd <= 78) {
+            return normalized.substring(0, sentenceEnd + 1);
+        }
+        return normalized.substring(0, 75).trim() + "...";
     }
 
     @Nonnull

@@ -52,6 +52,26 @@ public final class VampirismUiPaths {
     }
 
     @Nonnull
+    public static String huntCompendiumMetricCardLayout() {
+        return ROOT + "/Screens/HuntCompendiumMetricCard.ui";
+    }
+
+    @Nonnull
+    public static String huntCompendiumStatusRowLayout() {
+        return ROOT + "/Screens/HuntCompendiumStatusRow.ui";
+    }
+
+    @Nonnull
+    public static String huntCompendiumRewardChipLayout() {
+        return ROOT + "/Screens/HuntCompendiumRewardChip.ui";
+    }
+
+    @Nonnull
+    public static String huntCompendiumQuarryRowLayout() {
+        return ROOT + "/Screens/HuntCompendiumQuarryRow.ui";
+    }
+
+    @Nonnull
     public static String settingsLayout() {
         return ROOT + "/Screens/ProgressionSettings.ui";
     }

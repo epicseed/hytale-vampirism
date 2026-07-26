@@ -255,6 +255,11 @@ public class VampirismCommand extends AbstractCommand {
             ctx.sendMessage(Message.raw("  enabled=" + c.isInfectionEnabled()
                     + "  chance=" + pct(c.getInfectionChance())).color("white"));
 
+            ctx.sendMessage(Message.raw("-- Progression toggles --").color("gold"));
+            ctx.sendMessage(Message.raw("  ageTier=" + c.isAgeTierProgressionEnabled()
+                    + "  huntMastery=" + c.isNightHuntProgressionEnabled()
+                    + "  affinity=" + c.isBloodAffinityProgressionEnabled()).color("white"));
+
             ctx.sendMessage(Message.raw("-- Time --").color("gold"));
             ctx.sendMessage(Message.raw("  day=" + c.getDayStartHour() + "h"
                     + "  night=" + c.getNightStartHour() + "h"

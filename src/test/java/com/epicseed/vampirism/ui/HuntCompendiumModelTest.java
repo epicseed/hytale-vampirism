@@ -1,6 +1,7 @@
 package com.epicseed.vampirism.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -82,6 +83,32 @@ class HuntCompendiumModelTest {
                         + " · +10 mastery · +1 blood · Affinity Beast +1 when resonance lands the full pairing"
                         + " · Longer scent trails and a direct Blood Pursuit make Beast prey the cleanest specialization lane.",
                 HuntCompendiumModel.preparationRecapText(loadout));
+    }
+
+    @Test
+    void visualRecordsCarryPlaceholderIconsAndBadges() {
+        HuntCompendiumModel.DashboardMetric metric = new HuntCompendiumModel.DashboardMetric(
+                "Prey logged",
+                "3/8",
+                "Known quarry",
+                VampirismVisuals.DANGER,
+                VampirismVisuals.ICON_PREY,
+                "Quarry",
+                VampirismVisuals.DANGER);
+        HuntCompendiumModel.QuarryRow quarry = new HuntCompendiumModel.QuarryRow(
+                "Unknown prey",
+                "Beast / Ambusher",
+                "tier 2 · undiscovered",
+                VampirismVisuals.NEUTRAL,
+                VampirismVisuals.ICON_UNKNOWN,
+                "T2",
+                "Hidden");
+
+        assertEquals(VampirismVisuals.ICON_PREY, metric.icon());
+        assertEquals("Quarry", metric.stateLabel());
+        assertEquals("T2", quarry.tierBadge());
+        assertEquals("Hidden", quarry.stateLabel());
+        assertTrue(quarry.status().contains("undiscovered"));
     }
 
     @Test

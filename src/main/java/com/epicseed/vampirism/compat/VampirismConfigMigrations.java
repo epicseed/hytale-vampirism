@@ -24,7 +24,8 @@ public final class VampirismConfigMigrations {
     public static VersionedMigrationRegistry registry() {
         return new VersionedMigrationRegistry()
                 .currentVersion(DOCUMENT_KIND, VampirismConfig.CURRENT_SCHEMA_VERSION)
-                .register(new InitialVersionStampMigration());
+                .register(new InitialVersionStampMigration())
+                .register(new ProgressionFeatureToggleMigration());
     }
 
     private static final class InitialVersionStampMigration implements VersionedDocumentMigration {
@@ -42,7 +43,7 @@ public final class VampirismConfigMigrations {
 
         @Override
         public int toVersion() {
-            return VampirismConfig.CURRENT_SCHEMA_VERSION;
+            return 1;
         }
 
         @Override
@@ -53,6 +54,44 @@ public final class VampirismConfigMigrations {
         @Override
         public String id() {
             return "vampirism-config-initial-version";
+        }
+    }
+
+    private static final class ProgressionFeatureToggleMigration implements VersionedDocumentMigration {
+
+        @Nonnull
+        @Override
+        public String documentKind() {
+            return DOCUMENT_KIND;
+        }
+
+        @Override
+        public int fromVersion() {
+            return 1;
+        }
+
+        @Override
+        public int toVersion() {
+            return VampirismConfig.CURRENT_SCHEMA_VERSION;
+        }
+
+        @Override
+        public void migrate(@Nonnull ObjectNode document) {
+            putDefault(document, "AgeTierProgressionEnabled");
+            putDefault(document, "NightHuntProgressionEnabled");
+            putDefault(document, "BloodAffinityProgressionEnabled");
+        }
+
+        @Nonnull
+        @Override
+        public String id() {
+            return "vampirism-config-progression-feature-toggles";
+        }
+
+        private static void putDefault(@Nonnull ObjectNode document, @Nonnull String fieldName) {
+            if (!document.has(fieldName) || document.get(fieldName).isNull()) {
+                document.put(fieldName, true);
+            }
         }
     }
 }

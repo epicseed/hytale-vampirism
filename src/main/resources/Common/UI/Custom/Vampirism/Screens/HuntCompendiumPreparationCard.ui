@@ -4,20 +4,38 @@ Group #PreparationCard {
   Anchor: (Width: 220, Height: 84);
   Background: #14202c;
 
+  Group #PrepAccent {
+    Anchor: (Left: 0, Top: 0, Width: 4, Bottom: 0);
+    Background: #64748b;
+    HitTestVisible: false;
+  }
+
+  Group #PrepIconFrame {
+    Anchor: (Left: 14, Top: 14, Width: 32, Height: 32);
+    Background: #64748b;
+    Label #PrepIcon { Anchor: (Full: 0); Text: ""; Style: (FontSize: 15, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); HitTestVisible: false; }
+  }
+
+  Group #PrepBadge {
+    Anchor: (Right: 12, Bottom: 10, Width: 70, Height: 16);
+    Background: #64748b;
+    Label #PrepBadgeText { Anchor: (Full: 0); Text: ""; Style: (FontSize: 8, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); HitTestVisible: false; }
+  }
+
   Label #PrepName {
-    Anchor: (Left: 14, Top: 12, Right: 14, Height: 18);
+    Anchor: (Left: 56, Top: 12, Right: 14, Height: 18);
     Text: "";
     Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true);
   }
 
   Label #PrepMode {
-    Anchor: (Left: 14, Top: 32, Right: 14, Height: 28);
+    Anchor: (Left: 56, Top: 32, Right: 14, Height: 28);
     Text: "";
     Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
   }
 
   Label #PrepStatus {
-    Anchor: (Left: 14, Bottom: 12, Right: 14, Height: 16);
+    Anchor: (Left: 14, Bottom: 12, Right: 90, Height: 16);
     Text: "";
     Style: (FontSize: 11, TextColor: #9bb0c2, RenderBold: true);
   }

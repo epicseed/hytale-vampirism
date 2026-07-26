@@ -24,6 +24,7 @@ import com.epicseed.vampirism.domain.hunt.NightHuntPreparedLoadout;
 import com.epicseed.vampirism.domain.hunt.NightHuntPresentationText;
 import com.epicseed.vampirism.domain.hunt.NightHuntProgressionRegistry;
 import com.epicseed.vampirism.domain.hunt.NightHuntProgressionService;
+import com.epicseed.vampirism.domain.progression.VampirismProgressionFeaturePolicy;
 import com.epicseed.vampirism.registry.NightHuntSpawnRegistry;
 
 final class HuntCompendiumModel {
@@ -71,8 +72,67 @@ final class HuntCompendiumModel {
                              @Nonnull String modeDisplayName,
                              @Nonnull String focusLabel,
                              @Nonnull String statusText,
+                             @Nonnull String icon,
+                             @Nonnull String accentColor,
                              boolean selected,
                              boolean previewed) {
+    }
+
+    record DominantState(@Nonnull String icon,
+                        @Nonnull String label,
+                        @Nonnull String value,
+                        @Nonnull String detail,
+                        @Nonnull String accentColor) {
+    }
+
+    record DashboardMetric(@Nonnull String label,
+                           @Nonnull String value,
+                           @Nonnull String detail,
+                           @Nonnull String accentColor,
+                           @Nonnull String icon,
+                           @Nonnull String stateLabel,
+                           @Nonnull String severityColor) {
+        DashboardMetric(@Nonnull String label,
+                       @Nonnull String value,
+                       @Nonnull String detail,
+                       @Nonnull String accentColor) {
+            this(label, value, detail, accentColor, "", "", accentColor);
+        }
+    }
+
+    record DashboardRow(@Nonnull String label,
+                       @Nonnull String value,
+                       @Nonnull String detail,
+                       @Nonnull String accentColor,
+                       @Nonnull String icon,
+                       @Nonnull String stateLabel,
+                       @Nonnull String severityColor) {
+        DashboardRow(@Nonnull String label,
+                     @Nonnull String value,
+                     @Nonnull String detail,
+                     @Nonnull String accentColor) {
+            this(label, value, detail, accentColor, "", "", accentColor);
+        }
+    }
+
+    record RewardChip(@Nonnull String label,
+                      @Nonnull String value,
+                      @Nonnull String accentColor,
+                      @Nonnull String icon) {
+        RewardChip(@Nonnull String label,
+                   @Nonnull String value,
+                   @Nonnull String accentColor) {
+            this(label, value, accentColor, "");
+        }
+    }
+
+    record QuarryRow(@Nonnull String name,
+                     @Nonnull String tags,
+                     @Nonnull String status,
+                     @Nonnull String accentColor,
+                     @Nonnull String icon,
+                     @Nonnull String tierBadge,
+                     @Nonnull String stateLabel) {
     }
 
     private final NightHuntMasterySnapshot mastery;
@@ -88,6 +148,7 @@ final class HuntCompendiumModel {
     private final VampiricAgeTierSnapshot ageTierSnapshot;
     private final String nextThresholdText;
     private final Tab selectedTab;
+    private final VampirismProgressionFeaturePolicy featurePolicy;
 
     private HuntCompendiumModel(@Nonnull NightHuntMasterySnapshot mastery,
                                 @Nonnull NamedHuntProgress progress,
@@ -101,7 +162,8 @@ final class HuntCompendiumModel {
                                      @Nullable LineageWindowOpportunity.View lineageWindow,
                                      @Nonnull VampiricAgeTierSnapshot ageTierSnapshot,
                                     @Nullable String nextThresholdText,
-                                    @Nonnull Tab selectedTab) {
+                                    @Nonnull Tab selectedTab,
+                                    @Nonnull VampirismProgressionFeaturePolicy featurePolicy) {
         this.mastery = mastery;
         this.progress = progress;
         this.preyCatalogue = preyCatalogue;
@@ -115,6 +177,7 @@ final class HuntCompendiumModel {
         this.ageTierSnapshot = ageTierSnapshot;
         this.nextThresholdText = nextThresholdText;
         this.selectedTab = selectedTab;
+        this.featurePolicy = featurePolicy;
     }
 
     @Nonnull
@@ -124,6 +187,23 @@ final class HuntCompendiumModel {
                                       @Nullable HuntCompendiumNextRiteResolver.NextRite nextRite,
                                       @Nullable LineageWindowOpportunity.View lineageWindow,
                                       @Nullable String nextThresholdText) {
+        return create(uuid,
+                selectedTab,
+                previewPreparationId,
+                nextRite,
+                lineageWindow,
+                nextThresholdText,
+                VampirismProgressionFeaturePolicy.allEnabled());
+    }
+
+    @Nonnull
+    static HuntCompendiumModel create(@Nonnull UUID uuid,
+                                      @Nonnull Tab selectedTab,
+                                      @Nullable String previewPreparationId,
+                                      @Nullable HuntCompendiumNextRiteResolver.NextRite nextRite,
+                                      @Nullable LineageWindowOpportunity.View lineageWindow,
+                                      @Nullable String nextThresholdText,
+                                      @Nonnull VampirismProgressionFeaturePolicy featurePolicy) {
         NamedHuntProgress progress = VampirePlayerStateStore.get().getNamedHuntProgress(uuid, NightHuntContracts.HUNT_ID);
         List<NightHuntSpawnRegistry.SpawnOption> preyCatalogue = new ArrayList<>(NightHuntSpawnRegistry.get().allSpawns());
         preyCatalogue.sort(Comparator
@@ -148,7 +228,8 @@ final class HuntCompendiumModel {
                 lineageWindow,
                 VampiricAgeTierService.snapshot(uuid),
                 nextThresholdText,
-                selectedTab);
+                selectedTab,
+                featurePolicy);
     }
 
     @Nonnull
@@ -158,9 +239,10 @@ final class HuntCompendiumModel {
 
     @Nonnull
     String subtitle() {
-        return mastery.currentRank().displayName()
-                + " · " + mastery.masteryPoints() + " mastery"
-                + " · " + mastery.discoveredPreyRoleIds().size() + "/" + preyCatalogue.size() + " prey logged";
+        String preyText = mastery.discoveredPreyRoleIds().size() + "/" + preyCatalogue.size() + " prey logged";
+        return featurePolicy.nightHuntProgressionEnabled()
+                ? mastery.currentRank().displayName() + " · " + mastery.masteryPoints() + " mastery · " + preyText
+                : preyText;
     }
 
     @Nonnull
@@ -168,103 +250,259 @@ final class HuntCompendiumModel {
         NightHuntPreparationAffinityContent.PreparationAffinity focus =
                 NightHuntPreparationAffinityContent.focusForPreparation(currentLoadout.preparationId());
         return currentLoadout.preparationDisplayName() + " · " + currentLoadout.modeDisplayName()
-                + (focus != null ? " · " + focus.laneLabel() : "");
+                + (featurePolicy.bloodAffinityProgressionEnabled() && focus != null ? " · " + focus.laneLabel() : "");
     }
 
     @Nonnull
     String nextRankText() {
+        if (!featurePolicy.nightHuntProgressionEnabled()) {
+            return "Mastery progression disabled";
+        }
         return mastery.nextRank() != null
                 ? mastery.nextRank().displayName() + " in " + mastery.masteryToNextRank()
                 : "Maximum rank claimed";
     }
 
     @Nonnull
+    DominantState dominantState() {
+        HuntCrackdownText.View crackdown = HuntCrackdownText.resolve(persistedNightHuntState, continuity, progress);
+        HuntCasefileText.View casefile = HuntCasefileText.resolve(persistedNightHuntState, progress);
+        if (persistedNightHuntState.cooldownRemainingMs(System.currentTimeMillis()) > 0L || crackdown.active()) {
+            return new DominantState(
+                    VampirismVisuals.ICON_THREAT,
+                    "Hunt window",
+                    crackdown.value(),
+                    compactDetail(crackdown.detail()),
+                    crackdown.accentColor());
+        }
+        if (casefile.active()) {
+            return new DominantState(
+                    VampirismVisuals.ICON_RECORD,
+                    "Casefile",
+                    casefile.value(),
+                    compactDetail(casefile.detail()),
+                    casefile.escalated() ? VampirismVisuals.WARNING : VampirismVisuals.INFO);
+        }
+        if (featurePolicy.nightHuntProgressionEnabled()
+                && mastery.nextRank() != null
+                && mastery.masteryToNextRank() <= 5) {
+            return new DominantState(
+                    VampirismVisuals.ICON_REWARD,
+                    "Near mastery",
+                    mastery.nextRank().displayName(),
+                    mastery.masteryToNextRank() + " mastery to next rank",
+                    VampirismVisuals.WARNING);
+        }
+        return new DominantState(
+                VampirismVisuals.ICON_READY,
+                "Prepared",
+                currentLoadout.preparationDisplayName(),
+                currentLoadout.modeDisplayName()
+                        + (featurePolicy.bloodAffinityProgressionEnabled()
+                        ? " · " + preparationFocusLabel(currentLoadout.preparationId())
+                        : ""),
+                VampirismVisuals.SAFE);
+    }
+
+    @Nonnull
     String overviewSummaryText() {
-        return String.join("\n",
-                "Contracts completed: " + mastery.totalCompletions() + " · unique contracts " + mastery.uniqueContractsCompleted(),
-                "Prepared for next hunt: " + currentLoadout.preparationDisplayName() + " into " + currentLoadout.modeDisplayName() + ".",
-                "Affinity lane: " + preparationRecapText(currentLoadout),
-                "Objective focus: " + currentLoadout.objectiveText(),
-                "Elite prey claimed: " + mastery.eliteCompletionCount());
+        return joinMetrics(overviewMetrics());
     }
 
     @Nonnull
     String overviewContinuityText() {
-        ArrayList<String> lines = new ArrayList<>();
+        return joinDashboardRows(overviewStatusRows());
+    }
+
+    @Nonnull
+    List<DashboardMetric> overviewMetrics() {
+        ArrayList<DashboardMetric> metrics = new ArrayList<>();
+        if (featurePolicy.nightHuntProgressionEnabled()) {
+            metrics.add(new DashboardMetric(
+                        "Rank",
+                        mastery.currentRank().displayName(),
+                        mastery.masteryPoints() + " mastery",
+                        mastery.currentRank().accentColor(),
+                        VampirismVisuals.ICON_HUNT,
+                        "Rank",
+                        mastery.currentRank().accentColor()));
+        }
+        metrics.add(new DashboardMetric(
+                        "Prey logged",
+                        mastery.discoveredPreyRoleIds().size() + "/" + preyCatalogue.size(),
+                        "Known quarry",
+                        "#ef4444",
+                        VampirismVisuals.ICON_PREY,
+                        "Quarry",
+                        VampirismVisuals.DANGER));
+        metrics.add(new DashboardMetric(
+                        "Contracts",
+                        Integer.toString(mastery.totalCompletions()),
+                        mastery.uniqueContractsCompleted() + " unique",
+                        "#dc2626",
+                        VampirismVisuals.ICON_RECORD,
+                        "Ledger",
+                        VampirismVisuals.DANGER));
+        metrics.add(new DashboardMetric(
+                        "Elite claims",
+                        Integer.toString(mastery.eliteCompletionCount()),
+                        "High-value prey",
+                        "#f59e0b",
+                        VampirismVisuals.ICON_THREAT,
+                        "Elite",
+                        VampirismVisuals.WARNING));
+        if (featurePolicy.nightHuntProgressionEnabled()) {
+            metrics.add(new DashboardMetric(
+                        "Next rank",
+                        mastery.nextRank() != null ? mastery.nextRank().displayName() : "Max",
+                        mastery.nextRank() != null ? mastery.masteryToNextRank() + " mastery left" : "All ranks claimed",
+                        "#facc15",
+                        VampirismVisuals.ICON_REWARD,
+                        mastery.nextRank() != null ? "Goal" : "Max",
+                        mastery.nextRank() != null ? VampirismVisuals.WARNING : VampirismVisuals.SPECIAL));
+        }
+        return List.copyOf(metrics);
+    }
+
+    @Nonnull
+    List<DashboardRow> overviewStatusRows() {
+        ArrayList<DashboardRow> rows = new ArrayList<>();
         HuntCrackdownText.View crackdown = HuntCrackdownText.resolve(persistedNightHuntState, continuity, progress);
         HuntCasefileText.View casefile = HuntCasefileText.resolve(persistedNightHuntState, progress);
         if (persistedNightHuntState.cooldownRemainingMs(System.currentTimeMillis()) > 0L || crackdown.active()) {
-            lines.add("Next window: " + crackdown.value());
-            lines.add(crackdown.detail());
+            rows.add(new DashboardRow(
+                    "Next window",
+                    crackdown.value(),
+                    compactDetail(crackdown.detail()),
+                    crackdown.accentColor(),
+                    VampirismVisuals.ICON_THREAT,
+                    crackdown.active() ? "Active" : "Timer",
+                    crackdown.accentColor()));
         }
         if (casefile.active()) {
-            lines.add("Casefile: " + casefile.value());
-            lines.add(casefile.detail());
+            rows.add(new DashboardRow(
+                    "Casefile",
+                    casefile.value(),
+                    compactDetail(casefile.detail()),
+                    casefile.escalated() ? "#f97316" : "#f59e0b",
+                    VampirismVisuals.ICON_RECORD,
+                    casefile.escalated() ? "Hot" : "Open",
+                    casefile.escalated() ? VampirismVisuals.WARNING : VampirismVisuals.INFO));
         } else {
             String lastClearedCasefile = NightHuntCasefileService.lastClearedCasefileDisplayName(progress);
             if (lastClearedCasefile != null) {
-                lines.add("Last cleared casefile: " + lastClearedCasefile);
-                lines.add("Hunters are pivoting away from that file before they reopen the same route.");
+                rows.add(new DashboardRow(
+                        "Casefile",
+                        lastClearedCasefile,
+                        "Hunters are pivoting away from that route",
+                        "#22c55e",
+                        VampirismVisuals.ICON_READY,
+                        "Clear",
+                        VampirismVisuals.SAFE));
             }
         }
-        lines.add("Threat: " + (continuity.worldThreatLevel() > 0
-                ? continuity.worldThreatName() + " (" + continuity.worldThreatLevel() + ")"
-                : "Quiet"));
+        rows.add(new DashboardRow(
+                "Threat",
+                continuity.worldThreatLevel() > 0 ? continuity.worldThreatName() : "Quiet",
+                continuity.worldThreatLevel() > 0 ? "Level " + continuity.worldThreatLevel() : "No active world pressure",
+                continuity.worldThreatLevel() > 0 ? "#f59e0b" : "#22c55e",
+                VampirismVisuals.ICON_THREAT,
+                continuity.worldThreatLevel() > 0 ? "Alert" : "Quiet",
+                continuity.worldThreatLevel() > 0 ? VampirismVisuals.WARNING : VampirismVisuals.SAFE));
         if (continuity.preyMemoryName() != null && continuity.preyMemoryLevel() > 0) {
-            lines.add("Prey memory: " + continuity.preyMemoryName() + " (" + continuity.preyMemoryLevel() + ")");
+            rows.add(new DashboardRow(
+                    "Prey memory",
+                    continuity.preyMemoryName(),
+                    "Level " + continuity.preyMemoryLevel(),
+                    "#f97316",
+                    VampirismVisuals.ICON_PREY,
+                    "Memory",
+                    VampirismVisuals.WARNING));
         }
         if (continuity.behaviorMemoryName() != null && continuity.behaviorMemoryLevel() > 0) {
-            lines.add("Behavior read: " + continuity.behaviorMemoryName() + " (" + continuity.behaviorMemoryLevel() + ")");
+            rows.add(new DashboardRow(
+                    "Behavior read",
+                    continuity.behaviorMemoryName(),
+                    "Level " + continuity.behaviorMemoryLevel(),
+                    "#f59e0b",
+                    VampirismVisuals.ICON_RECORD,
+                    "Read",
+                    VampirismVisuals.WARNING));
         }
         if (continuity.activeChainName() != null && continuity.activeChainStep() > 0) {
-            lines.add("Chain: " + continuity.activeChainName() + " " + roman(continuity.activeChainStep()));
+            rows.add(new DashboardRow(
+                    "Chain",
+                    continuity.activeChainName() + " " + roman(continuity.activeChainStep()),
+                    "Active escalation",
+                    "#c084fc",
+                    VampirismVisuals.ICON_SPECIAL,
+                    "Chain",
+                    VampirismVisuals.SPECIAL));
         }
-        lines.add("Current streak: " + continuity.successStreak() + " success / " + continuity.failureStreak() + " failure");
-        return String.join("\n", lines);
+        rows.add(new DashboardRow(
+                "Streak",
+                continuity.successStreak() + " / " + continuity.failureStreak(),
+                "success / failure",
+                continuity.failureStreak() > continuity.successStreak() ? "#f97316" : "#22c55e",
+                VampirismVisuals.ICON_RECORD,
+                "Run",
+                continuity.failureStreak() > continuity.successStreak() ? VampirismVisuals.WARNING : VampirismVisuals.SAFE));
+        return List.copyOf(rows);
     }
 
     @Nonnull
     String overviewRewardText() {
+        return joinChips(overviewRewardChips()) + overviewGuidanceText(
+                nextRite,
+                lineageWindow,
+                featurePolicy.ageTierProgressionEnabled() ? ageTierSnapshot : null,
+                nextThresholdText);
+    }
+
+    @Nonnull
+    List<RewardChip> overviewRewardChips() {
         if (mastery.lastRewardedAtMs() <= 0L) {
-            return "No hunt rewards have been recorded yet.";
+            return List.of(new RewardChip("Recent reward", "None yet", "#64748b", VampirismVisuals.ICON_UNKNOWN));
         }
-        ArrayList<String> parts = new ArrayList<>();
-        if (mastery.lastRewardSkillPoints() > 0) {
-            parts.add("+" + mastery.lastRewardSkillPoints() + " skill point" + (mastery.lastRewardSkillPoints() == 1 ? "" : "s"));
-        }
-        if (mastery.lastRewardMasteryPoints() > 0) {
-            parts.add("+" + mastery.lastRewardMasteryPoints() + " mastery");
-        }
-        if (mastery.lastRewardBlood() > 0) {
-            parts.add("+" + mastery.lastRewardBlood() + " blood");
-        }
-        if (mastery.lastRewardAgeProgress() > 0) {
-            parts.add("+" + mastery.lastRewardAgeProgress() + " age progress");
-        }
-        if (mastery.lastRewardAffinityAmount() > 0 && mastery.lastRewardAffinityId() != null) {
-            parts.add("Affinity " + NightHuntPresentationText.humanize(mastery.lastRewardAffinityId())
-                    + " +" + mastery.lastRewardAffinityAmount());
-        }
+        ArrayList<RewardChip> chips = new ArrayList<>();
         String source = mastery.lastRewardedPreyRoleId() != null
                 ? NightHuntPresentationText.preyName(mastery.lastRewardedPreyRoleId())
                 : mastery.lastRewardedContractId() != null
                 ? NightHuntPresentationText.contractTargetSummary(mastery.lastRewardedContractId())
                 : "Unknown prey";
-        ArrayList<String> lines = new ArrayList<>();
-        lines.add("Most recent prey: " + source);
-        lines.add(parts.isEmpty() ? "No tangible bonus recorded." : String.join(" · ", parts));
-        String laneReadout = recentRewardLaneText(mastery);
-        if (!laneReadout.isBlank()) {
-            lines.add(laneReadout);
+        chips.add(new RewardChip("Last prey", source, "#ef4444", VampirismVisuals.ICON_PREY));
+        if (mastery.lastRewardSkillPoints() > 0) {
+            chips.add(new RewardChip("Skill", "+" + mastery.lastRewardSkillPoints(), "#facc15", VampirismVisuals.ICON_REWARD));
+        }
+        if (featurePolicy.nightHuntProgressionEnabled() && mastery.lastRewardMasteryPoints() > 0) {
+            chips.add(new RewardChip("Mastery", "+" + mastery.lastRewardMasteryPoints(), "#f59e0b", VampirismVisuals.ICON_HUNT));
+        }
+        if (mastery.lastRewardBlood() > 0) {
+            chips.add(new RewardChip("Blood", "+" + mastery.lastRewardBlood(), "#dc2626", VampirismVisuals.ICON_HEAT));
+        }
+        if (featurePolicy.ageTierProgressionEnabled() && mastery.lastRewardAgeProgress() > 0) {
+            chips.add(new RewardChip("Age", "+" + mastery.lastRewardAgeProgress(), "#c084fc", VampirismVisuals.ICON_AGE));
+        }
+        if (featurePolicy.bloodAffinityProgressionEnabled()
+                && mastery.lastRewardAffinityAmount() > 0
+                && mastery.lastRewardAffinityId() != null) {
+            chips.add(new RewardChip(
+                    NightHuntPresentationText.humanize(mastery.lastRewardAffinityId()),
+                    "+" + mastery.lastRewardAffinityAmount(),
+                    "#22c55e",
+                    VampirismVisuals.ICON_READY));
         }
         if (mastery.lastRewardedArchetypeMilestoneId() != null) {
-            lines.add("Milestone: " + NightHuntPresentationText.humanize(mastery.lastRewardedArchetypeMilestoneId()));
+            chips.add(new RewardChip(
+                    "Milestone",
+                    NightHuntPresentationText.humanize(mastery.lastRewardedArchetypeMilestoneId()),
+                    "#7dd3fc",
+                    VampirismVisuals.ICON_SPECIAL));
         }
         if (progress.lastOutcomeId != null) {
-            lines.add("Last outcome: " + NightHuntPresentationText.humanize(progress.lastOutcomeId));
+            chips.add(new RewardChip("Outcome", NightHuntPresentationText.humanize(progress.lastOutcomeId), "#9bb0c2", VampirismVisuals.ICON_RECORD));
         }
-        String nextStep = overviewGuidanceText(nextRite, lineageWindow, ageTierSnapshot, nextThresholdText);
-        return String.join("\n", lines) + nextStep;
+        return List.copyOf(chips);
     }
 
     @Nonnull
@@ -308,8 +546,12 @@ final class HuntCompendiumModel {
                     loadout.preparationId(),
                     loadout.preparationDisplayName(),
                     loadout.modeDisplayName(),
-                    preparationFocusLabel(loadout.preparationId()),
+                    featurePolicy.bloodAffinityProgressionEnabled()
+                            ? preparationFocusLabel(loadout.preparationId())
+                            : "Open focus",
                     status,
+                    preparationIcon(loadout.preparationId()),
+                    selected ? VampirismVisuals.WARNING : previewed ? VampirismVisuals.INFO : VampirismVisuals.NEUTRAL,
                     selected,
                     previewed));
         }
@@ -340,33 +582,26 @@ final class HuntCompendiumModel {
 
     @Nonnull
     String preparationPreviewEffects() {
-        ArrayList<String> lines = new ArrayList<>();
+        return joinDashboardRows(preparationEffectRows());
+    }
+
+    @Nonnull
+    List<DashboardRow> preparationEffectRows() {
+        ArrayList<DashboardRow> rows = new ArrayList<>();
         NightHuntPreparationAffinityContent.PreparationAffinity focus =
                 NightHuntPreparationAffinityContent.focusForPreparation(previewLoadout.preparationId());
-        if (focus != null) {
-            lines.add("Affinity focus: " + focus.preyFamilyDisplayName());
-            lines.add("Lane bonus: " + focus.bonusText());
-            lines.add("Affinity path: " + focus.focusText());
-        } else {
-            lines.add("Affinity focus: none");
+        if (featurePolicy.bloodAffinityProgressionEnabled() && focus != null) {
+            rows.add(new DashboardRow("Affinity", focus.preyFamilyDisplayName(), compactDetail(focus.bonusText()), "#22c55e"));
+            rows.add(new DashboardRow("Path", focus.laneLabel(), compactDetail(focus.focusText()), "#7dd3fc"));
+        } else if (featurePolicy.bloodAffinityProgressionEnabled()) {
+            rows.add(new DashboardRow("Affinity", "None", "No dedicated prey-family lane", "#64748b"));
         }
-        lines.add("Trail tier delta: " + signedDelta(previewLoadout.visualTierDelta()));
-        lines.add("Route delta: " + signedDelta(previewLoadout.waypointTargetAdjustment()) + " waypoint"
-                + (Math.abs(previewLoadout.waypointTargetAdjustment()) == 1 ? "" : "s"));
-        lines.add("Prey lifetime: x" + trimMultiplier(previewLoadout.preyLifetimeMultiplier()));
-        if (previewLoadout.requiredOwnerHits() > 0) {
-            lines.add("Prime requirement: " + previewLoadout.requiredOwnerHits() + " owner hit"
-                    + (previewLoadout.requiredOwnerHits() == 1 ? "" : "s"));
-        } else {
-            lines.add("Prime requirement: none");
-        }
-        if (previewLoadout.pressureSeconds() > 0f) {
-            lines.add("Pressure hold: " + Math.round(previewLoadout.pressureSeconds()) + "s within "
-                    + trimRadius(previewLoadout.pressureRadius()) + "m");
-        } else {
-            lines.add("Pressure hold: none");
-        }
-        return String.join("\n", lines);
+        rows.add(new DashboardRow("Trail tier", signedDelta(previewLoadout.visualTierDelta()), "visual trail delta", deltaAccent(previewLoadout.visualTierDelta())));
+        rows.add(new DashboardRow("Waypoints", signedDelta(previewLoadout.waypointTargetAdjustment()), "route length delta", deltaAccent(-previewLoadout.waypointTargetAdjustment())));
+        rows.add(new DashboardRow("Lifetime", "x" + trimMultiplier(previewLoadout.preyLifetimeMultiplier()), "prey uptime", "#f59e0b"));
+        rows.add(new DashboardRow("Prime", previewLoadout.requiredOwnerHits() > 0 ? previewLoadout.requiredOwnerHits() + " hits" : "None", "owner-hit requirement", previewLoadout.requiredOwnerHits() > 0 ? "#f97316" : "#22c55e"));
+        rows.add(new DashboardRow("Pressure", previewLoadout.pressureSeconds() > 0f ? Math.round(previewLoadout.pressureSeconds()) + "s" : "None", previewLoadout.pressureSeconds() > 0f ? "within " + trimRadius(previewLoadout.pressureRadius()) + "m" : "no hold", previewLoadout.pressureSeconds() > 0f ? "#c084fc" : "#22c55e"));
+        return List.copyOf(rows);
     }
 
     boolean previewMatchesSelection() {
@@ -380,54 +615,59 @@ final class HuntCompendiumModel {
 
     @Nonnull
     String recordsArchetypeText() {
+        return joinDashboardRows(recordsArchetypeRows());
+    }
+
+    @Nonnull
+    List<DashboardRow> recordsArchetypeRows() {
         NightHuntProgressionRegistry.Snapshot registry = NightHuntProgressionRegistry.get().snapshot();
-        ArrayList<String> lines = new ArrayList<>();
+        ArrayList<DashboardRow> rows = new ArrayList<>();
         for (NightHuntProgressionRegistry.ArchetypeDefinition archetype : registry.archetypes()) {
             int completions = mastery.archetypeCompletionCounts().getOrDefault(archetype.id(), 0);
             NightHuntProgressionRegistry.ArchetypeMilestone achieved = archetype.achievedMilestone(completions);
             NightHuntProgressionRegistry.ArchetypeMilestone next = archetype.nextMilestone(completions);
-            StringBuilder line = new StringBuilder()
-                    .append(archetype.displayName())
-                    .append(" · ")
-                    .append(completions)
-                    .append(" claim")
-                    .append(completions == 1 ? "" : "s");
+            String value = completions + " claim" + (completions == 1 ? "" : "s");
+            String detail = next != null
+                    ? "next in " + Math.max(0, next.killsRequired() - completions)
+                    : "mastered";
             if (achieved != null) {
-                line.append(" · ").append(achieved.displayName());
+                detail = achieved.displayName() + " · " + detail;
             }
-            if (next != null) {
-                line.append(" · next in ").append(Math.max(0, next.killsRequired() - completions));
-            } else {
-                line.append(" · mastered");
-            }
-            lines.add(line.toString());
+            rows.add(new DashboardRow(archetype.displayName(), value, detail, next == null ? "#22c55e" : "#f59e0b"));
         }
-        return String.join("\n", lines);
+        return List.copyOf(rows);
     }
 
     @Nonnull
     String recordsContractText() {
+        return joinDashboardRows(recordsContractRows());
+    }
+
+    @Nonnull
+    List<DashboardRow> recordsContractRows() {
         ArrayList<Map.Entry<String, Integer>> entries = new ArrayList<>(progress.contractCompletionCounts.entrySet());
         entries.sort(Map.Entry.<String, Integer>comparingByValue(Comparator.reverseOrder())
                 .thenComparing(Map.Entry::getKey, String.CASE_INSENSITIVE_ORDER));
-        ArrayList<String> lines = new ArrayList<>();
+        ArrayList<DashboardRow> rows = new ArrayList<>();
         if (progress.activeContractId != null) {
-            lines.add("Active: " + NightHuntPresentationText.contractTargetSummary(progress.activeContractId)
-                    + " · stage " + Math.max(1, progress.activeStep));
+            rows.add(new DashboardRow("Active", NightHuntPresentationText.contractTargetSummary(progress.activeContractId), "stage " + Math.max(1, progress.activeStep), "#facc15"));
         }
         if (progress.activeChainId != null && progress.activeChainStep > 0) {
-            lines.add("Chain: " + NightHuntPresentationText.humanize(progress.activeChainId) + " " + roman(progress.activeChainStep));
+            rows.add(new DashboardRow("Chain", NightHuntPresentationText.humanize(progress.activeChainId), roman(progress.activeChainStep), "#c084fc"));
         }
         if (entries.isEmpty()) {
-            lines.add("No contracts have been completed yet.");
+            rows.add(new DashboardRow("Completed", "None yet", "Finish hunts to fill the ledger", "#64748b"));
         } else {
             for (int i = 0; i < Math.min(entries.size(), 8); i++) {
                 Map.Entry<String, Integer> entry = entries.get(i);
-                lines.add(NightHuntPresentationText.contractTargetSummary(entry.getKey())
-                        + " · " + entry.getValue() + " completion" + (entry.getValue() == 1 ? "" : "s"));
+                rows.add(new DashboardRow(
+                        "Completed",
+                        NightHuntPresentationText.contractTargetSummary(entry.getKey()),
+                        entry.getValue() + " completion" + (entry.getValue() == 1 ? "" : "s"),
+                        "#ef4444"));
             }
         }
-        return String.join("\n", lines);
+        return List.copyOf(rows);
     }
 
     @Nonnull
@@ -684,18 +924,34 @@ final class HuntCompendiumModel {
 
     @Nonnull
     String quarryText() {
-        ArrayList<String> lines = new ArrayList<>();
+        return quarryRows().stream()
+                .map(row -> row.name() + " · " + row.tags() + " · " + row.status())
+                .toList()
+                .stream()
+                .collect(java.util.stream.Collectors.joining("\n"));
+    }
+
+    @Nonnull
+    List<QuarryRow> quarryRows() {
+        ArrayList<QuarryRow> rows = new ArrayList<>();
         for (NightHuntSpawnRegistry.SpawnOption option : preyCatalogue) {
             boolean discovered = mastery.discoveredPreyRoleIds().contains(option.roleId());
-            String line = (discovered ? option.displayName() : "Unknown prey")
-                    + " · " + NightHuntPresentationText.humanize(option.preyFamily())
-                    + " / " + NightHuntPresentationText.archetypeName(option.archetype())
-                    + " · tier " + option.visualTier()
+            String name = discovered ? option.displayName() : "Unknown prey";
+            String tags = NightHuntPresentationText.humanize(option.preyFamily())
+                    + " / " + NightHuntPresentationText.archetypeName(option.archetype());
+            String status = "tier " + option.visualTier()
                     + (option.elite() ? " · elite" : "")
                     + (discovered ? " · logged" : " · undiscovered");
-            lines.add(line);
+            rows.add(new QuarryRow(
+                    name,
+                    tags,
+                    status,
+                    discovered ? (option.elite() ? "#facc15" : "#ef4444") : "#64748b",
+                    discovered ? VampirismVisuals.ICON_PREY : VampirismVisuals.ICON_UNKNOWN,
+                    "T" + option.visualTier(),
+                    option.elite() ? "Elite" : discovered ? "Logged" : "Hidden"));
         }
-        return String.join("\n", lines);
+        return List.copyOf(rows);
     }
 
     @Nonnull
@@ -729,6 +985,24 @@ final class HuntCompendiumModel {
     }
 
     @Nonnull
+    private static String preparationIcon(@Nullable String preparationId) {
+        if (preparationId == null || preparationId.isBlank()) {
+            return VampirismVisuals.ICON_ROUTE;
+        }
+        String normalized = preparationId.toLowerCase(Locale.ROOT);
+        if (normalized.contains("siphon") || normalized.contains("blood")) {
+            return VampirismVisuals.ICON_HEAT;
+        }
+        if (normalized.contains("dread") || normalized.contains("fear")) {
+            return VampirismVisuals.ICON_THREAT;
+        }
+        if (normalized.contains("pursuit") || normalized.contains("trail")) {
+            return VampirismVisuals.ICON_HUNT;
+        }
+        return VampirismVisuals.ICON_ROUTE;
+    }
+
+    @Nonnull
     private static NightHuntPreparedLoadout resolvePreviewLoadout(@Nonnull List<NightHuntPreparedLoadout> availableLoadouts,
                                                                   @Nonnull NightHuntPreparedLoadout currentLoadout,
                                                                   @Nullable String previewPreparationId) {
@@ -755,6 +1029,54 @@ final class HuntCompendiumModel {
     @Nonnull
     private static String trimMultiplier(float value) {
         return String.format(Locale.ROOT, "%.2f", value);
+    }
+
+    @Nonnull
+    private static String compactDetail(@Nullable String text) {
+        if (text == null || text.isBlank()) {
+            return "";
+        }
+        String normalized = text.replace('\n', ' ').replaceAll("\\s+", " ").trim();
+        if (normalized.length() <= 72) {
+            return normalized;
+        }
+        int sentenceEnd = normalized.indexOf(". ");
+        if (sentenceEnd >= 24 && sentenceEnd <= 72) {
+            return normalized.substring(0, sentenceEnd + 1);
+        }
+        return normalized.substring(0, 69).trim() + "...";
+    }
+
+    @Nonnull
+    private static String deltaAccent(int value) {
+        if (value > 0) {
+            return "#22c55e";
+        }
+        if (value < 0) {
+            return "#f97316";
+        }
+        return "#9bb0c2";
+    }
+
+    @Nonnull
+    private static String joinDashboardRows(@Nonnull List<DashboardRow> rows) {
+        return rows.stream()
+                .map(row -> row.label() + ": " + row.value() + (row.detail().isBlank() ? "" : " · " + row.detail()))
+                .collect(java.util.stream.Collectors.joining("\n"));
+    }
+
+    @Nonnull
+    private static String joinMetrics(@Nonnull List<DashboardMetric> metrics) {
+        return metrics.stream()
+                .map(row -> row.label() + ": " + row.value() + (row.detail().isBlank() ? "" : " · " + row.detail()))
+                .collect(java.util.stream.Collectors.joining("\n"));
+    }
+
+    @Nonnull
+    private static String joinChips(@Nonnull List<RewardChip> chips) {
+        return chips.stream()
+                .map(chip -> chip.label() + ": " + chip.value())
+                .collect(java.util.stream.Collectors.joining("\n"));
     }
 
     @Nonnull

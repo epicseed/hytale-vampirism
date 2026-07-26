@@ -1,0 +1,51 @@
+$C = "../../Common.ui";
+
+Group #QuarryRow {
+  Anchor: (Width: 520, Height: 76);
+  Background: #14202c;
+
+  Group #QuarryAccent {
+    Anchor: (Left: 0, Top: 0, Width: 4, Bottom: 0);
+    Background: #64748b;
+    HitTestVisible: false;
+  }
+
+  Group #QuarryIconFrame {
+    Anchor: (Left: 14, Top: 14, Width: 44, Height: 44);
+    Background: #64748b;
+    Label #QuarryIcon { Anchor: (Full: 0); Text: ""; Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); HitTestVisible: false; }
+  }
+
+  Group #QuarryTierBadge {
+    Anchor: (Right: 78, Top: 10, Width: 44, Height: 18);
+    Background: #1e3048;
+    Label #QuarryTierText { Anchor: (Full: 0); Text: ""; Style: (FontSize: 9, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); HitTestVisible: false; }
+  }
+
+  Group #QuarryStateBadge {
+    Anchor: (Right: 14, Top: 10, Width: 58, Height: 18);
+    Background: #64748b;
+    Label #QuarryStateText { Anchor: (Full: 0); Text: ""; Style: (FontSize: 8, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); HitTestVisible: false; }
+  }
+
+  Label #QuarryName {
+    Anchor: (Left: 72, Top: 10, Width: 190, Height: 16);
+    Text: "";
+    Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true);
+    HitTestVisible: false;
+  }
+
+  Label #QuarryTags {
+    Anchor: (Left: 72, Top: 30, Right: 14, Height: 16);
+    Text: "";
+    Style: (FontSize: 11, TextColor: #d5e2ef);
+    HitTestVisible: false;
+  }
+
+  Label #QuarryStatus {
+    Anchor: (Left: 72, Top: 50, Right: 14, Height: 14);
+    Text: "";
+    Style: (FontSize: 10, TextColor: #9bb0c2);
+    HitTestVisible: false;
+  }
+}

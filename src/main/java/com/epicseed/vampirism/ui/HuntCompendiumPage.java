@@ -1,6 +1,7 @@
 package com.epicseed.vampirism.ui;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -12,6 +13,7 @@ import com.epicseed.vampirism.domain.hunt.NightHuntProgressionService;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatSnapshot;
+import com.epicseed.vampirism.domain.progression.VampirismProgressionFeaturePolicy;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContext;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
@@ -34,11 +36,23 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompendiumEventData> {
 
+    private static final int OVERVIEW_METRIC_SLOTS = 5;
+    private static final int OVERVIEW_STATUS_SLOTS = 8;
+    private static final int OVERVIEW_REWARD_SLOTS = 8;
+    private static final int PREPARATION_EFFECT_SLOTS = 8;
+    private static final int PREPARATION_CARD_WIDTH = 210;
+    private static final int PREPARATION_CARD_HEIGHT = 84;
+    private static final int PREPARATION_CARD_GAP = 10;
+    private static final int RECORD_ARCHETYPE_SLOTS = 8;
+    private static final int RECORD_CONTRACT_SLOTS = 10;
+    private static final int QUARRY_SLOTS = 12;
+
     private final ProgressionPageFactory pageFactory;
     private final HuntCompendiumNextRiteResolver nextRiteResolver;
     private final VampiricRitualContextResolver ritualContextResolver;
     private final VampiricLineageService lineageService;
     private final MasqueradeHeatService masqueradeHeatService;
+    private final Supplier<? extends VampirismProgressionFeaturePolicy> featurePolicySupplier;
     private HuntCompendiumModel.Tab selectedTab = HuntCompendiumModel.Tab.OVERVIEW;
     private String previewPreparationId;
 
@@ -66,12 +80,29 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
                               VampiricRitualContextResolver ritualContextResolver,
                               VampiricLineageService lineageService,
                               MasqueradeHeatService masqueradeHeatService) {
+        this(playerRef,
+                pageFactory,
+                ritualService,
+                ritualContextResolver,
+                lineageService,
+                masqueradeHeatService,
+                VampirismProgressionFeaturePolicy::allEnabled);
+    }
+
+    public HuntCompendiumPage(@Nonnull PlayerRef playerRef,
+                              @Nullable ProgressionPageFactory pageFactory,
+                              VampiricRitualService ritualService,
+                              VampiricRitualContextResolver ritualContextResolver,
+                              VampiricLineageService lineageService,
+                              MasqueradeHeatService masqueradeHeatService,
+                              @Nonnull Supplier<? extends VampirismProgressionFeaturePolicy> featurePolicySupplier) {
         super(playerRef, CustomPageLifetime.CanDismiss, HuntCompendiumEventData.CODEC);
         this.pageFactory = pageFactory;
         this.nextRiteResolver = ritualService != null ? new HuntCompendiumNextRiteResolver(ritualService) : null;
         this.ritualContextResolver = ritualContextResolver;
         this.lineageService = lineageService;
         this.masqueradeHeatService = masqueradeHeatService;
+        this.featurePolicySupplier = featurePolicySupplier;
     }
 
     @Override
@@ -83,6 +114,7 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
         HuntCompendiumModel model = model(store);
         bindEvents(events);
         appendPreparationCards(cmd, model);
+        appendDashboardSlots(cmd);
         bindPreparationEvents(events, model);
         render(cmd, model);
     }
@@ -168,7 +200,64 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
         int maxCards = model.preparationOptions().size();
         for (int i = 0; i < maxCards; i++) {
             cmd.append("#PreparationOptions", VampirismUiPaths.huntCompendiumPreparationCardLayout());
-            cmd.setObject("#PreparationOptions[" + i + "].Anchor", createAnchor((i % 3) * 232, (i / 3) * 96, 220, 84));
+            cmd.setObject("#PreparationOptions[" + i + "].Anchor",
+                    createHorizontalStackAnchor(PREPARATION_CARD_WIDTH, PREPARATION_CARD_HEIGHT, PREPARATION_CARD_GAP));
+        }
+    }
+
+    private void appendDashboardSlots(@Nonnull UICommandBuilder cmd) {
+        for (int i = 0; i < OVERVIEW_METRIC_SLOTS; i++) {
+            cmd.append("#OverviewMetrics", VampirismUiPaths.huntCompendiumMetricCardLayout());
+            cmd.setObject("#OverviewMetrics[" + i + "].Anchor", createAnchor(i * 232, 0, 220, 56));
+            cmd.set("#OverviewMetrics[" + i + "].Visible", false);
+        }
+        appendStatusRows(cmd, "#OverviewStatusRows", OVERVIEW_STATUS_SLOTS, 2, 320, 54, 12, 8);
+        appendRewardChips(cmd, "#OverviewRewardChips", OVERVIEW_REWARD_SLOTS, 2, 214, 46, 10, 8);
+        appendStatusRows(cmd, "#PreparationEffectRows", PREPARATION_EFFECT_SLOTS, 2, 320, 54, 12, 8);
+        appendStatusRows(cmd, "#RecordsArchetypeRows", RECORD_ARCHETYPE_SLOTS, 1, 470, 54, 0, 8);
+        appendStatusRows(cmd, "#RecordsContractRows", RECORD_CONTRACT_SLOTS, 1, 600, 54, 0, 8);
+        for (int i = 0; i < QUARRY_SLOTS; i++) {
+            int column = i % 2;
+            int row = i / 2;
+            cmd.append("#QuarryRows", VampirismUiPaths.huntCompendiumQuarryRowLayout());
+            cmd.setObject("#QuarryRows[" + i + "].Anchor", createAnchor(column * 548, row * 84, 520, 76));
+            cmd.set("#QuarryRows[" + i + "].Visible", false);
+        }
+    }
+
+    private void appendStatusRows(@Nonnull UICommandBuilder cmd,
+                                  @Nonnull String parentSelector,
+                                  int count,
+                                  int columns,
+                                  int width,
+                                  int height,
+                                  int columnGap,
+                                  int rowGap) {
+        for (int i = 0; i < count; i++) {
+            int column = i % columns;
+            int row = i / columns;
+            cmd.append(parentSelector, VampirismUiPaths.huntCompendiumStatusRowLayout());
+            cmd.setObject(parentSelector + "[" + i + "].Anchor",
+                    createAnchor(column * (width + columnGap), row * (height + rowGap), width, height));
+            cmd.set(parentSelector + "[" + i + "].Visible", false);
+        }
+    }
+
+    private void appendRewardChips(@Nonnull UICommandBuilder cmd,
+                                   @Nonnull String parentSelector,
+                                   int count,
+                                   int columns,
+                                   int width,
+                                   int height,
+                                   int columnGap,
+                                   int rowGap) {
+        for (int i = 0; i < count; i++) {
+            int column = i % columns;
+            int row = i / columns;
+            cmd.append(parentSelector, VampirismUiPaths.huntCompendiumRewardChipLayout());
+            cmd.setObject(parentSelector + "[" + i + "].Anchor",
+                    createAnchor(column * (width + columnGap), row * (height + rowGap), width, height));
+            cmd.set(parentSelector + "[" + i + "].Visible", false);
         }
     }
 
@@ -186,6 +275,7 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
     private void render(@Nonnull UICommandBuilder cmd, @Nonnull HuntCompendiumModel model) {
         cmd.set("#Title.Text", model.title());
         cmd.set("#Subtitle.Text", model.subtitle());
+        renderDominantState(cmd, model.dominantState());
         cmd.set("#PreparedLoadoutValue.Text", model.preparedLoadoutText());
         cmd.set("#NextRankValue.Text", model.nextRankText());
         cmd.set("#FooterHint.Text", model.footerText());
@@ -212,9 +302,19 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
     }
 
     private void renderOverview(@Nonnull UICommandBuilder cmd, @Nonnull HuntCompendiumModel model) {
-        cmd.set("#OverviewSummaryText.Text", model.overviewSummaryText());
-        cmd.set("#OverviewContinuityText.Text", model.overviewContinuityText());
-        cmd.set("#OverviewRewardText.Text", model.overviewRewardText());
+        renderMetricCards(cmd, "#OverviewMetrics", model.overviewMetrics(), OVERVIEW_METRIC_SLOTS);
+        renderStatusRows(cmd, "#OverviewStatusRows", model.overviewStatusRows(), OVERVIEW_STATUS_SLOTS);
+        renderRewardChips(cmd, "#OverviewRewardChips", model.overviewRewardChips(), OVERVIEW_REWARD_SLOTS);
+    }
+
+    private void renderDominantState(@Nonnull UICommandBuilder cmd,
+                                     @Nonnull HuntCompendiumModel.DominantState state) {
+        cmd.set("#DominantIconFrame.Background.Color", state.accentColor());
+        cmd.set("#DominantIcon.Text", state.icon());
+        cmd.set("#DominantLabel.Text", state.label());
+        cmd.set("#DominantValue.Text", state.value());
+        cmd.set("#DominantDetail.Text", state.detail());
+        cmd.set("#DominantValue.Style.TextColor", state.accentColor());
     }
 
     private void renderPreparations(@Nonnull UICommandBuilder cmd, @Nonnull HuntCompendiumModel model) {
@@ -222,7 +322,7 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
         cmd.set("#PreparationPreviewStatus.Text", model.preparationPreviewStatus());
         cmd.set("#PreparationPreviewDescription.Text", model.preparationPreviewDescription());
         cmd.set("#PreparationPreviewObjective.Text", model.preparationPreviewObjective());
-        cmd.set("#PreparationPreviewEffects.Text", model.preparationPreviewEffects());
+        renderStatusRows(cmd, "#PreparationEffectRows", model.preparationEffectRows(), PREPARATION_EFFECT_SLOTS);
         cmd.set("#PrepareConfirmLabel.Text", model.preparationButtonText());
 
         List<HuntCompendiumModel.PreparationOption> options = model.preparationOptions();
@@ -230,6 +330,13 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
             HuntCompendiumModel.PreparationOption option = options.get(i);
             String selector = "#PreparationOptions[" + i + "]";
             cmd.set(selector + ".Visible", true);
+            cmd.set(selector + " #PrepAccent.Background.Color", option.accentColor());
+            cmd.set(selector + " #PrepIconFrame.Background.Color", option.accentColor());
+            cmd.set(selector + " #PrepIcon.Text", option.icon());
+            cmd.set(selector + " #PrepBadge.Background.Color", option.accentColor());
+            cmd.set(selector + " #PrepBadgeText.Text", option.previewed()
+                    ? option.selected() ? "Ready" : "Preview"
+                    : option.selected() ? "Ready" : "Route");
             cmd.set(selector + " #PrepName.Text", option.displayName());
             cmd.set(selector + " #PrepMode.Text", option.modeDisplayName() + " · " + option.focusLabel());
             cmd.set(selector + " #PrepStatus.Text", option.statusText());
@@ -246,12 +353,112 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
     }
 
     private void renderRecords(@Nonnull UICommandBuilder cmd, @Nonnull HuntCompendiumModel model) {
-        cmd.set("#RecordsArchetypesText.Text", model.recordsArchetypeText());
-        cmd.set("#RecordsContractsText.Text", model.recordsContractText());
+        renderStatusRows(cmd, "#RecordsArchetypeRows", model.recordsArchetypeRows(), RECORD_ARCHETYPE_SLOTS);
+        renderStatusRows(cmd, "#RecordsContractRows", model.recordsContractRows(), RECORD_CONTRACT_SLOTS);
     }
 
     private void renderQuarry(@Nonnull UICommandBuilder cmd, @Nonnull HuntCompendiumModel model) {
-        cmd.set("#QuarryText.Text", model.quarryText());
+        renderQuarryRows(cmd, model.quarryRows(), QUARRY_SLOTS);
+    }
+
+    private void renderMetricCards(@Nonnull UICommandBuilder cmd,
+                                   @Nonnull String parentSelector,
+                                   @Nonnull List<HuntCompendiumModel.DashboardMetric> metrics,
+                                   int slots) {
+        for (int i = 0; i < slots; i++) {
+            String selector = parentSelector + "[" + i + "]";
+            if (i >= metrics.size()) {
+                cmd.set(selector + ".Visible", false);
+                continue;
+            }
+            HuntCompendiumModel.DashboardMetric metric = metrics.get(i);
+            boolean hasIcon = !metric.icon().isBlank();
+            boolean hasState = !metric.stateLabel().isBlank();
+            cmd.set(selector + ".Visible", true);
+            cmd.set(selector + " #MetricAccent.Background.Color", metric.accentColor());
+            cmd.set(selector + " #MetricIconFrame.Visible", hasIcon);
+            cmd.set(selector + " #MetricIconFrame.Background.Color", metric.severityColor());
+            cmd.set(selector + " #MetricIcon.Text", metric.icon());
+            cmd.set(selector + " #MetricStateBadge.Visible", hasState);
+            cmd.set(selector + " #MetricStateBadge.Background.Color", metric.severityColor());
+            cmd.set(selector + " #MetricStateLabel.Text", metric.stateLabel());
+            cmd.set(selector + " #MetricLabel.Text", metric.label());
+            cmd.set(selector + " #MetricValue.Text", metric.value());
+            cmd.set(selector + " #MetricDetail.Text", metric.detail());
+        }
+    }
+
+    private void renderStatusRows(@Nonnull UICommandBuilder cmd,
+                                  @Nonnull String parentSelector,
+                                  @Nonnull List<HuntCompendiumModel.DashboardRow> rows,
+                                  int slots) {
+        for (int i = 0; i < slots; i++) {
+            String selector = parentSelector + "[" + i + "]";
+            if (i >= rows.size()) {
+                cmd.set(selector + ".Visible", false);
+                continue;
+            }
+            HuntCompendiumModel.DashboardRow row = rows.get(i);
+            boolean hasIcon = !row.icon().isBlank();
+            boolean hasState = !row.stateLabel().isBlank();
+            cmd.set(selector + ".Visible", true);
+            cmd.set(selector + " #StatusAccent.Background.Color", row.accentColor());
+            cmd.set(selector + " #StatusIconFrame.Visible", hasIcon);
+            cmd.set(selector + " #StatusIconFrame.Background.Color", row.severityColor());
+            cmd.set(selector + " #StatusIcon.Text", row.icon());
+            cmd.set(selector + " #StatusStateBadge.Visible", hasState);
+            cmd.set(selector + " #StatusStateBadge.Background.Color", row.severityColor());
+            cmd.set(selector + " #StatusStateLabel.Text", row.stateLabel());
+            cmd.set(selector + " #StatusLabel.Text", row.label());
+            cmd.set(selector + " #StatusValue.Text", row.value());
+            cmd.set(selector + " #StatusDetail.Text", row.detail());
+        }
+    }
+
+    private void renderRewardChips(@Nonnull UICommandBuilder cmd,
+                                   @Nonnull String parentSelector,
+                                   @Nonnull List<HuntCompendiumModel.RewardChip> chips,
+                                   int slots) {
+        for (int i = 0; i < slots; i++) {
+            String selector = parentSelector + "[" + i + "]";
+            if (i >= chips.size()) {
+                cmd.set(selector + ".Visible", false);
+                continue;
+            }
+            HuntCompendiumModel.RewardChip chip = chips.get(i);
+            boolean hasIcon = !chip.icon().isBlank();
+            cmd.set(selector + ".Visible", true);
+            cmd.set(selector + " #RewardAccent.Background.Color", chip.accentColor());
+            cmd.set(selector + " #RewardIconFrame.Visible", hasIcon);
+            cmd.set(selector + " #RewardIconFrame.Background.Color", chip.accentColor());
+            cmd.set(selector + " #RewardIcon.Text", chip.icon());
+            cmd.set(selector + " #RewardLabel.Text", chip.label());
+            cmd.set(selector + " #RewardValue.Text", chip.value());
+        }
+    }
+
+    private void renderQuarryRows(@Nonnull UICommandBuilder cmd,
+                                  @Nonnull List<HuntCompendiumModel.QuarryRow> rows,
+                                  int slots) {
+        for (int i = 0; i < slots; i++) {
+            String selector = "#QuarryRows[" + i + "]";
+            if (i >= rows.size()) {
+                cmd.set(selector + ".Visible", false);
+                continue;
+            }
+            HuntCompendiumModel.QuarryRow row = rows.get(i);
+            cmd.set(selector + ".Visible", true);
+            cmd.set(selector + " #QuarryAccent.Background.Color", row.accentColor());
+            cmd.set(selector + " #QuarryIconFrame.Background.Color", row.accentColor());
+            cmd.set(selector + " #QuarryIcon.Text", row.icon());
+            cmd.set(selector + " #QuarryTierBadge.Background.Color", row.accentColor());
+            cmd.set(selector + " #QuarryTierText.Text", row.tierBadge());
+            cmd.set(selector + " #QuarryStateBadge.Background.Color", row.accentColor());
+            cmd.set(selector + " #QuarryStateText.Text", row.stateLabel());
+            cmd.set(selector + " #QuarryName.Text", row.name());
+            cmd.set(selector + " #QuarryTags.Text", row.tags());
+            cmd.set(selector + " #QuarryStatus.Text", row.status());
+        }
     }
 
     private void applyPreparationSelection() {
@@ -278,7 +485,8 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
                 previewPreparationId,
                 resolveNextRite(store),
                 resolveLineageWindow(masquerade),
-                masquerade != null ? MasqueradeHeatThresholdText.compactLine(masquerade, masqueradeHeatService.policy()) : null);
+                masquerade != null ? MasqueradeHeatThresholdText.compactLine(masquerade, masqueradeHeatService.policy()) : null,
+                featurePolicySupplier.get());
         previewPreparationId = latest.previewPreparationId();
         return latest;
     }
@@ -327,6 +535,15 @@ public final class HuntCompendiumPage extends InteractiveCustomUIPage<HuntCompen
         anchor.setTop(Value.of(top));
         anchor.setWidth(Value.of(width));
         anchor.setHeight(Value.of(height));
+        return anchor;
+    }
+
+    @Nonnull
+    private static Anchor createHorizontalStackAnchor(int width, int height, int rightGap) {
+        Anchor anchor = new Anchor();
+        anchor.setWidth(Value.of(width));
+        anchor.setHeight(Value.of(height));
+        anchor.setRight(Value.of(rightGap));
         return anchor;
     }
 

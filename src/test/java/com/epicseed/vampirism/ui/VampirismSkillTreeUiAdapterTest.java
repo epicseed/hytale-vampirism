@@ -1,6 +1,7 @@
 package com.epicseed.vampirism.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -61,22 +62,22 @@ class VampirismSkillTreeUiAdapterTest {
                 new NamedHuntProgress());
 
         assertEquals("Watched · 30.0 heat", card(cards, "Current Exposure").value());
+        assertEquals("Pressure 45 · 1 strike", card(cards, "Current Exposure").detail());
+        assertEquals(VampirismVisuals.ICON_HEAT, card(cards, "Current Exposure").icon());
+        assertEquals("Watched", card(cards, "Current Exposure").stateLabel());
         assertEquals("Hunted at 45.0", card(cards, "Next Threshold").value());
         assertTrue(card(cards, "Next Threshold").detail().contains("15.0 heat remaining"));
         assertEquals("Pressure 45", card(cards, "Current Risk").value());
+        assertCompactDetail(card(cards, "Current Risk").detail());
         assertEquals("Hunter crackdown · Siphon Ledger II", card(cards, "Next Hunt Window").value());
-        assertTrue(card(cards, "Next Hunt Window").detail().contains("delayed +30s"));
+        assertCompactDetail(card(cards, "Next Hunt Window").detail());
         assertEquals("Elder · Voidspawn", card(cards, "Identity Pressure").value());
         assertTrue(card(cards, "Identity Pressure").detail().contains("visibility +20%"));
-        assertTrue(card(cards, "Identity Pressure").detail().contains("threat escalation -20%"));
-        assertTrue(card(cards, "Identity Pressure").detail().contains("bends live adaptation toward route counterplay"));
+        assertCompactDetail(card(cards, "Identity Pressure").detail());
         assertEquals("Hunter crackdown · Siphon Ledger II", card(cards, "Pressure Outlook").value());
-        assertTrue(card(cards, "Pressure Outlook").detail().contains("Break this chain before the next hunt"));
-        assertTrue(card(cards, "Pressure Outlook").detail().contains("Voidspawn will bend the next live adaptation toward route counterplay."));
-        assertTrue(card(cards, "Pressure Outlook").detail().contains("Last pressure payoff: Pressure resonance +35 age toward Ancient"));
+        assertTrue(card(cards, "Pressure Outlook").detail().contains("Pressure resonance +35 age toward Ancient"));
         assertEquals("Siphon Ledger II", card(cards, "Pressure Drivers").value());
-        assertTrue(card(cards, "Pressure Drivers").detail().contains("keeping Hunter crackdown live"));
-        assertTrue(card(cards, "Pressure Drivers").detail().contains("Voidspawn will bend the next live adaptation toward route counterplay."));
+        assertCompactDetail(card(cards, "Pressure Drivers").detail());
         assertEquals("Voidspawn blocked", card(cards, "Current Opportunity").value());
         assertTrue(card(cards, "Current Opportunity").detail().contains("Cool 5.0 heat"));
     }
@@ -107,10 +108,8 @@ class VampirismSkillTreeUiAdapterTest {
         assertEquals("Fledgling · Voidspawn", card(cards, "Identity Pressure").value());
         assertEquals("Quiet routes", card(cards, "Pressure Outlook").value());
         assertTrue(card(cards, "Pressure Outlook").detail().contains("No active world response"));
-        assertTrue(card(cards, "Pressure Outlook").detail().contains("Voidspawn will bend the next live adaptation toward route counterplay."));
         assertEquals("No active driver", card(cards, "Pressure Drivers").value());
         assertTrue(card(cards, "Pressure Drivers").detail().contains("No chain, threat, or memory"));
-        assertTrue(card(cards, "Pressure Drivers").detail().contains("Voidspawn will bend the next live adaptation toward route counterplay."));
         assertEquals("Voidspawn ready", card(cards, "Current Opportunity").value());
         assertTrue(card(cards, "Current Opportunity").detail().contains("Stay at or below 25.0"));
     }
@@ -165,7 +164,10 @@ class VampirismSkillTreeUiAdapterTest {
 
         assertTrue(card(cards, "Lineage Milestone").detail()
                 .contains("Voidspawn needs you to raise Void affinity to 2 (currently 1/2)."));
+        assertEquals(VampirismVisuals.ICON_REWARD, card(cards, "Lineage Milestone").icon());
+        assertEquals("Locked", card(cards, "Lineage Milestone").stateLabel());
         assertTrue(card(cards, "Voidspawn").detail().contains("Raise Void affinity to 2 (currently 1/2)"));
+        assertEquals(VampirismVisuals.NEUTRAL, card(cards, "Voidspawn").severityColor());
     }
 
     @Test
@@ -243,6 +245,11 @@ class VampirismSkillTreeUiAdapterTest {
                 .filter(card -> title.equals(card.title()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Missing card: " + title));
+    }
+
+    private static void assertCompactDetail(String detail) {
+        assertFalse(detail.contains("\n"));
+        assertTrue(detail.length() <= 78, "Expected compact detail, got: " + detail);
     }
 
     private static NightHuntMasterySnapshot emptyMastery() {

@@ -82,7 +82,14 @@ public final class VampiricRitualBookPage extends InteractiveCustomUIPage<Ritual
         this.attunedRitualId = selectionService.selectedRitual(playerRef.getUuid(), anchor.blockId()).orElse(null);
         this.activeRitualId = activeRitualId;
         String initiallySelectedRitualId = activeRitualId != null ? activeRitualId : attunedRitualId;
-        this.model = VampiricRitualBookModel.create(anchor.blockId(), resolved, definitions, templates, evaluations, initiallySelectedRitualId);
+        this.model = VampiricRitualBookModel.create(
+                anchor.blockId(),
+                resolved,
+                definitions,
+                templates,
+                evaluations,
+                initiallySelectedRitualId,
+                ritualService.featurePolicy());
         this.pointSlotCount = Math.max(1, model.rituals().stream()
                 .mapToInt(entry -> entry.template().points().size())
                 .max()

@@ -12,9 +12,10 @@ import com.epicseed.epiccore.skill.progression.ProgressionDefinitionProvider;
 import com.epicseed.epiccore.skill.progression.SkillProgressionAccess;
 import com.epicseed.epiccore.skill.runtime.actions.ActionConditionEvaluator;
 import com.epicseed.epiccore.skill.runtime.requirements.ConfigurableRequirementEvaluator;
-import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatPolicy;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
+import com.epicseed.vampirism.domain.progression.VampirismProgressionFeaturePolicy;
+import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
 
 public final class SkillRequirementEvaluator {
 
@@ -76,7 +77,8 @@ public final class SkillRequirementEvaluator {
                 conditionEvaluator::evaluateAll,
                 fallbackAccessSupplier,
                 DEFAULT_MASQUERADE_HEAT_SERVICE,
-                null);
+                null,
+                VampirismProgressionFeaturePolicy::allEnabled);
     }
 
     public SkillRequirementEvaluator(@Nonnull ProgressionDefinitionProvider definitions,
@@ -88,7 +90,22 @@ public final class SkillRequirementEvaluator {
                 conditionEvaluator::evaluateAll,
                 fallbackAccessSupplier,
                 masqueradeHeatService,
-                ritualService);
+                ritualService,
+                VampirismProgressionFeaturePolicy::allEnabled);
+    }
+
+    public SkillRequirementEvaluator(@Nonnull ProgressionDefinitionProvider definitions,
+                                     @Nonnull SkillConditionEvaluator conditionEvaluator,
+                                     @Nonnull Supplier<? extends SkillProgressionAccess> fallbackAccessSupplier,
+                                     @Nonnull MasqueradeHeatService masqueradeHeatService,
+                                     VampiricRitualService ritualService,
+                                     @Nonnull Supplier<? extends VampirismProgressionFeaturePolicy> featurePolicySupplier) {
+        this(definitions,
+                conditionEvaluator::evaluateAll,
+                fallbackAccessSupplier,
+                masqueradeHeatService,
+                ritualService,
+                featurePolicySupplier);
     }
 
     public SkillRequirementEvaluator(@Nonnull ProgressionDefinitionProvider definitions,
@@ -103,7 +120,8 @@ public final class SkillRequirementEvaluator {
                 conditionEvaluator,
                 fallbackAccessSupplier,
                 DEFAULT_MASQUERADE_HEAT_SERVICE,
-                null);
+                null,
+                VampirismProgressionFeaturePolicy::allEnabled);
     }
 
     public SkillRequirementEvaluator(@Nonnull ProgressionDefinitionProvider definitions,
@@ -111,12 +129,26 @@ public final class SkillRequirementEvaluator {
                                      @Nonnull Supplier<? extends SkillProgressionAccess> fallbackAccessSupplier,
                                      @Nonnull MasqueradeHeatService masqueradeHeatService,
                                      VampiricRitualService ritualService) {
+        this(definitions,
+                conditionEvaluator,
+                fallbackAccessSupplier,
+                masqueradeHeatService,
+                ritualService,
+                VampirismProgressionFeaturePolicy::allEnabled);
+    }
+
+    public SkillRequirementEvaluator(@Nonnull ProgressionDefinitionProvider definitions,
+                                     @Nonnull ActionConditionEvaluator<SkillRuntimeContext> conditionEvaluator,
+                                     @Nonnull Supplier<? extends SkillProgressionAccess> fallbackAccessSupplier,
+                                     @Nonnull MasqueradeHeatService masqueradeHeatService,
+                                     VampiricRitualService ritualService,
+                                     @Nonnull Supplier<? extends VampirismProgressionFeaturePolicy> featurePolicySupplier) {
         this.evaluator = new ConfigurableRequirementEvaluator<>(
                 conditionEvaluator,
                 fallbackAccessSupplier,
                 definitions,
                 SkillRuntimeContext::uuid,
-                VampiricAgeTierRequirementPacks.ageTiers(SkillRuntimeContext::uuid),
+                VampiricAgeTierRequirementPacks.ageTiers(SkillRuntimeContext::uuid, featurePolicySupplier),
                 MasqueradeHeatRequirementPacks.masquerade(
                         masqueradeHeatService,
                         SkillRuntimeContext::uuid,

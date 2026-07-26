@@ -1,5 +1,6 @@
 // Hytale UI Definition: HuntCompendium
 $C = "../../Common.ui";
+$Common = "../../Common.ui";
 
 Group #HuntCompendiumRoot {
   Anchor: (Full: 0);
@@ -11,382 +12,225 @@ Group #HuntCompendiumRoot {
     Group #TabSkillTreeWrapper {
       Anchor: (Left: 0, Top: 0, Width: 140, Height: 44);
       Background: #0d1820;
-
-      Label {
-        Anchor: (Full: 0);
-        Text: "Skill Tree";
-        Style: (FontSize: 12, TextColor: #999999, HorizontalAlignment: Center, VerticalAlignment: Center);
-        HitTestVisible: false;
-      }
-
-      Button #TabSkillTreeBtn {
-        Anchor: (Full: 0);
-        Style: $C.@TertiaryButtonStyle;
-      }
-    }
+      Label { Anchor: (Full: 0); Text: "Skill Tree"; Style: (FontSize: 12, TextColor: #999999, HorizontalAlignment: Center, VerticalAlignment: Center); HitTestVisible: false; }
+      Button #TabSkillTreeBtn { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
     }
 
     Group #TabProfileWrapper {
       Anchor: (Left: 144, Top: 0, Width: 120, Height: 44);
       Background: #0d1820;
-
-      Label {
-        Anchor: (Full: 0);
-        Text: "Profile";
-        Style: (FontSize: 12, TextColor: #999999, HorizontalAlignment: Center, VerticalAlignment: Center);
-        HitTestVisible: false;
-      }
-
-      Button #TabProfileBtn {
-        Anchor: (Full: 0);
-        Style: $C.@TertiaryButtonStyle;
-      }
+      Label { Anchor: (Full: 0); Text: "Profile"; Style: (FontSize: 12, TextColor: #999999, HorizontalAlignment: Center, VerticalAlignment: Center); HitTestVisible: false; }
+      Button #TabProfileBtn { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
     }
 
     Group #TabRelicBindingsWrapper {
       Anchor: (Left: 268, Top: 0, Width: 146, Height: 44);
       Background: #0d1820;
-
-      Label {
-        Anchor: (Full: 0);
-        Text: "Relic Bindings";
-        Style: (FontSize: 12, TextColor: #999999, HorizontalAlignment: Center, VerticalAlignment: Center);
-        HitTestVisible: false;
-      }
-
-      Button #TabRelicBindingsBtn {
-        Anchor: (Full: 0);
-        Style: $C.@TertiaryButtonStyle;
-      }
+      Label { Anchor: (Full: 0); Text: "Relic Bindings"; Style: (FontSize: 12, TextColor: #999999, HorizontalAlignment: Center, VerticalAlignment: Center); HitTestVisible: false; }
+      Button #TabRelicBindingsBtn { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
     }
 
     Group #TabHuntCompendium {
       Anchor: (Left: 418, Top: 0, Width: 160, Height: 44);
       Background: #1e3048;
-
-      Label {
-        Anchor: (Full: 0);
-        Text: "Hunt Compendium";
-        Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
-        HitTestVisible: false;
-      }
+      Label { Anchor: (Full: 0); Text: "Hunt Compendium"; Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); HitTestVisible: false; }
     }
 
     Group #TabSettingsWrapper {
       Anchor: (Left: 582, Top: 0, Width: 146, Height: 44);
       Background: #0d1820;
-
-      Label {
-        Anchor: (Full: 0);
-        Text: "Settings";
-        Style: (FontSize: 12, TextColor: #999999, HorizontalAlignment: Center, VerticalAlignment: Center);
-        HitTestVisible: false;
-      }
-
-      Button #TabSettingsBtn {
-        Anchor: (Full: 0);
-        Style: $C.@TertiaryButtonStyle;
-      }
+      Label { Anchor: (Full: 0); Text: "Settings"; Style: (FontSize: 12, TextColor: #999999, HorizontalAlignment: Center, VerticalAlignment: Center); HitTestVisible: false; }
+      Button #TabSettingsBtn { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
     }
   }
 
   Group #HeaderBtns {
     Anchor: (Right: 16, Top: 14, Width: 100, Height: 38);
-
     $C.@CancelTextButton #CloseBtn {
       @Text = "Close";
       @Anchor = (Right: 0, Width: 100, Height: 32);
     }
   }
 
-$C.@Panel #CompendiumPanel {
-  Anchor: (Left: 60, Right: 60, Top: 64, Bottom: 36);
-  Padding: (Full: 16);
+  $C.@Panel #CompendiumPanel {
+    Anchor: (Left: 60, Right: 60, Top: 64, Bottom: 36);
+    Padding: (Full: 16);
 
-  Group #CompendiumPanelContent {
-    Anchor: (Full: 0);
+    Group #CompendiumPanelContent {
+      Anchor: (Full: 0);
 
-    Label #Title {
-      Anchor: (Left: 0, Top: 0, Width: 420, Height: 28);
-      Text: "";
-      Style: (FontSize: 24, RenderBold: true, TextColor: #ffffff);
-    }
-
-    Label #Subtitle {
-      Anchor: (Left: 0, Top: 30, Width: 540, Height: 18);
-      Text: "";
-      Style: (FontSize: 11, TextColor: #9bb0c2);
-    }
-
-    Group #SnapshotStrip {
-      Anchor: (Left: 0, Right: 0, Top: 62, Height: 90);
-      Background: #14202c;
-
-    Label {
-      Anchor: (Left: 18, Top: 12, Width: 120, Height: 16);
-      Text: "Prepared loadout";
-      Style: (FontSize: 11, TextColor: #8ea2b5);
-    }
-
-    Label #PreparedLoadoutValue {
-      Anchor: (Left: 18, Top: 30, Width: 420, Height: 34);
-      Text: "";
-      Style: (FontSize: 14, RenderBold: true, TextColor: #ffffff, Wrap: true);
-    }
-
-    Label {
-      Anchor: (Right: 220, Top: 12, Width: 120, Height: 16);
-      Text: "Next rank";
-      Style: (FontSize: 11, TextColor: #8ea2b5);
-    }
-
-    Label #NextRankValue {
-      Anchor: (Right: 18, Top: 30, Width: 220, Height: 34);
-      Text: "";
-      Style: (FontSize: 14, RenderBold: true, TextColor: #facc15, HorizontalAlignment: End, VerticalAlignment: Center);
-    }
-  }
-
-    Group #Tabs {
-      Anchor: (Left: 0, Top: 154, Width: 648, Height: 44);
-
-    Group #OverviewTab {
-      Anchor: (Left: 0, Top: 0, Width: 156, Height: 44);
-      Group #TabBackground { Anchor: (Full: 0); Background: #1e3048; }
-      Label #TabLabel {
-        Anchor: (Full: 0);
-        Text: "Overview";
-        Style: (FontSize: 12, RenderBold: true, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center);
-      }
-      Button #TabButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
-    }
-
-    Group #PreparationsTab {
-      Anchor: (Left: 164, Top: 0, Width: 156, Height: 44);
-      Group #TabBackground { Anchor: (Full: 0); Background: #0d1820; }
-      Label #TabLabel {
-        Anchor: (Full: 0);
-        Text: "Preparations";
-        Style: (FontSize: 12, TextColor: #9bb0c2, HorizontalAlignment: Center, VerticalAlignment: Center);
-      }
-      Button #TabButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
-    }
-
-    Group #RecordsTab {
-      Anchor: (Left: 328, Top: 0, Width: 156, Height: 44);
-      Group #TabBackground { Anchor: (Full: 0); Background: #0d1820; }
-      Label #TabLabel {
-        Anchor: (Full: 0);
-        Text: "Records";
-        Style: (FontSize: 12, TextColor: #9bb0c2, HorizontalAlignment: Center, VerticalAlignment: Center);
-      }
-      Button #TabButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
-    }
-
-    Group #QuarryTab {
-      Anchor: (Left: 492, Top: 0, Width: 156, Height: 44);
-      Group #TabBackground { Anchor: (Full: 0); Background: #0d1820; }
-      Label #TabLabel {
-        Anchor: (Full: 0);
-        Text: "Quarry";
-        Style: (FontSize: 12, TextColor: #9bb0c2, HorizontalAlignment: Center, VerticalAlignment: Center);
-      }
-      Button #TabButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
-    }
-  }
-
-    Group #ContentPanel {
-      Anchor: (Left: 0, Right: 0, Top: 214, Bottom: 30);
-      Background: #14202c;
-    }
-
-    Group #OverviewPanel {
-      Anchor: (Left: 0, Right: 0, Top: 226, Bottom: 42);
-
-    Group #OverviewSummaryCard {
-      Anchor: (Left: 0, Right: 0, Top: 0, Height: 118);
-      Background: #101922;
-      Label {
-        Anchor: (Left: 16, Top: 12, Width: 180, Height: 18);
-        Text: "Summary";
-        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-      }
-      Label #OverviewSummaryText {
-        Anchor: (Left: 16, Top: 38, Right: 16, Bottom: 16);
+      Label #Title {
+        Anchor: (Left: 0, Top: 0, Width: 420, Height: 28);
         Text: "";
-        Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
+        Style: (FontSize: 24, RenderBold: true, TextColor: #ffffff);
       }
-    }
 
-    Group #OverviewContinuityCard {
-      Anchor: (Left: 0, Top: 132, Width: 440, Bottom: 0);
-      Background: #101922;
-      Label {
-        Anchor: (Left: 16, Top: 12, Width: 220, Height: 18);
-        Text: "Continuity";
-        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-      }
-      Label #OverviewContinuityText {
-        Anchor: (Left: 16, Top: 38, Right: 16, Bottom: 16);
+      Label #Subtitle {
+        Anchor: (Left: 0, Top: 30, Width: 580, Height: 18);
         Text: "";
-        Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
-      }
-    }
-
-    Group #OverviewRewardCard {
-      Anchor: (Right: 0, Top: 132, Width: 440, Bottom: 0);
-      Background: #101922;
-      Label {
-        Anchor: (Left: 16, Top: 12, Width: 220, Height: 18);
-        Text: "Recent reward";
-        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-      }
-      Label #OverviewRewardText {
-        Anchor: (Left: 16, Top: 38, Right: 16, Bottom: 16);
-        Text: "";
-        Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
-      }
-    }
-  }
-
-    Group #PreparationsPanel {
-      Anchor: (Left: 0, Right: 0, Top: 226, Bottom: 42);
-      Visible: false;
-
-    Group #PreparationChoicesCard {
-      Anchor: (Left: 0, Right: 316, Top: 0, Height: 204);
-      Background: #101922;
-      Label {
-        Anchor: (Left: 16, Top: 12, Width: 220, Height: 18);
-        Text: "Preparation chooser";
-        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-      }
-      Label {
-        Anchor: (Left: 16, Top: 34, Right: 16, Height: 16);
-        Text: "Preview a preparation, then commit it for your next Night Hunt.";
         Style: (FontSize: 11, TextColor: #9bb0c2);
       }
-      Group #PreparationOptions {
-        Anchor: (Left: 16, Right: 16, Top: 60, Bottom: 16);
-      }
-    }
 
-    Group #PreparationPreviewCard {
-      Anchor: (Right: 0, Top: 0, Width: 300, Height: 204);
-      Background: #101922;
-      Label {
-        Anchor: (Left: 16, Top: 12, Width: 220, Height: 18);
-        Text: "Preview";
-        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-      }
-      Label #PreparationPreviewTitle {
-        Anchor: (Left: 16, Top: 36, Right: 16, Height: 18);
-        Text: "";
-        Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true, Wrap: true);
-      }
-      Label #PreparationPreviewStatus {
-        Anchor: (Left: 16, Top: 58, Right: 16, Height: 16);
-        Text: "";
-        Style: (FontSize: 11, TextColor: #7dd3fc, RenderBold: true);
-      }
-      Label #PreparationPreviewDescription {
-        Anchor: (Left: 16, Top: 82, Right: 16, Height: 46);
-        Text: "";
-        Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
-      }
-      Label #PreparationPreviewObjective {
-        Anchor: (Left: 16, Top: 132, Right: 16, Height: 28);
-        Text: "";
-        Style: (FontSize: 11, TextColor: #facc15, Wrap: true);
-      }
-      $C.@SecondaryTextButton #PrepareConfirmBtn {
-        @Text = "";
-        @Anchor = (Left: 16, Right: 16, Bottom: 16, Height: 32);
-      }
-      Label #PrepareConfirmLabel {
-        Anchor: (Left: 16, Right: 16, Bottom: 16, Height: 32);
-        Text: "";
-        Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
-        HitTestVisible: false;
-      }
-    }
+      Group #SnapshotStrip {
+        Anchor: (Left: 0, Right: 0, Top: 58, Height: 68);
+        Background: #101922;
 
-    Group #PreparationEffectsCard {
-      Anchor: (Left: 0, Right: 0, Top: 220, Bottom: 0);
-      Background: #101922;
-      Label {
-        Anchor: (Left: 16, Top: 12, Width: 220, Height: 18);
-        Text: "Route and contract effects";
-        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+        Group #DominantIconFrame {
+          Anchor: (Left: 16, Top: 12, Width: 42, Height: 42);
+          Background: #ef4444;
+          Label #DominantIcon { Anchor: (Full: 0); Text: ""; Style: (FontSize: 20, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); HitTestVisible: false; }
+        }
+
+        Label #DominantLabel { Anchor: (Left: 72, Top: 9, Width: 160, Height: 14); Text: ""; Style: (FontSize: 10, TextColor: #9bb0c2, RenderBold: true); }
+        Label #DominantValue { Anchor: (Left: 72, Top: 25, Width: 330, Height: 20); Text: ""; Style: (FontSize: 16, TextColor: #ffffff, RenderBold: true); }
+        Label #DominantDetail { Anchor: (Left: 72, Top: 47, Width: 470, Height: 14); Text: ""; Style: (FontSize: 10, TextColor: #d5e2ef); }
+
+        Label { Anchor: (Right: 400, Top: 10, Width: 120, Height: 14); Text: "Prepared"; Style: (FontSize: 10, TextColor: #8ea2b5, RenderBold: true, HorizontalAlignment: End); }
+        Label #PreparedLoadoutValue {
+          Anchor: (Right: 220, Top: 28, Width: 300, Height: 24);
+          Text: "";
+          Style: (FontSize: 12, RenderBold: true, TextColor: #ffffff, Wrap: true, HorizontalAlignment: End);
+        }
+
+        Label { Anchor: (Right: 220, Top: 10, Width: 120, Height: 14); Text: "Next rank"; Style: (FontSize: 10, TextColor: #8ea2b5, RenderBold: true, HorizontalAlignment: End); }
+        Label #NextRankValue {
+          Anchor: (Right: 18, Top: 28, Width: 220, Height: 24);
+          Text: "";
+          Style: (FontSize: 14, RenderBold: true, TextColor: #facc15, HorizontalAlignment: End, VerticalAlignment: Center);
+        }
       }
-      Label #PreparationPreviewEffects {
-        Anchor: (Left: 16, Top: 38, Right: 16, Bottom: 16);
+
+      Group #Tabs {
+        Anchor: (Left: 0, Top: 142, Width: 648, Height: 44);
+
+        Group #OverviewTab {
+          Anchor: (Left: 0, Top: 0, Width: 156, Height: 44);
+          Group #TabBackground { Anchor: (Full: 0); Background: #1e3048; }
+          Label #TabLabel { Anchor: (Full: 0); Text: "Overview"; Style: (FontSize: 12, RenderBold: true, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center); }
+          Button #TabButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+        }
+
+        Group #PreparationsTab {
+          Anchor: (Left: 164, Top: 0, Width: 156, Height: 44);
+          Group #TabBackground { Anchor: (Full: 0); Background: #0d1820; }
+          Label #TabLabel { Anchor: (Full: 0); Text: "Preparations"; Style: (FontSize: 12, TextColor: #9bb0c2, HorizontalAlignment: Center, VerticalAlignment: Center); }
+          Button #TabButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+        }
+
+        Group #RecordsTab {
+          Anchor: (Left: 328, Top: 0, Width: 156, Height: 44);
+          Group #TabBackground { Anchor: (Full: 0); Background: #0d1820; }
+          Label #TabLabel { Anchor: (Full: 0); Text: "Records"; Style: (FontSize: 12, TextColor: #9bb0c2, HorizontalAlignment: Center, VerticalAlignment: Center); }
+          Button #TabButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+        }
+
+        Group #QuarryTab {
+          Anchor: (Left: 492, Top: 0, Width: 156, Height: 44);
+          Group #TabBackground { Anchor: (Full: 0); Background: #0d1820; }
+          Label #TabLabel { Anchor: (Full: 0); Text: "Quarry"; Style: (FontSize: 12, TextColor: #9bb0c2, HorizontalAlignment: Center, VerticalAlignment: Center); }
+          Button #TabButton { Anchor: (Full: 0); Style: $C.@TertiaryButtonStyle; }
+        }
+      }
+
+      Group #ContentPanel {
+        Anchor: (Left: 0, Right: 0, Top: 202, Bottom: 28);
+        Background: #14202c;
+      }
+
+      Group #OverviewPanel {
+        Anchor: (Left: 0, Right: 0, Top: 214, Bottom: 40);
+
+        Group #OverviewMetricsCard {
+          Anchor: (Left: 0, Right: 0, Top: 0, Height: 102);
+          Background: #101922;
+          Label { Anchor: (Left: 16, Top: 10, Width: 180, Height: 16); Text: "At a glance"; Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true); }
+          Group #OverviewMetrics { Anchor: (Left: 16, Right: 16, Top: 34, Bottom: 12); }
+        }
+
+        Group #OverviewContinuityCard {
+          Anchor: (Left: 0, Top: 116, Width: 690, Bottom: 0);
+          Background: #101922;
+          Label { Anchor: (Left: 16, Top: 10, Width: 220, Height: 16); Text: "Continuity"; Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true); }
+          Group #OverviewStatusRows { Anchor: (Left: 16, Right: 16, Top: 34, Bottom: 12); }
+        }
+
+        Group #OverviewRewardCard {
+          Anchor: (Right: 0, Top: 116, Width: 484, Bottom: 0);
+          Background: #101922;
+          Label { Anchor: (Left: 16, Top: 10, Width: 220, Height: 16); Text: "Recent reward"; Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true); }
+          Group #OverviewRewardChips { Anchor: (Left: 16, Right: 16, Top: 34, Bottom: 12); }
+        }
+      }
+
+      Group #PreparationsPanel {
+        Anchor: (Left: 0, Right: 0, Top: 214, Bottom: 40);
+        Visible: false;
+
+        Group #PreparationChoicesCard {
+          Anchor: (Left: 0, Right: 0, Top: 0, Height: 146);
+          Background: #101922;
+          Label { Anchor: (Left: 16, Top: 12, Width: 220, Height: 18); Text: "Preparation chooser"; Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true); }
+          Label { Anchor: (Left: 16, Top: 34, Right: 16, Height: 16); Text: "Pick the next hunt route. Use the horizontal slider for more choices."; Style: (FontSize: 11, TextColor: #9bb0c2); }
+          Group #PreparationOptions {
+            Anchor: (Left: 12, Right: 12, Top: 58, Bottom: 12);
+            LayoutMode: LeftScrolling;
+            ScrollbarStyle: $Common.@DefaultScrollbar;
+          }
+        }
+
+        Group #PreparationPreviewCard {
+          Anchor: (Left: 0, Top: 162, Width: 350, Bottom: 0);
+          Background: #101922;
+          Label { Anchor: (Left: 16, Top: 12, Width: 220, Height: 18); Text: "Preview"; Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true); }
+          Label #PreparationPreviewTitle { Anchor: (Left: 16, Top: 36, Right: 16, Height: 18); Text: ""; Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true, Wrap: true); }
+          Label #PreparationPreviewStatus { Anchor: (Left: 16, Top: 58, Right: 16, Height: 16); Text: ""; Style: (FontSize: 11, TextColor: #7dd3fc, RenderBold: true); }
+          Label #PreparationPreviewDescription { Anchor: (Left: 16, Top: 82, Right: 16, Height: 46); Text: ""; Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true); }
+          Label #PreparationPreviewObjective { Anchor: (Left: 16, Top: 132, Right: 16, Height: 28); Text: ""; Style: (FontSize: 11, TextColor: #facc15, Wrap: true); }
+          $C.@SecondaryTextButton #PrepareConfirmBtn { @Text = ""; @Anchor = (Left: 16, Right: 16, Bottom: 16, Height: 32); }
+          Label #PrepareConfirmLabel { Anchor: (Left: 16, Right: 16, Bottom: 16, Height: 32); Text: ""; Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); HitTestVisible: false; }
+        }
+
+        Group #PreparationEffectsCard {
+          Anchor: (Left: 366, Right: 0, Top: 162, Bottom: 0);
+          Background: #101922;
+          Label { Anchor: (Left: 16, Top: 12, Width: 220, Height: 18); Text: "Route effects"; Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true); }
+          Group #PreparationEffectRows { Anchor: (Left: 16, Right: 16, Top: 42, Bottom: 12); }
+        }
+      }
+
+      Group #RecordsPanel {
+        Anchor: (Left: 0, Right: 0, Top: 214, Bottom: 40);
+        Visible: false;
+
+        Group #RecordsArchetypesCard {
+          Anchor: (Left: 0, Top: 0, Width: 520, Bottom: 0);
+          Background: #101922;
+          Label { Anchor: (Left: 16, Top: 12, Width: 220, Height: 18); Text: "Archetype mastery"; Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true); }
+          Group #RecordsArchetypeRows { Anchor: (Left: 16, Right: 16, Top: 42, Bottom: 12); }
+        }
+
+        Group #RecordsContractsCard {
+          Anchor: (Right: 0, Top: 0, Width: 650, Bottom: 0);
+          Background: #101922;
+          Label { Anchor: (Left: 16, Top: 12, Width: 220, Height: 18); Text: "Contract ledger"; Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true); }
+          Group #RecordsContractRows { Anchor: (Left: 16, Right: 16, Top: 42, Bottom: 12); }
+        }
+      }
+
+      Group #QuarryPanel {
+        Anchor: (Left: 0, Right: 0, Top: 214, Bottom: 40);
+        Visible: false;
+        Background: #101922;
+        Label { Anchor: (Left: 16, Top: 12, Width: 220, Height: 18); Text: "Quarry log"; Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true); }
+        Label { Anchor: (Left: 16, Top: 34, Right: 16, Height: 16); Text: "Discovered prey stay pinned first."; Style: (FontSize: 11, TextColor: #9bb0c2); }
+        Group #QuarryRows { Anchor: (Left: 16, Right: 16, Top: 62, Bottom: 12); }
+      }
+
+      Label #FooterHint {
+        Anchor: (Left: 16, Right: 16, Bottom: 0, Height: 16);
         Text: "";
-        Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
+        Style: (FontSize: 11, TextColor: #8ea2b5, HorizontalAlignment: Center);
       }
-    }
-  }
-
-    Group #RecordsPanel {
-      Anchor: (Left: 0, Right: 0, Top: 226, Bottom: 42);
-      Visible: false;
-
-    Group #RecordsArchetypesCard {
-      Anchor: (Left: 0, Top: 0, Width: 440, Bottom: 0);
-      Background: #101922;
-      Label {
-        Anchor: (Left: 16, Top: 12, Width: 220, Height: 18);
-        Text: "Archetype mastery";
-        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-      }
-      Label #RecordsArchetypesText {
-        Anchor: (Left: 16, Top: 38, Right: 16, Bottom: 16);
-        Text: "";
-        Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
-      }
-    }
-
-    Group #RecordsContractsCard {
-      Anchor: (Right: 0, Top: 0, Width: 544, Bottom: 0);
-      Background: #101922;
-      Label {
-        Anchor: (Left: 16, Top: 12, Width: 220, Height: 18);
-        Text: "Contract ledger";
-        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-      }
-      Label #RecordsContractsText {
-        Anchor: (Left: 16, Top: 38, Right: 16, Bottom: 16);
-        Text: "";
-        Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
-      }
-    }
-  }
-
-    Group #QuarryPanel {
-      Anchor: (Left: 0, Right: 0, Top: 226, Bottom: 42);
-      Visible: false;
-      Background: #101922;
-    Label {
-      Anchor: (Left: 16, Top: 12, Width: 220, Height: 18);
-      Text: "Quarry log";
-      Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-    }
-    Label {
-      Anchor: (Left: 16, Top: 34, Right: 16, Height: 16);
-      Text: "Discovered prey are pinned first so familiar targets stay easy to scan.";
-      Style: (FontSize: 11, TextColor: #9bb0c2);
-    }
-    Label #QuarryText {
-      Anchor: (Left: 16, Top: 60, Right: 16, Bottom: 16);
-      Text: "";
-      Style: (FontSize: 11, TextColor: #d5e2ef, Wrap: true);
-    }
-  }
-
-    Label #FooterHint {
-      Anchor: (Left: 16, Right: 16, Bottom: 0, Height: 16);
-      Text: "";
-      Style: (FontSize: 11, TextColor: #8ea2b5, HorizontalAlignment: Center);
     }
   }
 }

@@ -12,6 +12,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.epicseed.epiccore.vampirism.domain.player.RitualProgressState;
+import com.epicseed.vampirism.domain.progression.VampirismProgressionFeaturePolicy;
 import com.epicseed.vampirism.domain.progression.VampiricProgressionProofs;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContext;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualDefinition;
@@ -32,13 +33,22 @@ final class VampiricRitualBookModel {
 
     private final String anchorBlockId;
     private final List<RitualEntry> rituals;
+    private final VampirismProgressionFeaturePolicy featurePolicy;
     private int selectedIndex;
 
     VampiricRitualBookModel(@Nonnull String anchorBlockId,
                             @Nonnull List<RitualEntry> rituals,
                             @Nullable String selectedRitualId) {
+        this(anchorBlockId, rituals, selectedRitualId, VampirismProgressionFeaturePolicy.allEnabled());
+    }
+
+    VampiricRitualBookModel(@Nonnull String anchorBlockId,
+                            @Nonnull List<RitualEntry> rituals,
+                            @Nullable String selectedRitualId,
+                            @Nonnull VampirismProgressionFeaturePolicy featurePolicy) {
         this.anchorBlockId = Objects.requireNonNull(anchorBlockId, "anchorBlockId");
         this.rituals = rituals == null ? List.of() : List.copyOf(rituals);
+        this.featurePolicy = Objects.requireNonNull(featurePolicy, "featurePolicy");
         this.selectedIndex = selectedIndexFor(selectedRitualId);
     }
 
@@ -49,6 +59,23 @@ final class VampiricRitualBookModel {
                                           @Nonnull Map<String, VampiricRitualTemplate> templates,
                                           @Nonnull Map<String, VampiricRitualEvaluation> evaluations,
                                           @Nullable String selectedRitualId) {
+        return create(anchorBlockId,
+                resolvedRituals,
+                definitions,
+                templates,
+                evaluations,
+                selectedRitualId,
+                VampirismProgressionFeaturePolicy.allEnabled());
+    }
+
+    @Nonnull
+    static VampiricRitualBookModel create(@Nonnull String anchorBlockId,
+                                          @Nonnull List<VampiricRitualRuntimeService.ResolvedAnchorRitual> resolvedRituals,
+                                          @Nonnull Map<String, VampiricRitualDefinition> definitions,
+                                          @Nonnull Map<String, VampiricRitualTemplate> templates,
+                                          @Nonnull Map<String, VampiricRitualEvaluation> evaluations,
+                                          @Nullable String selectedRitualId,
+                                          @Nonnull VampirismProgressionFeaturePolicy featurePolicy) {
         ArrayList<RitualEntry> entries = new ArrayList<>();
         for (VampiricRitualRuntimeService.ResolvedAnchorRitual ritual : resolvedRituals) {
             VampiricRitualDefinition definition = definitions.get(ritual.ritualId());
@@ -59,7 +86,7 @@ final class VampiricRitualBookModel {
             }
             entries.add(new RitualEntry(ritual, definition, template, evaluation, resolveIcon(definition)));
         }
-        return new VampiricRitualBookModel(anchorBlockId, entries, selectedRitualId);
+        return new VampiricRitualBookModel(anchorBlockId, entries, selectedRitualId, featurePolicy);
     }
 
     public boolean empty() {
@@ -157,10 +184,10 @@ final class VampiricRitualBookModel {
         if (entry.definition().minBlood() > 0) {
             lines.add("Blood: " + entry.definition().minBlood());
         }
-        if (entry.definition().minCompletedNightHunts() > 0) {
+        if (featurePolicy.nightHuntProgressionEnabled() && entry.definition().minCompletedNightHunts() > 0) {
             lines.add("Completed hunts: " + entry.definition().minCompletedNightHunts());
         }
-        if (entry.definition().requiredAgeTierId() != null) {
+        if (featurePolicy.ageTierProgressionEnabled() && entry.definition().requiredAgeTierId() != null) {
             lines.add("Age tier: " + humanizeId(entry.definition().requiredAgeTierId()));
         }
         if (!entry.definition().requiredSkills().isEmpty()) {
@@ -169,7 +196,7 @@ final class VampiricRitualBookModel {
         if (!entry.definition().requiredProofIds().isEmpty()) {
             lines.add("Proof: " + joinProofLabels(entry.definition().requiredProofIds()));
         }
-        if (!entry.definition().requiredAffinities().isEmpty()) {
+        if (featurePolicy.bloodAffinityProgressionEnabled() && !entry.definition().requiredAffinities().isEmpty()) {
             lines.add("Affinity: " + joinAffinityLabels(entry.definition().requiredAffinities()));
         }
         if (!entry.definition().requiredContextTags().isEmpty()) {
@@ -227,7 +254,7 @@ final class VampiricRitualBookModel {
     public String rewardsText() {
         VampiricRitualDefinition.Rewards rewards = selected().definition().rewards();
         ArrayList<String> lines = new ArrayList<>();
-        if (rewards.ageTierId() != null) {
+        if (featurePolicy.ageTierProgressionEnabled() && rewards.ageTierId() != null) {
             lines.add("Age tier: " + humanizeId(rewards.ageTierId()));
         }
         if (rewards.skillPoints() > 0) {
@@ -268,11 +295,11 @@ final class VampiricRitualBookModel {
             boolean blocked = hasBlockingReason(evaluation, "min_blood:");
             items.add(check("Blood", "Required: " + definition.minBlood(), blocked));
         }
-        if (definition.minCompletedNightHunts() > 0) {
+        if (featurePolicy.nightHuntProgressionEnabled() && definition.minCompletedNightHunts() > 0) {
             boolean blocked = hasBlockingReason(evaluation, "min_completed_night_hunts:");
             items.add(check("Night hunts", "Required: " + definition.minCompletedNightHunts(), blocked));
         }
-        if (definition.requiredAgeTierId() != null) {
+        if (featurePolicy.ageTierProgressionEnabled() && definition.requiredAgeTierId() != null) {
             boolean blocked = hasBlockingReason(evaluation, "required_age_tier:");
             items.add(check("Age tier", humanizeId(definition.requiredAgeTierId()), blocked));
         }
@@ -290,7 +317,7 @@ final class VampiricRitualBookModel {
                     .replace("[", "Missing ")
                     .replace("]", ""), !missing.isEmpty()));
         }
-        if (!definition.requiredAffinities().isEmpty()) {
+        if (featurePolicy.bloodAffinityProgressionEnabled() && !definition.requiredAffinities().isEmpty()) {
             boolean blocked = definition.requiredAffinities().stream()
                     .anyMatch(requirement -> evaluation.blockingReasons().contains(requirement.blockingReason()));
             items.add(check("Affinity", joinAffinityLabels(definition.requiredAffinities()), blocked));
@@ -327,7 +354,7 @@ final class VampiricRitualBookModel {
     public List<RewardView> rewardViews() {
         VampiricRitualDefinition.Rewards rewards = selected().definition().rewards();
         ArrayList<RewardView> rewardsView = new ArrayList<>();
-        if (rewards.ageTierId() != null) {
+        if (featurePolicy.ageTierProgressionEnabled() && rewards.ageTierId() != null) {
             rewardsView.add(new RewardView("AGE", humanizeId(rewards.ageTierId())));
         }
         if (rewards.skillPoints() > 0) {

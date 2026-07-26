@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -52,11 +53,13 @@ import com.epicseed.vampirism.config.VampirismConfig;
 import com.epicseed.vampirism.domain.blood.BloodHudService;
 import com.epicseed.vampirism.domain.blood.FeedCompletionService;
 import com.epicseed.vampirism.domain.hunt.NightHuntService;
+import com.epicseed.vampirism.domain.hunt.NightHuntProgressionService;
 import com.epicseed.vampirism.domain.hunt.NightHuntProgressionRegistry;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageRegistry;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatPolicy;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
+import com.epicseed.vampirism.domain.progression.VampirismProgressionFeaturePolicy;
 import com.epicseed.epiccore.vampirism.domain.player.VampirePlayerStateStore;
 import com.epicseed.vampirism.domain.relic.PlayerRelicBindingsStore;
 import com.epicseed.vampirism.domain.relic.VampiricRelicSetService;
@@ -172,6 +175,9 @@ public final class VampirismRuntime {
                                              @Nonnull java.util.function.Supplier<Vector2d> highestPositionSupplier) {
         Path dataDirectory = plugin.getPersistentDataDirectory();
         VampireStatusRegistry.init(dataDirectory, () -> VampirismConfig.get().isVampireDefaultEnabled());
+        Supplier<VampirismProgressionFeaturePolicy> progressionFeaturePolicySupplier =
+                VampirismRuntime::progressionFeaturePolicy;
+        NightHuntProgressionService.configureFeaturePolicy(progressionFeaturePolicySupplier);
         PlayerSkillRegistry playerSkillRegistry = PlayerSkillRegistry.init(
                 dataDirectory,
                 VampirismCompatibility.profileMigrations());
@@ -246,7 +252,8 @@ public final class VampirismRuntime {
         MasqueradeHeatService masqueradeHeatService = new MasqueradeHeatService(MasqueradeHeatPolicy.defaults());
         VampiricLineageService lineageService = new VampiricLineageService(
                 new VampiricLineageRegistry(),
-                progressionAccess);
+                progressionAccess,
+                progressionFeaturePolicySupplier);
         VampiricRitualService ritualService = new VampiricRitualService(
                 new VampiricRitualRegistry(),
                 new RuntimeVampiricRitualRewardPort(
@@ -254,7 +261,8 @@ public final class VampirismRuntime {
                         lineageService,
                         nightHuntService,
                         masqueradeHeatService,
-                        temporaryModifiers));
+                        temporaryModifiers),
+                progressionFeaturePolicySupplier);
         VampiricRitualTemplateRegistry ritualTemplateRegistry = new VampiricRitualTemplateRegistry();
         VampiricRitualRuntimeService ritualRuntimeService =
                 new VampiricRitualRuntimeService(ritualService, ritualTemplateRegistry);
@@ -267,7 +275,8 @@ public final class VampirismRuntime {
                 skillConditionEvaluator,
                 () -> progressionAccess,
                 masqueradeHeatService,
-                ritualService);
+                ritualService,
+                progressionFeaturePolicySupplier);
         SkillActionExecutor skillActionExecutor = new SkillActionExecutor(
                 progressionDefinitionProvider,
                 skillConditionEvaluator,
@@ -306,7 +315,8 @@ public final class VampirismRuntime {
                 skillTreeManager,
                 lineageService,
                 ritualService,
-                masqueradeHeatService);
+                masqueradeHeatService,
+                progressionFeaturePolicySupplier);
         StandardRelicUiAdapter relicUiAdapter = new StandardRelicUiAdapter(
                 progressionDefinitionProvider,
                 () -> VampirismConfig.get().getCooldownHudUpdateIntervalMs(),
@@ -320,7 +330,8 @@ public final class VampirismRuntime {
                 ritualService,
                 ritualContextResolver,
                 lineageService,
-                masqueradeHeatService);
+                masqueradeHeatService,
+                progressionFeaturePolicySupplier);
         ProgressionPageFactory progressionPageFactory = vampirismProgressionPageFactory;
 
         PassiveRuntimeServices<SkillRuntimeContext, PassiveService> passiveRuntimeServices =
@@ -478,6 +489,7 @@ public final class VampirismRuntime {
         int savedProfiles = playerSkillRegistry.shutdown();
         LOGGER.info("Saved %d cached player profile(s) during shutdown", savedProfiles);
         VampirismClassifications.unregisterProvider();
+        NightHuntProgressionService.configureFeaturePolicy(VampirismProgressionFeaturePolicy::allEnabled);
         relicPresetSelectionAdapter.shutdown();
         RitualOfferingSurfaceInteraction.clearRuntime();
         VampirismInteractionRuntime.clear();
@@ -508,6 +520,15 @@ public final class VampirismRuntime {
         connectedPlayers.remove(uuid);
         PlayerRuntimeCleanupReport report = playerRuntimeCleanupCoordinator.cleanupAndReport(uuid, playerRef);
         logCleanupReport(report);
+    }
+
+    @Nonnull
+    private static VampirismProgressionFeaturePolicy progressionFeaturePolicy() {
+        VampirismConfig config = VampirismConfig.get();
+        return new VampirismProgressionFeaturePolicy(
+                config.isAgeTierProgressionEnabled(),
+                config.isNightHuntProgressionEnabled(),
+                config.isBloodAffinityProgressionEnabled());
     }
 
     @Nullable

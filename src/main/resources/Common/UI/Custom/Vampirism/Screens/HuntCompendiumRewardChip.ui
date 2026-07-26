@@ -1,0 +1,33 @@
+$C = "../../Common.ui";
+
+Group #RewardChip {
+  Anchor: (Width: 188, Height: 46);
+  Background: #14202c;
+
+  Group #RewardAccent {
+    Anchor: (Left: 0, Top: 0, Width: 4, Bottom: 0);
+    Background: #f59e0b;
+    HitTestVisible: false;
+  }
+
+  Group #RewardIconFrame {
+    Anchor: (Left: 12, Top: 12, Width: 22, Height: 22);
+    Background: #f59e0b;
+    Visible: false;
+    Label #RewardIcon { Anchor: (Full: 0); Text: ""; Style: (FontSize: 11, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); HitTestVisible: false; }
+  }
+
+  Label #RewardLabel {
+    Anchor: (Left: 42, Top: 7, Right: 10, Height: 13);
+    Text: "";
+    Style: (FontSize: 10, TextColor: #8ea2b5, RenderBold: true);
+    HitTestVisible: false;
+  }
+
+  Label #RewardValue {
+    Anchor: (Left: 42, Top: 23, Right: 10, Height: 16);
+    Text: "";
+    Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true);
+    HitTestVisible: false;
+  }
+}

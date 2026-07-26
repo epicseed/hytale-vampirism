@@ -1,5 +1,7 @@
 package com.epicseed.vampirism.ui;
 
+import java.util.function.Supplier;
+
 import com.epicseed.epiccore.skill.ui.ProgressionPageFactory;
 import com.epicseed.epiccore.skill.ui.ProgressionProfilePage;
 import com.epicseed.epiccore.skill.ui.ProgressionRelicBindingsPage;
@@ -8,6 +10,7 @@ import com.epicseed.epiccore.skill.ui.RelicUiAdapter;
 import com.epicseed.epiccore.skill.ui.SkillTreeUiAdapter;
 import com.epicseed.vampirism.domain.lineage.VampiricLineageService;
 import com.epicseed.vampirism.domain.masquerade.MasqueradeHeatService;
+import com.epicseed.vampirism.domain.progression.VampirismProgressionFeaturePolicy;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualContextResolver;
 import com.epicseed.vampirism.domain.ritual.VampiricRitualService;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
@@ -23,6 +26,7 @@ public final class VampirismProgressionPageFactory implements ProgressionPageFac
     private final VampiricRitualContextResolver ritualContextResolver;
     private final VampiricLineageService lineageService;
     private final MasqueradeHeatService masqueradeHeatService;
+    private final Supplier<? extends VampirismProgressionFeaturePolicy> featurePolicySupplier;
 
     public VampirismProgressionPageFactory(ProgressionUiPaths uiPaths,
                                            SkillTreeUiAdapter skillTreeUiAdapter,
@@ -32,6 +36,26 @@ public final class VampirismProgressionPageFactory implements ProgressionPageFac
                                            VampiricRitualContextResolver ritualContextResolver,
                                            VampiricLineageService lineageService,
                                            MasqueradeHeatService masqueradeHeatService) {
+        this(uiPaths,
+                skillTreeUiAdapter,
+                relicUiAdapter,
+                settingsUiAdapter,
+                ritualService,
+                ritualContextResolver,
+                lineageService,
+                masqueradeHeatService,
+                VampirismProgressionFeaturePolicy::allEnabled);
+    }
+
+    public VampirismProgressionPageFactory(ProgressionUiPaths uiPaths,
+                                           SkillTreeUiAdapter skillTreeUiAdapter,
+                                           RelicUiAdapter relicUiAdapter,
+                                           VampirismSettingsUiAdapter settingsUiAdapter,
+                                           VampiricRitualService ritualService,
+                                           VampiricRitualContextResolver ritualContextResolver,
+                                           VampiricLineageService lineageService,
+                                           MasqueradeHeatService masqueradeHeatService,
+                                           Supplier<? extends VampirismProgressionFeaturePolicy> featurePolicySupplier) {
         this.uiPaths = uiPaths;
         this.skillTreeUiAdapter = skillTreeUiAdapter;
         this.relicUiAdapter = relicUiAdapter;
@@ -40,6 +64,7 @@ public final class VampirismProgressionPageFactory implements ProgressionPageFac
         this.ritualContextResolver = ritualContextResolver;
         this.lineageService = lineageService;
         this.masqueradeHeatService = masqueradeHeatService;
+        this.featurePolicySupplier = featurePolicySupplier;
     }
 
     @Override
@@ -65,7 +90,8 @@ public final class VampirismProgressionPageFactory implements ProgressionPageFac
                 ritualService,
                 ritualContextResolver,
                 lineageService,
-                masqueradeHeatService);
+                masqueradeHeatService,
+                featurePolicySupplier);
     }
 
     @Override
